@@ -164,6 +164,11 @@ export function multipleRegression(X, y, predictorNames) {
     p: pT(Math.abs(beta[0] / seBetas[0]), dfRes),
   }
 
+  // 警示：依變項變異 = 0；任一 VIF > 100 視為嚴重共線
+  const zeroVarianceY = sdY === 0
+  const maxVif = coefficients.reduce((m, c) => (Number.isFinite(c.vif) && c.vif > m ? c.vif : m), 0)
+  const severeMulticollinearity = coefficients.some((c) => Number.isFinite(c.vif) && c.vif > 100)
+
   return {
     n, k,
     intercept,
@@ -177,5 +182,8 @@ export function multipleRegression(X, y, predictorNames) {
     },
     residuals,
     fitted,
+    zeroVarianceY,
+    severeMulticollinearity,
+    maxVif,
   }
 }

@@ -63,6 +63,13 @@ export function cronbachAlpha(rows, columns) {
 
   const sumItemVar = items.reduce((s, item) => s + variance(item), 0)
   const totalVar = variance(totals)
+  // 邊界：總分變異 = 0（所有受訪者各題完全相同分數，例如全班同分）
+  if (totalVar === 0) {
+    return {
+      error: 'zero-total-variance',
+      meta: { n, k },
+    }
+  }
   const alpha = (k / (k - 1)) * (1 - sumItemVar / totalVar)
 
   // 每項統計

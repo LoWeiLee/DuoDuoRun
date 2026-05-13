@@ -393,6 +393,9 @@ export default {
       },
       tieNote: 'Result includes tie correction',
       droppedNote: '{n} pairs with D = 0 dropped',
+      continuityNote: 'p-value applies ±0.5 continuity correction (matches SPSS / R wilcox.test default).',
+      smallSampleNote: 'Small sample (n < 10); the normal approximation has limited precision — interpret alongside effect size and descriptive statistics.',
+      allZeroDiffsNote: 'All paired differences are zero — the two variables are identical (p = 1).',
       effect: { small: 'small', medium: 'medium', large: 'large' },
       kwSigPosthoc:
         "After significant H, run Dunn's pairwise test (toggle \"Show post-hoc (Dunn's test)\" on the left to enable).",
@@ -1720,6 +1723,9 @@ export default {
       },
       total: 'Total',
       cramerHint: '|z| ≥ 1.96 corresponds to cell-level two-tailed p < .05',
+      yatesRow: 'Yates correction',
+      yatesNote: 'For 2×2 tables, Yates continuity correction is reported (matches SPSS default output); the uncorrected χ² is shown for comparison.',
+      fisherSuggest: 'This is a 2×2 table with at least one expected count < 5 — consider Fisher exact test (small-sample exact test).',
       effectInterp: {
         trivial: 'trivial',
         small: 'small',
@@ -1766,6 +1772,8 @@ export default {
       sigNo: 'not significantly',
       sigYesDiff: 'significantly',
       copyHint: 'Copy APA narrative',
+      yatesAppendix:
+        'With Yates continuity correction for the 2×2 table: χ²({df}, N = {n}) = {chi2Yates}, p = {pYatesStr}.',
     },
     interp: {
       header: 'Reading',
@@ -2436,8 +2444,9 @@ export default {
       factor: 'Factor (grouping variable)',
       pickDep: 'Pick a dependent variable',
       pickFactor: 'Pick a factor',
-      factorHint: 'Must be categorical with at least 3 groups',
-      factorBadGroups: 'This factor has {k} groups; needs at least 3',
+      factorHint: 'Must be categorical with at least 3 groups (for 2 groups, use t-test instead)',
+      factorBadGroups: 'This factor has only {k} group(s); ANOVA cannot be performed (< 2 groups)',
+      useTTestForTwoGroups: 'This factor has only 2 groups. ANOVA reduces to an independent-samples t-test in this case — please use the "Independent t-test" entry in the sidebar for a more direct result.',
     },
     result: {
       groupStatsTitle: 'Group descriptives',

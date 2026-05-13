@@ -2,14 +2,15 @@
  * 無母數檢定 — Mann-Whitney U、Wilcoxon Signed-Rank、Kruskal-Wallis
  *
  * 對外 API：
- *   mannWhitneyU(x1, x2)     → 獨立兩組秩和檢定
- *   wilcoxonSignedRank(x1,x2)→ 配對樣本秩和檢定（1 樣本對 0 也可）
+ *   mannWhitneyU(x1, x2)     → 獨立兩組秩和檢定（含 ±0.5 連續性校正）
+ *   wilcoxonSignedRank(x1,x2)→ 配對樣本秩和檢定（1 樣本對 0 也可，含 CC）
  *   kruskalWallis(groups)    → 三組以上秩和 ANOVA
  *
  * p-value：
  *   全部用 large-sample 常態近似（Z 檢定），含 tie 校正。
- *   小樣本（每組 < 10）的精確分布不實作；UI 端可加註樣本太小的提醒。
- *   實務上 n ≥ 10 / 組常態近似已足夠精確（< 1% 偏差）。
+ *   Mann-Whitney / Wilcoxon 採 ±0.5 連續性校正（與 SPSS / R wilcox.test 預設一致）。
+ *   小樣本（n < 10）加 smallSampleWarning，UI 端可加註樣本太小的提醒。
+ *   實務上 n ≥ 10 / 組常態近似（含 CC）已足夠精確。
  */
 import { normalCdf } from './pvalue.js'
 import { pChiSq } from './pvalue.js'
@@ -18,7 +19,7 @@ import { ranks, pooledRanks } from './ranks.js'
 /* ─────────────────────  Mann-Whitney U  ───────────────────── */
 
 /**
- * Mann-Whitney U（獨立兩組）
+ * Mann-Whitney U（獨立兩組，含 ±0.5 連續性校正）
  *
  * 公式：
  *   - 對 (x1 ∪ x2) 排序給平均秩
@@ -27,10 +28,12 @@ import { ranks, pooledRanks } from './ranks.js'
  *   - U  = min(U₁, U₂)
  *   - 期望 μ = n₁n₂ / 2
  *   - 變異 σ² = n₁n₂(n₁+n₂+1)/12，含 tie 校正：
- *     σ² = n₁n₂/(N(N-1)) · (N³-N - Σ(t³-t))/12
- *   - z = (U₁ - μ) / σ（取 U₁ 而非 min，可保留方向）
- *   - p = 2(1 - Φ(|z|))
- *   - 效果量 r = |z| / √N
+ *     σ² = n₁n₂/(N(N-1)) · (N³-N - Σ(t³-t))/12（並對極端 tie 取 Math.max(0,·) 防負）
+ *   - 連續性校正：|U₁-μ| 先扣 0.5（不低於 0），再除 σ 得 |z_CC|
+ *   - z（保留方向）= sign(U₁-μ) · |z_CC|
+ *   - p = 2(1 - Φ(|z_CC|))
+ *   - 效果量 r = |z_CC| / √N
+ *   - 邊界：σ=0（全部並列）回 z=0, p=1；n<10 加 smallSampleWarning
  */
 export function mannWhitneyU(x1, x2) {
   const n1 = x1.length
@@ -55,11 +58,25 @@ export function mannWhitneyU(x1, x2) {
   } else {
     sigma2 = (n1 * n2 / (N * (N - 1))) * ((N * N * N - N - tieSum) / 12)
   }
+  // 極端並列下浮點可能讓 sigma² < 0，防 sqrt(負)
+  sigma2 = Math.max(0, sigma2)
   const sigma = Math.sqrt(sigma2)
-  // z 用 U1 而非 min，保留方向
-  const zRaw = (U1 - mu) / sigma
-  const p = 2 * (1 - normalCdf(Math.abs(zRaw)))
-  const r = Math.abs(zRaw) / Math.sqrt(N)
+
+  // 連續性校正：|U₁ - μ| 扣 0.5（不低於 0）後再除 σ
+  const raw = U1 - mu
+  const adjMag = Math.max(0, Math.abs(raw) - 0.5)
+  let zCC, zRaw, p
+  if (sigma === 0) {
+    zCC = 0
+    zRaw = 0
+    p = 1
+  } else {
+    zCC = adjMag / sigma
+    zRaw = raw >= 0 ? zCC : -zCC
+    p = 2 * (1 - normalCdf(zCC))
+  }
+  const r = sigma > 0 ? zCC / Math.sqrt(N) : 0
+  const smallSample = n1 < 10 || n2 < 10
 
   return {
     U1, U2, U, R1, R2: totalN ? (n1 + n2) * (n1 + n2 + 1) / 2 - R1 : 0,
@@ -68,13 +85,15 @@ export function mannWhitneyU(x1, x2) {
     p: Math.max(0, Math.min(1, p)),
     r,
     tieCorrection: tiedGroups.length > 0,
+    continuityCorrection: true,
+    smallSampleWarning: smallSample,
   }
 }
 
 /* ─────────────────────  Wilcoxon Signed-Rank  ───────────────────── */
 
 /**
- * Wilcoxon Signed-Rank（配對／單一樣本對 0）
+ * Wilcoxon Signed-Rank（配對／單一樣本對 0，含 ±0.5 連續性校正）
  *
  * 演算法：
  *   D = x1 - x2（配對差）
@@ -86,10 +105,14 @@ export function mannWhitneyU(x1, x2) {
  *   n  = 有效配對數（D≠0）
  *   期望 μ = n(n+1)/4
  *   變異 σ² = n(n+1)(2n+1)/24，並做 tie 校正：
- *     σ² 扣掉 Σ(t³-t)/48
- *   z = (W+ - μ) / σ
- *   p = 2(1 - Φ(|z|))
- *   效果量 r = |z| / √n
+ *     σ² 扣掉 Σ(t³-t)/48；極端 tie 下取 max(0,·) 防負
+ *   連續性校正：|W+ - μ| 先扣 0.5（不低於 0）後再除 σ 得 |z_CC|
+ *   z（保留方向）= sign(W+-μ) · |z_CC|
+ *   p = 2(1 - Φ(|z_CC|))
+ *   效果量 r = |z_CC| / √n
+ *   邊界：所有配對差皆 0 → 回 W+=W-=T=0, z=0, p=1, warning='all-zero-diffs'
+ *         σ=0（所有差絕對值完全並列）→ 回 z=0, p=1
+ *         n<10 加 smallSampleWarning
  */
 export function wilcoxonSignedRank(x1, x2) {
   if (x1.length !== x2.length) return { error: 'paired-arrays-must-match-length' }
@@ -100,7 +123,22 @@ export function wilcoxonSignedRank(x1, x2) {
     if (d !== 0 && Number.isFinite(d)) diffs.push(d)
   }
   const n = diffs.length
-  if (n < 2) return { error: 'need-n>=2-non-zero-diffs' }
+
+  // 全零差異（兩變數完全相同）→ 不報錯，回退化結果
+  if (n === 0) {
+    return {
+      Wpos: 0, Wneg: 0, T: 0,
+      n: 0, nDropped: x1.length,
+      z: 0,
+      p: 1,
+      r: 0,
+      tieCorrection: false,
+      continuityCorrection: true,
+      smallSampleWarning: true,
+      allZeroDiffs: true,
+    }
+  }
+  if (n === 1) return { error: 'need-n>=2-non-zero-diffs' }
 
   const absDiffs = diffs.map((d) => Math.abs(d))
   const { ranks: r, tiedGroups } = ranks(absDiffs)
@@ -116,11 +154,25 @@ export function wilcoxonSignedRank(x1, x2) {
   let tieSum = 0
   for (const t of tiedGroups) tieSum += (t * t * t - t)
   sigma2 -= tieSum / 48
+  sigma2 = Math.max(0, sigma2)  // 防浮點下溢出
   const sigma = Math.sqrt(sigma2)
-  const z = (Wpos - mu) / sigma
-  const p = 2 * (1 - normalCdf(Math.abs(z)))
+
+  // 連續性校正：|W+ - μ| 扣 0.5
+  const raw = Wpos - mu
+  const adjMag = Math.max(0, Math.abs(raw) - 0.5)
+  let zCC, z, p
+  if (sigma === 0) {
+    zCC = 0
+    z = 0
+    p = 1
+  } else {
+    zCC = adjMag / sigma
+    z = raw >= 0 ? zCC : -zCC
+    p = 2 * (1 - normalCdf(zCC))
+  }
   const T = Math.min(Wpos, Wneg)
-  const effR = Math.abs(z) / Math.sqrt(n)
+  const effR = sigma > 0 ? zCC / Math.sqrt(n) : 0
+  const smallSample = n < 10
 
   return {
     Wpos, Wneg, T,
@@ -129,6 +181,8 @@ export function wilcoxonSignedRank(x1, x2) {
     p: Math.max(0, Math.min(1, p)),
     r: effR,
     tieCorrection: tiedGroups.length > 0,
+    continuityCorrection: true,
+    smallSampleWarning: smallSample,
   }
 }
 

@@ -31,8 +31,12 @@ export function runOneWayAnova(rows, settings) {
     buckets[f].push(num)
   }
   const groupNames = Object.keys(buckets)
-  if (groupNames.length < 3) {
+  if (groupNames.length < 2) {
     return { error: 'factorBadGroups', meta: { k: groupNames.length } }
+  }
+  // k=2 時 ANOVA 等價於兩樣本 t；引導使用者改用 t-test 介面
+  if (groupNames.length === 2) {
+    return { error: 'useTTestForTwoGroups', meta: { k: 2 } }
   }
 
   const groups = groupNames.map((name) => ({ name, values: buckets[name] }))

@@ -61,15 +61,35 @@ export function independentT(x1, x2) {
 
   // Welch's t 與 Welch–Satterthwaite df
   const se = Math.sqrt(v1 / n1 + v2 / n2)
-  const t = (m1 - m2) / se
-  const df =
-    Math.pow(v1 / n1 + v2 / n2, 2) /
-    (Math.pow(v1 / n1, 2) / (n1 - 1) + Math.pow(v2 / n2, 2) / (n2 - 1))
-  const p = pT(Math.abs(t), df)
+  const meanDiff = m1 - m2
+  // 邊界：兩組變異皆 0 → se=0，依平均差是否為 0 給退化結果
+  let t, df, p
+  if (se === 0) {
+    if (meanDiff === 0) {
+      t = 0; df = n1 + n2 - 2; p = 1
+    } else {
+      t = meanDiff > 0 ? Infinity : -Infinity
+      df = n1 + n2 - 2
+      p = 0
+    }
+  } else {
+    t = meanDiff / se
+    df =
+      Math.pow(v1 / n1 + v2 / n2, 2) /
+      (Math.pow(v1 / n1, 2) / (n1 - 1) + Math.pow(v2 / n2, 2) / (n2 - 1))
+    p = pT(Math.abs(t), df)
+  }
 
-  // Cohen's d 用 pooled SD
-  const pooledSd = Math.sqrt(((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2))
-  const d = (m1 - m2) / pooledSd
+  // Cohen's d 用 pooled SD；pooledSd=0 時依方向給 0 / Infinity
+  const pooledVar = ((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2)
+  const pooledSd = Math.sqrt(pooledVar)
+  let d
+  if (pooledSd === 0) {
+    d = meanDiff === 0 ? 0 : (meanDiff > 0 ? Infinity : -Infinity)
+  } else {
+    d = meanDiff / pooledSd
+  }
+  const zeroVariance = se === 0 || pooledSd === 0
 
   return {
     type: 'independent',
@@ -77,11 +97,12 @@ export function independentT(x1, x2) {
     df,
     p,
     d,
-    meanDiff: m1 - m2,
+    meanDiff,
     se,
     grp1: { n: n1, mean: m1, sd: s1, var: v1 },
     grp2: { n: n2, mean: m2, sd: s2, var: v2 },
     pooledSd,
+    zeroVarianceWarning: zeroVariance,
   }
 }
 
@@ -103,12 +124,22 @@ export function pairedT(x1, x2) {
   const m_d = mean(diffs)
   const sd_d = sd(diffs)
   const se = sd_d / Math.sqrt(n)
-  const t = m_d / se
   const df = n - 1
-  const p = pT(Math.abs(t), df)
-
-  // Cohen's d 用配對差的 SD
-  const d = m_d / sd_d
+  // 邊界：sd_d=0（所有配對差完全相同）
+  let t, p, d
+  if (sd_d === 0) {
+    if (m_d === 0) { t = 0; p = 1; d = 0 }       // 兩變數完全相同
+    else {
+      // 所有差都同號同值，t/d 為無窮大但無變異 → 顯示為 Infinity 並警示
+      t = m_d > 0 ? Infinity : -Infinity
+      p = 0
+      d = t
+    }
+  } else {
+    t = m_d / se
+    p = pT(Math.abs(t), df)
+    d = m_d / sd_d  // Cohen's dz（standardized mean change）
+  }
 
   return {
     type: 'paired',
@@ -122,6 +153,7 @@ export function pairedT(x1, x2) {
     sdDiff: sd_d,
     var1: { mean: mean(x1), sd: sd(x1) },
     var2: { mean: mean(x2), sd: sd(x2) },
+    zeroVarianceWarning: sd_d === 0,
   }
 }
 
@@ -142,10 +174,22 @@ export function oneSampleT(x, mu0) {
   const m = mean(x)
   const s = sd(x)
   const se = s / Math.sqrt(n)
-  const t = (m - mu0) / se
   const df = n - 1
-  const p = pT(Math.abs(t), df)
-  const d = (m - mu0) / s
+  const meanDiff = m - mu0
+  // 邊界：s=0（樣本全部相同）
+  let t, p, d
+  if (s === 0) {
+    if (meanDiff === 0) { t = 0; p = 1; d = 0 }
+    else {
+      t = meanDiff > 0 ? Infinity : -Infinity
+      p = 0
+      d = t
+    }
+  } else {
+    t = meanDiff / se
+    p = pT(Math.abs(t), df)
+    d = meanDiff / s
+  }
 
   return {
     type: 'oneSample',
@@ -153,11 +197,12 @@ export function oneSampleT(x, mu0) {
     df,
     p,
     d,
-    meanDiff: m - mu0,
+    meanDiff,
     se,
     n,
     mean: m,
     sd: s,
     mu0,
+    zeroVarianceWarning: s === 0,
   }
 }

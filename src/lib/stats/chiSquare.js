@@ -6,7 +6,10 @@
  *     → { rowLevels, colLevels, observed, rowTotals, colTotals, total, expected, n }
  *
  *   chiSquareIndependence(table)
- *     → { chi2, df, p, cramerV, n, observed, expected, stdResiduals, minExpected, lowExpectedCells, totalCells }
+ *     → { chi2, df, p, cramerV, chi2Yates, pYates, yatesApplied, suggestFisher,
+ *         n, observed, expected, stdResiduals, minExpected, lowExpectedCells, totalCells }
+ *     2x2 表會額外計算 Yates 連續性校正 chi²；
+ *     2x2 且任一期望次數 <5 時 suggestFisher=true，UI 應建議改用 Fisher exact。
  *
  *   chiSquareGoodnessOfFit(observed, expected)
  *     → { chi2, df, p, n, observed, expected, stdResiduals }
@@ -105,15 +108,24 @@ export function chiSquareIndependence(rows, rowVar, colVar) {
 
   const df = (R - 1) * (C - 1)
   let chi2 = 0
+  let chi2Yates = 0  // 僅 2x2 有意義
   const stdResiduals = []
   let minExpected = Infinity
   let lowExpectedCells = 0
+  const isTwoByTwo = R === 2 && C === 2
   for (let i = 0; i < R; i++) {
     const row = []
     for (let j = 0; j < C; j++) {
       const O = t.observed[i][j]
       const E = t.expected[i][j]
-      if (E > 0) chi2 += ((O - E) * (O - E)) / E
+      if (E > 0) {
+        chi2 += ((O - E) * (O - E)) / E
+        if (isTwoByTwo) {
+          // Yates 連續性校正：(max(0, |O-E| - 0.5))² / E
+          const d = Math.max(0, Math.abs(O - E) - 0.5)
+          chi2Yates += (d * d) / E
+        }
+      }
       const z = E > 0 ? (O - E) / Math.sqrt(E) : NaN
       row.push(z)
       if (E < minExpected) minExpected = E
@@ -123,12 +135,19 @@ export function chiSquareIndependence(rows, rowVar, colVar) {
   }
   const totalCells = R * C
   const p = pChiSq(chi2, df)
-  // Cramer's V
+  const pYates = isTwoByTwo ? pChiSq(chi2Yates, df) : NaN
+  // Cramer's V（採未校正 chi2，與 SPSS 一致）
   const dfMin = Math.min(R - 1, C - 1)
   const cramerV = t.n > 0 && dfMin > 0 ? Math.sqrt(chi2 / (t.n * dfMin)) : NaN
+  // 若 2x2 任一期望次數 < 5，建議改用 Fisher exact
+  const suggestFisher = isTwoByTwo && lowExpectedCells > 0
 
   return {
     chi2, df, p, cramerV,
+    chi2Yates: isTwoByTwo ? chi2Yates : NaN,
+    pYates,
+    yatesApplied: isTwoByTwo,
+    suggestFisher,
     n: t.n,
     rowLevels: t.rowLevels,
     colLevels: t.colLevels,

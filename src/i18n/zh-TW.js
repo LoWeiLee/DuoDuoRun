@@ -398,6 +398,9 @@ export default {
       },
       tieNote: '結果含並列校正',
       droppedNote: '已剔除 {n} 對 D = 0',
+      continuityNote: 'p 值已套用 ±0.5 連續性校正（與 SPSS / R wilcox.test 預設一致）',
+      smallSampleNote: '樣本量小（n < 10），常態近似的精度有限；建議搭配實際效果量與描述統計判讀',
+      allZeroDiffsNote: '所有配對差皆為 0，兩變數完全相同（p = 1）',
       effect: {
         small: '小', medium: '中', large: '大',
       },
@@ -1773,6 +1776,9 @@ export default {
       },
       total: '總和',
       cramerHint: '|z| ≥ 1.96 對應該 cell p < .05（雙尾）',
+      yatesRow: 'Yates 校正',
+      yatesNote: '2×2 列聯表已加報 Yates 連續性校正（對齊 SPSS 預設）；未校正卡方為對照之用。',
+      fisherSuggest: '本表為 2×2 且至少一個期望次數 < 5，建議改用 Fisher exact 檢定（小樣本精確檢定）。',
       effectInterp: {
         trivial: '微弱',
         small: '小',
@@ -1818,6 +1824,8 @@ export default {
       sigNo: '未達顯著',
       sigYesDiff: '存在顯著',
       copyHint: '一鍵複製 APA 敘述',
+      yatesAppendix:
+        '針對 2×2 列聯表，加報 Yates 連續性校正：χ²({df}, N = {n}) = {chi2Yates}, p = {pYatesStr}。',
     },
     interp: {
       header: '解讀',
@@ -2488,8 +2496,9 @@ export default {
       factor: '因子（分組變項）',
       pickDep: '請選依變項',
       pickFactor: '請選因子',
-      factorHint: '需為類別變項且至少 3 組',
-      factorBadGroups: '此變項有 {k} 組，需要至少 3 組',
+      factorHint: '需為類別變項且至少 3 組（兩組請改用 t 檢定）',
+      factorBadGroups: '此變項只有 {k} 組（< 2 組），無法執行 ANOVA',
+      useTTestForTwoGroups: '此分組變項僅有 2 組，ANOVA 此時等價於兩樣本 t 檢定，請改用左側選單的「獨立樣本 t 檢定」以取得更直觀的結果。',
     },
     result: {
       groupStatsTitle: '各組敘述統計',

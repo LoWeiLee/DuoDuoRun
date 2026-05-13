@@ -77,8 +77,12 @@ function MWResult({ result, t, valueLabels, lang }) {
           </tbody>
         </table>
       </div>
+      <p className="text-[11px] text-duo-cocoa-400 mt-2">{t.np.result.continuityNote}</p>
       {result.tieCorrection && (
-        <p className="text-[11px] text-duo-cocoa-400 mt-2">{t.np.result.tieNote}</p>
+        <p className="text-[11px] text-duo-cocoa-400 mt-1">{t.np.result.tieNote}</p>
+      )}
+      {result.smallSampleWarning && (
+        <p className="text-[11px] text-duo-amber-700 mt-1">{t.np.result.smallSampleNote}</p>
       )}
     </div>
   )
@@ -123,8 +127,15 @@ function WilResult({ result, t }) {
           {fillTemplate(t.np.result.droppedNote, { n: result.nDropped })}
         </p>
       )}
+      <p className="text-[11px] text-duo-cocoa-400 mt-1">{t.np.result.continuityNote}</p>
       {result.tieCorrection && (
         <p className="text-[11px] text-duo-cocoa-400 mt-1">{t.np.result.tieNote}</p>
+      )}
+      {result.allZeroDiffs && (
+        <p className="text-[11px] text-duo-amber-700 mt-1">{t.np.result.allZeroDiffsNote}</p>
+      )}
+      {result.smallSampleWarning && !result.allZeroDiffs && (
+        <p className="text-[11px] text-duo-amber-700 mt-1">{t.np.result.smallSampleNote}</p>
       )}
     </div>
   )

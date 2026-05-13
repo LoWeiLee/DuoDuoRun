@@ -1,8 +1,11 @@
 /**
- * Levene's 等變異數檢定（Brown-Forsythe 版本）
+ * Levene's 等變異數檢定（Brown-Forsythe 版本，median-based）
  *
- * 與 SPSS / JASP 預設一致：使用各組「中位數」而非「平均數」做中心化，
- * 對偏態分布更穩健（Brown & Forsythe 1974）。
+ * 對齊 JASP 預設與 R::car::leveneTest 預設：使用各組「中位數」做中心化，
+ * 對偏態分布較穩健（Brown & Forsythe 1974）。
+ *
+ * 註：SPSS 的「Test of Homogeneity of Variances」預設為 mean-based Levene；
+ * 本工具未提供 mean-based 版本。若要與 SPSS 預設輸出完全對齊，請以 R/JASP 結果為準。
  *
  * 演算法：
  *   1. 對每組 i，計算 Z_ij = |X_ij - median(group_i)|

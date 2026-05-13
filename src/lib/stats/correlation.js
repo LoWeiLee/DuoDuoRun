@@ -37,7 +37,7 @@ export function pearsonCorr(x, y) {
     dxx += dx * dx
     dyy += dy * dy
   }
-  if (dxx === 0 || dyy === 0) return { r: NaN, t: NaN, df: NaN, p: NaN, n }
+  if (dxx === 0 || dyy === 0) return { r: NaN, t: NaN, df: NaN, p: NaN, n, zeroVariance: true }
   const r = num / Math.sqrt(dxx * dyy)
   const df = n - 2
   // 處理 r = ±1 的邊界（會讓分母為 0）
@@ -66,7 +66,14 @@ export function spearmanRho(x, y) {
   const rx = ranks(x).ranks
   const ry = ranks(y).ranks
   const out = pearsonCorr(rx, ry)
-  return { rho: out.r, t: out.t, df: out.df, p: out.p, n }
+  return {
+    rho: out.r,
+    t: out.t,
+    df: out.df,
+    p: out.p,
+    n,
+    zeroVariance: out.zeroVariance || false,
+  }
 }
 
 /** Spearman ρ 矩陣（同 correlationMatrix 但用 rank-based） */

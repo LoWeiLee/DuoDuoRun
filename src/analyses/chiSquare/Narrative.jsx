@@ -20,6 +20,16 @@ function buildNarrative(result, dataset, lang) {
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const sig = result.p < 0.05
 
+  // 2x2 表附加 Yates 校正一句（與 SPSS Continuity Correction 對齊）
+  const yatesSuffix = result.yatesApplied
+    ? ' ' + fillTemplate(t.chiSq.apa.yatesAppendix, {
+        df: result.df,
+        n: result.n,
+        chi2Yates: fmtNum(result.chi2Yates, 3),
+        pYatesStr: fmtP(result.pYates),
+      })
+    : ''
+
   if (result.type === 'independence') {
     const rowLabel = labelMap[result.rowVar] || result.rowVar
     const colLabel = labelMap[result.colVar] || result.colVar
@@ -34,7 +44,7 @@ function buildNarrative(result, dataset, lang) {
         pStr: fmtP(result.p),
         v: fmtNum(result.cramerV, 3),
         effect: ek ? t.chiSq.result.effectInterp[ek] : '—',
-      })
+      }) + yatesSuffix
     }
     return fillTemplate(t.chiSq.apa.indepNs, {
       rowVar: rowLabel,
@@ -43,7 +53,7 @@ function buildNarrative(result, dataset, lang) {
       n: result.n,
       chi2: fmtNum(result.chi2, 3),
       pStr: fmtP(result.p),
-    })
+    }) + yatesSuffix
   }
 
   // gof

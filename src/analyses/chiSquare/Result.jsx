@@ -91,6 +91,11 @@ function AssumptionRow({ result, t }) {
               {t.chiSq.result.assumpViolatedHint}
             </div>
           )}
+          {result.suggestFisher && (
+            <div className="text-[11px] text-duo-amber-700 mt-1 ml-4 leading-snug">
+              {t.chiSq.result.fisherSuggest}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -181,6 +186,7 @@ function GofTable({ result, t, dataset, lang }) {
 function StatsTable({ result, t }) {
   const c = t.chiSq.result.cols
   const ek = result.cramerV !== undefined ? cramerInterpretKey(result.cramerV) : null
+  const showYates = result.type === 'independence' && result.yatesApplied
   return (
     <div>
       <Heading>{t.chiSq.result.statsTitle}</Heading>
@@ -188,6 +194,7 @@ function StatsTable({ result, t }) {
         <table className="w-full text-xs">
           <thead className="bg-duo-cream-50">
             <tr>
+              {showYates && <Th align="left">Test</Th>}
               <Th>{c.chi2}</Th>
               <Th>{c.df}</Th>
               <Th>{c.p}</Th>
@@ -198,6 +205,7 @@ function StatsTable({ result, t }) {
           </thead>
           <tbody>
             <tr>
+              {showYates && <Td align="left" mono={false} bold>Pearson χ²</Td>}
               <Td>{fmtNum(result.chi2, 3)}</Td>
               <Td>{result.df}</Td>
               <Td>{fmtP(result.p)}</Td>
@@ -209,9 +217,23 @@ function StatsTable({ result, t }) {
                 </Td>
               )}
             </tr>
+            {showYates && (
+              <tr>
+                <Td align="left" mono={false} bold>{t.chiSq.result.yatesRow}</Td>
+                <Td>{fmtNum(result.chi2Yates, 3)}</Td>
+                <Td>{result.df}</Td>
+                <Td>{fmtP(result.pYates)}</Td>
+                <Td>{result.n}</Td>
+                <Td>—</Td>
+                <Td align="left" mono={false}>—</Td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+      {showYates && (
+        <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">{t.chiSq.result.yatesNote}</p>
+      )}
     </div>
   )
 }
