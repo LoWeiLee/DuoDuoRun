@@ -93,6 +93,24 @@ function TopToolbar() {
     if (fileInputRef.current) fileInputRef.current.click()
   }
 
+  const formatWarning = (w) => {
+    switch (w.code) {
+      case 'decoded-as-big5':
+        return t.toolbar.decodedAsBig5
+      case 'encoding-suspect':
+        return t.toolbar.encodingSuspect
+      case 'ignored-sheets':
+        return fillTemplate(t.toolbar.ignoredSheets, {
+          used: w.meta?.used || '—',
+          list: (w.meta?.ignored || []).join('、'),
+        })
+      case 'large-row-count':
+        return fillTemplate(t.toolbar.largeRowCount, { n: w.meta?.n || 0 })
+      default:
+        return w.code
+    }
+  }
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
     e.target.value = '' // 允許重複選同一個檔
@@ -101,18 +119,30 @@ function TopToolbar() {
     try {
       const parsed = await parseFile(file)
       setUploadedDataset(parsed)
-      setUploadStatus({
-        kind: 'success',
-        msg: fillTemplate(t.toolbar.uploadSuccess, {
-          n: parsed.rows.length,
-          k: parsed.columns.length,
-        }),
+      const baseMsg = fillTemplate(t.toolbar.uploadSuccess, {
+        n: parsed.rows.length,
+        k: parsed.columns.length,
       })
-      setTimeout(() => setUploadStatus({ kind: 'idle', msg: '' }), 3000)
+      const warnings = parsed.warnings || []
+      if (warnings.length === 0) {
+        setUploadStatus({ kind: 'success', msg: baseMsg })
+        setTimeout(() => setUploadStatus({ kind: 'idle', msg: '' }), 3000)
+      } else {
+        const warnLines = warnings.map(formatWarning)
+        const msg = `${baseMsg}\n${t.toolbar.warningsLabel}：\n· ${warnLines.join('\n· ')}`
+        setUploadStatus({ kind: 'warning', msg })
+        // 有警告時延長顯示時間（含 Big5 提示時讓使用者有時間看清楚）
+        setTimeout(() => setUploadStatus({ kind: 'idle', msg: '' }), 9000)
+      }
     } catch (err) {
       let msg
       if (err.message === 'unsupported-format') {
         msg = fillTemplate(t.toolbar.unsupportedFormat, { ext: err.ext || '?' })
+      } else if (err.message === 'file-too-large') {
+        msg = fillTemplate(t.toolbar.fileTooLarge, {
+          actual: err.actualMb || '?',
+          max: err.maxMb || 50,
+        })
       } else {
         msg = fillTemplate(t.toolbar.uploadError, { msg: err.message || String(err) })
       }
@@ -361,14 +391,16 @@ function TopToolbar() {
       <TransformDialog open={transformOpen} onClose={() => setTransformOpen(false)} />
       <HistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
 
-      {/* 上傳狀態 toast — 短暫顯示成功或錯誤訊息 */}
+      {/* 上傳狀態 toast — 短暫顯示成功 / 警告 / 錯誤訊息 */}
       {uploadStatus.kind !== 'idle' && uploadStatus.msg && (
         <div
           className={[
-            'fixed top-20 right-6 z-40 px-4 py-2 rounded-md text-xs shadow-md border max-w-sm',
+            'fixed top-20 right-4 md:right-6 left-4 md:left-auto z-40 px-4 py-2 rounded-md text-xs shadow-md border md:max-w-sm whitespace-pre-line leading-relaxed',
             uploadStatus.kind === 'success'
               ? 'bg-duo-leaf/10 border-duo-leaf text-duo-cocoa-800'
-              : 'bg-duo-tongue/15 border-duo-tongue text-duo-cocoa-800',
+              : uploadStatus.kind === 'warning'
+                ? 'bg-duo-amber-50 border-duo-amber-400 text-duo-cocoa-800'
+                : 'bg-duo-tongue/15 border-duo-tongue text-duo-cocoa-800',
           ].join(' ')}
         >
           {uploadStatus.msg}

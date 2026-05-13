@@ -118,9 +118,18 @@ function Narrative() {
   const result = runTTest(dataset.rows, settings)
 
   if (result.error) {
+    // 對齊 Result.jsx 的錯誤處理：依不同 error code 顯示對應訊息，不要把所有 error 都吃成 pickDep
+    let msg
+    if (result.error in t.ttest.config) {
+      msg = t.ttest.config[result.error]
+    } else if (result.error === 'groupVarBadGroups') {
+      msg = fillTemplate(t.ttest.config.groupVarBadGroups, { k: result.meta?.k ?? '?' })
+    } else {
+      msg = result.error
+    }
     return (
       <div className="text-sm text-duo-cocoa-400 leading-relaxed">
-        {t.ttest.config.pickDep}
+        {msg}
       </div>
     )
   }

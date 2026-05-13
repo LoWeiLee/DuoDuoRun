@@ -127,6 +127,12 @@ export default {
     uploadedGroupLabel: 'Uploaded',
     demoGroupLabel: 'Demo datasets',
     unsupportedFormat: 'Unsupported format: .{ext} (only csv / xlsx / xls)',
+    fileTooLarge: 'File too large ({actual} MB); the limit is {max} MB. Trim the data in Excel or split the file first.',
+    decodedAsBig5: 'Detected Big5 encoding and converted automatically. If text still looks garbled, save the CSV as UTF-8 in Excel or use .xlsx directly.',
+    encodingSuspect: 'File encoding seems to be neither UTF-8 nor Big5; column names and category values may appear garbled. Please re-save as .xlsx.',
+    ignoredSheets: 'Loaded sheet "{used}"; the following sheets were not loaded: {list} (only the first sheet is read).',
+    largeRowCount: 'Dataset is large ({n} rows); computations may be slower.',
+    warningsLabel: 'Notes',
     export: 'Export report',
     language: 'Language',
     mode: 'Mode',
@@ -2518,7 +2524,7 @@ export default {
       sentence:
         'A one-way ANOVA showed a {sigWord} effect of {factor} on {depVar}, F({df1}, {df2}) = {f}, p = {pStr}, η² = {eta2} ({etaInterp} effect). {tukeySection}',
       sentenceNs:
-        'A one-way ANOVA showed no significant effect of {factor} on {depVar}, F({df1}, {df2}) = {f}, p = {pStr}, η² = {eta2}.',
+        'A one-way ANOVA showed a {sigWord} effect of {factor} on {depVar}, F({df1}, {df2}) = {f}, p = {pStr}, η² = {eta2}.',
       tukeyOpener: 'Tukey HSD post-hoc revealed: ',
       tukeyPairLine:
         '{a} (M = {ma}) and {b} (M = {mb}) differed significantly (mean diff = {diff}, p = {pStr})',
@@ -2705,7 +2711,7 @@ export default {
     },
     apa: {
       sentence:
-        "Internal consistency reliability of the scale was assessed via Cronbach's α. The scale contained {k} items (n = {n}); α = {alpha} ({interp}), mean inter-item correlation = {meanInter}.",
+        "Internal consistency reliability of the scale was assessed via Cronbach's α. The scale included items {itemList} (k = {k}, n = {n}); α = {alpha} ({interp}), mean inter-item correlation = {meanInter}.",
       copyHint: 'Copy APA narrative',
     },
     interp: {
