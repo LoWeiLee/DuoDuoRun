@@ -68,10 +68,10 @@ function Sidebar() {
     setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
-  // 收起狀態：只顯示一條窄條 + 展開按鈕
+  // 收起狀態：桌面顯示窄條；手機完全不渲染（drawer 已關）
   if (sidebarCollapsed) {
     return (
-      <aside className="w-7 shrink-0 border-r border-duo-cocoa-100 bg-white flex flex-col items-center pt-3">
+      <aside className="hidden md:flex w-7 shrink-0 border-r border-duo-cocoa-100 bg-white flex-col items-center pt-3">
         <button
           type="button"
           onClick={toggleSidebar}
@@ -85,7 +85,14 @@ function Sidebar() {
   }
 
   return (
-    <aside className="w-60 shrink-0 border-r border-duo-cocoa-100 bg-white overflow-y-auto relative">
+    <>
+      {/* 手機 backdrop：點擊關閉 drawer */}
+      <div
+        className="md:hidden fixed inset-0 top-16 bg-black/30 z-30"
+        onClick={toggleSidebar}
+        aria-hidden
+      />
+      <aside className="fixed top-16 bottom-0 left-0 w-72 z-40 shadow-xl md:static md:top-auto md:bottom-auto md:left-auto md:w-60 md:z-auto md:shadow-none shrink-0 border-r border-duo-cocoa-100 bg-white overflow-y-auto">
       {/* 收起按鈕 */}
       <button
         type="button"
@@ -170,6 +177,7 @@ function Sidebar() {
         </div>
       </nav>
     </aside>
+    </>
   )
 }
 

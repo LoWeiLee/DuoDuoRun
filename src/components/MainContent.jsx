@@ -104,10 +104,10 @@ function ConfigPanel() {
   const analysisLabel = findAnalysisLabel(activeAnalysis, t)
   const analysisModule = activeAnalysis ? getAnalysisModule(activeAnalysis) : null
 
-  // 收起狀態：只顯示一條窄條 + 展開按鈕
+  // 收起狀態：桌面顯示窄條，手機不渲染（手機本來就垂直堆疊，無需收起）
   if (configCollapsed) {
     return (
-      <section className={`w-7 shrink-0 border-r ${PANEL_BORDER} bg-white flex flex-col items-center pt-3`}>
+      <section className={`hidden md:flex w-7 shrink-0 border-r ${PANEL_BORDER} bg-white flex-col items-center pt-3`}>
         <button
           type="button"
           onClick={toggleConfig}
@@ -133,7 +133,7 @@ function ConfigPanel() {
 
   if (!dataset) {
     return (
-      <section className={`flex-[25] min-w-0 p-5 border-r ${PANEL_BORDER} bg-white overflow-y-auto relative`}>
+      <section className={`w-full md:flex-[25] md:min-w-0 p-5 border-b md:border-b-0 md:border-r ${PANEL_BORDER} bg-white md:overflow-y-auto relative`}>
         {collapseBtn}
         <PanelHeading>{t.panels.configTitle}</PanelHeading>
         {activeAnalysis && <LoadDemoButton analysisId={activeAnalysis} />}
@@ -144,7 +144,7 @@ function ConfigPanel() {
 
   if (analysisModule?.Config) {
     return (
-      <section className={`flex-[25] min-w-0 p-5 border-r ${PANEL_BORDER} bg-white overflow-y-auto relative`}>
+      <section className={`w-full md:flex-[25] md:min-w-0 p-5 border-b md:border-b-0 md:border-r ${PANEL_BORDER} bg-white md:overflow-y-auto relative`}>
         {collapseBtn}
         <LoadDemoButton analysisId={activeAnalysis} />
         <analysisModule.Config />
@@ -154,7 +154,7 @@ function ConfigPanel() {
 
   if (analysisLabel) {
     return (
-      <section className={`flex-[25] min-w-0 p-5 border-r ${PANEL_BORDER} bg-white overflow-y-auto relative`}>
+      <section className={`w-full md:flex-[25] md:min-w-0 p-5 border-b md:border-b-0 md:border-r ${PANEL_BORDER} bg-white md:overflow-y-auto relative`}>
         {collapseBtn}
         <div className="space-y-6">
           <VariableList />
@@ -231,7 +231,7 @@ function ResultPanel() {
 
   if (!dataset) {
     return (
-      <section className={`flex-[45] min-w-0 p-6 border-r ${PANEL_BORDER} bg-duo-cream-50 overflow-y-auto`}>
+      <section className={`w-full md:flex-[45] md:min-w-0 p-4 md:p-6 border-b md:border-b-0 md:border-r ${PANEL_BORDER} bg-duo-cream-50 md:overflow-y-auto`}>
         <PanelHeading>{t.panels.resultTitle}</PanelHeading>
         <div className="flex flex-col items-center justify-center text-center py-12">
           <DuoMascot state="idle" size={96} />
@@ -246,7 +246,7 @@ function ResultPanel() {
 
   if (analysisModule?.Result) {
     return (
-      <section className={`flex-[45] min-w-0 p-6 border-r ${PANEL_BORDER} bg-duo-cream-50 overflow-y-auto`}>
+      <section className={`w-full md:flex-[45] md:min-w-0 p-4 md:p-6 border-b md:border-b-0 md:border-r ${PANEL_BORDER} bg-duo-cream-50 md:overflow-y-auto`}>
         <div className="flex items-center justify-between gap-3 mb-3">
           <h2 className="heading-eyebrow">{t.panels.resultTitle}</h2>
           <CopyTablesButton contentRef={contentRef} />
@@ -261,7 +261,7 @@ function ResultPanel() {
 
   if (activeAnalysis) {
     return (
-      <section className={`flex-[45] min-w-0 p-6 border-r ${PANEL_BORDER} bg-duo-cream-50 overflow-y-auto`}>
+      <section className={`w-full md:flex-[45] md:min-w-0 p-4 md:p-6 border-b md:border-b-0 md:border-r ${PANEL_BORDER} bg-duo-cream-50 md:overflow-y-auto`}>
         <PanelHeading>{t.panels.resultTitle}</PanelHeading>
         <div className="flex flex-col items-center justify-center text-center py-12">
           <DuoMascot state="idle" size={72} />
@@ -292,7 +292,7 @@ function ExplainPanel() {
 
   if (!dataset || !activeAnalysis) {
     return (
-      <section className="flex-[30] min-w-0 p-5 bg-white overflow-y-auto">
+      <section className="w-full md:flex-[30] md:min-w-0 p-5 bg-white md:overflow-y-auto">
         <PanelHeading>{t.panels.explainTitle}</PanelHeading>
         <EmptyHint>{t.panels.explainEmpty}</EmptyHint>
       </section>
@@ -302,7 +302,7 @@ function ExplainPanel() {
   if (analysisModule) {
     const Component = mode === 'teaching' ? analysisModule.Notes : analysisModule.Narrative
     return (
-      <section className="flex-[30] min-w-0 p-5 bg-white overflow-y-auto">
+      <section className="w-full md:flex-[30] md:min-w-0 p-5 bg-white md:overflow-y-auto">
         <PanelHeading>{t.panels.explainTitle}</PanelHeading>
         {Component ? <Component /> : <EmptyHint>{t.panels.explainEmpty}</EmptyHint>}
       </section>
@@ -326,13 +326,13 @@ function MainContent() {
   // 首頁模式：尚未載入資料且未選分析
   if (!dataset && !activeAnalysis) {
     return (
-      <main className="flex-1 flex min-w-0">
+      <main className="flex-1 flex flex-col md:flex-row min-w-0">
         <HomePage />
       </main>
     )
   }
   return (
-    <main className="flex-1 flex min-w-0">
+    <main className="flex-1 flex flex-col md:flex-row min-w-0">
       <ConfigPanel />
       <ResultPanel />
       <ExplainPanel />

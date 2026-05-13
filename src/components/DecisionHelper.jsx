@@ -194,8 +194,8 @@ function DecisionHelper() {
   /* ─── 對話視窗（開啟） ─── */
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 flex flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-duo-cocoa-100 overflow-hidden"
-      style={{ width: 380, maxHeight: 'min(640px, calc(100vh - 80px))' }}
+      className="fixed bottom-4 right-4 left-4 md:left-auto md:bottom-6 md:right-6 z-50 flex flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-duo-cocoa-100 overflow-hidden"
+      style={{ width: 'min(380px, calc(100vw - 32px))', maxHeight: 'min(640px, calc(100vh - 80px))' }}
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-duo-amber-50 to-duo-cream-50 border-b border-duo-cocoa-100">

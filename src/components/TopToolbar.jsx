@@ -73,7 +73,9 @@ function TopToolbar() {
     uploadedDataset, setUploadedDataset,
     history,
     t,
+    toggleSidebar,
   } = useApp()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   /** 點 brand → 回首頁：清空資料集與分析（保留上傳資料以避免使用者重傳） */
   const goHome = () => {
@@ -153,31 +155,86 @@ function TopToolbar() {
   }
 
   return (
-    <header className="flex items-center justify-between px-6 h-16 bg-white border-b border-duo-cocoa-100">
-      {/* 左：brand（可點擊回首頁） */}
+    <header className="flex items-center justify-between px-4 md:px-6 h-16 bg-white border-b border-duo-cocoa-100 relative">
+      {/* 左：漢堡（手機）+ brand */}
+      <div className="flex items-center gap-1 md:gap-0 min-w-0">
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="md:hidden p-2 -ml-2 text-duo-cocoa-700 hover:text-duo-amber-700 transition shrink-0"
+          title={lang === 'zh-TW' ? '開啟分析選單' : 'Open analysis menu'}
+          aria-label="menu"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        {/* brand（可點擊回首頁） */}
+        <button
+          type="button"
+          onClick={goHome}
+          title={lang === 'zh-TW' ? '回首頁' : 'Back to home'}
+          className="flex items-center gap-3.5 group cursor-pointer hover:opacity-90 transition-opacity min-w-0"
+        >
+          <img
+            src={duoHead}
+            alt="多多"
+            className="h-9 w-9 md:h-11 md:w-11 rounded-md object-cover ring-1 ring-duo-cocoa-100 group-hover:ring-duo-amber-400 transition shrink-0"
+          />
+          <div className="text-left min-w-0">
+            <h1 className="font-serif text-[17px] md:text-[20px] font-semibold tracking-tight text-duo-cocoa-900 leading-none group-hover:text-duo-amber-700 transition truncate">
+              {t.app.title}
+            </h1>
+            <p className={`font-mono text-[10px] uppercase text-duo-amber-700 mt-1.5 ${subtitleTracking} truncate`}>
+              {t.app.subtitle}
+            </p>
+          </div>
+        </button>
+      </div>
+
+      {/* 手機：工具下拉觸發按鈕 */}
       <button
         type="button"
-        onClick={goHome}
-        title={lang === 'zh-TW' ? '回首頁' : 'Back to home'}
-        className="flex items-center gap-3.5 group cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => setMobileMenuOpen(v => !v)}
+        className="md:hidden p-2 -mr-2 text-duo-cocoa-700 hover:text-duo-amber-700 transition shrink-0"
+        title={lang === 'zh-TW' ? '工具' : 'Tools'}
+        aria-label="tools"
+        aria-expanded={mobileMenuOpen}
       >
-        <img
-          src={duoHead}
-          alt="多多"
-          className="h-11 w-11 rounded-md object-cover ring-1 ring-duo-cocoa-100 group-hover:ring-duo-amber-400 transition"
-        />
-        <div className="text-left">
-          <h1 className="font-serif text-[20px] font-semibold tracking-tight text-duo-cocoa-900 leading-none group-hover:text-duo-amber-700 transition">
-            {t.app.title}
-          </h1>
-          <p className={`font-mono text-[10px] uppercase text-duo-amber-700 mt-1.5 ${subtitleTracking}`}>
-            {t.app.subtitle}
-          </p>
-        </div>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="5" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+        </svg>
       </button>
 
-      {/* 右：控制群 */}
-      <div className="flex items-center gap-3">
+      {/* 手機 dropdown backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 top-16 bg-black/30 z-20"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/* 右：控制群（桌面 inline；手機絕對定位 dropdown） */}
+      <div
+        className={[
+          mobileMenuOpen ? 'flex' : 'hidden',
+          'md:flex',
+          'absolute md:static top-16 md:top-auto left-0 right-0',
+          'bg-white md:bg-transparent',
+          'border-b md:border-b-0 border-duo-cocoa-100',
+          'p-4 md:p-0',
+          'flex-col md:flex-row',
+          'items-stretch md:items-center',
+          'gap-3',
+          'shadow-lg md:shadow-none',
+          'z-30',
+        ].join(' ')}
+      >
         {/* 模式切換 */}
         <SegmentedControl
           options={[
@@ -199,7 +256,7 @@ function TopToolbar() {
         <select
           value={activeDataset || ''}
           onChange={e => setActiveDataset(e.target.value || null)}
-          className="h-8 px-3 pr-8 text-xs rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer max-w-[180px]"
+          className="h-8 px-3 pr-8 text-xs rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer w-full md:w-auto md:max-w-[180px]"
         >
           <option value="">{t.toolbar.selectDataset}</option>
           {uploadedDataset && (

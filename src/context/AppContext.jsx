@@ -44,7 +44,10 @@ export function AppProvider({ children }) {
   const [transforms, setTransforms] = useState([])
   const [history, setHistory] = useState([])
   const [uploadedDataset, setUploadedDatasetRaw] = useState(null)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  // 手機（<768px）預設折疊 sidebar，避免一進來就被導覽列吃掉螢幕
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  )
   const [configCollapsed, setConfigCollapsed] = useState(false)
   const toggleSidebar = useCallback(() => setSidebarCollapsed((v) => !v), [])
   const toggleConfig = useCallback(() => setConfigCollapsed((v) => !v), [])
