@@ -17,7 +17,7 @@ export default {
     tagline: '純前端統計分析工具，瀏覽器即可使用，免安裝、隱私不外流',
   },
   home: {
-    heroTagline: '不會跑統計，就請多多幫你跑，雖然他會給你一個白眼，但是會給你正確答案。',
+    heroTagline: '不會跑統計，就請多多幫你跑，雖然他會給你一個白眼，但你也會得到正確答案。',
     byAuthor: 'by 李洛維',
     authorUrl: 'https://qqamp.github.io/homepage/',
     cards: {
