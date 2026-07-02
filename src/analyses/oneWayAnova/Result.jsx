@@ -9,6 +9,7 @@
  *   5. Tukey HSD 兩兩比較
  *   6. 教學模式：白話解讀
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runOneWayAnova } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -377,9 +378,8 @@ function Interpretation({ result, t, valueLabels, lang }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runOneWayAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runOneWayAnova(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'factorBadGroups')

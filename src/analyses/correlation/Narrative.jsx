@@ -3,7 +3,7 @@
  *
  * 列出所有達顯著的兩兩配對，分中英版各一段（多個句子串起來），各帶複製按鈕。
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCorrelation } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -96,8 +96,8 @@ function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
 
+  const result = useMemo(() => (dataset ? runCorrelation(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runCorrelation(dataset.rows, state)
   if (result.error) {
     return (
       <div className="text-sm text-duo-cocoa-400 leading-relaxed">

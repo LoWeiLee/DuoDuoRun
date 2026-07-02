@@ -8,6 +8,7 @@
  *   - 係數表（常數項、斜率；含 b、SE、β、t、p）
  *   - 教學模式：白話解讀
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runSimpleRegression } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -240,9 +241,8 @@ function Interpretation({ result, t, labelMap }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runSimpleRegression(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runSimpleRegression(dataset.rows, state)
   if (result.error) {
     const msg = t.simpleReg.config[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

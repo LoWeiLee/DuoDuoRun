@@ -7,6 +7,7 @@
  *  3. 三種加權的 κ 對照（unweighted / linear / quadratic）
  *  4. Landis & Koch 解讀
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runKappa } from './compute'
 import { cohenKappa } from '../../lib/stats/kappa.js'
@@ -203,8 +204,8 @@ function VariantsTable({ rows, settings, t }) {
 function Result() {
   const { dataset, lang, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runKappa(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runKappa(dataset.rows, state)
   if (result.error && result.error !== 'undefinedKappa') {
     const msg = t.kappa.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

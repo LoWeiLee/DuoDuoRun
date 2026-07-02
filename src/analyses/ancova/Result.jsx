@@ -7,6 +7,7 @@
  *   3. 原始 vs 調整（LS）平均並列 / Raw means vs adjusted (LS) means side-by-side
  *   4. 教學模式：白話解讀 / Teaching mode: plain-language interpretation
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runAncova } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -271,9 +272,8 @@ function Interpretation({ result, t, factorLabel, yLabel, covLabelMap }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runAncova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runAncova(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'factorBadGroups')

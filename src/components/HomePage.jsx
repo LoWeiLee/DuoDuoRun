@@ -8,9 +8,9 @@
  *   - 中：中英文標題 + by 作者連結 + tagline
  *   - 下：4 張資訊卡（用途、開發、隱私、引用）+ footer 測試版聲明 + email
  */
-import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import duoduoBanner from '../assets/duoduo-banner.jpg'
+import { useTimedFlash } from '../lib/hooks/useTimedFlash'
 
 function InfoCard({ title, body }) {
   return (
@@ -26,12 +26,11 @@ function InfoCard({ title, body }) {
 }
 
 function CopyButton({ text, copyLabel, copiedLabel }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, flashCopied] = useTimedFlash(1500)
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      flashCopied()
     } catch (e) {
       // fallback：選取以便手動複製
       console.error('Copy failed', e)

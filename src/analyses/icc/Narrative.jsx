@@ -4,7 +4,7 @@
  * 預設敘述以 ICC(2,1) 雙因子隨機、絕對一致性、單一評分者為主軸（最常見的「評分者間信度」報告角度）。
  * Default APA narrative anchored on ICC(2,1) absolute agreement.
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runIcc } from './compute'
 import { iccInterpretationKey } from '../../lib/stats/icc'
@@ -92,8 +92,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runIcc(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runIcc(dataset.rows, state)
   if (result.error) {
     const msg = t.icc.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

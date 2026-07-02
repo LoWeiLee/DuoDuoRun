@@ -1,7 +1,7 @@
 /**
  * Cronbach's α — Narrative（報告模式右欄）
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCronbachAlpha } from './compute'
 import { alphaInterpretationKey } from '../../lib/stats/alpha'
@@ -68,8 +68,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runCronbachAlpha(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runCronbachAlpha(dataset.rows, state)
   if (result.error) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.alpha[result.error] || result.error}</div>
   }

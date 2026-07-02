@@ -10,6 +10,7 @@
  * Result panel for ICC: ANOVA breakdown + 6-variant table + decision-tree
  * teaching paragraph.
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runIcc } from './compute'
 import { iccInterpretationKey } from '../../lib/stats/icc'
@@ -200,9 +201,8 @@ function DecisionTree({ t }) {
 function Result() {
   const { dataset, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runIcc(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runIcc(dataset.rows, state)
   if (result.error) {
     const msg = t.icc.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

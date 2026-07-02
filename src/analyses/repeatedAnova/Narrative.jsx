@@ -7,7 +7,7 @@
  *   - 主效應 F、df、p、partial η²、η²_G
  *   - 自動選擇報告依據：Mauchly 顯著違反 → 採 Greenhouse-Geisser；否則 Sphericity Assumed
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runRepeatedAnova } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -101,8 +101,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runRepeatedAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runRepeatedAnova(dataset.rows, state)
   if (result.error) {
     const msg = t.repAnova.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

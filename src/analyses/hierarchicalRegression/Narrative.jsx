@@ -3,7 +3,7 @@
  *
  * 產出 APA 風格中英文敘述，依序描述每一步累積 R² 與 ΔR² 是否顯著
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runHierarchicalRegression } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -101,8 +101,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runHierarchicalRegression(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runHierarchicalRegression(dataset.rows, state)
   if (result.error) {
     const msg = t.hierReg.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

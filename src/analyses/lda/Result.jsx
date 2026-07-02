@@ -15,6 +15,7 @@
  * structure matrix + group centroids + classification + Box's M +
  * interpretation.
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runLDA } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -422,9 +423,8 @@ function Interpretation({ result, t }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runLDA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runLDA(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'groupBadGroups')

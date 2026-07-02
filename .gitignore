@@ -29,3 +29,6 @@ desktop.ini
 
 # Sandbox artefact (空目錄，OneDrive 鎖住無法在 sandbox 內刪除)
 _scaffold/
+
+# 一次性除錯草稿
+_cmp*.mjs

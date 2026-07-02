@@ -1,6 +1,7 @@
 /**
  * z 檢定（比例）— Result
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runZProp } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -201,8 +202,8 @@ function TwoSampleResult({ result, t, lang, dataset, groupVar, valueVar }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runZProp(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runZProp(dataset.rows, state)
   if (result.error) {
     let msg = t.zProp.errors[result.error] || result.error
     if (result.error === 'tooManyGroups' && result.extra?.groups) {

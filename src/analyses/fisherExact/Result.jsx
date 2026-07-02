@@ -7,6 +7,7 @@
  *   3. 解讀段落（白底卡片）
  *   4. 警告：若任一變數類別數 > 2 或啟用 Haldane 修正
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runFisherExact } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -53,8 +54,8 @@ function lnOrInterpKey(lnOr) {
 function Result() {
   const { dataset, lang, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runFisherExact(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runFisherExact(dataset.rows, state)
   if (result.error) {
     const msg = t.fisherExact.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

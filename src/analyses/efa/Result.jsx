@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runEFA } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -189,9 +190,8 @@ function Interpretation({ result, t }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runEFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runEFA(dataset.rows, state)
   if (result.error) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || result.error}</div>
   }

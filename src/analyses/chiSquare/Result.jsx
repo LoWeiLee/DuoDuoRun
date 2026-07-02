@@ -9,6 +9,7 @@
  *   5. 統計量表（χ² / df / p / N / Cramer's V）
  *   6. 教學模式：白話解讀
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runChiSquare } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -315,9 +316,8 @@ function Interpretation({ result, t, dataset, lang }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runChiSquare(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runChiSquare(dataset.rows, state)
   if (result.error) {
     let msg = t.chiSq.config[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

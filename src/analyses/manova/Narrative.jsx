@@ -4,7 +4,7 @@
  * Default reports Wilks' Λ and mentions Box's M. APA narrative with
  * one-click copy in 中文 / English.
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runManova } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -103,8 +103,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runManova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runManova(dataset.rows, state)
   if (result.error) {
     const msg = t.manova.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

@@ -1,6 +1,7 @@
 /**
  * Cohen's Kappa — 報告模式（APA 敘述）
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runKappa } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -18,8 +19,8 @@ function kappaInterpKey(k) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runKappa(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runKappa(dataset.rows, state)
   if (result.error && result.error !== 'undefinedKappa') {
     return <div className="text-xs text-duo-cocoa-400">—</div>
   }

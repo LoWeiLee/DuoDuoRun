@@ -14,6 +14,7 @@
  * sizes, centroids with z-scores, quality metrics, dendrogram (Ward
  * only), recommendation.
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCluster } from './compute'
 import { fmtNum, fillTemplate } from '../../lib/format'
@@ -418,9 +419,8 @@ function Interpretation({ result, t }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runCluster(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runCluster(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'tooFewN')

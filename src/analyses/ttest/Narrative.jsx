@@ -3,7 +3,7 @@
  *
  * 同時顯示中英 APA 敘述，各帶獨立複製按鈕。
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runTTest } from './compute'
 import { cohenDInterpretation } from '../../lib/stats/ttest'
@@ -113,9 +113,8 @@ function Narrative() {
   const [rawState] = useAnalysisState()
   const settings = rawState || {}
 
+  const result = useMemo(() => (dataset ? runTTest(dataset.rows, settings) : null), [dataset, settings])
   if (!dataset) return null
-
-  const result = runTTest(dataset.rows, settings)
 
   if (result.error) {
     // 對齊 Result.jsx 的錯誤處理：依不同 error code 顯示對應訊息，不要把所有 error 都吃成 pickDep

@@ -9,7 +9,7 @@
  *
  * One-click copy in 中文 / English.
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runLDA } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -103,8 +103,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runLDA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runLDA(dataset.rows, state)
   if (result.error) {
     const msg = t.lda.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

@@ -193,7 +193,10 @@ export function AppProvider({ children }) {
     setHistory([])
   }, [])
 
-  const value = {
+  // 用 useMemo 包 context value，避免每次 render 都產生新物件導致全樹 re-render
+  // setter（useState 回傳的 dispatch）與 useCallback 包過的 handler 引用穩定，不需列入 deps
+  // 但為了 react-hooks lint 安全，把所有值都列進去（穩定引用不會觸發額外渲染）
+  const value = useMemo(() => ({
     lang, setLang,
     mode, setMode,
     activeAnalysis, setActiveAnalysis,
@@ -212,7 +215,14 @@ export function AppProvider({ children }) {
     clearHistory,
     sidebarCollapsed, toggleSidebar,
     configCollapsed, toggleConfig,
-  }
+  }), [
+    lang, mode, activeAnalysis, activeDataset, transforms, dataset, variables,
+    uploadedDataset, t, history, sidebarCollapsed, configCollapsed,
+    switchDataset, setUploadedDataset, addTransform, removeTransform,
+    getAnalysisState, updateAnalysisState,
+    pushSnapshot, restoreSnapshot, removeSnapshot, clearHistory,
+    toggleSidebar, toggleConfig,
+  ])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

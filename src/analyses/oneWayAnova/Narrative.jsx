@@ -4,7 +4,7 @@
  * 顯著時：完整 APA + Tukey HSD 顯著配對列表
  * 不顯著時：簡短一句不顯著
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runOneWayAnova } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -107,8 +107,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runOneWayAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runOneWayAnova(dataset.rows, state)
   if (result.error) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.anova.config[result.error] || result.error}</div>
   }

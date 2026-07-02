@@ -1,7 +1,7 @@
 /**
  * 簡單迴歸 — Narrative（報告模式右欄）
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runSimpleRegression } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -71,8 +71,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runSimpleRegression(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runSimpleRegression(dataset.rows, state)
   if (result.error) {
     const msg = t.simpleReg.config[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

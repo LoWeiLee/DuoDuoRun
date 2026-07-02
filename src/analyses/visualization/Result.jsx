@@ -3,6 +3,7 @@
  *
  * 依 type 渲染對應的圖表。
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runViz } from './compute'
 import { ScatterPlot, Histogram, BoxPlot, CorrelationHeatmap } from '../../components/charts'
@@ -10,9 +11,8 @@ import { ScatterPlot, Histogram, BoxPlot, CorrelationHeatmap } from '../../compo
 function Result() {
   const { dataset, lang, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runViz(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runViz(dataset.rows, state)
   if (result.error) {
     let msg = t.viz.config[result.error] || t.np.config[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

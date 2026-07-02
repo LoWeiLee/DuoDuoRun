@@ -1,6 +1,7 @@
 /**
  * 無母數檢定 — Result（中欄）
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runNonparametric } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -357,9 +358,8 @@ function Interpretation({ result, t, dataset, lang }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runNonparametric(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runNonparametric(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'groupVarBadGroups')

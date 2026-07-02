@@ -9,7 +9,7 @@
  *
  * 球形違反（Mauchly p < .05）→ B 與 AB 自動採 Greenhouse-Geisser 校正
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runMixedAnova } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -122,8 +122,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runMixedAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runMixedAnova(dataset.rows, state)
   if (result.error) {
     const msg = t.mixedAnova.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

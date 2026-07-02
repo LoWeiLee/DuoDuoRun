@@ -9,6 +9,7 @@
  *   5. 殘差變異表
  *   6. 教學模式：解讀段落
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCFA } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -374,9 +375,8 @@ function Interpretation({ result, t }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runCFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runCFA(dataset.rows, state)
   if (result.error) {
     const msg = t.cfa.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

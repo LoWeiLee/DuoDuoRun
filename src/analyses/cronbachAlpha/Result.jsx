@@ -8,6 +8,7 @@
  *      - 刪題後 α > 整體 α 的題目 amber 標示
  *   3. 教學模式：白話解讀
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCronbachAlpha } from './compute'
 import { alphaInterpretationKey } from '../../lib/stats/alpha'
@@ -167,9 +168,8 @@ function Interpretation({ result, t }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runCronbachAlpha(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runCronbachAlpha(dataset.rows, state)
   if (result.error) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.alpha[result.error] || result.error}</div>
   }

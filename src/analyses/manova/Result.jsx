@@ -14,6 +14,7 @@
  * MANOVA result panel: descriptives + Box's M + multivariate tests +
  * eigenvalues + interpretation.
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runManova } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -349,9 +350,8 @@ function Interpretation({ result, t }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runManova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runManova(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'factorBadGroups')

@@ -4,7 +4,7 @@
  * 顯示中英文 APA 敘述各一段（可同時呈現），各帶獨立的「複製」按鈕。
  * 沒勾選變數時提示。
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runDescriptive } from './compute'
 import { fmtNum, fmtInt, fillTemplate } from '../../lib/format'
@@ -83,6 +83,10 @@ function Narrative() {
   const [state] = useAnalysisState()
   const selectedVars = state.selectedVars || []
 
+  const results = useMemo(
+    () => (dataset && selectedVars.length > 0 ? runDescriptive(dataset.rows, selectedVars) : null),
+    [dataset, selectedVars])
+
   if (!dataset || selectedVars.length === 0) {
     return (
       <div className="text-sm text-duo-cocoa-400 leading-relaxed">
@@ -90,8 +94,6 @@ function Narrative() {
       </div>
     )
   }
-
-  const results = runDescriptive(dataset.rows, selectedVars)
   const zhText = buildNarrative(results, dataset, 'zh-TW')
   const enText = buildNarrative(results, dataset, 'en')
 

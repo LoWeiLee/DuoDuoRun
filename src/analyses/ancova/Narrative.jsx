@@ -7,7 +7,7 @@
  *   - 共變項各自的 F 與 p
  *   - 斜率同質性聲明（若可計算）
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runAncova } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -110,8 +110,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runAncova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runAncova(dataset.rows, state)
   if (result.error) {
     const msg = t.ancova.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

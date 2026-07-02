@@ -7,6 +7,7 @@
  * 表格欄位順序與 SPSS 慣例一致：
  *   Variable | N | M | SD | SE | Min | Max | Median | Skew | Kurt
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runDescriptive } from './compute'
 import { fmtNum, fmtInt, fillTemplate } from '../../lib/format'
@@ -98,6 +99,10 @@ function Result() {
   const [state] = useAnalysisState()
   const selectedVars = state.selectedVars || []
 
+  const results = useMemo(
+    () => (dataset && selectedVars.length > 0 ? runDescriptive(dataset.rows, selectedVars) : null),
+    [dataset, selectedVars])
+
   if (!dataset) return null
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
@@ -109,8 +114,6 @@ function Result() {
       </div>
     )
   }
-
-  const results = runDescriptive(dataset.rows, selectedVars)
 
   return (
     <div>

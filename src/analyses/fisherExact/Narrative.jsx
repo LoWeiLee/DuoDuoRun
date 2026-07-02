@@ -1,6 +1,7 @@
 /**
  * Fisher 精確檢定 — 報告模式（APA 敘述）
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runFisherExact } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -8,8 +9,8 @@ import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
 function Narrative() {
   const { dataset, lang, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runFisherExact(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runFisherExact(dataset.rows, state)
   if (result.error) return <div className="text-xs text-duo-cocoa-400">—</div>
 
   const langKey = lang === 'zh-TW' ? 'zh' : 'en'

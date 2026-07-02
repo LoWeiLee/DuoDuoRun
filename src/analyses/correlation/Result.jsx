@@ -3,6 +3,7 @@
  *
  * 結構：相關矩陣（每格秀 r、n、p；用顏色強度表達 |r| 大小、星號表顯著性）。
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCorrelation } from './compute'
 import { fmtNum, fmtP, fmtSig } from '../../lib/format'
@@ -31,9 +32,8 @@ function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
 
+  const result = useMemo(() => (dataset ? runCorrelation(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runCorrelation(dataset.rows, state)
   if (result.error) {
     return (
       <div className="text-sm text-duo-cocoa-400 leading-relaxed">

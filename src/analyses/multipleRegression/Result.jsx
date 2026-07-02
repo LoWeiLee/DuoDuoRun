@@ -10,6 +10,7 @@
  *   5. VIF 警示總結（若有）
  *   6. 教學模式：白話解讀
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runMultipleRegression } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -285,9 +286,8 @@ function Interpretation({ result, t, labelMap }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runMultipleRegression(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runMultipleRegression(dataset.rows, state)
   if (result.error) {
     const msg = t.multReg.config[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

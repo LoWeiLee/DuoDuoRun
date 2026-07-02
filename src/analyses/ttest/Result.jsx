@@ -7,6 +7,7 @@
  *   3. t 檢定結果表（核心統計量：t, df, p, mean diff, SE, Cohen's d, effect）
  *   4. 教學模式專屬：白話解讀段落
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runTTest } from './compute'
 import { cohenDInterpretation } from '../../lib/stats/ttest'
@@ -309,9 +310,8 @@ function Result() {
   const [rawState] = useAnalysisState()
   const settings = rawState || {}
 
+  const result = useMemo(() => (dataset ? runTTest(dataset.rows, settings) : null), [dataset, settings])
   if (!dataset) return null
-
-  const result = runTTest(dataset.rows, settings)
 
   if (result.error) {
     const msgKey = result.error in t.ttest.config ? result.error : null

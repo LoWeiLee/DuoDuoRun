@@ -3,7 +3,7 @@
  *
  * APA 風格的中英敘述：模型結構（因子數 + 指標數）+ 全部適配指標 + 解讀。
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCFA } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -107,8 +107,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runCFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runCFA(dataset.rows, state)
   if (result.error) {
     const msg = t.cfa.errors[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>

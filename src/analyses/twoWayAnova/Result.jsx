@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runTwoWayAnova } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -238,9 +239,9 @@ function Interpretation({ result, t, labelMap }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runTwoWayAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   // 把 factorA 與 factorB 注入 result 物件方便 downstream 使用
-  const result = runTwoWayAnova(dataset.rows, state)
   if (result.error) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.anova2.config[result.error] || result.error}</div>
   }

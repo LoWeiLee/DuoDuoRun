@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runLogisticRegression } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -274,9 +275,8 @@ function Interpretation({ result, t, labelMap }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runLogisticRegression(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runLogisticRegression(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'yNeedBinary')

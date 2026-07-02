@@ -7,6 +7,7 @@
  * 推薦結果可一鍵跳到該 analysis（呼叫 setActiveAnalysis）。
  */
 import { useState } from 'react'
+import { useAutoClearTimer } from '../lib/hooks/useTimedFlash'
 import { useApp } from '../context/AppContext'
 import { ANALYSIS_GROUPS } from '../config/analyses'
 import { isAnalysisImplemented } from '../analyses/registry'
@@ -136,6 +137,8 @@ function DecisionHelper() {
   const [path, setPath] = useState(['start']) // 已走過的 node id stack
   const [recommendation, setRecommendation] = useState(null) // analysis id[] | null
 
+  const [scheduleReset] = useAutoClearTimer()
+
   const helper = t.helper || {}
   const currentNode = TREE[path[path.length - 1]] || TREE.start
 
@@ -145,7 +148,7 @@ function DecisionHelper() {
   }
   const close = () => {
     setOpen(false)
-    setTimeout(reset, 200)
+    scheduleReset(reset, 200)
   }
   const back = () => {
     if (recommendation) {

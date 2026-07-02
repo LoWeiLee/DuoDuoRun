@@ -1,6 +1,7 @@
 /**
  * z 檢定（比例）— 報告模式（APA 敘述）
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runZProp } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -8,8 +9,8 @@ import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
 function Narrative() {
   const { dataset, lang, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runZProp(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runZProp(dataset.rows, state)
   if (result.error) return <div className="text-xs text-duo-cocoa-400">—</div>
 
   let text

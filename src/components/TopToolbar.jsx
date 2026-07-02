@@ -13,6 +13,7 @@ import { isAnalysisImplemented } from '../analyses/registry'
 import { exportToPdf } from '../lib/pdfExport'
 import { parseFile } from '../lib/fileParser'
 import { fillTemplate } from '../lib/format'
+import { useAutoClearTimer } from '../lib/hooks/useTimedFlash'
 import TransformDialog from './TransformDialog'
 import HistoryDialog from './HistoryDialog'
 
@@ -87,6 +88,7 @@ function TopToolbar() {
   const [transformOpen, setTransformOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [uploadStatus, setUploadStatus] = useState({ kind: 'idle', msg: '' })
+  const [scheduleClearToast] = useAutoClearTimer()
   const fileInputRef = useRef(null)
 
   const handleUploadClick = () => {
@@ -126,13 +128,13 @@ function TopToolbar() {
       const warnings = parsed.warnings || []
       if (warnings.length === 0) {
         setUploadStatus({ kind: 'success', msg: baseMsg })
-        setTimeout(() => setUploadStatus({ kind: 'idle', msg: '' }), 3000)
+        scheduleClearToast(() => setUploadStatus({ kind: 'idle', msg: '' }), 3000)
       } else {
         const warnLines = warnings.map(formatWarning)
         const msg = `${baseMsg}\n${t.toolbar.warningsLabel}：\n· ${warnLines.join('\n· ')}`
         setUploadStatus({ kind: 'warning', msg })
         // 有警告時延長顯示時間（含 Big5 提示時讓使用者有時間看清楚）
-        setTimeout(() => setUploadStatus({ kind: 'idle', msg: '' }), 9000)
+        scheduleClearToast(() => setUploadStatus({ kind: 'idle', msg: '' }), 9000)
       }
     } catch (err) {
       let msg
@@ -147,7 +149,7 @@ function TopToolbar() {
         msg = fillTemplate(t.toolbar.uploadError, { msg: err.message || String(err) })
       }
       setUploadStatus({ kind: 'error', msg })
-      setTimeout(() => setUploadStatus({ kind: 'idle', msg: '' }), 5000)
+      scheduleClearToast(() => setUploadStatus({ kind: 'idle', msg: '' }), 5000)
     }
   }
 

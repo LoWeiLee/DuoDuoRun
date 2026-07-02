@@ -7,6 +7,7 @@
  *   - 兩個 p 都 < .05 → nonNormal
  *   - 不一致 → mixed
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runNormality } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -30,9 +31,8 @@ function verdictColor(key) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runNormality(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runNormality(dataset.rows, state)
   if (result.error) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.norm[result.error] || result.error}</div>
   }

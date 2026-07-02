@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runEFA } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
@@ -82,8 +82,8 @@ function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runEFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-  const result = runEFA(dataset.rows, state)
   if (result.error) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || result.error}</div>
   }

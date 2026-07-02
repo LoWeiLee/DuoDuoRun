@@ -9,6 +9,7 @@
  * 視覺：1px hairline 邊框（border-duo-cocoa-100）、small caps eyebrow heading
  */
 import { useRef, useState } from 'react'
+import { useTimedFlash, useAutoClearTimer } from '../lib/hooks/useTimedFlash'
 import { useApp } from '../context/AppContext'
 import { ANALYSIS_GROUPS } from '../config/analyses'
 import { getAnalysisModule } from '../analyses/registry'
@@ -63,15 +64,14 @@ function PanelChevronRight() {
 /* 載入示範設定按鈕 — 一鍵填好資料集與變數選擇 */
 function LoadDemoButton({ analysisId }) {
   const { setActiveDataset, updateAnalysisState, t } = useApp()
-  const [loaded, setLoaded] = useState(false)
+  const [loaded, flashLoaded] = useTimedFlash(1500)
   const demo = getDemo(analysisId)
   if (!demo) return null
 
   const handle = () => {
     setActiveDataset(demo.dataset)
     updateAnalysisState(analysisId, demo.settings)
-    setLoaded(true)
-    setTimeout(() => setLoaded(false), 1500)
+    flashLoaded()
   }
 
   return (
@@ -184,18 +184,19 @@ function ConfigPanel() {
 function CopyTablesButton({ contentRef }) {
   const { t } = useApp()
   const [status, setStatus] = useState({ kind: 'idle', count: 0 })
+  const [scheduleReset] = useAutoClearTimer()
   const handle = async () => {
     if (!contentRef.current) return
     const { count, text } = copyAllTablesIn(contentRef.current)
     if (count === 0) {
       setStatus({ kind: 'empty', count: 0 })
-      setTimeout(() => setStatus({ kind: 'idle', count: 0 }), 1500)
+      scheduleReset(() => setStatus({ kind: 'idle', count: 0 }), 1500)
       return
     }
     const ok = await copyToClipboard(text)
     if (ok) {
       setStatus({ kind: 'copied', count })
-      setTimeout(() => setStatus({ kind: 'idle', count: 0 }), 1800)
+      scheduleReset(() => setStatus({ kind: 'idle', count: 0 }), 1800)
     }
   }
   let label = t.panels.copyTablesBtn

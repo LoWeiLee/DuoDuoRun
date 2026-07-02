@@ -10,6 +10,7 @@
  *   5. 校正建議區塊 / correction recommendation banner
  *   6. 教學模式：白話解讀（球形違反時自動以 GG 為解讀依據）
  */
+import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runRepeatedAnova } from './compute'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
@@ -311,9 +312,8 @@ function Interpretation({ result, t }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
+  const result = useMemo(() => (dataset ? runRepeatedAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
-
-  const result = runRepeatedAnova(dataset.rows, state)
   if (result.error) {
     let msg
     if (result.error === 'tooFewN')
