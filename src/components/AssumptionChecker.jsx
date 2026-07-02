@@ -8,18 +8,19 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { runAssumptionChecks } from '../lib/assumptionChecker'
 
+// LED 燈號（2026-07 UI 改版：發光圓點，統一綠黃紅語意）
 const STATUS_COLORS = {
-  ok:   'bg-duo-leaf',
-  warn: 'bg-duo-amber-500',
-  fail: 'bg-duo-tongue',
-  info: 'bg-duo-denim-500',
+  ok:   'bg-duo-sig-ok shadow-led-ok',
+  warn: 'bg-duo-sig-warn shadow-led-warn',
+  fail: 'bg-duo-sig-bad shadow-led-bad',
+  info: 'bg-duo-denim-500 shadow-led-info',
   skip: 'bg-duo-cocoa-300',
 }
 
 const STATUS_TEXT_COLORS = {
-  ok:   'text-duo-leaf',
-  warn: 'text-duo-amber-700',
-  fail: 'text-duo-tongue',
+  ok:   'text-duo-sig-ok',
+  warn: 'text-duo-sig-warn',
+  fail: 'text-duo-sig-bad',
   info: 'text-duo-denim-600',
   skip: 'text-duo-cocoa-400',
 }
@@ -33,7 +34,7 @@ function AssumptionChecker() {
   let checks
   try {
     checks = runAssumptionChecks(activeAnalysis, dataset, settings, t.panels)
-  } catch (e) {
+  } catch {
     return null
   }
   if (!checks || checks.length === 0) return null
@@ -72,19 +73,20 @@ function AssumptionChecker() {
         </span>
       </button>
       {expanded && (
-        <ul className="px-4 py-3 space-y-2">
+        <ul className="px-3 py-2.5 space-y-1.5">
           {checks.map((c) => (
-            <li key={c.id} className="flex items-start gap-2.5">
+            <li
+              key={c.id}
+              className="flex items-center gap-2.5 rounded-lg border border-duo-cocoa-100 bg-duo-cream-50/70 px-3 py-2"
+            >
               <span
-                className={`inline-block w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${STATUS_COLORS[c.status]}`}
+                className={`inline-block w-2 h-2 rounded-full shrink-0 ${STATUS_COLORS[c.status]}`}
                 title={t.panels.assumpStatus?.[c.status] || c.status}
               />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium text-duo-cocoa-800">{c.label}</div>
-                <div className="font-mono text-[11px] text-duo-cocoa-500 leading-snug">
-                  {c.detail}
-                </div>
-              </div>
+              <span className="text-xs font-medium text-duo-cocoa-800 shrink-0">{c.label}</span>
+              <span className="font-mono text-[11px] text-duo-cocoa-500 leading-snug ml-auto text-right truncate">
+                {c.detail}
+              </span>
             </li>
           ))}
         </ul>

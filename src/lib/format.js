@@ -59,3 +59,12 @@ export function fillTemplate(tpl, data) {
     return v === undefined || v === null ? `{${key}}` : String(v)
   })
 }
+
+/**
+ * p 值的紅綠語意（2026-07 UI 改版）：顯著=ok（綠）、未達顯著=bad（紅，需注意）
+ * @returns 'ok' | 'bad' | undefined（p 非有限數值時）
+ */
+export function toneForP(p, alpha = 0.05) {
+  if (!Number.isFinite(p)) return undefined
+  return p < alpha ? 'ok' : 'bad'
+}

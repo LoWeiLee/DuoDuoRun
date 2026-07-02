@@ -1,3 +1,8 @@
+/* JetBrains Mono — 數值/統計量專用等寬字體（@fontsource 本地打包） */
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/700.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

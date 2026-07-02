@@ -10,8 +10,9 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runTTest } from './compute'
+import StatCards from '../../components/StatCards'
 import { cohenDInterpretation } from '../../lib/stats/ttest'
-import { fmtNum, fmtInt, fmtP, fillTemplate } from '../../lib/format'
+import { fmtNum, fmtInt, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -330,12 +331,28 @@ function Result() {
     labelMap.__depLabel = labelMap[settings.depVar] || settings.depVar
   }
 
+  const cols = t.ttest.result.cols
   return (
     <div>
       <AssumptionChecks
         assumptions={result.assumptions}
         type={result.type}
         t={t}
+      />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版參考實作；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
+      <StatCards
+        items={[
+          { label: cols.t, value: fmtNum(result.ttest.t, 3), sub: `${cols.df} = ${fmtNum(result.ttest.df, 2)}` },
+          {
+            label: cols.p,
+            value: fmtP(result.ttest.p),
+            tone: toneForP(result.ttest.p),
+            sub: Number.isFinite(result.ttest.p) ? (result.ttest.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          { label: cols.d, value: fmtNum(result.ttest.d, 3) },
+          { label: cols.meanDiff, value: fmtNum(result.ttest.meanDiff, 2) },
+        ]}
       />
 
       {result.type === 'independent' && (

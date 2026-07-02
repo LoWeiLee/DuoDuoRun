@@ -36,6 +36,13 @@ export default {
           'monospace',
         ],
       },
+      boxShadow: {
+        // LED 光暈（假設檢核燈號、狀態點）
+        'led-ok':   '0 0 8px rgba(47, 158, 99, 0.75)',
+        'led-warn': '0 0 8px rgba(224, 148, 15, 0.75)',
+        'led-bad':  '0 0 8px rgba(217, 54, 62, 0.70)',
+        'led-info': '0 0 8px rgba(96, 125, 180, 0.6)',
+      },
       letterSpacing: {
         // 用於 small caps section heading：UPPERCASE TRACKING
         ai: '0.18em',
@@ -93,6 +100,13 @@ export default {
           // 單值口音色
           tongue: '#f4a8a8',  // 警示／前提違反 highlight
           leaf:   '#6a9a5a',  // 結果通過／成功
+          // 語意訊號色（2026-07 UI 改版：統一綠黃紅、LED 燈號用）
+          // 比 leaf/tongue 更飽和，供 LED 與顯著性標色；暖底上仍協調
+          sig: {
+            ok:   '#2f9e63',
+            warn: '#e0940f',
+            bad:  '#d9363e',
+          },
         },
       },
     },
