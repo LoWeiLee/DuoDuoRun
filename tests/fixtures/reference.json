@@ -1,0 +1,382 @@
+{
+ "descriptive_y": {
+  "source": "pandas/scipy",
+  "values": {
+   "n": 60.0,
+   "mean": 40.343340000000005,
+   "sd": 7.467869488210755,
+   "se": 0.9640978053163586,
+   "median": 40.14595,
+   "min": 25.9338,
+   "max": 61.3616,
+   "skewness": 0.420077792340128,
+   "kurtosis": 0.6563683429568083
+  }
+ },
+ "ttest_independent_welch": {
+  "source": "scipy.ttest_ind(equal_var=False)",
+  "values": {
+   "t": 0.5696995609166586,
+   "df": 57.660737653918176,
+   "p": 0.5710944654663108,
+   "d": 0.14709579411812643,
+   "meanDiff": 1.1623266666666652
+  }
+ },
+ "ttest_paired": {
+  "source": "scipy.ttest_rel",
+  "values": {
+   "t": -5.958663724365577,
+   "df": 59.0,
+   "p": 1.5144056088531958e-07,
+   "d": -0.7692601790039381,
+   "meanDiff": -3.3083933333333335
+  }
+ },
+ "ttest_one_sample": {
+  "source": "scipy.ttest_1samp(mu=40)",
+  "values": {
+   "t": 0.35612569399775934,
+   "df": 59.0,
+   "p": 0.7230167507262222,
+   "d": 0.04597562940032935
+  }
+ },
+ "pearson_x1_x2": {
+  "source": "scipy.pearsonr",
+  "values": {
+   "r": 0.5700632985438193,
+   "p": 1.9898107725118015e-06,
+   "n": 60.0
+  }
+ },
+ "spearman_x1_x2": {
+  "source": "scipy.spearmanr",
+  "values": {
+   "rho": 0.5313698249513755,
+   "p": 1.2518247247778743e-05,
+   "n": 60.0
+  }
+ },
+ "anova_oneway": {
+  "source": "scipy.f_oneway",
+  "values": {
+   "F": 5.145884292094649,
+   "p": 0.008821004001677053,
+   "dfBetween": 2.0,
+   "dfWithin": 57.0,
+   "ssBetween": 503.23810705599954,
+   "ssWithin": 2787.137299828001,
+   "ssTotal": 3290.3754068840003,
+   "eta2": 0.15294245939327883,
+   "omega2": 0.12141680843961879
+  }
+ },
+ "tukey_hsd": {
+  "source": "scipy.tukey_hsd",
+  "values": {
+   "p_AB": 0.4583199872666285,
+   "p_AC": 0.006700709236594604,
+   "p_BC": 0.12719123317840442
+  }
+ },
+ "regression_simple": {
+  "source": "statsmodels.OLS",
+  "values": {
+   "intercept": 7.077982092513799,
+   "slope": 0.6567321625215362,
+   "seSlope": 0.0902318432666089,
+   "tSlope": 7.278274927633733,
+   "pSlope": 9.986382290451777e-10,
+   "r2": 0.4773516930853914,
+   "adjR2": 0.4683405153799671,
+   "F": 52.97328592222182,
+   "pF": 9.986382290451814e-10
+  }
+ },
+ "regression_multiple": {
+  "source": "statsmodels.OLS",
+  "values": {
+   "intercept": 0.9783494466852183,
+   "b_x1": 0.6129912930896217,
+   "b_x2": 0.07938915887400703,
+   "b_x3": 0.04466019937254729,
+   "se_x1": 0.11037376786396996,
+   "t_x1": 5.553776997493664,
+   "p_x1": 7.988812550804597e-07,
+   "r2": 0.49066857262142605,
+   "adjR2": 0.46338296044043104,
+   "F": 17.98268513701101,
+   "pF": 2.6962957323025223e-08,
+   "vif_x1": 1.4824538602090194,
+   "vif_x2": 1.4862751488735573,
+   "vif_x3": 1.0033344345871038
+  }
+ },
+ "regression_hierarchical": {
+  "source": "statsmodels.OLS (manual \u0394F)",
+  "values": {
+   "r2_step1": 0.4773516930853914,
+   "r2_step2": 0.49066857262142605,
+   "deltaR2": 0.013316879536034665,
+   "deltaF": 0.7320825045649956,
+   "deltaP": 0.48545160568900125
+  }
+ },
+ "logistic_regression": {
+  "source": "statsmodels.Logit",
+  "values": {
+   "intercept": -1.9800484752744363,
+   "b_x1": 0.042283177457488164,
+   "b_male": 0.5249818750510752,
+   "se_x1": 0.035256731747012215,
+   "z_x1": 1.1992937337724558,
+   "p_x1": 0.23041375079322957,
+   "llNull": -40.380700026043286,
+   "ll": -39.08259401783385,
+   "lrStat": 2.5962120164188747,
+   "lrP": 0.2730484551351276,
+   "mcFadden": 0.032146694023933,
+   "nagelkerke": 0.057247357161619904,
+   "auc": 0.6134259259259259
+  }
+ },
+ "chisquare_2x2": {
+  "source": "scipy.chi2_contingency",
+  "values": {
+   "chi2": 17.37556561085973,
+   "p": 3.067441457187181e-05,
+   "df": 1.0,
+   "chi2Yates": 15.271493212669682,
+   "pYates": 9.311114934849337e-05,
+   "cramerV": 0.53813823519705
+  }
+ },
+ "fisher_exact": {
+  "source": "scipy.fisher_exact",
+  "values": {
+   "p": 6.318223421545623e-05,
+   "oddsRatio": 11.666666666666666
+  }
+ },
+ "mann_whitney": {
+  "source": "scipy.mannwhitneyu(asymptotic, continuity)",
+  "values": {
+   "U": 494.0,
+   "p": 0.5201446121616038
+  }
+ },
+ "mann_whitney_small": {
+  "source": "scipy (asymptotic + exact \u5c0d\u7167)",
+  "values": {
+   "U": 0.0,
+   "p": 0.03038282197657749,
+   "pExact": 0.02857142857142857
+  }
+ },
+ "mann_whitney_ties": {
+  "source": "scipy.mannwhitneyu",
+  "values": {
+   "U": 32.5,
+   "p": 0.01811731097669831
+  }
+ },
+ "wilcoxon_signed_rank": {
+  "source": "scipy.wilcoxon(wilcox, correction, approx)",
+  "values": {
+   "T": 259.0,
+   "p": 1.396309058823877e-06,
+   "z": -4.8255307675661765
+  }
+ },
+ "kruskal_wallis": {
+  "source": "scipy.kruskal",
+  "values": {
+   "H": 9.208852459016384,
+   "p": 0.010007442332841603,
+   "df": 2.0,
+   "epsilon2": 0.12647109577221727
+  }
+ },
+ "shapiro_wilk": {
+  "source": "scipy.shapiro",
+  "values": {
+   "W": 0.9755691171586719,
+   "p": 0.2704522379750004
+  }
+ },
+ "ks_lilliefors": {
+  "source": "statsmodels.lilliefors(approx)",
+  "values": {
+   "D": 0.07844227871718523,
+   "p": 0.5160544697900533
+  }
+ },
+ "levene_median": {
+  "source": "scipy.levene(center=median)",
+  "values": {
+   "F": 0.38762994241212556,
+   "p": 0.680438717297181,
+   "df1": 2.0,
+   "df2": 57.0
+  }
+ },
+ "levene_mean_spss_default": {
+  "source": "scipy.levene(center=mean)\uff08SPSS \u9810\u8a2d\u5c0d\u7167\uff09",
+  "values": {
+   "F": 0.39725810823629115,
+   "p": 0.6740069183107285
+  }
+ },
+ "twoway_anova_type3": {
+  "source": "statsmodels anova_lm(typ=3, Sum coding)",
+  "values": {
+   "ssA": 77.42385291266837,
+   "fA": 1.5865240579359692,
+   "pA": 0.2132404611650971,
+   "ssB": 503.2381070559983,
+   "fB": 5.156029658037473,
+   "pB": 0.008927631944788588,
+   "ssAB": 74.46311057733352,
+   "fAB": 0.7629271336634545,
+   "pAB": 0.4712591490236704,
+   "ssError": 2635.250336338
+  }
+ },
+ "ancova": {
+  "source": "pingouin.ancova",
+  "values": {
+   "fFactor": 7.964850381410193,
+   "pFactor": 0.000916643473305302,
+   "ssFactor": 382.54140319499743,
+   "fCov1": 35.43219653165008,
+   "pCov1": 1.9195509048177575e-07
+  }
+ },
+ "repeated_anova": {
+  "source": "pingouin.rm_anova + sphericity",
+  "values": {
+   "F": 45.02172360808392,
+   "p": 2.950869441845621e-15,
+   "dfNum": 2.0,
+   "dfDen": 118.0,
+   "ssTreat": 743.7506884663339,
+   "ssError": 974.6692730270006,
+   "ggEps": 0.982716953467219,
+   "pGG": 4.922862632692652e-15,
+   "mauchlyW": 0.9824129964667762,
+   "mauchlyP": 0.5977627882747719
+  }
+ },
+ "mixed_anova": {
+  "source": "pingouin.mixed_anova",
+  "values": {
+   "fBetween": 0.023112555770460945,
+   "pBetween": 0.8796923447174267,
+   "fWithin": 44.429580241116575,
+   "pWithin": 4.722270213971931e-15,
+   "fInter": 0.2240088594742283,
+   "pInter": 0.7996530090083656
+  }
+ },
+ "cronbach_alpha_6items": {
+  "source": "pingouin.cronbach_alpha",
+  "values": {
+   "alpha": 0.7336416473970376
+  }
+ },
+ "cronbach_alpha_f1": {
+  "source": "pingouin.cronbach_alpha",
+  "values": {
+   "alpha": 0.7634904636377735
+  }
+ },
+ "icc": {
+  "source": "pingouin.intraclass_corr",
+  "values": {
+   "icc11": 0.8048097722356536,
+   "icc21": 0.8045361875637106,
+   "icc31": 0.8022871664548922,
+   "icc1k": 0.8918499717992106,
+   "icc2k": 0.8916819658240364,
+   "icc3k": 0.8902989283699945
+  }
+ },
+ "cohen_kappa": {
+  "source": "sklearn.cohen_kappa_score",
+  "values": {
+   "kappa": 0.4794417201056205,
+   "kappaLinear": 0.6556671449067433,
+   "kappaQuadratic": 0.8018796037592075
+  }
+ },
+ "zprop_one": {
+  "source": "statsmodels.proportions_ztest(prop_var=p0)",
+  "values": {
+   "z": 1.5491933384829666,
+   "p": 0.12133525035848222,
+   "phat": 0.6,
+   "wilsonLow": 0.4736605349204075,
+   "wilsonHigh": 0.7143050946511744
+  }
+ },
+ "zprop_two": {
+  "source": "statsmodels.proportions_ztest(pooled)",
+  "values": {
+   "z": 1.0540925533894596,
+   "p": 0.29184054514378865,
+   "p1": 0.6666666666666666,
+   "p2": 0.5333333333333333
+  }
+ },
+ "efa_pca_varimax": {
+  "source": "factor_analyzer(principal, varimax)",
+  "values": {
+   "bartlettChi2": 86.05750038843473,
+   "bartlettP": 5.361506188140414e-12,
+   "kmo": 0.7300597940846918,
+   "eig1": 2.60198381239419,
+   "eig2": 1.4008953800041044,
+   "eig3": 0.5863492993047656,
+   "absLoadingsSorted": [
+    0.702789,
+    0.762704,
+    0.784386,
+    0.821172,
+    0.843766,
+    0.851615
+   ],
+   "communalities": [
+    0.582733,
+    0.623891,
+    0.676549,
+    0.680611,
+    0.713847,
+    0.725248
+   ]
+  }
+ },
+ "manova": {
+  "source": "statsmodels.MANOVA",
+  "values": {
+   "wilks": 0.7511454880923656,
+   "wilksF": 2.8200287507122677,
+   "wilksP": 0.013649060888058333,
+   "pillai": 0.254760687891034,
+   "pillaiF": 2.7248600278697586,
+   "pillaiP": 0.01652176176849593,
+   "hotelling": 0.32343712340100006,
+   "roy": 0.2969590919411126
+  }
+ },
+ "cfa_2factor": {
+  "source": "semopy(ML)",
+  "values": {
+   "chi2": 7.224819703306582,
+   "df": 8.0,
+   "cfi": 1.0100763240664274,
+   "tli": 1.0188931076245515,
+   "rmsea": 0.0
+  }
+ }
+}

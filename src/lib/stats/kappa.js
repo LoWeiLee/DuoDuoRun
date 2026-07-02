@@ -83,21 +83,28 @@ export function cohenKappa(rows, rater1Var, rater2Var, weighting = 'none') {
   if (rater1Var === rater2Var) return { error: 'sameVar' }
   const w = ['none', 'linear', 'quadratic'].includes(weighting) ? weighting : 'none'
 
-  // Step 1: 蒐集兩個 rater 各自出現的層級，並取交集（保留 rater1 的順序）
-  // Collect levels per rater and intersect (preserve rater1's order)
-  const levels1 = []
-  const levels2Set = new Set()
-  const seen1 = new Set()
+  // Step 1: 蒐集兩位評分者出現過的所有層級（聯集），並依自然序排序。
+  // Collect the UNION of levels from both raters, sorted in natural (ordinal) order.
+  //
+  // 修正（2026-07-02 驗證發現）：
+  //   (a) 原實作取「交集 + rater1 出現順序」。加權 κ 的權重 w_ij 取決於層級的
+  //       序位距離 |i−j|，層級順序若非量尺自然順序，權重矩陣整個錯位——
+  //       linear/quadratic κ 會嚴重偏離 SPSS / sklearn（實測偏低 0.14–0.22）。
+  //   (b) 交集會默默剔除「僅單一評分者使用過的層級」及其觀察值；
+  //       SPSS crosstabs 與 sklearn 均以聯集建方形表，觀察值不應流失。
+  const levelSet = new Set()
   for (const r of rows) {
     const v1 = r[rater1Var]
     const v2 = r[rater2Var]
     if (isMissing(v1) || isMissing(v2)) continue
-    const k1 = String(v1)
-    const k2 = String(v2)
-    if (!seen1.has(k1)) { seen1.add(k1); levels1.push(k1) }
-    levels2Set.add(k2)
+    levelSet.add(String(v1))
+    levelSet.add(String(v2))
   }
-  const levels = levels1.filter(lv => levels2Set.has(lv))
+  const levels = [...levelSet]
+  const allNumeric = levels.every((lv) => lv !== '' && Number.isFinite(Number(lv)))
+  levels.sort(allNumeric
+    ? (a, b) => Number(a) - Number(b)
+    : (a, b) => a.localeCompare(b))
   const k = levels.length
   if (k < 2) return { error: 'needTwoLevels' }
 
