@@ -22,7 +22,7 @@ const TONE_TEXT = {
 function StatCards({ items }) {
   if (!items || items.length === 0) return null
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+    <div className="grid gap-3 mb-4 grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))]">
       {items.map((it, i) => (
         <div key={i} className="rounded-xl border border-duo-cocoa-100 bg-duo-cream-50/70 px-3.5 py-3">
           <div className="text-[11px] text-duo-cocoa-400 mb-1">{it.label}</div>

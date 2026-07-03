@@ -97,25 +97,25 @@ function AssumptionChecks({ assumptions, type, t }) {
           <li
             key={idx}
             className={[
-              'flex items-center justify-between px-3 py-2',
+              'flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2',
               idx > 0 ? 'border-t border-duo-cream-100' : '',
             ].join(' ')}
           >
-            <div className="flex items-center gap-2">
+            <span className="flex items-center gap-2 min-w-0">
               <span
                 className={[
-                  'inline-block w-2 h-2 rounded-full',
-                  it.ok ? 'bg-duo-leaf' : 'bg-duo-tongue',
+                  'inline-block w-2 h-2 rounded-full shrink-0',
+                  it.ok ? 'bg-duo-sig-ok shadow-led-ok' : 'bg-duo-sig-bad shadow-led-bad',
                 ].join(' ')}
               />
               <span className="text-duo-cocoa-700">{it.label}</span>
-            </div>
-            <div className="font-mono text-duo-cocoa-700">
+            </span>
+            <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
               {it.stat}{' '}
-              <span className={it.ok ? 'text-duo-leaf' : 'text-duo-tongue'}>
+              <span className={it.ok ? 'text-duo-sig-ok' : 'text-duo-sig-bad'}>
                 · {it.ok ? r.assumpOk : r.assumpViolated}
               </span>
-            </div>
+            </span>
           </li>
         ))}
       </ul>

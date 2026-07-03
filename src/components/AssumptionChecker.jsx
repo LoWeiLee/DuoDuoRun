@@ -77,14 +77,16 @@ function AssumptionChecker() {
           {checks.map((c) => (
             <li
               key={c.id}
-              className="flex items-center gap-2.5 rounded-lg border border-duo-cocoa-100 bg-duo-cream-50/70 px-3 py-2"
+              className="flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg border border-duo-cocoa-100 bg-duo-cream-50/70 px-3 py-2"
             >
-              <span
-                className={`inline-block w-2 h-2 rounded-full shrink-0 ${STATUS_COLORS[c.status]}`}
-                title={t.panels.assumpStatus?.[c.status] || c.status}
-              />
-              <span className="text-xs font-medium text-duo-cocoa-800 shrink-0">{c.label}</span>
-              <span className="font-mono text-[11px] text-duo-cocoa-500 leading-snug ml-auto text-right truncate">
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className={`inline-block w-2 h-2 rounded-full shrink-0 ${STATUS_COLORS[c.status]}`}
+                  title={t.panels.assumpStatus?.[c.status] || c.status}
+                />
+                <span className="text-xs font-medium text-duo-cocoa-800">{c.label}</span>
+              </span>
+              <span className="font-mono text-[11px] text-duo-cocoa-500 leading-snug ml-auto text-right whitespace-nowrap">
                 {c.detail}
               </span>
             </li>
