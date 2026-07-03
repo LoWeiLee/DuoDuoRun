@@ -1460,6 +1460,7 @@ export default {
         '4. 若邊際分布極度不平衡（kappa paradox），κ 可能被低估；此時建議同時報告 Po 與檢視 confusion 表',
     },
     narrative: {
+      copyHint: '一鍵複製 APA 敘述',
       overall:
         "採用 Cohen's Kappa（{weighting}）評估兩位評分者在 k = {k} 個類別上的一致性。" +
         '在 N = {n} 對成對評分中，觀察一致 Po = {po}、隨機一致 Pe = {pe}，' +
@@ -1641,6 +1642,7 @@ export default {
         '4. ln OR 的絕對值 < 0.5 微弱、< 1.0 小、< 2.0 中、≥ 2.0 大',
     },
     narrative: {
+      copyHint: '一鍵複製 APA 敘述',
       main:
         '採用 Fisher 精確檢定，分析「{rowVar}」與「{colVar}」之關聯。' +
         '在 N = {n} 名有效觀察值中，2×2 列聯表為「{rSucc}/{cSucc}」= {a}、「{rSucc}/{cFail}」= {b}、' +
@@ -1733,6 +1735,7 @@ export default {
         '3. 95% CI 不包含 0（雙樣本）或不包含 p₀（單樣本）等同 p < .05',
     },
     narrative: {
+      copyHint: '一鍵複製 APA 敘述',
       one:
         '採用單樣本比例 z 檢定，檢定「{success}」之觀察比例是否等於 p₀ = {p0}。' +
         '在 N = {n} 名觀察值中觀察次數為 {x}（p̂ = {phat}），95% CI [{ciLow}, {ciHigh}]。' +

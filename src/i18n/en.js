@@ -570,6 +570,7 @@ export default {
         '4. |ln OR|: < 0.5 trivial, < 1.0 small, < 2.0 medium, ≥ 2.0 large',
     },
     narrative: {
+      copyHint: 'Copy APA narrative',
       main:
         "Fisher's exact test was conducted to assess the association between \"{rowVar}\" and \"{colVar}\". " +
         'Of N = {n} valid observations, the 2×2 cells were "{rSucc}/{cSucc}" = {a}, "{rSucc}/{cFail}" = {b}, ' +
@@ -1491,6 +1492,7 @@ export default {
         '4. With highly imbalanced marginals (the kappa paradox) κ can be deflated; report Po and inspect the confusion table.',
     },
     narrative: {
+      copyHint: 'Copy APA narrative',
       overall:
         "Cohen's Kappa ({weighting}) was used to assess agreement between two raters across k = {k} common categories. " +
         'Out of N = {n} paired ratings, observed agreement was Po = {po} and chance agreement Pe = {pe}, ' +
@@ -1677,6 +1679,7 @@ export default {
         '3. CI not containing 0 (two-sample) or p₀ (one-sample) ⇔ p < .05',
     },
     narrative: {
+      copyHint: 'Copy APA narrative',
       one:
         'A one-sample proportion z-test was conducted to compare the observed proportion of "{success}" ' +
         'with p₀ = {p0}. Out of N = {n} observations, {x} were successes (p̂ = {phat}, ' +

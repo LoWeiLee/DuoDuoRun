@@ -3,6 +3,7 @@
  */
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
+import NarrativeBlock from '../../components/NarrativeBlock'
 import { runZProp } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
 
@@ -46,9 +47,13 @@ function Narrative() {
     })
   }
   return (
-    <div className="text-sm text-duo-cocoa-800 leading-relaxed whitespace-pre-line">
-      {text}
-    </div>
+    <NarrativeBlock
+      heading={lang === 'zh-TW' ? '中文（APA）' : 'English (APA)'}
+      text={text}
+      copyLabel={{ copy: t.common.copy, copied: t.common.copied }}
+      copyHint={t.zProp.narrative.copyHint}
+      preLine
+    />
   )
 }
 
