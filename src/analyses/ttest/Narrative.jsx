@@ -2,6 +2,11 @@
  * t 檢定 — Narrative（報告模式右欄）
  *
  * 同時顯示中英 APA 敘述，各帶獨立複製按鈕。
+ *
+ * NarrativeBlock 為 2026-07 UI 改版的「範本」樣式
+ * （對齊 docs/mockups/mockup-d-final-hybrid.html 的 .apa 區塊：
+ *   cream 底 + hairline 邊框 + 左上 mono 小標籤 + 右上 ghost 複製鈕），
+ * 其餘 Narrative 之後照此逐步跟進。
  */
 import { useState, useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
@@ -85,7 +90,12 @@ function CopyButton({ text, label, hint }) {
       type="button"
       onClick={handleCopy}
       title={hint}
-      className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-duo-amber-500 text-white hover:bg-duo-amber-600 transition"
+      className={[
+        'px-2.5 py-1 text-[11px] font-medium rounded-md border bg-white transition',
+        copied
+          ? 'border-duo-sig-ok text-duo-sig-ok'
+          : 'border-duo-cocoa-100 text-duo-cocoa-500 hover:border-duo-amber-400 hover:text-duo-amber-700',
+      ].join(' ')}
     >
       {copied ? label.copied : label.copy}
     </button>
@@ -94,14 +104,14 @@ function CopyButton({ text, label, hint }) {
 
 function NarrativeBlock({ heading, text, copyLabel, copyHint }) {
   return (
-    <section className="mb-5">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400">
+    <section className="mb-5 rounded-xl border hairline bg-duo-cream-50 px-4 py-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <h4 className="font-mono text-[11px] font-bold uppercase tracking-wider text-duo-amber-700">
           {heading}
         </h4>
         <CopyButton text={text} label={copyLabel} hint={copyHint} />
       </div>
-      <div className="text-sm text-duo-cocoa-800 leading-relaxed bg-white border border-duo-cream-200 rounded-md px-4 py-3">
+      <div className="text-sm text-duo-cocoa-800 leading-relaxed">
         {text}
       </div>
     </section>

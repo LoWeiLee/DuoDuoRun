@@ -134,6 +134,7 @@ export default {
     largeRowCount: 'Dataset is large ({n} rows); computations may be slower.',
     warningsLabel: 'Notes',
     export: 'Export report',
+    runsLocally: 'runs locally',
     language: 'Language',
     mode: 'Mode',
   },

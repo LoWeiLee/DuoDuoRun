@@ -140,6 +140,7 @@ export default {
     largeRowCount: '資料列數較多（{n} 筆），運算可能稍慢',
     warningsLabel: '提醒',
     export: '匯出報告',
+    runsLocally: '本地運算',
     language: '語言',
     mode: '模式',
   },

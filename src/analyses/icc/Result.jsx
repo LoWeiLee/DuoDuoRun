@@ -153,8 +153,8 @@ function VariantTable({ result, t }) {
                   : '—'
               let color = 'text-duo-cocoa-700'
               if (ik === 'excellent' || ik === 'good')
-                color = 'text-duo-leaf font-semibold'
-              else if (ik === 'poor') color = 'text-duo-tongue font-semibold'
+                color = 'text-duo-sig-ok font-semibold'
+              else if (ik === 'poor') color = 'text-duo-sig-bad font-semibold'
               return (
                 <tr key={v.key}>
                   <Td align="left" mono bold color="text-duo-cocoa-800">

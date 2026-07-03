@@ -22,8 +22,8 @@ function verdictKey(swP, ksP) {
 }
 
 function verdictColor(key) {
-  if (key === 'normal') return 'text-duo-leaf'
-  if (key === 'nonNormal') return 'text-duo-tongue'
+  if (key === 'normal') return 'text-duo-sig-ok'
+  if (key === 'nonNormal') return 'text-duo-sig-bad'
   if (key === 'mixed') return 'text-duo-amber-700'
   return 'text-duo-cocoa-400'
 }

@@ -14,7 +14,7 @@ import { useTimedFlash } from '../lib/hooks/useTimedFlash'
 
 function InfoCard({ title, body }) {
   return (
-    <div className="bg-white rounded-lg border border-duo-cocoa-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white/70 rounded-xl border hairline p-5">
       <h3 className="font-serif text-base font-semibold text-duo-cocoa-900 mb-2">
         {title}
       </h3>
@@ -43,7 +43,7 @@ function CopyButton({ text, copyLabel, copiedLabel }) {
       className={[
         'shrink-0 px-2 py-0.5 text-[11px] font-medium rounded border transition',
         copied
-          ? 'bg-duo-leaf/15 border-duo-leaf text-duo-leaf'
+          ? 'bg-duo-sig-ok/10 border-duo-sig-ok text-duo-sig-ok'
           : 'bg-white border-duo-cocoa-100 text-duo-cocoa-600 hover:border-duo-amber-400 hover:text-duo-amber-700',
       ].join(' ')}
     >
@@ -55,7 +55,7 @@ function CopyButton({ text, copyLabel, copiedLabel }) {
 function CitationCard({ citation }) {
   if (!citation) return null
   return (
-    <div className="bg-white rounded-lg border border-duo-cocoa-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white/70 rounded-xl border hairline p-5">
       <h3 className="font-serif text-base font-semibold text-duo-cocoa-900 mb-2">
         {citation.title}
       </h3>
@@ -167,7 +167,7 @@ function HomePage() {
             {t.home.footerEmail && (
               <a
                 href={`mailto:${t.home.footerEmail}`}
-                className="text-duo-amber-700 hover:underline underline-offset-2"
+                className="font-mono text-duo-amber-700 hover:underline underline-offset-2"
               >
                 {t.home.footerEmail}
               </a>

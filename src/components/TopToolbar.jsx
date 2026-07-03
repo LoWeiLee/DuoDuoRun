@@ -72,6 +72,7 @@ function TopToolbar() {
     activeDataset, setActiveDataset,
     activeAnalysis, setActiveAnalysis,
     uploadedDataset, setUploadedDataset,
+    dataset,
     history,
     t,
     toggleSidebar,
@@ -186,6 +187,10 @@ function TopToolbar() {
     }
   }
 
+  // 資料集 chip 的「列數×欄數」（dataset 為套用 transforms 後的有效資料集）
+  const dsRows = dataset?.rows?.length || 0
+  const dsCols = dataset?.rows?.[0] ? Object.keys(dataset.rows[0]).length : 0
+
   return (
     <header className="flex items-center justify-between px-4 md:px-6 h-16 bg-white border-b border-duo-cocoa-100 relative">
       {/* 左：漢堡（手機）+ brand */}
@@ -284,28 +289,42 @@ function TopToolbar() {
           onChange={setLang}
         />
 
-        {/* 資料集下拉（含上傳組） */}
-        <select
-          value={activeDataset || ''}
-          onChange={e => setActiveDataset(e.target.value || null)}
-          className="h-8 px-3 pr-8 text-xs rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer w-full md:w-auto md:max-w-[180px]"
-        >
-          <option value="">{t.toolbar.selectDataset}</option>
-          {uploadedDataset && (
-            <optgroup label={t.toolbar.uploadedGroupLabel}>
-              <option value="uploaded">
-                {fillTemplate(t.toolbar.uploadedLabel, { name: uploadedDataset.name })}
-              </option>
+        {/* 資料集 chip（終端機風：迷你 LED + mono；select 保留下拉功能） */}
+        <div className="flex items-center gap-2 h-8 px-2.5 rounded-lg border border-duo-cocoa-100 bg-duo-cream-50 font-mono w-full md:w-auto min-w-0">
+          <span
+            aria-hidden
+            className={[
+              'w-1.5 h-1.5 rounded-full shrink-0 transition',
+              dataset ? 'bg-duo-sig-ok shadow-led-ok' : 'bg-duo-cocoa-200',
+            ].join(' ')}
+          />
+          <select
+            value={activeDataset || ''}
+            onChange={e => setActiveDataset(e.target.value || null)}
+            className="h-full bg-transparent font-mono text-xs font-semibold text-duo-cocoa-800 focus:outline-none cursor-pointer min-w-0 flex-1 md:flex-none md:max-w-[150px]"
+          >
+            <option value="">{t.toolbar.selectDataset}</option>
+            {uploadedDataset && (
+              <optgroup label={t.toolbar.uploadedGroupLabel}>
+                <option value="uploaded">
+                  {fillTemplate(t.toolbar.uploadedLabel, { name: uploadedDataset.name })}
+                </option>
+              </optgroup>
+            )}
+            <optgroup label={t.toolbar.demoGroupLabel}>
+              {DEMO_DATASETS.map(d => (
+                <option key={d.id} value={d.id}>
+                  {t.datasets[d.i18nKey]}
+                </option>
+              ))}
             </optgroup>
+          </select>
+          {dataset && dsRows > 0 && (
+            <span className="text-[10px] text-duo-cocoa-400 whitespace-nowrap shrink-0">
+              {dsRows}×{dsCols} · {t.toolbar.runsLocally}
+            </span>
           )}
-          <optgroup label={t.toolbar.demoGroupLabel}>
-            {DEMO_DATASETS.map(d => (
-              <option key={d.id} value={d.id}>
-                {t.datasets[d.i18nKey]}
-              </option>
-            ))}
-          </optgroup>
-        </select>
+        </div>
 
         {/* 上傳檔案 */}
         <input
