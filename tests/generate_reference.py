@@ -355,4 +355,9 @@ except Exception as e:
     put("cfa_2factor", f"semopy FAILED: {e}")
 
 with open(os.path.join(FIX, "reference.json"), "w") as f:
-    json.dump(RE
+    json.dump(REF, f, indent=1)
+
+print(f"datasets: main n={N}, small n=8, ties n=24")
+print(f"reference methods: {len(REF)}")
+for k in REF:
+    print(" -", k)
