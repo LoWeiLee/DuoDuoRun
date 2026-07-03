@@ -4,7 +4,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runNonparametric } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -370,8 +371,39 @@ function Result() {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
 
+  // 關鍵統計量卡片（依檢定型別分支；2026-07 UI 改版）
+  const cols = t.np.result.cols
+  const pCard = {
+    label: cols.p,
+    value: fmtP(result.p),
+    tone: toneForP(result.p),
+    sub: Number.isFinite(result.p) ? (result.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+  }
+  let cardItems
+  if (result.type === 'mw') {
+    cardItems = [
+      { label: cols.u, value: fmtNum(result.U, 1), sub: `${cols.z} = ${fmtNum(result.z, 3)}` },
+      pCard,
+      { label: cols.r, value: fmtNum(result.r, 3) },
+    ]
+  } else if (result.type === 'wilcoxon') {
+    cardItems = [
+      { label: cols.t, value: fmtNum(result.T, 1), sub: `${cols.z} = ${fmtNum(result.z, 3)}` },
+      pCard,
+      { label: cols.r, value: fmtNum(result.r, 3) },
+    ]
+  } else {
+    cardItems = [
+      { label: cols.h, value: fmtNum(result.H, 3), sub: `${cols.df} = ${result.df}` },
+      pCard,
+      { label: cols.eps2, value: fmtNum(result.epsilon2, 3) },
+    ]
+  }
+
   return (
     <div>
+      <StatCards items={cardItems} />
+
       {result.type === 'mw' && (
         <MWResult result={result} t={t}
           valueLabels={dataset.valueLabels?.[result.groupVar]} lang={lang} />

@@ -11,7 +11,8 @@ import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runKappa } from './compute'
 import { cohenKappa } from '../../lib/stats/kappa.js'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -237,6 +238,24 @@ function Result() {
 
   return (
     <div>
+      {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
+      <StatCards
+        items={[
+          { label: t.kappa.result.cols.kappa, value: fmtNum(result.kappa, 3) },
+          {
+            label: t.kappa.result.cols.p,
+            value: fmtP(result.p),
+            tone: toneForP(result.p),
+            sub: Number.isFinite(result.p) ? (result.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          {
+            label: t.kappa.result.cols.ci95,
+            value: `[${fmtNum(result.ciLow, 3)}, ${fmtNum(result.ciHigh, 3)}]`,
+            long: true,
+          },
+        ]}
+      />
+
       <AgreementTable result={result} t={t} valueLabels={valueLabels} />
       <StatsTable result={result} t={t} />
       <VariantsTable rows={dataset.rows} settings={state} t={t} />

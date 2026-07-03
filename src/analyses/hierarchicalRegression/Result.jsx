@@ -11,7 +11,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runHierarchicalRegression } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -84,12 +85,12 @@ function StepSummary({ result, t, labelMap, lang }) {
                   <Td>{fmtNum(s.F, 3)}</Td>
                   <Td>{s.dfNum}, {s.dfDen}</Td>
                   <Td>{fmtP(s.p)}</Td>
-                  <Td color={sigDelta ? 'text-duo-leaf font-semibold' : 'text-duo-cocoa-700'}>
+                  <Td color={sigDelta ? 'text-duo-sig-ok font-semibold' : 'text-duo-cocoa-700'}>
                     {s.deltaR2 === null ? '—' : fmtNum(s.deltaR2, 3)}
                   </Td>
                   <Td>{s.deltaF === null ? '—' : fmtNum(s.deltaF, 3)}</Td>
                   <Td>{s.deltaDfNum === null ? '—' : `${s.deltaDfNum}, ${s.deltaDfDen}`}</Td>
-                  <Td color={sigDelta ? 'text-duo-leaf font-semibold' : 'text-duo-cocoa-700'}>
+                  <Td color={sigDelta ? 'text-duo-sig-ok font-semibold' : 'text-duo-cocoa-700'}>
                     {s.deltaP === null ? '—' : fmtP(s.deltaP)}
                   </Td>
                 </tr>
@@ -215,7 +216,7 @@ function Interpretation({ result, t, labelMap, lang }) {
         )}
 
         {sigSteps.length > 0 && result.steps.length >= 2 && (
-          <p className="mt-3 text-duo-leaf">
+          <p className="mt-3 text-duo-sig-ok">
             {fillTemplate(t.hierReg.interp.sigSummary, {
               steps: sigSteps.map(({ idx }) => idx + 1).join(', '),
             })}
@@ -237,9 +238,26 @@ function Result() {
   }
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
+  const cols = t.hierReg.result.cols
+  const lastStep = result.steps[result.steps.length - 1]
 
   return (
     <div>
+      {/* 關鍵統計量卡片（最終步；2026-07 UI 改版） */}
+      <StatCards
+        items={[
+          { label: cols.r2, value: fmtNum(lastStep.R2, 3) },
+          { label: cols.adjR2, value: fmtNum(lastStep.adjR2, 3) },
+          { label: cols.deltaR2, value: lastStep.deltaR2 === null ? '—' : fmtNum(lastStep.deltaR2, 3) },
+          {
+            label: cols.deltaP,
+            value: fmtP(lastStep.deltaP),
+            tone: toneForP(lastStep.deltaP),
+            sub: Number.isFinite(lastStep.deltaP) ? (lastStep.deltaP < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+        ]}
+      />
+
       <StepSummary result={result} t={t} labelMap={labelMap} lang={lang} />
       <FinalCoefficients result={result} t={t} labelMap={labelMap} />
       {mode === 'teaching' && (

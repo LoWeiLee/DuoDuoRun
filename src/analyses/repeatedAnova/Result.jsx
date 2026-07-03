@@ -13,7 +13,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runRepeatedAnova } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -127,20 +128,20 @@ function MauchlyTable({ result, t }) {
     <div>
       <Heading>{r.mauchlyTitle}</Heading>
       <div className="bg-white border border-duo-cream-200 rounded-lg overflow-hidden text-xs">
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+          <span className="flex items-center gap-2 min-w-0">
             <span className={[
-              'inline-block w-2 h-2 rounded-full',
-              violated ? 'bg-duo-tongue' : 'bg-duo-leaf',
+              'inline-block w-2 h-2 rounded-full shrink-0',
+              violated ? 'bg-duo-sig-bad shadow-led-bad' : 'bg-duo-sig-ok shadow-led-ok',
             ].join(' ')} />
             <span className="text-duo-cocoa-700">{r.mauchlyLabel}</span>
-          </div>
-          <div className="font-mono text-duo-cocoa-700">
+          </span>
+          <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
             W = {fmtNum(m.w, 3)}, χ²({m.df}) = {fmtNum(m.chi2, 3)}, p = {fmtP(m.p)}
-            <span className={violated ? 'text-duo-tongue' : 'text-duo-leaf'}>
+            <span className={violated ? 'text-duo-sig-bad' : 'text-duo-sig-ok'}>
               {' '}· {violated ? r.mauchlyViolated : r.mauchlyOk}
             </span>
-          </div>
+          </span>
         </div>
       </div>
     </div>
@@ -327,6 +328,26 @@ function Result() {
   return (
     <div>
       <SummaryCard result={result} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
+      <StatCards
+        items={[
+          {
+            label: t.repAnova.result.cols.f,
+            value: fmtNum(result.f, 3),
+            sub: `df = ${fmtNum(result.dfTreat, 2)}, ${fmtNum(result.dfError, 2)}`,
+          },
+          {
+            label: t.repAnova.result.cols.p,
+            value: fmtP(result.p),
+            tone: toneForP(result.p),
+            sub: Number.isFinite(result.p) ? (result.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          { label: t.repAnova.result.cols.partialEta2, value: fmtNum(result.partialEta2, 3) },
+          { label: t.repAnova.result.cols.etaG2, value: fmtNum(result.etaG2, 3) },
+        ]}
+      />
+
       <DescTable result={result} t={t} labelMap={labelMap} />
       <MauchlyTable result={result} t={t} />
       <AnovaTable result={result} t={t} />

@@ -12,6 +12,7 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCFA } from './compute'
+import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
 import {
   cfiInterpretationKey,
@@ -54,9 +55,9 @@ function Td({ children, align = 'right', mono = true, bold = false, color }) {
 }
 
 function colorForKey(key) {
-  if (key === 'good') return 'text-duo-leaf font-semibold'
+  if (key === 'good') return 'text-duo-sig-ok font-semibold'
   if (key === 'acceptable') return 'text-duo-amber-700 font-semibold'
-  if (key === 'poor') return 'text-duo-tongue font-semibold'
+  if (key === 'poor') return 'text-duo-sig-bad font-semibold'
   return 'text-duo-cocoa-700'
 }
 
@@ -111,8 +112,8 @@ function ConvergenceBadge({ result, t }) {
       className={[
         'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs',
         ok
-          ? 'bg-duo-leaf/10 text-duo-leaf border border-duo-leaf/20'
-          : 'bg-duo-tongue/10 text-duo-tongue border border-duo-tongue/20',
+          ? 'bg-duo-leaf/10 text-duo-sig-ok border border-duo-leaf/20'
+          : 'bg-duo-tongue/10 text-duo-sig-bad border border-duo-tongue/20',
       ].join(' ')}
     >
       <span className="font-medium">
@@ -224,7 +225,7 @@ function LoadingsTable({ result, t, labelMap }) {
                 : 'text-duo-cocoa-700'
               const stdAbs = Math.abs(row.lambdaStd)
               const stdCls =
-                stdAbs < 0.4 ? 'text-duo-tongue'
+                stdAbs < 0.4 ? 'text-duo-sig-bad'
                 : stdAbs < 0.5 ? 'text-duo-cocoa-500'
                 : stdAbs < 0.7 ? 'text-duo-cocoa-800'
                 : 'text-duo-amber-700 font-semibold'
@@ -251,7 +252,7 @@ function LoadingsTable({ result, t, labelMap }) {
         </table>
       </div>
       {!showSE && (
-        <p className="text-[11px] text-duo-tongue mt-2 leading-snug">
+        <p className="text-[11px] text-duo-sig-bad mt-2 leading-snug">
           {t.cfa.result.seUnavailable}
         </p>
       )}
@@ -287,7 +288,7 @@ function FactorCorrelationsTable({ result, t }) {
                   const a = Math.abs(v)
                   const cls = same
                     ? 'text-duo-cocoa-300'
-                    : a >= 0.7 ? 'text-duo-tongue font-semibold'
+                    : a >= 0.7 ? 'text-duo-sig-bad font-semibold'
                     : a >= 0.5 ? 'text-duo-amber-700'
                     : 'text-duo-cocoa-700'
                   return (
@@ -388,6 +389,21 @@ function Result() {
       <div className="mb-3">
         <ConvergenceBadge result={result} t={t} />
       </div>
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；適配指標不加 tone） */}
+      <StatCards
+        items={[
+          {
+            label: 'χ²',
+            value: fmtNum(result.chi2, 3),
+            sub: `${t.cfa.result.cols.df} = ${result.df}`,
+          },
+          { label: 'CFI', value: fmtNum(result.fitIndices.cfi, 3) },
+          { label: 'TLI', value: fmtNum(result.fitIndices.tli, 3) },
+          { label: 'RMSEA', value: fmtNum(result.fitIndices.rmsea, 3) },
+        ]}
+      />
+
       <Heading>{t.cfa.result.summaryTitle}</Heading>
       <SummaryStrip result={result} t={t} />
       <FitIndicesBlock result={result} t={t} />

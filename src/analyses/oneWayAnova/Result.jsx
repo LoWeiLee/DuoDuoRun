@@ -12,7 +12,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runOneWayAnova } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -84,22 +85,22 @@ function AssumptionChecks({ assumptions, t }) {
       <ul className="bg-white border border-duo-cream-200 rounded-lg overflow-hidden text-xs">
         {items.map((it, idx) => (
           <li key={idx} className={[
-            'flex items-center justify-between px-3 py-2',
+            'flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2',
             idx > 0 ? 'border-t border-duo-cream-100' : '',
           ].join(' ')}>
-            <div className="flex items-center gap-2">
+            <span className="flex items-center gap-2 min-w-0">
               <span className={[
-                'inline-block w-2 h-2 rounded-full',
-                it.ok ? 'bg-duo-leaf' : 'bg-duo-tongue',
+                'inline-block w-2 h-2 rounded-full shrink-0',
+                it.ok ? 'bg-duo-sig-ok shadow-led-ok' : 'bg-duo-sig-bad shadow-led-bad',
               ].join(' ')} />
               <span className="text-duo-cocoa-700">{it.label}</span>
-            </div>
-            <div className="font-mono text-duo-cocoa-700">
+            </span>
+            <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
               {it.stat}{' '}
-              <span className={it.ok ? 'text-duo-leaf' : 'text-duo-tongue'}>
+              <span className={it.ok ? 'text-duo-sig-ok' : 'text-duo-sig-bad'}>
                 · {it.ok ? t.ttest.result.assumpOk : t.ttest.result.assumpViolated}
               </span>
-            </div>
+            </span>
           </li>
         ))}
       </ul>
@@ -393,6 +394,26 @@ function Result() {
   return (
     <div>
       <AssumptionChecks assumptions={result.assumptions} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅色） */}
+      <StatCards
+        items={[
+          {
+            label: t.anova.result.cols.f,
+            value: fmtNum(result.anova.F, 3),
+            sub: `${t.anova.result.cols.df} = ${result.anova.dfBetween}, ${result.anova.dfWithin}`,
+          },
+          {
+            label: t.anova.result.cols.p,
+            value: fmtP(result.anova.p),
+            tone: toneForP(result.anova.p),
+            sub: Number.isFinite(result.anova.p) ? (result.anova.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          { label: t.anova.result.effectInterp.eta2Label, value: fmtNum(result.anova.eta2, 3) },
+          { label: t.anova.result.effectInterp.omega2Label, value: fmtNum(result.anova.omega2, 3) },
+        ]}
+      />
+
       <GroupDescTable groupStats={result.anova.groupStats} t={t} valueLabels={valueLabels} lang={lang} />
       <AnovaTable anova={result.anova} t={t} />
       <EffectSize anova={result.anova} t={t} />

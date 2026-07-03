@@ -18,7 +18,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runLDA } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -345,20 +346,20 @@ function BoxMRow({ result, t }) {
         </div>
       )}
       <div className="bg-white border border-duo-cream-200 rounded-lg text-xs">
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+          <span className="flex items-center gap-2 min-w-0">
             <span className={[
-              'inline-block w-2 h-2 rounded-full',
-              violated ? 'bg-duo-amber-500' : 'bg-duo-leaf',
+              'inline-block w-2 h-2 rounded-full shrink-0',
+              violated ? 'bg-duo-sig-warn shadow-led-warn' : 'bg-duo-sig-ok shadow-led-ok',
             ].join(' ')} />
             <span className="text-duo-cocoa-700">{r.boxMLabel}</span>
-          </div>
-          <div className="font-mono text-duo-cocoa-700">
-            M = {fmtNum(box.m, 2)}, χ²({box.df}) = {fmtNum(box.chi2, 2)}, p = {fmtP(box.p)}
-            <span className={violated ? 'text-duo-amber-700 font-semibold' : 'text-duo-leaf'}>
-              {' · '}{violated ? r.boxMViolated : r.boxMOk}
+          </span>
+          <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
+            M = {fmtNum(box.m, 2)}, χ²({box.df}) = {fmtNum(box.chi2, 2)}, p = {fmtP(box.p)}{' '}
+            <span className={violated ? 'text-duo-sig-warn font-semibold' : 'text-duo-sig-ok'}>
+              · {violated ? r.boxMViolated : r.boxMOk}
             </span>
-          </div>
+          </span>
         </div>
       </div>
     </div>
@@ -442,9 +443,33 @@ function Result() {
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const valueLabels = dataset.valueLabels?.[result.groupVar]
 
+  const f1 = result.functions[0]
+
   return (
     <div className="space-y-1">
       <SummaryLine result={result} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
+      <StatCards
+        items={[
+          {
+            label: t.lda.result.cols.wilks,
+            value: fmtNum(f1?.wilksLambda, 3),
+            sub: `${t.lda.result.cols.chi2}(${f1?.df ?? '—'}) = ${fmtNum(f1?.chi2, 2)}`,
+          },
+          {
+            label: t.lda.result.cols.p,
+            value: fmtP(f1?.p),
+            tone: toneForP(f1?.p),
+            sub: Number.isFinite(f1?.p) ? (f1.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          {
+            label: t.lda.result.overallAccuracy,
+            value: `${fmtNum(result.classification.overallAccuracy * 100, 2)}%`,
+          },
+        ]}
+      />
+
       <FunctionsTable result={result} t={t} />
       <StandardizedTable result={result} t={t} labelMap={labelMap} />
       <StructureTable result={result} t={t} labelMap={labelMap} />

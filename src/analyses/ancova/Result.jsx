@@ -10,7 +10,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runAncova } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -65,20 +66,20 @@ function HomogeneityCheck({ result, t }) {
         <div className="text-xs text-duo-cocoa-400 px-3 py-2">{r.homoNotComputable}</div>
       ) : (
         <div className="bg-white border border-duo-cream-200 rounded-lg overflow-hidden text-xs">
-          <div className="flex items-center justify-between px-3 py-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+            <span className="flex items-center gap-2 min-w-0">
               <span className={[
-                'inline-block w-2 h-2 rounded-full',
-                violated ? 'bg-duo-tongue' : 'bg-duo-leaf',
+                'inline-block w-2 h-2 rounded-full shrink-0',
+                violated ? 'bg-duo-sig-bad shadow-led-bad' : 'bg-duo-sig-ok shadow-led-ok',
               ].join(' ')} />
               <span className="text-duo-cocoa-700">{r.homoLabel}</span>
-            </div>
-            <div className="font-mono text-duo-cocoa-700">
+            </span>
+            <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
               F({h.dfNum}, {h.dfDen}) = {fmtNum(h.f, 3)}, p = {fmtP(h.p)}
-              <span className={violated ? 'text-duo-tongue' : 'text-duo-leaf'}>
+              <span className={violated ? 'text-duo-sig-bad' : 'text-duo-sig-ok'}>
                 {' '}· {violated ? r.homoViolated : r.homoOk}
               </span>
-            </div>
+            </span>
           </div>
         </div>
       )}
@@ -291,6 +292,25 @@ function Result() {
   return (
     <div>
       <HomogeneityCheck result={result} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
+      <StatCards
+        items={[
+          {
+            label: t.ancova.result.cols.f,
+            value: fmtNum(result.factor.f, 3),
+            sub: `${t.ancova.result.cols.df} = ${result.factor.df}, ${result.error.df}`,
+          },
+          {
+            label: t.ancova.result.cols.p,
+            value: fmtP(result.factor.p),
+            tone: toneForP(result.factor.p),
+            sub: Number.isFinite(result.factor.p) ? (result.factor.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          { label: t.ancova.result.cols.partialEta2, value: fmtNum(result.factor.partialEta2, 3) },
+        ]}
+      />
+
       <AncovaTable result={result} t={t} factorLabel={factorLabel} covLabelMap={covLabelMap} />
       <div className="mt-5">
         <MeansTables result={result} t={t} valueLabels={valueLabels} lang={lang} />

@@ -17,7 +17,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runManova } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -145,20 +146,20 @@ function BoxMRow({ result, t }) {
         </div>
       )}
       <div className="bg-white border border-duo-cream-200 rounded-lg text-xs">
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+          <span className="flex items-center gap-2 min-w-0">
             <span className={[
-              'inline-block w-2 h-2 rounded-full',
-              violated ? 'bg-duo-amber-500' : 'bg-duo-leaf',
+              'inline-block w-2 h-2 rounded-full shrink-0',
+              violated ? 'bg-duo-amber-500' : 'bg-duo-sig-ok shadow-led-ok',
             ].join(' ')} />
             <span className="text-duo-cocoa-700">{r.boxMLabel}</span>
-          </div>
-          <div className="font-mono text-duo-cocoa-700">
+          </span>
+          <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
             M = {fmtNum(box.m, 2)}, χ²({box.df}) = {fmtNum(box.chi2, 2)}, p = {fmtP(box.p)}
-            <span className={violated ? 'text-duo-amber-700 font-semibold' : 'text-duo-leaf'}>
+            <span className={violated ? 'text-duo-amber-700 font-semibold' : 'text-duo-sig-ok'}>
               {' · '}{violated ? r.boxMViolated : r.boxMOk}
             </span>
-          </div>
+          </span>
         </div>
       </div>
     </div>
@@ -372,6 +373,25 @@ function Result() {
   return (
     <div className="space-y-1">
       <SummaryLine result={result} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；以 Wilks' Λ 為主檢定，p 值紅綠語意） */}
+      <StatCards
+        items={[
+          {
+            label: t.manova.result.tests.wilks,
+            value: fmtNum(result.wilks.lambda, 3),
+            sub: `F(${fmtNum(result.wilks.df1, 2)}, ${fmtNum(result.wilks.df2, 2)}) = ${fmtNum(result.wilks.f, 3)}`,
+          },
+          {
+            label: t.manova.result.cols.p,
+            value: fmtP(result.wilks.p),
+            tone: toneForP(result.wilks.p),
+            sub: Number.isFinite(result.wilks.p) ? (result.wilks.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          { label: t.manova.result.cols.partialEta2, value: fmtNum(result.wilks.eta2, 3) },
+        ]}
+      />
+
       <GroupDescTable result={result} t={t} valueLabels={valueLabels} lang={lang} labelMap={labelMap} />
       <BoxMRow result={result} t={t} />
       <MultivariateTable result={result} t={t} />

@@ -10,7 +10,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runFisherExact } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -115,6 +116,24 @@ function Result() {
           )}
         </div>
       )}
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版） */}
+      <StatCards
+        items={[
+          {
+            label: t.fisherExact.result.cols.p,
+            value: fmtP(result.p),
+            tone: toneForP(result.p),
+            sub: Number.isFinite(result.p) ? (result.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          {
+            label: t.fisherExact.result.cols.or,
+            value: fmtNum(result.or, 3),
+            sub: `[${fmtNum(result.orCiLow, 3)}, ${fmtNum(result.orCiHigh, 3)}]`,
+          },
+          { label: t.fisherExact.result.cols.lnOr, value: fmtNum(result.lnOr, 3) },
+        ]}
+      />
 
       {/* 2×2 列聯表 */}
       <Heading>{t.fisherExact.result.tableTitle}</Heading>

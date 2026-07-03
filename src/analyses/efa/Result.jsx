@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runEFA } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 import { ScreePlot } from './ScreePlot'
 
 function Heading({ children }) {
@@ -74,7 +75,7 @@ function SuitabilitySection({ result, t, lang }) {
           <div className="font-mono text-xs text-duo-cocoa-600">
             p = {fmtP(result.bartlett.p)}{fmtSig(result.bartlett.p)}
           </div>
-          <div className={`text-[11px] mt-1 ${bSig ? 'text-duo-leaf' : 'text-duo-tongue'}`}>
+          <div className={`text-[11px] mt-1 ${bSig ? 'text-duo-sig-ok' : 'text-duo-sig-bad'}`}>
             {bSig ? t.efa.result.bartlettSig : t.efa.result.bartlettNs}
           </div>
         </div>
@@ -200,6 +201,29 @@ function Result() {
   return (
     <div>
       <SuitabilitySection result={result} t={t} lang={lang} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
+      <StatCards
+        items={[
+          ...(result.kmo
+            ? [{ label: t.efa.result.cols.kmo, value: fmtNum(result.kmo.overall, 3) }]
+            : []),
+          {
+            label: t.efa.result.cols.bartlett,
+            value: fmtP(result.bartlett.p),
+            tone: toneForP(result.bartlett.p),
+            sub: Number.isFinite(result.bartlett.p)
+              ? (result.bartlett.p < 0.05 ? 'p < .05' : 'n.s.')
+              : undefined,
+          },
+          { label: t.efa.config.nFactorsTitle, value: result.nFactors },
+          {
+            label: t.efa.result.cols.cumulative,
+            value: fmtNum(result.varianceExplained.cumulative[result.nFactors - 1], 1),
+          },
+        ]}
+      />
+
       <div>
         <Heading>{t.efa.result.screeTitle}</Heading>
         <div className="bg-white border border-duo-cocoa-100 rounded-md p-3">

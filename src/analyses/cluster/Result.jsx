@@ -17,6 +17,7 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCluster } from './compute'
+import StatCards from '../../components/StatCards'
 import { fmtNum, fillTemplate } from '../../lib/format'
 import { niceTicks, linearScale, niceDomain } from '../../lib/viz/scale'
 
@@ -434,9 +435,25 @@ function Result() {
   }
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
 
+  const sKey = silhouetteInterpKey(result.silhouette)
+
   return (
     <div className="space-y-1">
       <SummaryLine result={result} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版；品質指標不加 tone） */}
+      <StatCards
+        items={[
+          {
+            label: t.cluster.result.cols.silhouette,
+            value: fmtNum(result.silhouette, 3),
+            sub: sKey ? t.cluster.result.silhouetteInterp[sKey] : undefined,
+          },
+          { label: 'k', value: result.k },
+          { label: 'N', value: result.n },
+        ]}
+      />
+
       <ElbowSection result={result} t={t} />
       <SizesTable result={result} t={t} />
       <CentroidsTable result={result} t={t} labelMap={labelMap} />

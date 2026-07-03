@@ -11,7 +11,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runSimpleRegression } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -53,21 +54,21 @@ function AssumptionRow({ result, t }) {
           殘差常態性違反（p &lt; .05）— 在小樣本下迴歸的 p 值與信賴區間可能失準。考慮樣本量是否足夠或檢視殘差散佈圖。 / Residual normality violated; consider sample size and inspect residual plot.
         </div>
       )}
-      <div className="bg-white border border-duo-cream-200 rounded-lg overflow-hidden text-xs">
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
+      <ul className="bg-white border border-duo-cream-200 rounded-lg overflow-hidden text-xs">
+        <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+          <span className="flex items-center gap-2 min-w-0">
             <span className={[
-              'inline-block w-2 h-2 rounded-full',
-              violated ? 'bg-duo-tongue' : 'bg-duo-leaf',
+              'inline-block w-2 h-2 rounded-full shrink-0',
+              violated ? 'bg-duo-sig-bad shadow-led-bad' : 'bg-duo-sig-ok shadow-led-ok',
             ].join(' ')} />
             <span className="text-duo-cocoa-700">Shapiro-Wilk（{result.reg.n} 殘差）</span>
-          </div>
-          <div className="font-mono text-duo-cocoa-700">
-            W = {fmtNum(sw.W, 3)}, p = {fmtP(sw.p)}
-            <span className={violated ? 'text-duo-tongue' : 'text-duo-leaf'}> · {violated ? t.ttest.result.assumpViolated : t.ttest.result.assumpOk}</span>
-          </div>
-        </div>
-      </div>
+          </span>
+          <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
+            W = {fmtNum(sw.W, 3)}, p = {fmtP(sw.p)}{' '}
+            <span className={violated ? 'text-duo-sig-bad' : 'text-duo-sig-ok'}>· {violated ? t.ttest.result.assumpViolated : t.ttest.result.assumpOk}</span>
+          </span>
+        </li>
+      </ul>
     </div>
   )
 }
@@ -249,10 +250,27 @@ function Result() {
   }
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
+  const cols = t.simpleReg.result.cols
 
   return (
     <div>
       <AssumptionRow result={result} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版） */}
+      <StatCards
+        items={[
+          { label: cols.r2, value: fmtNum(result.reg.fit.r2, 3) },
+          {
+            label: cols.p,
+            value: fmtP(result.reg.anova.p),
+            tone: toneForP(result.reg.anova.p),
+            sub: Number.isFinite(result.reg.anova.p) ? (result.reg.anova.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          { label: cols.slope, value: fmtNum(result.reg.slope.b, 3) },
+          { label: cols.adjR2, value: fmtNum(result.reg.fit.adjR2, 3) },
+        ]}
+      />
+
       <ModelSummary result={result} t={t} />
       <AnovaTable result={result} t={t} />
       <CoefficientsTable result={result} t={t} labelMap={labelMap} />

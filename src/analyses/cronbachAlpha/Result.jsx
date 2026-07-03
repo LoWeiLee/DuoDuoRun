@@ -11,6 +11,7 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runCronbachAlpha } from './compute'
+import StatCards from '../../components/StatCards'
 import { alphaInterpretationKey } from '../../lib/stats/alpha'
 import { fmtNum, fmtInt, fillTemplate } from '../../lib/format'
 
@@ -46,40 +47,25 @@ function Td({ children, align = 'right', mono = true, bold = false, color }) {
 
 function SummaryCard({ result, t }) {
   const ik = alphaInterpretationKey(result.alpha)
-  const interp = ik ? t.alpha.interpretation[ik] : '—'
-  // 高 α: leaf；中等: amber；偏低: tongue
-  let bg = 'bg-duo-cream-50 border-duo-cream-200'
-  if (ik === 'excellent' || ik === 'good') bg = 'bg-duo-leaf/10 border-duo-leaf'
-  else if (ik === 'questionable' || ik === 'poor' || ik === 'unacceptable')
-    bg = 'bg-duo-tongue/15 border-duo-tongue'
-
+  const interp = ik ? t.alpha.interpretation[ik] : undefined
   return (
     <div>
       <Heading>{t.alpha.summaryTitle}</Heading>
-      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-lg border ${bg}`}>
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-duo-cocoa-400 mb-1">{t.alpha.cols.alpha}</div>
-          <div className="font-mono text-2xl text-duo-cocoa-800 font-medium">{fmtNum(result.alpha, 3)}</div>
-          <div className="text-xs text-duo-amber-700 mt-0.5">{interp}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-duo-cocoa-400 mb-1">{t.alpha.cols.kItems}</div>
-          <div className="font-mono text-2xl text-duo-cocoa-800 font-medium">{result.k}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-duo-cocoa-400 mb-1">{t.alpha.cols.n}</div>
-          <div className="font-mono text-2xl text-duo-cocoa-800 font-medium">{result.n}</div>
-          {result.droppedRows > 0 && (
-            <div className="text-[10px] text-duo-cocoa-400 mt-0.5">
-              {fillTemplate(t.alpha.droppedNote, { n: result.droppedRows })}
-            </div>
-          )}
-        </div>
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-duo-cocoa-400 mb-1">{t.alpha.cols.meanInter}</div>
-          <div className="font-mono text-2xl text-duo-cocoa-800 font-medium">{fmtNum(result.meanInterItemCorr, 3)}</div>
-        </div>
-      </div>
+      {/* 關鍵統計量卡片（2026-07 UI 改版；α 不加 tone） */}
+      <StatCards
+        items={[
+          { label: t.alpha.cols.alpha, value: fmtNum(result.alpha, 3), sub: interp },
+          { label: t.alpha.cols.kItems, value: fmtInt(result.k) },
+          {
+            label: t.alpha.cols.n,
+            value: fmtInt(result.n),
+            sub: result.droppedRows > 0
+              ? fillTemplate(t.alpha.droppedNote, { n: result.droppedRows })
+              : undefined,
+          },
+          { label: t.alpha.cols.meanInter, value: fmtNum(result.meanInterItemCorr, 3) },
+        ]}
+      />
     </div>
   )
 }
@@ -115,7 +101,7 @@ function ItemTable({ result, t, labelMap }) {
                   </Td>
                   <Td>{fmtNum(it.mean, 2)}</Td>
                   <Td>{fmtNum(it.sd, 2)}</Td>
-                  <Td color={lowITC ? 'text-duo-tongue font-semibold' : 'text-duo-cocoa-700'}>
+                  <Td color={lowITC ? 'text-duo-sig-bad font-semibold' : 'text-duo-cocoa-700'}>
                     {fmtNum(it.itemTotalCorr, 3)}
                   </Td>
                   <Td color={aboveAlpha ? 'text-duo-amber-700 font-semibold' : 'text-duo-cocoa-700'}>
@@ -129,7 +115,7 @@ function ItemTable({ result, t, labelMap }) {
       </div>
       <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">
         {t.l === 'zh-TW' ? '' : ''}
-        <span className="text-duo-tongue">●</span> 校正項目-總分相關 &lt; 0.30 / corrected r &lt; 0.30
+        <span className="text-duo-sig-bad">●</span> 校正項目-總分相關 &lt; 0.30 / corrected r &lt; 0.30
         &nbsp;·&nbsp;
         <span className="text-duo-amber-700">●</span> 刪題後 α 高於整體 / α-if-deleted exceeds overall
       </p>

@@ -12,7 +12,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runChiSquare } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -71,8 +72,8 @@ function AssumptionRow({ result, t }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={[
-                'inline-block w-2 h-2 rounded-full',
-                violated ? 'bg-duo-tongue' : 'bg-duo-leaf',
+                'inline-block w-2 h-2 rounded-full shrink-0',
+                violated ? 'bg-duo-sig-bad shadow-led-bad' : 'bg-duo-sig-ok shadow-led-ok',
               ].join(' ')} />
               <span className="text-duo-cocoa-700">
                 {fillTemplate(t.chiSq.result.assumpExpected, {
@@ -88,7 +89,7 @@ function AssumptionRow({ result, t }) {
             })}
           </div>
           {violated && (
-            <div className="text-[11px] text-duo-tongue mt-1 ml-4 leading-snug">
+            <div className="text-[11px] text-duo-sig-bad mt-1 ml-4 leading-snug">
               {t.chiSq.result.assumpViolatedHint}
             </div>
           )}
@@ -333,9 +334,27 @@ function Result() {
     colLabels = result.colLevels.map((lv) => colVL[lv] || lv)
   }
 
+  const cols = t.chiSq.result.cols
+
   return (
     <div>
       <AssumptionRow result={result} t={t} />
+
+      {/* 關鍵統計量卡片（2026-07 UI 改版） */}
+      <StatCards
+        items={[
+          { label: cols.chi2, value: fmtNum(result.chi2, 3), sub: `${cols.df} = ${result.df}` },
+          {
+            label: cols.p,
+            value: fmtP(result.p),
+            tone: toneForP(result.p),
+            sub: Number.isFinite(result.p) ? (result.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          ...(result.type === 'independence'
+            ? [{ label: cols.cramerV, value: fmtNum(result.cramerV, 3) }]
+            : []),
+        ]}
+      />
 
       {result.type === 'independence' && (
         <>

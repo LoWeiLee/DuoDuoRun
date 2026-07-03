@@ -4,7 +4,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runZProp } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 
 function Heading({ children }) {
   return (
@@ -59,6 +60,24 @@ function OneSampleResult({ result, t, lang, valueLabels }) {
   })
   return (
     <div>
+      {/* 關鍵統計量卡片（2026-07 UI 改版） */}
+      <StatCards
+        items={[
+          { label: t.zProp.result.cols.z, value: fmtNum(result.z, 3) },
+          {
+            label: t.zProp.result.cols.p,
+            value: fmtP(result.p),
+            tone: toneForP(result.p),
+            sub: Number.isFinite(result.p) ? (result.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          {
+            label: t.zProp.result.cols.phat,
+            value: fmtNum(result.phat, 3),
+            sub: `${t.zProp.result.cols.p0} = ${fmtNum(result.p0, 3)}`,
+          },
+        ]}
+      />
+
       <Heading>{t.zProp.result.summaryTitle}</Heading>
       <div className="overflow-x-auto bg-white border border-duo-cocoa-100 rounded-md">
         <table className="w-full text-xs">
@@ -135,6 +154,25 @@ function TwoSampleResult({ result, t, lang, dataset, groupVar, valueVar }) {
   })
   return (
     <div>
+      {/* 關鍵統計量卡片（2026-07 UI 改版） */}
+      <StatCards
+        items={[
+          { label: t.zProp.result.cols.z, value: fmtNum(result.z, 3) },
+          {
+            label: t.zProp.result.cols.p,
+            value: fmtP(result.p),
+            tone: toneForP(result.p),
+            sub: Number.isFinite(result.p) ? (result.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          {
+            label: t.zProp.result.cols.diff,
+            value: fmtNum(result.diff, 3),
+            sub: `[${fmtNum(result.diffCiLow, 3)}, ${fmtNum(result.diffCiHigh, 3)}]`,
+          },
+          { label: t.zProp.result.cols.h, value: fmtNum(result.h, 3) },
+        ]}
+      />
+
       <Heading>{t.zProp.result.summaryTitle}</Heading>
       <div className="overflow-x-auto bg-white border border-duo-cocoa-100 rounded-md">
         <table className="w-full text-xs">

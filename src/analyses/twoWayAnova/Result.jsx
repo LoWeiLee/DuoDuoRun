@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runTwoWayAnova } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 import { InteractionPlot } from './InteractionPlot'
 
 function Heading({ children }) {
@@ -251,8 +252,33 @@ function Result() {
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
 
+  const cols2 = t.anova2.result.cols
   return (
     <div>
+      {/* 關鍵統計量卡片（2026-07 UI 改版；每個效果一張卡，p 值紅綠語意） */}
+      <StatCards
+        items={[
+          {
+            label: cols2.effectA,
+            value: fmtP(result.effectA.p),
+            tone: toneForP(result.effectA.p),
+            sub: `F(${result.effectA.df}, ${result.error.df}) = ${fmtNum(result.effectA.F, 3)}`,
+          },
+          {
+            label: cols2.effectB,
+            value: fmtP(result.effectB.p),
+            tone: toneForP(result.effectB.p),
+            sub: `F(${result.effectB.df}, ${result.error.df}) = ${fmtNum(result.effectB.F, 3)}`,
+          },
+          {
+            label: cols2.effectAB,
+            value: fmtP(result.effectAB.p),
+            tone: toneForP(result.effectAB.p),
+            sub: `F(${result.effectAB.df}, ${result.error.df}) = ${fmtNum(result.effectAB.F, 3)}`,
+          },
+        ]}
+      />
+
       <CellMeansTable result={result} t={t} dataset={dataset} lang={lang} />
       <AnovaTable result={result} t={t} />
       <PlotSection result={result} dataset={dataset} lang={lang} t={t} />

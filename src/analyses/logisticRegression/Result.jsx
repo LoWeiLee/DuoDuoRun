@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runLogisticRegression } from './compute'
-import { fmtNum, fmtP, fmtSig, fillTemplate } from '../../lib/format'
+import StatCards from '../../components/StatCards'
+import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 import { ROCPlot } from './ROCPlot'
 
 function Heading({ children }) {
@@ -71,7 +72,7 @@ function ModelSummary({ result, t }) {
       </div>
       <p className={[
         'text-[11px]',
-        result.converged ? 'text-duo-leaf' : 'text-duo-tongue',
+        result.converged ? 'text-duo-sig-ok' : 'text-duo-sig-bad',
       ].join(' ')}>
         {result.converged
           ? fillTemplate(t.logReg.result.converged, { n: result.iterations })
@@ -285,9 +286,25 @@ function Result() {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
+  const cols = t.logReg.result.cols
 
   return (
     <div>
+      {/* 關鍵統計量卡片（2026-07 UI 改版） */}
+      <StatCards
+        items={[
+          { label: cols.nagelkerke, value: fmtNum(result.fit.nagelkerke, 3) },
+          {
+            label: cols.p,
+            value: fmtP(result.fit.lrP),
+            tone: toneForP(result.fit.lrP),
+            sub: Number.isFinite(result.fit.lrP) ? (result.fit.lrP < 0.05 ? 'p < .05' : 'n.s.') : undefined,
+          },
+          { label: cols.auc, value: fmtNum(result.roc.auc, 3) },
+          { label: cols.mcFadden, value: fmtNum(result.fit.mcFadden, 3) },
+        ]}
+      />
+
       <ModelSummary result={result} t={t} />
       <OmnibusTable result={result} t={t} />
       <CoefficientsTable result={result} t={t} labelMap={labelMap} />
