@@ -10,12 +10,26 @@
  *      Result / Narrative 依 committed 計算（bootstrap 較重，不做即時反應式計算）。
  *
  * state（analysisState['pls-sem']）：
- *   { lvs, paths, bootstrapN, committed, configErrors }
+ *   { lvs, paths, bootstrapN, committed, configErrors, plsView, positions }
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { validatePLSModel } from '../../lib/stats/pls.js'
 import { fillTemplate } from '../../lib/format'
+
+/** 手機窄幅偵測（md 斷點 = 768px）；畫布在窄幅退回表單 */
+function useIsNarrow() {
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onResize = () => setNarrow(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return narrow
+}
 
 const BOOT_OPTIONS = [500, 1000, 5000]
 
@@ -55,10 +69,13 @@ function Config() {
   const { dataset, variables, lang, t } = useApp()
   const [state, update] = useAnalysisState()
   const c = t.pls.config
+  const narrow = useIsNarrow()
 
   const lvs = state.lvs
   const paths = state.paths
   const bootstrapN = state.bootstrapN ?? 1000
+  // 檢視模式：'form' 表單 / 'canvas' 畫布；窄幅一律退回表單
+  const plsView = narrow ? 'form' : (state.plsView === 'canvas' ? 'canvas' : 'form')
 
   // 首次進入：兩個空構念 + 一條空路徑
   useEffect(() => {
@@ -151,6 +168,43 @@ function Config() {
 
   return (
     <div className="space-y-5">
+      {/* 表單 / 畫布 切換（segmented control，照 mockup 樣式） */}
+      {!narrow && (
+        <div>
+          <div className="inline-flex rounded-lg bg-duo-cream-50 border border-duo-cream-200 p-0.5 w-full">
+            {[
+              { key: 'form', label: c.viewForm },
+              { key: 'canvas', label: c.viewCanvas },
+            ].map((v) => {
+              const active = plsView === v.key
+              return (
+                <button
+                  key={v.key}
+                  type="button"
+                  onClick={() => update({ plsView: v.key })}
+                  className={[
+                    'flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition',
+                    active
+                      ? 'bg-white text-duo-cocoa-800 shadow-sm'
+                      : 'text-duo-cocoa-500 hover:text-duo-cocoa-700',
+                  ].join(' ')}
+                >
+                  {v.label}
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">
+            {plsView === 'canvas' ? c.viewCanvasHint : c.viewFormHint}
+          </p>
+        </div>
+      )}
+      {narrow && state.plsView === 'canvas' && (
+        <div className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">
+          {c.canvasNarrowFallback}
+        </div>
+      )}
+
       {/* 潛在變數 */}
       <div>
         <SectionTitle>{c.lvsTitle}</SectionTitle>

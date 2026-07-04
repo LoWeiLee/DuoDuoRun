@@ -7,14 +7,32 @@
  *   3. 區辨效度：Fornell-Larcker 矩陣 ＋ HTMT 表（< .85 綠、≥ .85 紅）
  *   4. 結構模型：路徑係數表（β / SE / t / p / 95% CI）＋ R² 表 ＋ f² / VIF 表
  *
+ * 檢視模式：state.plsView === 'canvas'（桌面）時，本元件改渲染 Canvas（拖拉式畫布），
+ * 與表單共用同一份模型 state；窄幅退回表單結果。
+ *
  * 計算觸發：Config 按「執行分析」把驗證過的模型寫入 state.committed，
  * 本元件 useMemo 依 [dataset, committed] 計算（Worker 接線見 compute.js 檔頭 TODO）。
  */
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runPLSAnalysis } from './compute'
+import Canvas from './Canvas'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtInt, fmtP, fillTemplate, toneForP } from '../../lib/format'
+
+/** 手機窄幅偵測（md 斷點 = 768px）；畫布在窄幅退回表單結果 */
+function useIsNarrow() {
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onResize = () => setNarrow(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return narrow
+}
 
 const TONE_TEXT = {
   ok: 'text-duo-sig-ok',
@@ -447,6 +465,8 @@ function Result() {
   const { dataset, lang, t } = useApp()
   const [rawState] = useAnalysisState()
   const committed = rawState?.committed || null
+  const narrow = useIsNarrow()
+  const canvasMode = !narrow && rawState?.plsView === 'canvas'
 
   const res = useMemo(
     () => (dataset && committed ? runPLSAnalysis(dataset.rows, committed) : null),
@@ -455,6 +475,9 @@ function Result() {
 
   const r = t.pls.result
   if (!dataset) return null
+
+  // 畫布模式：主區顯示 Canvas（佔滿 Result 面板寬度），與表單共用同一份模型 state
+  if (canvasMode) return <Canvas />
   if (!committed || !res) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{r.runFirst}</div>
   }
