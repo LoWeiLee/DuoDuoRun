@@ -12,12 +12,15 @@
  *   t              — i18n 字串表
  *   analysisState  — 各分析的設定狀態
  *   history        — 釘選的分析快照陣列（PR-4c）
+ *   sidebarCollapsed / configCollapsed / explainCollapsed
+ *                  — 三個可收合欄位各自獨立的收合狀態（各欄按鈕只收合自己）
  *
  * 操作：
  *   setLang / setMode / setActiveAnalysis / setActiveDataset(=switchDataset)
  *   addTransform / removeTransform
  *   getAnalysisState / updateAnalysisState
  *   pushSnapshot / restoreSnapshot / removeSnapshot / clearHistory
+ *   toggleSidebar / toggleConfig / toggleExplain
  *
  * 不接 localStorage。
  */
@@ -49,8 +52,10 @@ export function AppProvider({ children }) {
     () => typeof window !== 'undefined' && window.innerWidth < 768
   )
   const [configCollapsed, setConfigCollapsed] = useState(false)
+  const [explainCollapsed, setExplainCollapsed] = useState(false)
   const toggleSidebar = useCallback(() => setSidebarCollapsed((v) => !v), [])
   const toggleConfig = useCallback(() => setConfigCollapsed((v) => !v), [])
+  const toggleExplain = useCallback(() => setExplainCollapsed((v) => !v), [])
 
   const t = useMemo(() => getStrings(lang), [lang])
 
@@ -215,13 +220,14 @@ export function AppProvider({ children }) {
     clearHistory,
     sidebarCollapsed, toggleSidebar,
     configCollapsed, toggleConfig,
+    explainCollapsed, toggleExplain,
   }), [
     lang, mode, activeAnalysis, activeDataset, transforms, dataset, variables,
-    uploadedDataset, t, history, sidebarCollapsed, configCollapsed,
+    uploadedDataset, t, history, sidebarCollapsed, configCollapsed, explainCollapsed,
     switchDataset, setUploadedDataset, addTransform, removeTransform,
     getAnalysisState, updateAnalysisState,
     pushSnapshot, restoreSnapshot, removeSnapshot, clearHistory,
-    toggleSidebar, toggleConfig,
+    toggleSidebar, toggleConfig, toggleExplain,
   ])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

@@ -5,7 +5,10 @@
  *   1. 首頁模式：尚未載入資料 + 未選分析 → 渲染 HomePage
  *   2. 工作模式：已載入資料或已選分析 → 三欄佈局
  *
- * 三欄寬度：左 25% / 中 45% / 右 30%（Config 收起時，Result 自動補位）
+ * 三欄寬度：左 25% / 中 45% / 右 30%（Config / 方法說明收起時，Result 自動補位）
+ * 收合規則：每欄的收合鈕只收合「自己」——
+ *   側欄收合鈕在 Sidebar.jsx、Config 與方法說明各有自己的鈕（僅桌面顯示；
+ *   手機為垂直堆疊，不提供收合以免收起後無法展開）。
  * 視覺：1px hairline 邊框（border-duo-cocoa-100）、small caps eyebrow heading
  */
 import { useRef, useState } from 'react'
@@ -120,12 +123,13 @@ function ConfigPanel() {
     )
   }
 
+  // 收合鈕只收合 Config 自己；手機不顯示（收起後在手機上無法展開）
   const collapseBtn = (
     <button
       type="button"
       onClick={toggleConfig}
       title={t.common?.collapse || '收起'}
-      className="absolute top-3 right-2 p-1 text-duo-cocoa-300 hover:text-duo-amber-700 transition z-10"
+      className="hidden md:block absolute top-3 right-2 p-1 text-duo-cocoa-300 hover:text-duo-amber-700 transition z-10"
     >
       <PanelChevronLeft />
     </button>
@@ -288,12 +292,41 @@ function ResultPanel() {
 /* ─────────────────────────  右欄  ───────────────────────── */
 
 function ExplainPanel() {
-  const { dataset, activeAnalysis, mode, t } = useApp()
+  const { dataset, activeAnalysis, mode, t, explainCollapsed, toggleExplain } = useApp()
   const analysisModule = activeAnalysis ? getAnalysisModule(activeAnalysis) : null
+
+  // 收起狀態：桌面顯示窄條，手機不渲染（手機本來就垂直堆疊，無需收起）
+  if (explainCollapsed) {
+    return (
+      <section className="hidden md:flex w-7 shrink-0 bg-white flex-col items-center pt-3">
+        <button
+          type="button"
+          onClick={toggleExplain}
+          title={t.common?.expand || '展開'}
+          className="p-1 text-duo-cocoa-400 hover:text-duo-amber-700 transition"
+        >
+          <PanelChevronLeft />
+        </button>
+      </section>
+    )
+  }
+
+  // 收合鈕只收合方法說明欄自己；手機不顯示（收起後在手機上無法展開）
+  const collapseBtn = (
+    <button
+      type="button"
+      onClick={toggleExplain}
+      title={t.common?.collapse || '收起'}
+      className="hidden md:block absolute top-3 right-2 p-1 text-duo-cocoa-300 hover:text-duo-amber-700 transition z-10"
+    >
+      <PanelChevronRight />
+    </button>
+  )
 
   if (!dataset || !activeAnalysis) {
     return (
-      <section className="w-full md:flex-[30] md:min-w-0 p-5 bg-white md:overflow-y-auto">
+      <section className="w-full md:flex-[30] md:min-w-0 p-5 bg-white md:overflow-y-auto relative">
+        {collapseBtn}
         <PanelHeading>{t.panels.explainTitle}</PanelHeading>
         <EmptyHint>{t.panels.explainEmpty}</EmptyHint>
       </section>
@@ -303,7 +336,8 @@ function ExplainPanel() {
   if (analysisModule) {
     const Component = mode === 'teaching' ? analysisModule.Notes : analysisModule.Narrative
     return (
-      <section className="w-full md:flex-[30] md:min-w-0 p-5 bg-white md:overflow-y-auto">
+      <section className="w-full md:flex-[30] md:min-w-0 p-5 bg-white md:overflow-y-auto relative">
+        {collapseBtn}
         <PanelHeading>{t.panels.explainTitle}</PanelHeading>
         {Component ? <Component /> : <EmptyHint>{t.panels.explainEmpty}</EmptyHint>}
       </section>
@@ -311,7 +345,8 @@ function ExplainPanel() {
   }
 
   return (
-    <section className="flex-[30] min-w-0 p-5 bg-white overflow-y-auto">
+    <section className="flex-[30] min-w-0 p-5 bg-white overflow-y-auto relative">
+      {collapseBtn}
       <PanelHeading>{t.panels.explainTitle}</PanelHeading>
       <EmptyHint>
         {mode === 'teaching' ? t.panels.explainTeaching : t.panels.explainReport}

@@ -9,6 +9,9 @@
  *   - 即將開放群組：所有項目灰色、不可點擊
  *
  * 收起狀態：sidebarCollapsed = true 時，僅顯示一條極窄的展開條。
+ * 注意：桌面版 aside 必須是 md:relative（不能 md:static），
+ * 否則 absolute 定位的收起按鈕會錨到外層版面容器、跑到整個畫面右上角
+ * （看起來像最右欄的按鈕、點了卻收合側欄）。
  */
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
@@ -92,8 +95,8 @@ function Sidebar() {
         onClick={toggleSidebar}
         aria-hidden
       />
-      <aside className="fixed top-16 bottom-0 left-0 w-72 z-40 shadow-xl md:static md:top-auto md:bottom-auto md:left-auto md:w-60 md:z-auto md:shadow-none shrink-0 border-r border-duo-cocoa-100 bg-white overflow-y-auto">
-      {/* 收起按鈕 */}
+      <aside className="fixed top-16 bottom-0 left-0 w-72 z-40 shadow-xl md:relative md:top-auto md:bottom-auto md:left-auto md:w-60 md:z-auto md:shadow-none shrink-0 border-r border-duo-cocoa-100 bg-white overflow-y-auto">
+      {/* 收起按鈕（錨定在本欄右上角，收合的是側欄自己） */}
       <button
         type="button"
         onClick={toggleSidebar}

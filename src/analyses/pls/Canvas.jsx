@@ -12,7 +12,12 @@
  *   指標         = 小矩形節點，自動排列在所屬 LV 周圍（不可拖，跟著 LV 走）
  * 邊：
  *   LV→LV（structural）= 箭頭路徑，點擊可刪；跑完分析顯示 β＋顯著星號（toneForP 語意色）
- *   LV→指標（measure）= 連線，跑完分析顯示 loading（mono）
+ *     LV 四方位都有 handle（ConnectionMode.Loose：每個圓點皆可拉出／接入連線）；
+ *     邊依兩節點「相對位置」自動選最近的一對 handle（目標在右 → right→left，近似直線），
+ *     拖動節點時（onNodeDrag 即時座標）邊會即時重選 handle，不會從下方繞到上方。
+ *   LV→指標（measure）= 淺 cocoa 細線，跑完分析顯示 loading（mono）
+ *     指標節點的 handle 必須是 target 型（先前誤設為 source，React Flow 找不到
+ *     target handle 而整條邊不渲染 — 這就是「看不到指標連線」的根因）。
  * 結果覆蓋層：LV 圓內顯示 R²。
  * 匯出：html2canvas 匯出白底 PNG（論文用）。
  *
@@ -21,6 +26,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
+  ConnectionMode,
   Controls,
   Handle,
   Position,
@@ -38,11 +44,26 @@ const COCOA = { 700: '#3f2d1f', 500: '#5a432a', 400: '#7d5e3c', 200: '#cfae89', 
 const CREAM = { 50: '#fffaf2', 100: '#fbeed8', 200: '#f4ddb2' }
 const AMBER = { 50: '#fef3e2', 500: '#d97e2a' }
 
+/* LV 四方位 handle 的圓點樣式（Loose 模式：每個圓點皆可拉出／接入連線） */
+const HANDLE_STYLE = { background: AMBER[500], border: '1.5px solid #fff', width: 9, height: 9 }
+
 /** 新 LV 的不重疊預設座標（沿對角線鋪開，避免疊在一起） */
 function defaultPosFor(index) {
   const col = index % 3
   const row = Math.floor(index / 3)
   return { x: 80 + col * 260, y: 80 + row * 200 }
+}
+
+/**
+ * 依兩個 LV 的相對位置選最近的一對 handle，回傳 [sourceHandle, targetHandle]。
+ * 兩個 LV 節點同尺寸（130×84），比較左上角座標等同比較中心點。
+ * 水平距離較大 → 走左右（right→left / left→right）；垂直較大 → 走上下。
+ */
+function pickPathHandles(sPos, tPos) {
+  const dx = tPos.x - sPos.x
+  const dy = tPos.y - sPos.y
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? ['r', 'l'] : ['l', 'r']
+  return dy >= 0 ? ['b', 't'] : ['t', 'b']
 }
 
 /* ─────────────────────  自訂節點  ───────────────────── */
@@ -86,11 +107,11 @@ function LvNode({ data }) {
       onDoubleClick={(e) => { e.stopPropagation(); setEditing(true) }}
       onClick={(e) => { e.stopPropagation(); if (!editing) onOpenPanel(label) }}
     >
-      {/* 四方向 handle：source 供拉出路徑，target 供接入路徑 */}
-      <Handle type="target" position={Position.Left} style={{ background: COCOA[400], width: 8, height: 8 }} />
-      <Handle type="source" position={Position.Right} style={{ background: AMBER[500], width: 8, height: 8 }} />
-      <Handle type="target" position={Position.Top} id="t" style={{ background: COCOA[400], width: 8, height: 8 }} />
-      <Handle type="source" position={Position.Bottom} id="b" style={{ background: AMBER[500], width: 8, height: 8 }} />
+      {/* 四方位 handle：ConnectionMode.Loose 下每個圓點都同時可拉出與接入路徑 */}
+      <Handle type="source" position={Position.Left} id="l" style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Right} id="r" style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Top} id="t" style={HANDLE_STYLE} />
+      <Handle type="source" position={Position.Bottom} id="b" style={HANDLE_STYLE} />
 
       {editing ? (
         <input
@@ -146,7 +167,8 @@ function IndicatorNode({ data }) {
         boxShadow: '0 1px 2px rgba(43,29,20,0.08)',
       }}
     >
-      <Handle type="source" position={Position.Top} style={{ background: COCOA[200], width: 6, height: 6 }} />
+      {/* target 型（LV→指標 的接入端）；不開放手動連線 */}
+      <Handle type="target" position={Position.Top} isConnectable={false} style={{ background: COCOA[200], border: 'none', width: 6, height: 6 }} />
       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
       {Number.isFinite(loading) && (
         <div style={{ fontFamily: 'JetBrains Mono, monospace', color: tone, fontSize: 9.5, marginTop: 1 }}>
@@ -213,6 +235,11 @@ function CanvasInner() {
   const lvs = useMemo(() => state.lvs || [], [state.lvs])
   const paths = useMemo(() => state.paths || [], [state.paths])
   const positions = useMemo(() => state.positions || {}, [state.positions])
+
+  // 拖動中的即時座標（drag stop 才寫回共用 state）：
+  // 讓邊在拖動過程即時重選最近的 handle、指標小矩形跟著 LV 走
+  const [livePositions, setLivePositions] = useState({})
+  const effPositions = useMemo(() => ({ ...positions, ...livePositions }), [positions, livePositions])
 
   const labelMap = useMemo(
     () => dataset?.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {},
@@ -287,7 +314,7 @@ function CanvasInner() {
   const nodes = useMemo(() => {
     const out = []
     lvs.forEach((f, fi) => {
-      const pos = positions[f.name] || defaultPosFor(fi)
+      const pos = effPositions[f.name] || defaultPosFor(fi)
       out.push({
         id: `lv:${f.name}`,
         type: 'lvNode',
@@ -317,13 +344,17 @@ function CanvasInner() {
       })
     })
     return out
-  }, [lvs, positions, overlay, selectedLv, renameLv, deleteLv, labelMap])
+  }, [lvs, effPositions, overlay, selectedLv, renameLv, deleteLv, labelMap])
 
   const edges = useMemo(() => {
     const out = []
-    // 結構路徑：箭頭 + β/星號
+    const lvIndex = new Map(lvs.map((f, i) => [f.name, i]))
+    const posFor = (name) => effPositions[name] || defaultPosFor(lvIndex.get(name) ?? 0)
+    // 結構路徑：箭頭 + β/星號；依相對位置就近選 handle（近似直線，不繞遠路）
     paths.forEach((p) => {
       if (!p.from || !p.to) return
+      if (!lvIndex.has(p.from) || !lvIndex.has(p.to)) return
+      const [sh, th] = pickPathHandles(posFor(p.from), posFor(p.to))
       const info = overlay.path[`${p.from}→${p.to}`]
       let label
       let color = COCOA[400]
@@ -336,8 +367,8 @@ function CanvasInner() {
         id: `path:${p.from}->${p.to}`,
         source: `lv:${p.from}`,
         target: `lv:${p.to}`,
-        sourceHandle: 'b',
-        targetHandle: 't',
+        sourceHandle: sh,
+        targetHandle: th,
         type: 'default',
         animated: false,
         label,
@@ -370,12 +401,24 @@ function CanvasInner() {
       })
     })
     return out
-  }, [paths, lvs, overlay])
+  }, [paths, lvs, overlay, effPositions])
 
   /* ── 互動 ── */
+  const onNodeDrag = useCallback((_e, node) => {
+    if (!node.id.startsWith('lv:')) return
+    const name = node.id.slice(3)
+    setLivePositions((prev) => ({ ...prev, [name]: { x: node.position.x, y: node.position.y } }))
+  }, [])
+
   const onNodeDragStop = useCallback((_e, node) => {
     if (!node.id.startsWith('lv:')) return
     const name = node.id.slice(3)
+    setLivePositions((prev) => {
+      if (!(name in prev)) return prev
+      const next = { ...prev }
+      delete next[name]
+      return next
+    })
     setPositions({ ...positions, [name]: { x: Math.round(node.position.x), y: Math.round(node.position.y) } })
   }, [positions, setPositions])
 
@@ -474,6 +517,8 @@ function CanvasInner() {
           nodes={nodes}
           edges={edges}
           nodeTypes={NODE_TYPES}
+          connectionMode={ConnectionMode.Loose}
+          onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
           onConnect={onConnect}
           onEdgeClick={onEdgeClick}
