@@ -2,15 +2,18 @@
  * PLS-SEM — Config（左欄）
  *
  * 表單式模型宣告（照 cfa/Config.jsx 的動態卡片慣例）：
- *   1. 潛在變數卡片：名稱 + 從資料欄多選指標（一個指標只屬於一個構念）
+ *   1. 潛在變數卡片：名稱 + 測量模式（反映型/形成型）+ 從資料欄多選指標
  *   2. 結構路徑：from → to 下拉選（可新增／刪除）
  *   3. Bootstrap 重抽次數：500 / 1000 / 5000（預設 1000）
- *   4. 「執行分析」：先跑 validatePLSModel，錯誤以中文列出；
- *      通過才把 { model, bootstrapN, draft } 寫入 state.committed，
+ *   4. 進階選項（W3，收合區）：weighting scheme（path/factorial/centroid）、
+ *      PLSc（consistent PLS）、CI 類型（percentile/BCa）、blindfolding Q² 開關
+ *   5. 「執行分析」：先跑 validatePLSModel，錯誤以中文列出；
+ *      通過才把 { model, bootstrapN, options, draft } 寫入 state.committed，
  *      Result / Narrative 依 committed 計算（bootstrap 較重，不做即時反應式計算）。
  *
  * state（analysisState['pls-sem']）：
- *   { lvs, paths, bootstrapN, committed, configErrors, plsView, positions }
+ *   { lvs, paths, bootstrapN, scheme, consistent, ciType, q2,
+ *     committed, configErrors, plsView, positions }
  */
 import { useEffect, useState } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
@@ -32,10 +35,11 @@ function useIsNarrow() {
 }
 
 const BOOT_OPTIONS = [500, 1000, 5000]
+const SCHEME_OPTIONS = ['path', 'factorial', 'centroid']
 
 const DEFAULT_LVS = () => [
-  { name: 'LV1', indicators: [] },
-  { name: 'LV2', indicators: [] },
+  { name: 'LV1', indicators: [], mode: 'reflective' },
+  { name: 'LV2', indicators: [], mode: 'reflective' },
 ]
 const DEFAULT_PATHS = () => [{ from: '', to: '' }]
 
@@ -46,6 +50,7 @@ function buildModel(lvs, paths) {
     latentVariables: (lvs || []).map((f) => ({
       name: (f.name || '').trim(),
       indicators: Array.isArray(f.indicators) ? f.indicators.filter(Boolean) : [],
+      mode: f.mode === 'formative' ? 'formative' : 'reflective',
     })),
     paths: (paths || [])
       .filter((p) => p.from || p.to)
@@ -53,8 +58,8 @@ function buildModel(lvs, paths) {
   }
 }
 
-function draftSignature(lvs, paths, bootstrapN) {
-  return JSON.stringify({ model: buildModel(lvs, paths), bootstrapN })
+function draftSignature(lvs, paths, bootstrapN, options) {
+  return JSON.stringify({ model: buildModel(lvs, paths), bootstrapN, options })
 }
 
 function SectionTitle({ children }) {
@@ -65,15 +70,65 @@ function SectionTitle({ children }) {
   )
 }
 
+/** segmented control（照 mockup 樣式；供檢視切換 / scheme / CI 類型共用） */
+function Segmented({ items, value, onChange, mono = false }) {
+  return (
+    <div className="inline-flex rounded-lg bg-duo-cream-50 border border-duo-cream-200 p-0.5 w-full">
+      {items.map((it) => {
+        const active = value === it.key
+        return (
+          <button
+            key={it.key}
+            type="button"
+            onClick={() => onChange(it.key)}
+            className={[
+              'flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition',
+              mono ? 'font-mono' : '',
+              active
+                ? 'bg-white text-duo-cocoa-800 shadow-sm'
+                : 'text-duo-cocoa-500 hover:text-duo-cocoa-700',
+            ].join(' ')}
+          >
+            {it.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function Toggle({ checked, onChange, label, hint }) {
+  return (
+    <label className="flex items-start gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="accent-duo-amber-500 w-3.5 h-3.5 mt-0.5 cursor-pointer"
+      />
+      <span>
+        <span className="block text-xs font-medium text-duo-cocoa-800">{label}</span>
+        {hint && <span className="block text-[11px] text-duo-cocoa-400 leading-snug mt-0.5">{hint}</span>}
+      </span>
+    </label>
+  )
+}
+
 function Config() {
   const { dataset, variables, lang, t } = useApp()
   const [state, update] = useAnalysisState()
   const c = t.pls.config
   const narrow = useIsNarrow()
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   const lvs = state.lvs
   const paths = state.paths
   const bootstrapN = state.bootstrapN ?? 1000
+  const scheme = state.scheme ?? 'path'
+  const consistent = state.consistent === true
+  const ciType = state.ciType === 'bca' ? 'bca' : 'percentile'
+  const q2 = state.q2 === true
+  const options = { scheme, consistent, ciType, q2 }
   // 檢視模式：'form' 表單 / 'canvas' 畫布；窄幅一律退回表單
   const plsView = narrow ? 'form' : (state.plsView === 'canvas' ? 'canvas' : 'form')
 
@@ -108,13 +163,15 @@ function Config() {
 
   /* ── 構念操作 ── */
   const setLvs = (next) => update({ lvs: next })
-  const addLv = () => setLvs([...curLvs, { name: `LV${curLvs.length + 1}`, indicators: [] }])
+  const addLv = () => setLvs([...curLvs, { name: `LV${curLvs.length + 1}`, indicators: [], mode: 'reflective' }])
   const removeLv = (fi) => {
     if (curLvs.length <= 1) return
     setLvs(curLvs.filter((_, idx) => idx !== fi))
   }
   const renameLv = (fi, name) =>
     setLvs(curLvs.map((f, idx) => (idx === fi ? { ...f, name } : f)))
+  const setLvMode = (fi, mode) =>
+    setLvs(curLvs.map((f, idx) => (idx === fi ? { ...f, mode } : f)))
   const toggleIndicator = (fi, col) =>
     setLvs(
       curLvs.map((f, idx) => {
@@ -155,45 +212,32 @@ function Config() {
       committed: {
         model,
         bootstrapN,
-        draft: { model, bootstrapN },
+        options,
+        draft: { model, bootstrapN, options },
       },
     })
   }
 
   const committed = state.committed
   const stale =
-    committed && JSON.stringify(committed.draft) !== draftSignature(curLvs, curPaths, bootstrapN)
+    committed &&
+    JSON.stringify(committed.draft) !== draftSignature(curLvs, curPaths, bootstrapN, options)
 
   const errors = state.configErrors || []
 
   return (
     <div className="space-y-5">
-      {/* 表單 / 畫布 切換（segmented control，照 mockup 樣式） */}
+      {/* 表單 / 畫布 切換 */}
       {!narrow && (
         <div>
-          <div className="inline-flex rounded-lg bg-duo-cream-50 border border-duo-cream-200 p-0.5 w-full">
-            {[
+          <Segmented
+            items={[
               { key: 'form', label: c.viewForm },
               { key: 'canvas', label: c.viewCanvas },
-            ].map((v) => {
-              const active = plsView === v.key
-              return (
-                <button
-                  key={v.key}
-                  type="button"
-                  onClick={() => update({ plsView: v.key })}
-                  className={[
-                    'flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition',
-                    active
-                      ? 'bg-white text-duo-cocoa-800 shadow-sm'
-                      : 'text-duo-cocoa-500 hover:text-duo-cocoa-700',
-                  ].join(' ')}
-                >
-                  {v.label}
-                </button>
-              )
-            })}
-          </div>
+            ]}
+            value={plsView}
+            onChange={(key) => update({ plsView: key })}
+          />
           <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">
             {plsView === 'canvas' ? c.viewCanvasHint : c.viewFormHint}
           </p>
@@ -214,6 +258,7 @@ function Config() {
           {curLvs.map((f, fi) => {
             const used = usedByOthers(fi)
             const availCols = numericCols.filter((col) => !used.has(col))
+            const mode = f.mode === 'formative' ? 'formative' : 'reflective'
             return (
               <div key={fi} className="bg-white border border-duo-cocoa-100 rounded-md p-3">
                 <div className="flex items-center gap-2 mb-2">
@@ -239,6 +284,18 @@ function Config() {
                       <path d="M4 4l8 8M12 4l-8 8" />
                     </svg>
                   </button>
+                </div>
+                {/* 測量模式（反映型 / 形成型） */}
+                <div className="mb-2">
+                  <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.modeLabel}</div>
+                  <Segmented
+                    items={[
+                      { key: 'reflective', label: c.modeReflective },
+                      { key: 'formative', label: c.modeFormative },
+                    ]}
+                    value={mode}
+                    onChange={(key) => setLvMode(fi, key)}
+                  />
                 </div>
                 <div className="text-[11px] text-duo-cocoa-500 mb-1.5">
                   {c.indicatorsLabel}（{f.indicators.length}）
@@ -277,6 +334,7 @@ function Config() {
             )
           })}
         </div>
+        <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">{c.modeHint}</p>
 
         <button
           type="button"
@@ -343,27 +401,68 @@ function Config() {
       {/* Bootstrap 次數 */}
       <div>
         <SectionTitle>{c.bootstrapTitle}</SectionTitle>
-        <div className="inline-flex rounded-lg bg-duo-cream-50 border border-duo-cream-200 p-0.5 w-full">
-          {BOOT_OPTIONS.map((n) => {
-            const active = bootstrapN === n
-            return (
-              <button
-                key={n}
-                type="button"
-                onClick={() => update({ bootstrapN: n })}
-                className={[
-                  'flex-1 px-2 py-1.5 text-xs font-mono font-medium rounded-md transition',
-                  active
-                    ? 'bg-white text-duo-cocoa-800 shadow-sm'
-                    : 'text-duo-cocoa-500 hover:text-duo-cocoa-700',
-                ].join(' ')}
-              >
-                {n}
-              </button>
-            )
-          })}
-        </div>
+        <Segmented
+          items={BOOT_OPTIONS.map((n) => ({ key: n, label: String(n) }))}
+          value={bootstrapN}
+          onChange={(key) => update({ bootstrapN: key })}
+          mono
+        />
         <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.bootstrapHint}</p>
+      </div>
+
+      {/* 進階選項（W3）：scheme / PLSc / CI 類型 / Q² */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 bg-duo-cream-50 border border-duo-cream-200 rounded-md hover:text-duo-cocoa-600 transition"
+        >
+          <span>{c.advancedTitle}</span>
+          <svg
+            width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+            strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
+            className={advancedOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
+          >
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </button>
+        {advancedOpen && (
+          <div className="mt-3 space-y-4 px-1">
+            <div>
+              <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.schemeTitle}</div>
+              <Segmented
+                items={SCHEME_OPTIONS.map((s) => ({ key: s, label: c.schemeNames[s] }))}
+                value={scheme}
+                onChange={(key) => update({ scheme: key })}
+              />
+              <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.schemeHint}</p>
+            </div>
+            <Toggle
+              checked={consistent}
+              onChange={(v) => update({ consistent: v })}
+              label={c.plscLabel}
+              hint={c.plscHint}
+            />
+            <div>
+              <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.ciTypeTitle}</div>
+              <Segmented
+                items={[
+                  { key: 'percentile', label: c.ciPercentile },
+                  { key: 'bca', label: c.ciBca },
+                ]}
+                value={ciType}
+                onChange={(key) => update({ ciType: key })}
+              />
+              <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.ciTypeHint}</p>
+            </div>
+            <Toggle
+              checked={q2}
+              onChange={(v) => update({ q2: v })}
+              label={c.q2Label}
+              hint={c.q2Hint}
+            />
+          </div>
+        )}
       </div>
 
       {/* 執行 */}

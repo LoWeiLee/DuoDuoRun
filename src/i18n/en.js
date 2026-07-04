@@ -2736,9 +2736,13 @@ export default {
     title: 'PLS-SEM (partial least squares structural equation modeling)',
     config: {
       lvsTitle: 'Latent variables (constructs)',
-      lvsHint: 'Name each latent variable and tick its indicators (reflective Mode A; ≥ 3 items per construct recommended, single-indicator allowed)',
+      lvsHint: 'Name each latent variable, pick its measurement mode (reflective / formative) and tick its indicators (≥ 3 items per construct recommended, single-indicator allowed)',
       lvLabel: 'Construct',
       indicatorsLabel: 'Indicators',
+      modeLabel: 'Measurement mode',
+      modeReflective: 'Reflective',
+      modeFormative: 'Formative',
+      modeHint: 'Reflective (Mode A) = indicators manifest the construct; formative (Mode B) = indicators jointly form the construct — the report shows weight tests + outer VIF instead of reliability',
       addLv: 'Add latent variable',
       removeLv: 'Remove this construct',
       noIndicatorsLeft: 'All available indicators are used by other constructs',
@@ -2750,11 +2754,23 @@ export default {
       pathIncomplete: 'Path {i} is missing its from or to construct',
       bootstrapTitle: 'Bootstrap resamples',
       bootstrapHint: 'Journal convention is 5000; use 500 / 1000 for quick previews on large data (default 1000)',
+      advancedTitle: 'Advanced options',
+      schemeTitle: 'Weighting scheme',
+      schemeNames: { path: 'Path', factorial: 'Factorial', centroid: 'Centroid' },
+      schemeHint: 'Path is the SmartPLS 4 default; centroid / factorial are provided for methodological comparison and older literature.',
+      plscLabel: 'Consistent PLS (PLSc)',
+      plscHint: 'Corrects attenuation from measurement error in reflective constructs via rho_A (Dijkstra & Henseler, 2015); paths, loadings and CR / AVE all use corrected values, and the bootstrap runs the consistent procedure.',
+      ciTypeTitle: 'Bootstrap confidence interval',
+      ciPercentile: 'Percentile',
+      ciBca: 'BCa',
+      ciTypeHint: 'Percentile is the SmartPLS 4 default; BCa (bias-corrected and accelerated) additionally needs n jackknife re-estimations — slower but more accurate for skewed sampling distributions.',
+      q2Label: 'Blindfolding Q²',
+      q2Hint: 'Construct-level cross-validated redundancy (omission distance = 7) to assess predictive relevance of endogenous constructs; adds computation time.',
       run: 'Run analysis',
       rerun: 'Re-run analysis',
       staleNote: 'Model settings have changed — the current results reflect the previous run. Please re-run.',
       errorsTitle: 'Model validation failed:',
-      modeNote: 'W1 release: reflective indicators (Mode A) + path weighting scheme; formative indicators (Mode B) are planned for Wave 3. Missing data handled by casewise deletion.',
+      modeNote: 'W3 release: reflective (Mode A) and formative (Mode B) measurement, path / factorial / centroid weighting schemes, PLSc (consistent PLS), percentile / BCa bootstrap, model fit (SRMR etc.) and blindfolding Q². Missing data handled by casewise deletion.',
       viewForm: 'Form',
       viewCanvas: 'Canvas',
       viewFormHint: 'Declare the model with dropdowns and multi-select; best for precise edits and mobile.',
@@ -2762,36 +2778,48 @@ export default {
       canvasNarrowFallback: 'The canvas needs a wider screen; on mobile it falls back to the form automatically.',
     },
     canvas: {
-      hint: 'Drag a construct to move it; drag from a construct’s bottom handle to another to add a path; click a path to delete it; click a construct to open its indicator panel; double-click to rename.',
-      legend: 'Ellipse = latent variable (R² shown inside); small rectangle = indicator (loading on the link); arrow = structural path (β with significance stars). Green = significant, red = not significant.',
+      hint: 'Drag a construct to move it; drag from a construct’s bottom handle to another to add a path; click a path to delete it; click a construct to open its indicator panel (with reflective / formative toggle); double-click to rename.',
+      legend: 'Ellipse = latent variable (R² inside; Mode B badge for formative); small rectangle = indicator (loading on the link; weight w for formative); arrow = structural path (β with significance stars). Green = significant, red = not significant.',
       empty: 'No latent variables yet; add a construct to start modeling.',
       exportBtn: 'Export diagram',
       exportHint: 'Export a white-background PNG (for papers)',
       exporting: 'Exporting…',
+      modeBadge: 'Mode B (formative)',
     },
     result: {
       runFirst: 'Declare the latent variables and structural paths on the left, then press "Run analysis" (the bootstrap takes a few seconds).',
       cards: { n: 'Valid N', iterations: 'PLS iterations', bootstrap: 'Valid bootstrap draws', r2: 'R²' },
       converged: 'Converged',
       notConverged: 'Not converged',
-      measurementTitle: 'Measurement model — outer loadings',
+      settingsLine: 'weighting scheme = {scheme}{plsc}',
+      plscTag: ' | PLSc (consistent PLS) enabled — paths and loadings are corrected values',
+      measurementTitle: 'Measurement model — outer loadings (reflective)',
       loadingNote: 'Loading thresholds: ≥ .708 good (green), .40 – .708 borderline (yellow), < .40 poor (red). SE / t / p come from the bootstrap.',
+      formativeTitle: 'Measurement model — formative outer weights (bootstrap tests)',
+      formativeNote: 'Weight SE / t / p / CI come from the bootstrap; outer VIF (indicator collinearity): < 3.3 good (green), 3.3 – 5 caution (yellow), ≥ 5 concern (red). When a weight is not significant, a loading ≥ .50 can still support retaining the indicator (fallback reading; Hair et al., 2017).',
       reliabilityTitle: 'Measurement model — reliability & convergent validity',
-      reliabilityNote: 'Pass thresholds: α ≥ .70, rho_A ≥ .70, CR ≥ .70, AVE ≥ .50; the row LED = all four pass. Single-indicator constructs are 1 by definition and shown as "—".',
+      reliabilityNote: 'Pass thresholds: α ≥ .70, rho_A ≥ .70, CR ≥ .70, AVE ≥ .50; the row LED = all four pass. Single-indicator constructs are 1 by definition ("—"). Formative constructs have no reliability/convergent validity — see the formative weights table.',
       discriminantFLTitle: 'Discriminant validity — Fornell-Larcker criterion',
-      flNote: 'Diagonal (bold) is √AVE and must exceed every inter-construct correlation in its row/column (green = pass, red = violated).',
+      flNote: 'Diagonal (bold) is √AVE and must exceed every inter-construct correlation in its row/column (green = pass, red = violated); AVE is undefined for formative constructs (—).',
       discriminantHTMTTitle: 'Discriminant validity — HTMT',
-      htmtNote: 'HTMT < .85 passes (green); ≥ .85 flags a discriminant-validity concern (red). Pairs involving single-indicator constructs are undefined (—).',
+      htmtNote: 'HTMT < .85 passes (green); ≥ .85 flags a discriminant-validity concern (red). Pairs involving single-indicator or formative constructs are undefined (—).',
       structuralTitle: 'Structural model — path coefficients (bootstrap inference)',
-      bootstrapMeta: 'bootstrap {nValid} / {nRequested} valid resamples (seed = {seed}, percentile 95% CI, construct-level sign correction)',
+      bootstrapMeta: 'bootstrap {nValid} / {nRequested} valid resamples (seed = {seed}, {ciType} 95% CI, construct-level sign correction)',
       bootstrapUnavailable: 'Bootstrap failed; only point estimates are shown: {message}',
       r2Title: 'Structural model — explained variance',
       effectsTitle: 'Structural model — effect sizes f² & collinearity VIF',
       f2Note: 'f² conventions (Cohen, 1988): .02 small, .15 medium, .35 large. VIF: < 3.3 good (green), 3.3 – 5 caution (yellow), ≥ 5 collinearity concern (red).',
+      fitTitle: 'Model fit — SRMR / d_ULS / d_G / NFI',
+      fitNote: 'SRMR: < .08 good (green), .08 – .10 borderline (yellow), ≥ .10 poor (red); NFI ≥ .90 good. d_ULS / d_G are distance measures for model comparison (smaller is better). "Saturated" frees all construct correlations (measurement model only); "estimated" implies them from the structural paths. Computed from the original formulas (SmartPLS does not fully document its implementation) — cross-check with SmartPLS / seminr recommended.',
+      q2Title: 'Predictive relevance — blindfolding Q²',
+      q2Note: 'Q² > 0 indicates predictive relevance for that endogenous construct (green); ≤ 0 means no better than mean prediction (red). Construct-level cross-validated redundancy, omission distance D = {d}.',
+      q2Unavailable: 'Q² computation failed: {message}',
       cols: {
         lv: 'Construct',
         indicator: 'Indicator',
         loading: 'Loading',
+        weight: 'Weight',
+        outerVif: 'Outer VIF',
         alpha: "Cronbach's α",
         rhoA: 'rho_A',
         cr: 'CR',
@@ -2807,6 +2835,10 @@ export default {
         f2: 'f²',
         vif: 'VIF',
         effect: 'Effect size',
+        fitIndex: 'Fit index',
+        saturated: 'Saturated model',
+        estimated: 'Estimated model',
+        q2: 'Q²',
       },
       f2Interp: { none: 'negligible', small: 'small', medium: 'medium', large: 'large' },
     },
@@ -2816,46 +2848,61 @@ export default {
         'Partial least squares SEM (PLS-SEM) approximates latent constructs as weighted linear composites of their indicators, ' +
         'estimating the measurement model (construct ↔ indicators) and the structural model (paths among constructs) simultaneously.\n\n' +
         'Best suited to: prediction-oriented research, complex models (many constructs/paths), smaller samples, non-normal data, or theory still under development.\n\n' +
-        'Versus CB-SEM: CB-SEM tests overall fit of the covariance structure (confirmatory); PLS-SEM maximizes explained variance of endogenous constructs (predictive) and offers no χ²-type global fit test.',
+        'Versus CB-SEM: CB-SEM tests overall fit of the covariance structure (confirmatory); PLS-SEM maximizes explained variance of endogenous constructs (predictive). Fit indices such as SRMR are approximate checks, not χ²-type tests.',
       assumpTitle: 'Assumptions & scope',
       assumptions:
-        '1. Reflective indicators (Mode A): indicators manifest the construct and should intercorrelate highly\n' +
+        '1. The measurement mode must be theory-driven: reflective (Mode A) indicators manifest the construct and should intercorrelate; formative (Mode B) indicators jointly form it, need not correlate, but must not be highly collinear (check outer VIF)\n' +
         '2. Recursive structural model: the path diagram is acyclic (no reciprocal causation)\n' +
         '3. Indicators are continuous or approximately continuous (5/7-point Likert is common)\n' +
         '4. Sample size lower bound via the "10-times rule": at least 10 × the largest number of paths aimed at any construct\n' +
-        '5. Inference relies on bootstrap resampling — no normality assumption required',
+        '5. Inference relies on bootstrap resampling — no normality assumption required\n' +
+        '6. If the goal is estimating true construct correlations/paths (theory testing), enable PLSc to correct attenuation in reflective constructs',
       conceptsTitle: 'Key concepts',
       concepts:
         'Outer loading: correlation between indicator and construct; ≥ .708 means the construct explains ≥ 50% of the indicator variance\n' +
-        "Reliability: Cronbach's α (lower bound), rho_A (less biased), CR composite reliability (upper bound); all ≥ .70\n" +
-        'AVE (average variance extracted): convergent validity, ≥ .50\n' +
-        'Fornell-Larcker: √AVE should exceed the correlations with all other constructs\n' +
+        'Outer weight: a formative indicator’s contribution to its construct (regression weight), tested via bootstrap\n' +
+        "Reliability: Cronbach's α (lower bound), rho_A (less biased), CR composite reliability (upper bound); all ≥ .70 (reflective only)\n" +
+        'AVE (average variance extracted): convergent validity, ≥ .50; Fornell-Larcker: √AVE should exceed inter-construct correlations\n' +
         'HTMT (heterotrait-monotrait ratio): discriminant validity, < .85 (conservative) or < .90 (liberal)\n' +
-        'R²: explained variance of an endogenous construct; f²: change in R² when a predictor is removed\n' +
-        'Inner VIF: collinearity among predictor constructs; < 3.3 good, ≥ 5 problematic\n' +
-        'Bootstrap: SE, t, p and percentile CIs from the empirical distribution of resampled estimates',
+        'Weighting scheme: inner-proxy weighting — path (default) / factorial (correlations) / centroid (signs of correlations); practical differences are usually tiny\n' +
+        'PLSc (consistent PLS): disattenuation via rho_A so reflective paths approach CB-SEM-consistent estimates\n' +
+        'R²: explained variance of an endogenous construct; f²: change in R² when a predictor is removed; inner VIF: predictor collinearity\n' +
+        'Model fit: SRMR (standardized root mean square residual, < .08), d_ULS / d_G (distance measures), NFI (≥ .90)\n' +
+        'Q² (blindfolding): cross-validation by omitting and predicting data points; > 0 indicates predictive relevance\n' +
+        'Bootstrap: SE, t, p and confidence intervals (percentile or BCa) from the empirical distribution of resampled estimates',
       readingTitle: 'How to read',
       reading:
         '1. Check convergence and sample-size warnings first\n' +
-        '2. Measurement model: loadings ≥ .708, α / rho_A / CR ≥ .70, AVE ≥ .50\n' +
+        '2. Measurement model: reflective — loadings ≥ .708, α / rho_A / CR ≥ .70, AVE ≥ .50; formative — significant weights and outer VIF < 3.3 (a non-significant weight with loading ≥ .50 can be retained)\n' +
         '3. Discriminant validity: Fornell-Larcker passes and HTMT < .85\n' +
-        '4. Only after the measurement model qualifies, read the structural model: path p-values and 95% CIs, f², VIF\n' +
-        '5. Finally R²: .25 / .50 / .75 roughly map to weak / moderate / substantial (field-dependent)',
+        '4. Model fit: SRMR < .08 (saturated = measurement; estimated adds the structural model)\n' +
+        '5. Only after the measurement model qualifies, read the structural model: path p-values and 95% CIs, f², VIF\n' +
+        '6. Finally R² (.25 / .50 / .75 ≈ weak / moderate / substantial) and Q² (> 0 = predictive relevance)',
     },
     apa: {
       intro:
-        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; path weighting, Mode A; N = {n}), ' +
-        'with inference based on {nValid} bootstrap resamples (percentile 95% confidence intervals).',
+        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; {scheme} weighting scheme{plsc}; N = {n}), ' +
+        'with inference based on {nValid} bootstrap resamples ({ciType} 95% confidence intervals).',
       introNoBoot:
-        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; path weighting, Mode A; N = {n}).',
+        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; {scheme} weighting scheme{plsc}; N = {n}).',
+      plscClause: ', consistent PLS (PLSc)',
+      schemeNames: { path: 'path', factorial: 'factorial', centroid: 'centroid' },
+      ciNames: { percentile: 'percentile', bca: 'BCa' },
       measurement:
-        "For the measurement model, Cronbach's α ranged {alphaRange}, composite reliability (CR) ranged {crRange}, " +
+        "For the reflective measurement model, Cronbach's α ranged {alphaRange}, composite reliability (CR) ranged {crRange}, " +
         'and average variance extracted (AVE) ranged {aveRange}; {measVerdict}',
       measOk: 'reliability and convergent validity met the recommended thresholds (CR ≥ .70, AVE ≥ .50).',
       measBad: 'some constructs fell short of the recommended thresholds (CR ≥ .70, AVE ≥ .50), which should be borne in mind.',
+      formative: 'Formative constructs ({lvs}) were assessed via bootstrap tests of outer weights and indicator collinearity, with a maximum outer VIF of {vifMax}.',
       htmt: 'Regarding discriminant validity, the maximum HTMT was {htmtMax}, {htmtVerdict}',
       htmtOk: 'below the .85 threshold, supporting discriminant validity.',
       htmtBad: 'above the .85 threshold, indicating a discriminant-validity concern for some construct pairs.',
+      fit: 'Regarding model fit, the SRMR of the estimated model was {srmr}, {fitVerdict}',
+      fitOk: 'below the .08 threshold.',
+      fitBad: 'above the .08 threshold, so overall fit warrants attention.',
+      q2: 'Blindfolding Q² for the endogenous constructs (D = {d}) ranged {q2Range}; {q2Verdict}',
+      q2Ok: 'all values exceeded 0, indicating predictive relevance.',
+      q2Bad: 'not all values exceeded 0, indicating limited predictive relevance.',
       structuralIntro: 'Structural model results: ',
       path: '{from} → {to} (β = {beta}, t = {t}, {pStr}, 95% CI [{lo}, {hi}], {sig})',
       pathNoBoot: '{from} → {to} (β = {beta})',

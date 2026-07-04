@@ -29,10 +29,11 @@ const TOL = {
   'logistic_regression.p_x1': 1e-5,
 }
 
-// PLS 迭代估計量（loadings/weights/path/R²/f²/rho_A/rho_c/AVE 等皆由迭代收斂的
-// 權重導出）→ 1e-4；封閉式公式（直接由指標相關矩陣計算）→ 預設 1e-6
+// PLS 迭代估計量（loadings/weights/path/R²/f²/rho_A/PLSc/fit/Q² 等皆由迭代收斂的
+// 權重導出）→ 1e-4，適用所有 pls_* 方法；封閉式公式（直接由指標相關矩陣計算，
+// 如標準化 α、HTMT、形成型外部 VIF）→ 預設 1e-6
 const TOL_PLS_ITERATIVE = 1e-4
-const PLS_CLOSED_FORM = new Set(['alphaStd_F1', 'alphaStd_F2', 'htmt_F1F2'])
+const PLS_CLOSED_FORM = new Set(['alphaStd_F1', 'alphaStd_F2', 'htmt_F1F2', 'vif_x1', 'vif_x2', 'vif_x3'])
 
 // 已知慣例差異，不比對（每項需在驗證報告中有對應記錄）
 const SKIP = {
@@ -61,7 +62,7 @@ describe('統計核心 vs Python 黃金標準', () => {
           continue
         }
         const tol = TOL[skipKey] ??
-          (method === 'pls_basic' && !PLS_CLOSED_FORM.has(field) ? TOL_PLS_ITERATIVE : DEFAULT_TOL)
+          (method.startsWith('pls_') && !PLS_CLOSED_FORM.has(field) ? TOL_PLS_ITERATIVE : DEFAULT_TOL)
         it(`${field} (tol=${tol})`, () => {
           const got = actual[field]
           if (Array.isArray(expected)) {

@@ -2,9 +2,11 @@
  * PLS-SEM — Narrative（報告模式右欄）
  *
  * 用共用 NarrativeBlock 同時顯示中英 APA 敘述（各帶複製鈕）：
- *   1. 方法與 bootstrap 設定
- *   2. 測量模型信效度（α / CR / AVE 範圍 + HTMT 最大值）
- *   3. 結構模型路徑檢定（β, t, p, 95% CI）與 R²
+ *   1. 方法（scheme / PLSc）與 bootstrap 設定（重抽數、CI 類型）
+ *   2. 測量模型：反映型信效度（α / CR / AVE 範圍 + HTMT 最大值）＋
+ *      形成型（權重檢定 + 外部 VIF 最大值）
+ *   3. 模型適配（估計模型 SRMR）與 blindfolding Q²（開啟時）
+ *   4. 結構模型路徑檢定（β, t, p, 95% CI）與 R²
  */
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
@@ -33,20 +35,30 @@ function pStr(p, lang) {
 function buildNarrative(res, lang) {
   const t = getStrings(lang)
   const a = t.pls.apa
-  const { estimate, bootstrap } = res
+  const { estimate, bootstrap, q2 } = res
   const bootOk = Boolean(bootstrap && !bootstrap.error)
+
+  const schemeName = a.schemeNames[estimate.meta.scheme] || estimate.meta.scheme
+  const plscClause = estimate.meta.consistent ? a.plscClause : ''
 
   const parts = []
   parts.push(
     bootOk
-      ? fillTemplate(a.intro, { n: estimate.meta.n, nValid: bootstrap.nValid })
-      : fillTemplate(a.introNoBoot, { n: estimate.meta.n })
+      ? fillTemplate(a.intro, {
+          n: estimate.meta.n,
+          nValid: bootstrap.nValid,
+          scheme: schemeName,
+          plsc: plscClause,
+          ciType: a.ciNames[bootstrap.ciType] || bootstrap.ciType,
+        })
+      : fillTemplate(a.introNoBoot, { n: estimate.meta.n, scheme: schemeName, plsc: plscClause })
   )
 
-  // 測量模型（僅多指標構念；單指標構念的 α/CR/AVE 定義上為 1）
+  // 測量模型（反映型多指標構念；單指標與形成型另計）
   const kByLv = new Map()
   for (const q of estimate.outerLoadings) kByLv.set(q.lv, (kByLv.get(q.lv) || 0) + 1)
-  const multi = estimate.reliability.filter((q) => (kByLv.get(q.lv) || 0) >= 2)
+  const multi = estimate.reliability.filter(
+    (q) => q.mode !== 'formative' && (kByLv.get(q.lv) || 0) >= 2)
   if (multi.length > 0) {
     const measOk = multi.every((q) => q.rhoC >= 0.7 && q.ave >= 0.5)
     parts.push(
@@ -55,6 +67,21 @@ function buildNarrative(res, lang) {
         crRange: rangeStr(multi.map((q) => q.rhoC)),
         aveRange: rangeStr(multi.map((q) => q.ave)),
         measVerdict: measOk ? a.measOk : a.measBad,
+      })
+    )
+  }
+
+  // 形成型構念：權重檢定 + 外部 VIF
+  const lvModes = estimate.lvModes || {}
+  const formativeLvs = Object.keys(lvModes).filter((lv) => lvModes[lv] === 'formative')
+  if (formativeLvs.length > 0) {
+    const vifs = estimate.outerWeights
+      .filter((q) => lvModes[q.lv] === 'formative' && Number.isFinite(q.vif))
+      .map((q) => q.vif)
+    parts.push(
+      fillTemplate(a.formative, {
+        lvs: formativeLvs.join(lang === 'en' ? ', ' : '、'),
+        vifMax: vifs.length > 0 ? fmtNum(Math.max(...vifs), 2) : '—',
       })
     )
   }
@@ -72,6 +99,31 @@ function buildNarrative(res, lang) {
         htmtVerdict: htmtMax < 0.85 ? a.htmtOk : a.htmtBad,
       })
     )
+  }
+
+  // 模型適配（估計模型 SRMR）
+  if (estimate.fit && Number.isFinite(estimate.fit.estimated?.srmr)) {
+    const srmr = estimate.fit.estimated.srmr
+    parts.push(
+      fillTemplate(a.fit, {
+        srmr: fmtNum(srmr, 3),
+        fitVerdict: srmr < 0.08 ? a.fitOk : a.fitBad,
+      })
+    )
+  }
+
+  // Q²（開啟且成功時）
+  if (q2 && !q2.error && Array.isArray(q2.constructs) && q2.constructs.length > 0) {
+    const vals = q2.constructs.map((c) => c.q2).filter((v) => Number.isFinite(v))
+    if (vals.length > 0) {
+      parts.push(
+        fillTemplate(a.q2, {
+          d: q2.omissionDistance,
+          q2Range: rangeStr(vals),
+          q2Verdict: vals.every((v) => v > 0) ? a.q2Ok : a.q2Bad,
+        })
+      )
+    }
   }
 
   // 結構模型

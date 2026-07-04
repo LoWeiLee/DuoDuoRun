@@ -3,15 +3,17 @@
  *
  * 結構：
  *   1. StatCards：N / PLS 迭代 / Bootstrap 有效重抽 / 主要內生構念 R²
- *   2. 測量模型：外部負荷量表（含 bootstrap SE, t, p）＋ 信度效度表（α / rho_A / CR / AVE，LED 綠紅）
- *   3. 區辨效度：Fornell-Larcker 矩陣 ＋ HTMT 表（< .85 綠、≥ .85 紅）
+ *      ＋ 設定列（weighting scheme、PLSc 標記）
+ *   2. 測量模型：
+ *      反映型 — 外部負荷量表（含 bootstrap SE, t, p）＋ 信度效度表（α / rho_A / CR / AVE）
+ *      形成型 — 外部權重檢定表（權重 / 外部 VIF / SE / t / p / CI ＋ 負荷量備援）
+ *   3. 區辨效度：Fornell-Larcker 矩陣 ＋ HTMT 表（形成型配對顯示 —）
  *   4. 結構模型：路徑係數表（β / SE / t / p / 95% CI）＋ R² 表 ＋ f² / VIF 表
+ *   5. 模型適配：SRMR / d_ULS / d_G / NFI（飽和 vs 估計模型，SRMR < .08 LED）
+ *   6. 預測相關性：blindfolding Q²（開啟時）
  *
- * 檢視模式：state.plsView === 'canvas'（桌面）時，本元件改渲染 Canvas（拖拉式畫布），
- * 與表單共用同一份模型 state；窄幅退回表單結果。
- *
- * 計算觸發：Config 按「執行分析」把驗證過的模型寫入 state.committed，
- * 本元件 useMemo 依 [dataset, committed] 計算（Worker 接線見 compute.js 檔頭 TODO）。
+ * 檢視模式：state.plsView === 'canvas'（桌面）時，本元件改渲染 Canvas（拖拉式畫布）。
+ * 計算觸發：Config 按「執行分析」把驗證過的模型與選項寫入 state.committed。
  */
 import { useEffect, useMemo, useState } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
@@ -119,6 +121,13 @@ function vifStatus(v) {
   return 'bad'
 }
 
+function srmrStatus(v) {
+  if (!Number.isFinite(v)) return 'bad'
+  if (v < 0.08) return 'ok'
+  if (v < 0.1) return 'warn'
+  return 'bad'
+}
+
 function f2InterpKey(f2) {
   if (!Number.isFinite(f2)) return 'none'
   if (f2 >= 0.35) return 'large'
@@ -134,7 +143,7 @@ function PassNum({ value, ok, decimals = 3 }) {
 
 /* ─────────────────────  區塊元件  ───────────────────── */
 
-function LoadingsTable({ estimate, loadMap, bootOk, r, labelMap }) {
+function LoadingsTable({ rows, loadMap, bootOk, r, labelMap }) {
   const c = r.cols
   return (
     <div>
@@ -155,7 +164,7 @@ function LoadingsTable({ estimate, loadMap, bootOk, r, labelMap }) {
           </tr>
         </thead>
         <tbody>
-          {estimate.outerLoadings.map((q, i, arr) => {
+          {rows.map((q, i, arr) => {
             const st = loadingStatus(q.loading)
             const b = bootOk ? loadMap.get(`${q.lv}｜${q.indicator}`) : null
             const firstOfBlock = i === 0 || arr[i - 1].lv !== q.lv
@@ -192,7 +201,75 @@ function LoadingsTable({ estimate, loadMap, bootOk, r, labelMap }) {
   )
 }
 
-function ReliabilityTable({ estimate, kByLv, r }) {
+/** 形成型構念：外部權重檢定表（取代信度表；權重 + 外部 VIF + bootstrap 檢定 + 負荷量備援） */
+function FormativeWeightsTable({ rows, weightMap, loadingByKey, bootOk, r, labelMap }) {
+  const c = r.cols
+  return (
+    <div>
+      <Heading>{r.formativeTitle}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{c.lv}</Th>
+            <Th align="left">{c.indicator}</Th>
+            <Th>{c.weight}</Th>
+            <Th>{c.outerVif}</Th>
+            {bootOk && (
+              <>
+                <Th>{c.se}</Th>
+                <Th>{c.t}</Th>
+                <Th>{c.p}</Th>
+                <Th>{c.ci}</Th>
+              </>
+            )}
+            <Th>{c.loading}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((q, i, arr) => {
+            const b = bootOk ? weightMap.get(`${q.lv}｜${q.indicator}`) : null
+            const firstOfBlock = i === 0 || arr[i - 1].lv !== q.lv
+            const vs = q.vif === null ? null : vifStatus(q.vif)
+            const loading = loadingByKey.get(`${q.lv}｜${q.indicator}`)
+            return (
+              <tr key={`${q.lv}-${q.indicator}`}>
+                <Td align="left" mono={false} bold>
+                  {firstOfBlock ? q.lv : ''}
+                </Td>
+                <Td align="left" mono={false}>{labelMap[q.indicator] || q.indicator}</Td>
+                <Td>{fmtNum(q.weight, 3)}</Td>
+                <Td>
+                  {vs === null ? '—' : (
+                    <span className="inline-flex items-center gap-2">
+                      <Led status={vs} />
+                      <span className={TONE_TEXT[vs]}>{fmtNum(q.vif, 2)}</span>
+                    </span>
+                  )}
+                </Td>
+                {bootOk && (
+                  <>
+                    <Td>{fmtNum(b?.se, 3)}</Td>
+                    <Td>{fmtNum(b?.t, 2)}</Td>
+                    <Td>
+                      <span className={TONE_TEXT[toneForP(b?.p)] || ''}>{fmtP(b?.p)}</span>
+                    </Td>
+                    <Td>
+                      [{fmtNum(b?.ciLower, 3)}, {fmtNum(b?.ciUpper, 3)}]
+                    </Td>
+                  </>
+                )}
+                <Td>{fmtNum(loading, 3)}</Td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </TableBox>
+      <Note>{r.formativeNote}</Note>
+    </div>
+  )
+}
+
+function ReliabilityTable({ rows, kByLv, r }) {
   const c = r.cols
   return (
     <div>
@@ -208,7 +285,7 @@ function ReliabilityTable({ estimate, kByLv, r }) {
           </tr>
         </thead>
         <tbody>
-          {estimate.reliability.map((q) => {
+          {rows.map((q) => {
             const single = (kByLv.get(q.lv) || 0) < 2
             if (single) {
               return (
@@ -252,6 +329,7 @@ function FornellLarckerTable({ estimate, r }) {
   const { lvNames, matrix } = estimate.fornellLarcker
   // 對角線通過檢查：√AVE 是否大於該構念與所有其他構念的相關（同列＋同欄）
   const diagOk = lvNames.map((_, a) => {
+    if (matrix[a][a] === null) return null
     let maxCorr = 0
     for (let b = 0; b < lvNames.length; b++) {
       if (b === a) continue
@@ -279,6 +357,7 @@ function FornellLarckerTable({ estimate, r }) {
               {row.map((v, b) => {
                 if (b > a) return <Td key={b}> </Td>
                 if (a === b) {
+                  if (v === null) return <Td key={b}>—</Td>
                   return (
                     <Td key={b}>
                       <span className={`font-bold ${diagOk[a] ? TONE_TEXT.ok : TONE_TEXT.bad}`}>
@@ -345,6 +424,7 @@ function PathsTable({ estimate, boot, bootOk, r }) {
             nValid: boot.nValid,
             nRequested: boot.nRequested,
             seed: boot.seed,
+            ciType: boot.ciType === 'bca' ? 'BCa' : 'percentile',
           })}
         </p>
       )}
@@ -459,6 +539,90 @@ function EffectsTable({ estimate, r }) {
   )
 }
 
+/** 模型適配：SRMR / d_ULS / d_G / NFI（飽和 vs 估計模型；SRMR 與 NFI 帶 LED） */
+function FitTable({ fit, r }) {
+  const c = r.cols
+  const rows = [
+    { key: 'SRMR', get: (f) => f.srmr, led: srmrStatus, dec: 3 },
+    { key: 'd_ULS', get: (f) => f.dUls, led: null, dec: 3 },
+    { key: 'd_G', get: (f) => f.dG, led: null, dec: 3 },
+    { key: 'NFI', get: (f) => f.nfi, led: (v) => (Number.isFinite(v) ? (v >= 0.9 ? 'ok' : v >= 0.8 ? 'warn' : 'bad') : 'bad'), dec: 3 },
+  ]
+  const cell = (row, f) => {
+    const v = row.get(f)
+    if (v === null || !Number.isFinite(v)) return <Td>—</Td>
+    if (!row.led) return <Td>{fmtNum(v, row.dec)}</Td>
+    const st = row.led(v)
+    return (
+      <Td>
+        <span className="inline-flex items-center gap-2">
+          <Led status={st} />
+          <span className={TONE_TEXT[st]}>{fmtNum(v, row.dec)}</span>
+        </span>
+      </Td>
+    )
+  }
+  return (
+    <div>
+      <Heading>{r.fitTitle}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{c.fitIndex}</Th>
+            <Th>{c.saturated}</Th>
+            <Th>{c.estimated}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.key}>
+              <Td align="left" mono bold>{row.key}</Td>
+              {cell(row, fit.saturated)}
+              {cell(row, fit.estimated)}
+            </tr>
+          ))}
+        </tbody>
+      </TableBox>
+      <Note>{r.fitNote}</Note>
+    </div>
+  )
+}
+
+/** 預測相關性：blindfolding Q² */
+function Q2Table({ q2res, r }) {
+  const c = r.cols
+  return (
+    <div>
+      <Heading>{r.q2Title}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{c.lv}</Th>
+            <Th>{c.q2}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {q2res.constructs.map((q) => {
+            const ok = Number.isFinite(q.q2) && q.q2 > 0
+            return (
+              <tr key={q.lv}>
+                <Td align="left" mono={false} bold>{q.lv}</Td>
+                <Td>
+                  <span className="inline-flex items-center gap-2">
+                    <Led status={ok ? 'ok' : 'bad'} />
+                    <span className={ok ? TONE_TEXT.ok : TONE_TEXT.bad}>{fmtNum(q.q2, 3)}</span>
+                  </span>
+                </Td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </TableBox>
+      <Note>{fillTemplate(r.q2Note, { d: q2res.omissionDistance })}</Note>
+    </div>
+  )
+}
+
 /* ─────────────────────  主元件  ───────────────────── */
 
 function Result() {
@@ -489,18 +653,27 @@ function Result() {
     )
   }
 
-  const { estimate, bootstrap: boot } = res
+  const { estimate, bootstrap: boot, q2: q2res } = res
   const bootOk = Boolean(boot && !boot.error)
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
+  const lvModes = estimate.lvModes || {}
 
-  // bootstrap loadings 查表
+  // bootstrap loadings / weights 查表
   const loadMap = new Map()
+  const weightMap = new Map()
   if (bootOk) {
     for (const q of boot.loadings) loadMap.set(`${q.lv}｜${q.indicator}`, q)
+    for (const q of boot.weights || []) weightMap.set(`${q.lv}｜${q.indicator}`, q)
   }
+  const loadingByKey = new Map(
+    estimate.outerLoadings.map((q) => [`${q.lv}｜${q.indicator}`, q.loading]))
   // 每個構念的指標數（單指標構念的信度定義上為 1，顯示為 —）
   const kByLv = new Map()
   for (const q of estimate.outerLoadings) kByLv.set(q.lv, (kByLv.get(q.lv) || 0) + 1)
+
+  const reflectiveLoadings = estimate.outerLoadings.filter((q) => lvModes[q.lv] !== 'formative')
+  const formativeWeights = estimate.outerWeights.filter((q) => lvModes[q.lv] === 'formative')
+  const reflectiveReliability = estimate.reliability.filter((q) => q.mode !== 'formative')
 
   const lastStructural = estimate.structural[estimate.structural.length - 1]
 
@@ -540,13 +713,39 @@ function Result() {
 
       <StatCards items={cards} />
 
-      <LoadingsTable estimate={estimate} loadMap={loadMap} bootOk={bootOk} r={r} labelMap={labelMap} />
-      <ReliabilityTable estimate={estimate} kByLv={kByLv} r={r} />
+      <p className="text-[11px] text-duo-cocoa-400 mb-1 font-mono">
+        {fillTemplate(r.settingsLine, {
+          scheme: estimate.meta.scheme,
+          plsc: estimate.meta.consistent ? r.plscTag : '',
+        })}
+      </p>
+
+      {reflectiveLoadings.length > 0 && (
+        <LoadingsTable rows={reflectiveLoadings} loadMap={loadMap} bootOk={bootOk} r={r} labelMap={labelMap} />
+      )}
+      {formativeWeights.length > 0 && (
+        <FormativeWeightsTable
+          rows={formativeWeights}
+          weightMap={weightMap}
+          loadingByKey={loadingByKey}
+          bootOk={bootOk}
+          r={r}
+          labelMap={labelMap}
+        />
+      )}
+      {reflectiveReliability.length > 0 && (
+        <ReliabilityTable rows={reflectiveReliability} kByLv={kByLv} r={r} />
+      )}
       <FornellLarckerTable estimate={estimate} r={r} />
       <HtmtTable estimate={estimate} r={r} />
       <PathsTable estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
       <R2Table estimate={estimate} r={r} />
       <EffectsTable estimate={estimate} r={r} />
+      {estimate.fit && <FitTable fit={estimate.fit} r={r} />}
+      {q2res && q2res.error && (
+        <WarnBox>{fillTemplate(r.q2Unavailable, { message: q2res.message || q2res.error })}</WarnBox>
+      )}
+      {q2res && !q2res.error && <Q2Table q2res={q2res} r={r} />}
     </div>
   )
 }

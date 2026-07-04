@@ -462,6 +462,338 @@ try:
 except Exception as e:
     put("pls_basic", f"plspm FAILED: {e}")
 
+# --- PLS-SEM Wave 3 基準（2026-07-04） ------------------------------------
+# 內容與來源：
+#   pls_scheme_centroid / pls_scheme_factorial
+#       — plspm 0.5.7 的另外兩種 weighting scheme（M4 四構念模型，逐欄 z-score 後輸入）
+#   pls_formative
+#       — plspm Mode B（形成型 / regression weights）＋ numpy 手算外部 VIF
+#         （指標相關矩陣反矩陣對角線；Hair et al. 2017 形成型評估程序）
+#   pls_plsc
+#       — consistent PLS：Dijkstra & Henseler (2015), Psychometrika 80(2) eq.(12)
+#         與 MIS Quarterly 39(2)；rho_A 校正構念相關 + 一致 loadings（numpy 手算）
+#   pls_fit
+#       — SRMR：Henseler et al. (2014), Organizational Research Methods 17(2)
+#         d_ULS / d_G：Dijkstra & Henseler (2015), MIS Quarterly 39(2)
+#         NFI：Bentler & Bonett (1980)；ML 差異函數 F = ln|Σ̂|−ln|S|+tr(SΣ̂⁻¹)−p
+#         飽和模型 = 構念相關自由；估計模型 = 構念相關由路徑模型（遞迴 path tracing）隱含
+#   pls_q2
+#       — blindfolding Q²（Stone 1974; Geisser 1974），程序依 Hair et al. (2017) 教科書
+#         第 6 章／SmartPLS 慣例：omission distance D=7、cross-validated redundancy、
+#         略去點以其餘資料的欄平均補值後全模型重估。SmartPLS 未公開全部實作細節，
+#         此為文獻程序的忠實手算——待 Kevin 本機 SmartPLS/seminr 抽驗（見 validation-report）
+#   pls_bca_reference
+#       — BCa bootstrap CI：Efron (1987), JASA 82(397)；Efron & Tibshirani (1993) §14.3。
+#         固定 draws＋jackknife 存入 fixture，供 JS bcaInterval() 逐值比對（tests/pls.test.js）
+# 手算部分使用獨立實作的 numpy PLS 引擎 _pls_engine（Lohmöller 1989 演算法，
+# 與 JS 實作為兩套獨立程式碼），並以 assert 與 plspm（path scheme）交叉驗證 <1e-6。
+try:
+    import plspm.config as plsc3
+    from plspm.plspm import Plspm as Plspm3
+    from plspm.scheme import Scheme as PlsScheme3
+    from plspm.mode import Mode as PlsMode3
+
+    def _pls_engine(Xz, blocks, modes, path_pairs, scheme="path", tol=1e-12, max_iter=5000):
+        """獨立 numpy PLS（Lohmöller 1989）。Xz: n×p 逐欄 z-score（ddof=1）。
+        blocks: 每個 LV 的欄索引；modes: 'A'（相關權重）/'B'（迴歸權重）；
+        path_pairs: (from,to) 索引；scheme: path/factorial/centroid。
+        回傳 (W 權重, Y 分數 n×L, loadings, 迭代數)；符號採 dominant orientation。"""
+        n, p = Xz.shape
+        L = len(blocks)
+        pred = [[] for _ in range(L)]
+        succ = [[] for _ in range(L)]
+        for a, b in path_pairs:
+            pred[b].append(a)
+            succ[a].append(b)
+        Sb = [np.corrcoef(Xz[:, b], rowvar=False).reshape(len(b), len(b)) for b in blocks]
+        W = [np.ones(len(b)) for b in blocks]
+        Y = np.column_stack([Xz[:, blocks[j]] @ W[j] for j in range(L)])
+        sd0 = Y.std(axis=0, ddof=1)
+        Y = Y / sd0
+        W = [W[j] / sd0[j] for j in range(L)]
+        it = 0
+        for it in range(1, max_iter + 1):
+            R = np.corrcoef(Y, rowvar=False)
+            Z = np.zeros_like(Y)
+            for j in range(L):
+                if scheme == "path":
+                    P = pred[j]
+                    if P:
+                        bcoef = np.linalg.solve(R[np.ix_(P, P)], R[P, j])
+                        Z[:, j] += Y[:, P] @ bcoef
+                    for s_ in succ[j]:
+                        Z[:, j] += R[j, s_] * Y[:, s_]
+                else:
+                    for k in sorted(set(pred[j]) | set(succ[j])):
+                        e = R[j, k]
+                        if scheme == "centroid":
+                            e = 1.0 if e >= 0 else -1.0
+                        Z[:, j] += e * Y[:, k]
+            Wn = []
+            for j in range(L):
+                zb = Xz[:, blocks[j]]
+                zj = Z[:, j]
+                r = np.array([np.corrcoef(zb[:, h], zj)[0, 1] for h in range(zb.shape[1])])
+                w = r if modes[j] == "A" else np.linalg.solve(Sb[j], r)
+                w = w / (zb @ w).std(ddof=1)
+                Wn.append(w)
+            diff = max(np.max(np.abs(Wn[j] - W[j])) for j in range(L))
+            W = Wn
+            Y = np.column_stack([Xz[:, blocks[j]] @ W[j] for j in range(L)])
+            if diff < tol:
+                break
+        for j in range(L):  # dominant orientation：與所屬指標相關總和為正
+            s = sum(np.corrcoef(Xz[:, h], Y[:, j])[0, 1] for h in blocks[j])
+            if s < 0:
+                Y[:, j] *= -1
+                W[j] = -W[j]
+        loadings = [np.array([np.corrcoef(Xz[:, h], Y[:, j])[0, 1] for h in blocks[j]])
+                    for j in range(L)]
+        return W, Y, loadings, it
+
+    def _zsc(df):
+        return (df - df.mean()) / df.std(ddof=1)
+
+    # ── M4 模型：F1(i1-3)→F2(i4-6)；F1→C、F2→C（C=cond1-3，雙前置）；F2→Y(y 單指標) ──
+    _m4_cols = ["i1", "i2", "i3", "i4", "i5", "i6", "cond1", "cond2", "cond3", "y"]
+    _m4_blocks = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+    _m4_lv = ["F1", "F2", "C", "Y"]
+    _m4_pairs = [(0, 1), (0, 2), (1, 2), (1, 3)]
+    _m4_X = mainc[_m4_cols].astype(float)
+    _m4_Z = _zsc(_m4_X)
+
+    def _m4_plspm(scheme):
+        st = pd.DataFrame(0, index=_m4_lv, columns=_m4_lv)
+        st.loc["F2", "F1"] = 1
+        st.loc["C", "F1"] = 1
+        st.loc["C", "F2"] = 1
+        st.loc["Y", "F2"] = 1
+        cfg = plsc3.Config(st, scaled=True)
+        cfg.add_lv("F1", PlsMode3.A, plsc3.MV("i1"), plsc3.MV("i2"), plsc3.MV("i3"))
+        cfg.add_lv("F2", PlsMode3.A, plsc3.MV("i4"), plsc3.MV("i5"), plsc3.MV("i6"))
+        cfg.add_lv("C", PlsMode3.A, plsc3.MV("cond1"), plsc3.MV("cond2"), plsc3.MV("cond3"))
+        cfg.add_lv("Y", PlsMode3.A, plsc3.MV("y"))
+        p = Plspm3(_m4_Z, cfg, scheme, iterations=2000, tolerance=1e-12)
+        om = p.outer_model()
+        load = {mv: float(om.loc[mv, "loading"]) for mv in _m4_cols}
+        pc = p.path_coefficients()
+        paths = {
+            ("F1", "F2"): float(pc.loc["F2", "F1"]),
+            ("F1", "C"): float(pc.loc["C", "F1"]),
+            ("F2", "C"): float(pc.loc["C", "F2"]),
+            ("F2", "Y"): float(pc.loc["Y", "F2"]),
+        }
+        r2 = p.inner_summary()["r_squared"]
+        # dominant orientation（plspm 不保證；與 JS 慣例對齊）：
+        # 若某 LV 的 loadings 總和為負 → 翻轉該 LV 的 loadings 與所有觸及路徑
+        flips = {}
+        for lv, idxs in zip(_m4_lv, _m4_blocks):
+            names = [_m4_cols[i] for i in idxs]
+            flips[lv] = -1.0 if sum(load[nm] for nm in names) < 0 else 1.0
+            for nm in names:
+                load[nm] *= flips[lv]
+        paths = {k: v * flips[k[0]] * flips[k[1]] for k, v in paths.items()}
+        return load, paths, {lv: float(r2[lv]) for lv in ["F2", "C", "Y"]}
+
+    for _scheme_obj, _scheme_key in [(PlsScheme3.CENTROID, "centroid"),
+                                     (PlsScheme3.FACTORIAL, "factorial")]:
+        _ld, _pa, _r2 = _m4_plspm(_scheme_obj)
+        put(f"pls_scheme_{_scheme_key}",
+            f"plspm 0.5.7({_scheme_key.upper()} scheme, 逐欄 z-score 後輸入, tol=1e-12)；"
+            "dominant orientation 對齊 JS 慣例",
+            **{f"loading_{mv}": _ld[mv] for mv in _m4_cols},
+            path_F1_F2=_pa[("F1", "F2")], path_F1_C=_pa[("F1", "C")],
+            path_F2_C=_pa[("F2", "C")], path_F2_Y=_pa[("F2", "Y")],
+            r2_F2=_r2["F2"], r2_C=_r2["C"], r2_Y=_r2["Y"])
+
+    # ── 自家 numpy 引擎交叉驗證（path scheme vs plspm，<1e-6 才放行手算基準） ──
+    _W4, _Y4, _L4, _it4 = _pls_engine(_m4_Z.values, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
+    _ldp, _pap, _r2p = _m4_plspm(PlsScheme3.PATH)
+    _own_flat = np.concatenate(_L4)
+    _plspm_flat = np.array([_ldp[mv] for mv in _m4_cols])
+    assert np.max(np.abs(_own_flat - _plspm_flat)) < 1e-6, "numpy PLS 引擎與 plspm 不一致"
+    _R4 = np.corrcoef(_Y4, rowvar=False)
+    _bC4 = np.linalg.solve(_R4[np.ix_([0, 1], [0, 1])], _R4[[0, 1], 2])
+    assert abs(_R4[0, 1] - _pap[("F1", "F2")]) < 1e-6
+    assert abs(_bC4[0] - _pap[("F1", "C")]) < 1e-6 and abs(_bC4[1] - _pap[("F2", "C")]) < 1e-6
+
+    # ── 形成型（Mode B）：XF(x1,x2,x3 formative) → Y(y 單指標反映型) ──
+    _fm_cols = ["x1", "x2", "x3", "y"]
+    _fm_Z = _zsc(mainc[_fm_cols].astype(float))
+    _fm_st = pd.DataFrame([[0, 0], [1, 0]], index=["XF", "Y"], columns=["XF", "Y"])
+    _fm_cfg = plsc3.Config(_fm_st, scaled=True)
+    _fm_cfg.add_lv("XF", PlsMode3.B, plsc3.MV("x1"), plsc3.MV("x2"), plsc3.MV("x3"))
+    _fm_cfg.add_lv("Y", PlsMode3.A, plsc3.MV("y"))
+    _fm = Plspm3(_fm_Z, _fm_cfg, PlsScheme3.PATH, iterations=2000, tolerance=1e-12)
+    _fm_om = _fm.outer_model()
+    _fm_S = np.corrcoef(mainc[["x1", "x2", "x3"]].astype(float).values.T)
+    _fm_w = _fm_om.loc[["x1", "x2", "x3"], "weight"].values
+    _fm_w = _fm_w / np.sqrt(_fm_w @ _fm_S @ _fm_w)  # 正規化 w'Sw=1（同 W1 慣例）
+    _fm_vif = np.diag(np.linalg.inv(_fm_S))  # 形成型外部 VIF：指標相關矩陣反矩陣對角線
+    put("pls_formative",
+        "plspm 0.5.7(Mode B regression weights, PATH scheme, 逐欄 z-score, tol=1e-12, "
+        "權重正規化 w'Sw=1) + numpy 手算外部 VIF（指標相關矩陣反矩陣對角線）",
+        weight_x1=_fm_w[0], weight_x2=_fm_w[1], weight_x3=_fm_w[2],
+        loading_x1=_fm_om.loc["x1", "loading"], loading_x2=_fm_om.loc["x2", "loading"],
+        loading_x3=_fm_om.loc["x3", "loading"],
+        path_XF_Y=_fm.path_coefficients().loc["Y", "XF"],
+        r2_Y=_fm.inner_summary().loc["Y", "r_squared"],
+        vif_x1=_fm_vif[0], vif_x2=_fm_vif[1], vif_x3=_fm_vif[2])
+
+    # ── PLSc（Dijkstra & Henseler 2015）：M4、path scheme，numpy 手算 ──
+    _S4 = np.corrcoef(_m4_Z.values, rowvar=False)
+    _rhoA = []
+    _lamc = []
+    for _j, _b in enumerate(_m4_blocks):
+        if len(_b) < 2:
+            _rhoA.append(1.0)
+            _lamc.append(np.array([1.0]))
+            continue
+        _Sb = _S4[np.ix_(_b, _b)]
+        _w = np.asarray(_W4[_j])  # 已滿足 w'Sw=1（單位樣本變異分數）
+        _S0 = _Sb - np.diag(np.diag(_Sb))
+        _W0 = np.outer(_w, _w) - np.diag(_w ** 2)
+        _c2 = (_w @ _S0 @ _w) / (_w @ _W0 @ _w)
+        _lamc.append(np.sqrt(_c2) * _w)
+        _rhoA.append(float((_w @ _w) ** 2 * _c2))
+    _q = np.sqrt(_rhoA)
+    _Rc = _R4 / np.outer(_q, _q)
+    np.fill_diagonal(_Rc, 1.0)
+    _pc_f2 = float(_Rc[0, 1])
+    _pc_C = np.linalg.solve(_Rc[np.ix_([0, 1], [0, 1])], _Rc[[0, 1], 2])
+    _pc_Y = float(_Rc[1, 3])
+    _lamc_flat = np.concatenate(_lamc)
+    put("pls_plsc",
+        "numpy 手算 consistent PLS（Dijkstra & Henseler 2015, Psychometrika 80(2) eq.12 與 "
+        "MIS Quarterly 39(2)）：rho_A 反衰減構念相關 → OLS 路徑；一致 loadings = √c²·ŵ；"
+        "底層權重來自與 plspm 交叉驗證過的 numpy PLS（path scheme）",
+        rhoA_F1=_rhoA[0], rhoA_F2=_rhoA[1], rhoA_C=_rhoA[2],
+        **{f"cloading_{mv}": float(_lamc_flat[i]) for i, mv in enumerate(_m4_cols)},
+        corr_F1_F2=_pc_f2, corr_F2_Y=_pc_Y,
+        path_F1_F2=_pc_f2, path_F1_C=float(_pc_C[0]), path_F2_C=float(_pc_C[1]),
+        path_F2_Y=_pc_Y,
+        r2_F2=_pc_f2 * _Rc[0, 1], r2_C=float(_pc_C @ _Rc[[0, 1], 2]), r2_Y=_pc_Y * _Rc[1, 3])
+
+    # ── Model fit（composite loadings、M4、path scheme）：numpy 手算 ──
+    from scipy.linalg import eigh as _geigh
+    _own_load_flat = _own_flat
+    _owner = np.concatenate([[j] * len(b) for j, b in enumerate(_m4_blocks)])
+
+    def _implied(Rlv):
+        pdim = _S4.shape[0]
+        Sig = np.empty((pdim, pdim))
+        for i in range(pdim):
+            for k in range(pdim):
+                if i == k:
+                    Sig[i, k] = 1.0
+                elif _owner[i] == _owner[k]:
+                    Sig[i, k] = _own_load_flat[i] * _own_load_flat[k]
+                else:
+                    Sig[i, k] = (_own_load_flat[i] * Rlv[_owner[i], _owner[k]]
+                                 * _own_load_flat[k])
+        return Sig
+
+    def _fitstats(Sig):
+        pdim = _S4.shape[0]
+        res = _S4 - Sig
+        srmr = math.sqrt(sum(res[i, k] ** 2 for i in range(pdim) for k in range(i, pdim))
+                         / (pdim * (pdim + 1) / 2))
+        d_uls = 0.5 * float(np.sum(res ** 2))
+        ev = _geigh(Sig, _S4, eigvals_only=True)  # S⁻¹Σ̂ 的特徵值（廣義對稱）
+        d_g = 0.5 * float(np.sum(np.log(ev) ** 2))
+        f_ml = float(np.sum(np.log(ev) + 1 / ev - 1))
+        f_null = -float(np.sum(np.log(np.linalg.eigvalsh(_S4))))
+        return srmr, d_uls, d_g, 1 - f_ml / f_null
+
+    _bY4 = float(_R4[1, 3])
+    _Re = np.eye(4)
+    _Re[0, 1] = _Re[1, 0] = float(_R4[0, 1])                        # F1→F2 直接
+    _Re[0, 2] = _Re[2, 0] = float(_bC4[0] + _bC4[1] * _R4[0, 1])    # F1→C
+    _Re[1, 2] = _Re[2, 1] = float(_bC4[0] * _R4[0, 1] + _bC4[1])    # F2→C
+    _Re[0, 3] = _Re[3, 0] = _bY4 * float(_R4[0, 1])                 # F1→Y（僅間接）
+    _Re[1, 3] = _Re[3, 1] = _bY4
+    _Re[2, 3] = _Re[3, 2] = _bY4 * _Re[1, 2]
+    _sat = _fitstats(_implied(_R4))
+    _est = _fitstats(_implied(_Re))
+    put("pls_fit",
+        "numpy 手算 model fit（SRMR: Henseler et al. 2014 ORM 17(2)；d_ULS/d_G: "
+        "Dijkstra & Henseler 2015 MISQ 39(2)；NFI: Bentler & Bonett 1980，F_ML 差異函數）；"
+        "composite loadings，飽和=構念相關自由、估計=遞迴 path tracing 隱含相關",
+        srmrSat=_sat[0], dUlsSat=_sat[1], dGSat=_sat[2], nfiSat=_sat[3],
+        srmrEst=_est[0], dUlsEst=_est[1], dGEst=_est[2], nfiEst=_est[3])
+
+    # ── Blindfolding Q²（D=7、cross-validated redundancy）：numpy 手算 ──
+    _m4_raw = mainc[_m4_cols].astype(float).values
+
+    def _q2_for(j_target, Dd=7):
+        b = _m4_blocks[j_target]
+        k = len(b)
+        n_ = _m4_raw.shape[0]
+        sse = 0.0
+        sso = 0.0
+        P = sorted({a for a, t_ in _m4_pairs if t_ == j_target})
+        for d in range(Dd):
+            omitted = [(i, b[h]) for i in range(n_) for h in range(k)
+                       if (i * k + h) % Dd == d]
+            Xd = _m4_raw.copy()
+            colmeans = {}
+            for c in {c for _, c in omitted}:
+                mask = np.ones(n_, bool)
+                mask[[i for i, cc in omitted if cc == c]] = False
+                colmeans[c] = _m4_raw[mask, c].mean()
+            for i, c in omitted:
+                Xd[i, c] = colmeans[c]
+            mu = Xd.mean(axis=0)
+            sd = Xd.std(axis=0, ddof=1)
+            Zd = (Xd - mu) / sd
+            Wd, Yd, loadd, _ = _pls_engine(Zd, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
+            Rd = np.corrcoef(Yd, rowvar=False)
+            bd = (np.linalg.solve(Rd[np.ix_(P, P)], Rd[P, j_target]) if len(P) > 1
+                  else np.array([Rd[P[0], j_target]]))
+            Yhat = Yd[:, P] @ bd
+            lmap = dict(zip(b, loadd[j_target]))
+            for i, c in omitted:
+                zt = (_m4_raw[i, c] - mu[c]) / sd[c]
+                sse += (zt - lmap[c] * Yhat[i]) ** 2
+                sso += (zt - (colmeans[c] - mu[c]) / sd[c]) ** 2
+        return 1 - sse / sso
+
+    put("pls_q2",
+        "numpy 手算 blindfolding Q²（Stone 1974; Geisser 1974；程序依 Hair et al. 2017 "
+        "第 6 章／SmartPLS 慣例：D=7、cross-validated redundancy、略去點以其餘資料欄平均"
+        "補值後全模型重估、對整批資料重新標準化）——獨立 numpy PLS 引擎複算",
+        q2_F2=_q2_for(1), q2_C=_q2_for(2), q2_Y=_q2_for(3))
+
+    # ── BCa bootstrap CI（Efron 1987）：固定 draws＋jackknife 的公式複算 ──
+    _rng_bca = np.random.default_rng(20260704)
+    _yv = mainc["y"].values.astype(float)
+    _orig = float(_yv.mean())
+    _B = 999
+    _draws = np.array([_yv[_rng_bca.integers(0, N, N)].mean() for _ in range(_B)])
+    _jack = np.array([np.delete(_yv, i).mean() for i in range(N)])
+    _below = int(np.sum(_draws < _orig))
+    _prop = min(max(_below / _B, 1 / (_B + 1)), _B / (_B + 1))
+    _z0 = float(sps.norm.ppf(_prop))
+    _dj = _jack.mean() - _jack
+    _a_acc = float(np.sum(_dj ** 3) / (6 * np.sum(_dj ** 2) ** 1.5))
+
+    def _bca_adj(z):
+        t_ = _z0 + z
+        return float(sps.norm.cdf(_z0 + t_ / (1 - _a_acc * t_)))
+
+    _a1 = _bca_adj(float(sps.norm.ppf(0.025)))
+    _a2 = _bca_adj(float(sps.norm.ppf(0.975)))
+    _ci = np.quantile(_draws, [_a1, _a2])  # 線性內插 = R type 7，同 JS quantile
+    put("pls_bca_reference",
+        "numpy 手算 BCa（Efron 1987 JASA 82(397); Efron & Tibshirani 1993 §14.3）："
+        "統計量=main.y 平均、B=999 固定 draws（rng seed 20260704）＋jackknife；"
+        "draws/jackknife 一併入 fixture 供 JS bcaInterval() 逐值比對",
+        original=_orig, z0=_z0, a=_a_acc, alphaLower=_a1, alphaUpper=_a2,
+        ciLower=float(_ci[0]), ciUpper=float(_ci[1]),
+        draws=[float(v) for v in _draws], jackknife=[float(v) for v in _jack])
+except Exception as e:
+    put("pls_w3", f"PLS W3 baselines FAILED: {e}")
+
 with open(os.path.join(FIX, "reference.json"), "w") as f:
     json.dump(REF, f, indent=1)
 

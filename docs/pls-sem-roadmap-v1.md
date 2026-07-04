@@ -123,6 +123,20 @@ bootstrap 比對用「大 B 下的統計容差」而非逐值相等。
 
 ## Wave 3：SmartPLS 對齊深化（估計選項與模型評估補齊）
 
+**進度註記（2026-07-04）**：核心切片已交付 ✅——
+- [x] 形成型測量（Mode B）：outer weights bootstrap 檢定、外部 VIF、formative 專屬報表區
+- [x] 三種 weighting schemes（path／factorial／centroid）
+- [x] PLSc ＋ consistent bootstrapping
+- [x] BCa bootstrap CI（percentile 維持預設）
+- [x] Model fit：SRMR、d_ULS、d_G、NFI（saturated vs estimated 兩欄；χ² 與 GoF 未列）
+- [x] Blindfolding Q²（omission distance 預設 7、構念層 cross-validated redundancy）
+- [ ] 標準化／非標準化／mean-centered 三種估計（IPMA 前置，順延）
+- [ ] pairwise deletion；CCA 工作流程指引；GoF index（順延）
+
+驗證：plspm（scheme／形成型）＋ numpy 手算（PLSc／fit／Q²／BCa，附文獻出處）全部對齊，
+`npm test` 337 過（見 `validation-report-v1.md` W3 增補節）；
+PLSc／SRMR／Q² 待 Kevin 本機 SmartPLS 4／seminr 抽驗複核。
+
 **範圍**
 - 形成型測量完整支援：outer weights ＋ bootstrap 顯著性檢定、外部 VIF、
   formative 專屬報表區（權重、負荷量備援判讀）

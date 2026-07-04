@@ -2,7 +2,8 @@
  * PLS-SEM — 拖拉式模型畫布（W2）
  *
  * 與表單「共用同一份模型 state」：讀寫 analysisState['pls-sem'] 的
- *   lvs      — [{ name, indicators }]（與 Config.jsx 完全相同的欄位）
+ *   lvs      — [{ name, indicators, mode }]（與 Config.jsx 完全相同的欄位；
+ *               mode: 'reflective' | 'formative'，W3 起可在指標面板切換）
  *   paths    — [{ from, to }]
  *   positions — { [lvName]: { x, y } }（W2 新增；節點座標，重載對話不丟版面）
  * 切換「表單 / 畫布」視圖只改 state.plsView，不動 lvs/paths，故資料不掉。
@@ -69,7 +70,7 @@ function pickPathHandles(sPos, tPos) {
 /* ─────────────────────  自訂節點  ───────────────────── */
 
 function LvNode({ data }) {
-  const { label, r2, selected, onRename, onOpenPanel, onDelete } = data
+  const { label, r2, mode, modeBadge, selected, onRename, onOpenPanel, onDelete } = data
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(label)
   // 名稱由外部（改名/刪除）變動時，同步草稿（render 期間調整 state，避免 effect 級聯渲染）
@@ -132,6 +133,12 @@ function LvNode({ data }) {
         </div>
       )}
 
+      {mode === 'formative' && (
+        <div style={{ marginTop: 1, fontSize: 8.5, fontWeight: 600, letterSpacing: 0.4, color: AMBER[500] }}>
+          {modeBadge}
+        </div>
+      )}
+
       {Number.isFinite(r2) && (
         <div style={{ marginTop: 2, fontSize: 10.5, fontFamily: 'JetBrains Mono, monospace', color: COCOA[500] }}>
           R² {fmtNum(r2, 3)}
@@ -154,10 +161,12 @@ function LvNode({ data }) {
 }
 
 function IndicatorNode({ data }) {
-  const { label, loading } = data
-  const tone = Number.isFinite(loading)
-    ? (Math.abs(loading) >= 0.708 ? SIG.ok : Math.abs(loading) >= 0.4 ? SIG.warn : SIG.bad)
-    : COCOA[400]
+  const { label, loading, isWeight } = data
+  const tone = isWeight
+    ? COCOA[500]
+    : Number.isFinite(loading)
+      ? (Math.abs(loading) >= 0.708 ? SIG.ok : Math.abs(loading) >= 0.4 ? SIG.warn : SIG.bad)
+      : COCOA[400]
   return (
     <div
       style={{
@@ -172,7 +181,7 @@ function IndicatorNode({ data }) {
       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
       {Number.isFinite(loading) && (
         <div style={{ fontFamily: 'JetBrains Mono, monospace', color: tone, fontSize: 9.5, marginTop: 1 }}>
-          {fmtNum(loading, 2)}
+          {isWeight ? `w ${fmtNum(loading, 2)}` : fmtNum(loading, 2)}
         </div>
       )}
     </div>
@@ -183,10 +192,11 @@ const NODE_TYPES = { lvNode: LvNode, indicatorNode: IndicatorNode }
 
 /* ─────────────────────  指標掛載小面板  ───────────────────── */
 
-function IndicatorPanel({ lvName, lvs, numericCols, labelMap, onToggle, onClose, t }) {
+function IndicatorPanel({ lvName, lvs, numericCols, labelMap, onToggle, onSetMode, onClose, t }) {
   const c = t.pls.config
   const lv = lvs.find((f) => f.name === lvName)
   if (!lv) return null
+  const mode = lv.mode === 'formative' ? 'formative' : 'reflective'
   // 已被其他 LV 佔用的指標（不可勾）
   const usedByOthers = new Set()
   lvs.forEach((f) => { if (f.name !== lvName) f.indicators.forEach((i) => usedByOthers.add(i)) })
@@ -199,6 +209,24 @@ function IndicatorPanel({ lvName, lvs, numericCols, labelMap, onToggle, onClose,
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs font-semibold text-duo-cocoa-800 truncate">{lvName}</div>
         <button type="button" onClick={onClose} className="text-duo-cocoa-300 hover:text-duo-cocoa-600 text-sm leading-none">×</button>
+      </div>
+      <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.modeLabel}</div>
+      <div className="inline-flex rounded-lg bg-duo-cream-50 border border-duo-cream-200 p-0.5 w-full mb-2">
+        {[['reflective', c.modeReflective], ['formative', c.modeFormative]].map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onSetMode(lvName, key)}
+            className={[
+              'flex-1 px-2 py-1 text-[11px] font-medium rounded-md transition',
+              mode === key
+                ? 'bg-white text-duo-cocoa-800 shadow-sm'
+                : 'text-duo-cocoa-500 hover:text-duo-cocoa-700',
+            ].join(' ')}
+          >
+            {label}
+          </button>
+        ))}
       </div>
       <div className="text-[11px] text-duo-cocoa-500 mb-1.5">{c.indicatorsLabel}（{lv.indicators.length}）</div>
       <ul className="space-y-1 max-h-56 overflow-y-auto">
@@ -256,15 +284,16 @@ function CanvasInner() {
     [dataset, state.committed]
   )
   const overlay = useMemo(() => {
-    const r2 = {}, loading = {}, path = {}
+    const r2 = {}, loading = {}, weight = {}, path = {}
     if (res && !res.error && res.estimate) {
       for (const s of res.estimate.structural) r2[s.lv] = s.r2
       for (const q of res.estimate.outerLoadings) loading[`${q.lv}｜${q.indicator}`] = q.loading
+      for (const q of res.estimate.outerWeights) weight[`${q.lv}｜${q.indicator}`] = q.weight
       const boot = res.bootstrap && !res.bootstrap.error ? res.bootstrap : null
       if (boot) for (const q of boot.paths) path[`${q.from}→${q.to}`] = { beta: q.original, p: q.p }
       else for (const q of res.estimate.pathCoefficients) path[`${q.from}→${q.to}`] = { beta: q.coef, p: null }
     }
-    return { r2, loading, path }
+    return { r2, loading, weight, path }
   }, [res])
 
   /* ── 模型寫回（共用 state） ── */
@@ -297,12 +326,16 @@ function CanvasInner() {
     }))
   }, [lvs, setLvs])
 
+  const setLvMode = useCallback((lvName, mode) => {
+    setLvs(lvs.map((f) => (f.name === lvName ? { ...f, mode } : f)))
+  }, [lvs, setLvs])
+
   const addLv = useCallback(() => {
     const existing = new Set(lvs.map((f) => f.name))
     let n = lvs.length + 1
     let name = `LV${n}`
     while (existing.has(name)) { n += 1; name = `LV${n}` }
-    setLvs([...lvs, { name, indicators: [] }])
+    setLvs([...lvs, { name, indicators: [], mode: 'reflective' }])
     setPositions({ ...positions, [name]: defaultPosFor(lvs.length) })
   }, [lvs, positions, setLvs, setPositions])
 
@@ -322,6 +355,8 @@ function CanvasInner() {
         data: {
           label: f.name,
           r2: overlay.r2[f.name],
+          mode: f.mode === 'formative' ? 'formative' : 'reflective',
+          modeBadge: cc.modeBadge,
           selected: selectedLv === f.name,
           onRename: renameLv,
           onOpenPanel: (name) => setOpenPanelLv((cur) => (cur === name ? null : name)),
@@ -330,6 +365,7 @@ function CanvasInner() {
       })
       // 指標圍繞 LV 下方水平鋪開（不可拖）
       const k = f.indicators.length
+      const formative = f.mode === 'formative'
       f.indicators.forEach((ind, ii) => {
         const spread = 74
         const x = pos.x + 65 - ((k - 1) * spread) / 2 + ii * spread - 30
@@ -339,12 +375,16 @@ function CanvasInner() {
           position: { x, y: pos.y + 130 },
           draggable: false,
           selectable: false,
-          data: { label: labelMap[ind] || ind, loading: overlay.loading[`${f.name}｜${ind}`] },
+          data: {
+            label: labelMap[ind] || ind,
+            loading: formative ? overlay.weight[`${f.name}｜${ind}`] : overlay.loading[`${f.name}｜${ind}`],
+            isWeight: formative,
+          },
         })
       })
     })
     return out
-  }, [lvs, effPositions, overlay, selectedLv, renameLv, deleteLv, labelMap])
+  }, [lvs, effPositions, overlay, selectedLv, renameLv, deleteLv, labelMap, cc.modeBadge])
 
   const edges = useMemo(() => {
     const out = []
@@ -383,8 +423,9 @@ function CanvasInner() {
     })
     // 指標連線：LV → 指標，跑完顯示 loading
     lvs.forEach((f) => {
+      const formative = f.mode === 'formative'
       f.indicators.forEach((ind) => {
-        const l = overlay.loading[`${f.name}｜${ind}`]
+        const l = formative ? overlay.weight[`${f.name}｜${ind}`] : overlay.loading[`${f.name}｜${ind}`]
         out.push({
           id: `load:${f.name}:${ind}`,
           source: `lv:${f.name}`,
@@ -392,7 +433,7 @@ function CanvasInner() {
           sourceHandle: 'b',
           type: 'straight',
           selectable: false,
-          label: Number.isFinite(l) ? fmtNum(l, 2) : undefined,
+          label: Number.isFinite(l) ? (formative ? `w ${fmtNum(l, 2)}` : fmtNum(l, 2)) : undefined,
           labelStyle: { fill: COCOA[500], fontFamily: 'JetBrains Mono, monospace', fontSize: 10 },
           labelBgStyle: { fill: '#fff', fillOpacity: 0.85 },
           labelBgPadding: [2, 1],
@@ -542,6 +583,7 @@ function CanvasInner() {
             numericCols={numericCols}
             labelMap={labelMap}
             onToggle={toggleIndicator}
+            onSetMode={setLvMode}
             onClose={() => setOpenPanelLv(null)}
             t={t}
           />

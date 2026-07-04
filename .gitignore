@@ -32,3 +32,6 @@ _scaffold/
 
 # 一次性除錯草稿
 _cmp*.mjs
+
+# Python cache（generate_reference.py）
+tests/__pycache__/

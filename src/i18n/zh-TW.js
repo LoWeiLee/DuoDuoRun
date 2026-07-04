@@ -2791,9 +2791,13 @@ export default {
     title: 'PLS-SEM 偏最小平方法結構方程模型',
     config: {
       lvsTitle: '潛在變數（構念）',
-      lvsHint: '為每個潛在變數命名並勾選其指標題（反映型 Mode A；每構念建議 ≥ 3 題，允許單指標）',
+      lvsHint: '為每個潛在變數命名、選擇測量模式（反映型／形成型）並勾選指標題（每構念建議 ≥ 3 題，允許單指標）',
       lvLabel: '構念',
       indicatorsLabel: '指標',
+      modeLabel: '測量模式',
+      modeReflective: '反映型',
+      modeFormative: '形成型',
+      modeHint: '反映型（Mode A）＝指標是構念的展現；形成型（Mode B）＝指標共同組成構念，報表以權重檢定＋外部 VIF 取代信度表',
       addLv: '新增潛在變數',
       removeLv: '刪除此構念',
       noIndicatorsLeft: '可用指標已被其他構念佔用',
@@ -2805,11 +2809,23 @@ export default {
       pathIncomplete: '第 {i} 條路徑尚未同時選擇 from 與 to',
       bootstrapTitle: 'Bootstrap 重抽次數',
       bootstrapHint: '期刊慣例為 5000 次；資料量大或先探索時，可用 500 / 1000 快速預覽（預設 1000）',
+      advancedTitle: '進階選項',
+      schemeTitle: 'Weighting scheme',
+      schemeNames: { path: 'Path', factorial: 'Factorial', centroid: 'Centroid' },
+      schemeHint: 'Path 為 SmartPLS 4 預設；centroid / factorial 供方法比較與舊文獻重現。',
+      plscLabel: 'Consistent PLS（PLSc）',
+      plscHint: '以 rho_A 校正反映型構念的測量誤差衰減（Dijkstra & Henseler, 2015）；路徑、loadings、CR / AVE 皆改用校正後值，bootstrap 同步採 consistent 流程。',
+      ciTypeTitle: 'Bootstrap 信賴區間',
+      ciPercentile: 'Percentile',
+      ciBca: 'BCa',
+      ciTypeHint: 'Percentile 為 SmartPLS 4 預設；BCa（偏誤校正＋加速）另需 n 次 jackknife 重估計，較慢但對偏態抽樣分布較準。',
+      q2Label: 'Blindfolding Q²',
+      q2Hint: '構念層 cross-validated redundancy（omission distance = 7），評估內生構念的預測相關性；會增加運算時間。',
       run: '執行分析',
       rerun: '重新執行分析',
       staleNote: '模型設定已變更 — 目前結果對應的是上一次執行的設定，請重新執行。',
       errorsTitle: '模型驗證未通過：',
-      modeNote: 'W1 版本：反映型指標（Mode A）＋ path weighting scheme；形成型指標（Mode B）規劃於 Wave 3 開通。缺失值採 casewise 剔除。',
+      modeNote: 'W3 版本：反映型（Mode A）與形成型（Mode B）測量、path / factorial / centroid 三種 weighting scheme、PLSc（consistent PLS）、percentile / BCa bootstrap、model fit（SRMR 等）與 blindfolding Q²。缺失值採 casewise 剔除。',
       viewForm: '表單',
       viewCanvas: '畫布',
       viewFormHint: '以下拉與多選宣告模型；適合精確編輯與行動裝置。',
@@ -2817,36 +2833,48 @@ export default {
       canvasNarrowFallback: '畫布需要較寬螢幕，行動裝置已自動退回表單模式。',
     },
     canvas: {
-      hint: '拖曳構念移動位置；從一個構念的下方端點拉到另一構念建立路徑；點路徑可刪；點構念開指標面板；雙擊改名。',
-      legend: '橢圓 = 潛在變數（圓內顯示 R²）、小矩形 = 指標（連線顯示 loading）、箭頭 = 結構路徑（顯示 β 與顯著星號）。綠 = 顯著、紅 = 未達顯著。',
+      hint: '拖曳構念移動位置；從一個構念的下方端點拉到另一構念建立路徑；點路徑可刪；點構念開指標面板（可切換反映型／形成型）；雙擊改名。',
+      legend: '橢圓 = 潛在變數（圓內顯示 R²、形成型標記 Mode B）、小矩形 = 指標（連線顯示 loading；形成型顯示權重 w）、箭頭 = 結構路徑（顯示 β 與顯著星號）。綠 = 顯著、紅 = 未達顯著。',
       empty: '尚無潛在變數，先新增一個構念開始建模。',
       exportBtn: '匯出模型圖',
       exportHint: '匯出白底 PNG（論文用）',
       exporting: '匯出中…',
+      modeBadge: 'Mode B（形成型）',
     },
     result: {
       runFirst: '請先在左側宣告潛在變數與結構路徑，按「執行分析」後才會計算（bootstrap 需要數秒鐘）。',
       cards: { n: '有效樣本 N', iterations: 'PLS 迭代', bootstrap: 'Bootstrap 有效重抽', r2: 'R²' },
       converged: '已收斂',
       notConverged: '未收斂',
-      measurementTitle: '測量模型 — 外部負荷量',
+      settingsLine: 'weighting scheme = {scheme}{plsc}',
+      plscTag: '｜PLSc（consistent PLS）已啟用 — 路徑與 loadings 為校正後值',
+      measurementTitle: '測量模型 — 外部負荷量（反映型）',
       loadingNote: '負荷量門檻：≥ .708 佳（綠）、.40 – .708 邊緣（黃）、< .40 不佳（紅）。SE / t / p 來自 bootstrap 重抽。',
+      formativeTitle: '測量模型 — 形成型外部權重（bootstrap 檢定）',
+      formativeNote: '權重的 SE / t / p / CI 來自 bootstrap；外部 VIF（指標共線性）：< 3.3 佳（綠）、3.3 – 5 注意（黃）、≥ 5 疑慮（紅）。權重不顯著時，負荷量 ≥ .50 仍可支持保留該指標（備援判讀；Hair et al., 2017）。',
       reliabilityTitle: '測量模型 — 信度與收斂效度',
-      reliabilityNote: '通過門檻：α ≥ .70、rho_A ≥ .70、CR ≥ .70、AVE ≥ .50；列首燈號 = 四項全數通過。單指標構念定義上皆為 1，以「—」表示。',
+      reliabilityNote: '通過門檻：α ≥ .70、rho_A ≥ .70、CR ≥ .70、AVE ≥ .50；列首燈號 = 四項全數通過。單指標構念定義上皆為 1，以「—」表示；形成型構念不適用信度/收斂效度，見形成型權重表。',
       discriminantFLTitle: '區辨效度 — Fornell-Larcker 準則',
-      flNote: '對角線（粗體）為 √AVE，須大於同列／同欄所有構念間相關（綠 = 通過、紅 = 違反）。',
+      flNote: '對角線（粗體）為 √AVE，須大於同列／同欄所有構念間相關（綠 = 通過、紅 = 違反）；形成型構念不定義 AVE（—）。',
       discriminantHTMTTitle: '區辨效度 — HTMT',
-      htmtNote: 'HTMT < .85 通過（綠）、≥ .85 區辨效度有疑慮（紅）；含單指標構念的配對不定義（—）。',
+      htmtNote: 'HTMT < .85 通過（綠）、≥ .85 區辨效度有疑慮（紅）；含單指標或形成型構念的配對不定義（—）。',
       structuralTitle: '結構模型 — 路徑係數（bootstrap 推論）',
-      bootstrapMeta: 'bootstrap {nValid} / {nRequested} 次有效重抽（seed = {seed}、percentile 95% CI、construct-level 符號校正）',
+      bootstrapMeta: 'bootstrap {nValid} / {nRequested} 次有效重抽（seed = {seed}、{ciType} 95% CI、construct-level 符號校正）',
       bootstrapUnavailable: 'Bootstrap 失敗，以下僅顯示點估計：{message}',
       r2Title: '結構模型 — 解釋力',
       effectsTitle: '結構模型 — 效果量 f² 與共線性 VIF',
       f2Note: 'f² 慣例（Cohen, 1988）：.02 小、.15 中、.35 大。VIF：< 3.3 佳（綠）、3.3 – 5 注意（黃）、≥ 5 共線性疑慮（紅）。',
+      fitTitle: '模型適配 — SRMR / d_ULS / d_G / NFI',
+      fitNote: 'SRMR：< .08 佳（綠）、.08 – .10 邊緣（黃）、≥ .10 不佳（紅）；NFI ≥ .90 佳。d_ULS / d_G 供模型間比較（越小越好）。「飽和模型」構念相關自由（只評測量模型）、「估計模型」依結構路徑隱含相關。依原始文獻公式計算（SmartPLS 未完整公開實作細節），建議與 SmartPLS / seminr 抽驗互證。',
+      q2Title: '預測相關性 — Blindfolding Q²',
+      q2Note: 'Q² > 0 表示對該內生構念具預測相關性（綠）；≤ 0 表示不優於以平均數預測（紅）。構念層 cross-validated redundancy，omission distance D = {d}。',
+      q2Unavailable: 'Q² 計算失敗：{message}',
       cols: {
         lv: '構念',
         indicator: '指標',
         loading: '負荷量',
+        weight: '權重',
+        outerVif: '外部 VIF',
         alpha: "Cronbach's α",
         rhoA: 'rho_A',
         cr: 'CR',
@@ -2862,6 +2890,10 @@ export default {
         f2: 'f²',
         vif: 'VIF',
         effect: '效果量',
+        fitIndex: '適配指標',
+        saturated: '飽和模型',
+        estimated: '估計模型',
+        q2: 'Q²',
       },
       f2Interp: { none: '不足', small: '小', medium: '中', large: '大' },
     },
@@ -2871,46 +2903,61 @@ export default {
         '偏最小平方法結構方程模型（PLS-SEM）以指標的加權線性組合近似潛在構念，' +
         '同時估計「測量模型」（構念 ↔ 指標）與「結構模型」（構念之間的路徑）。\n\n' +
         '適合：預測導向的研究、模型較複雜（構念多、路徑多）、樣本較小、資料非常態，或理論尚在發展階段。\n\n' +
-        '與 CB-SEM 差異：CB-SEM 檢驗共變異結構的整體適配（理論驗證取向）；PLS-SEM 最大化內生構念的被解釋變異（預測取向），不提供 χ² 類整體適配檢定。',
+        '與 CB-SEM 差異：CB-SEM 檢驗共變異結構的整體適配（理論驗證取向）；PLS-SEM 最大化內生構念的被解釋變異（預測取向）。SRMR 等適配指標屬近似性檢核，非 χ² 類檢定。',
       assumpTitle: '前提與適用情境',
       assumptions:
-        '1. 指標為反映型（Mode A）：指標是構念的展現，同構念指標間應高相關\n' +
+        '1. 測量模式需依理論指定：反映型（Mode A）指標是構念的展現、同構念指標應高相關；形成型（Mode B）指標共同組成構念、彼此不必相關，但不可高度共線（看外部 VIF）\n' +
         '2. 結構模型為遞迴模型：路徑圖無環（不允許互為因果）\n' +
         '3. 指標為連續或近似連續變數（Likert 5 / 7 點常見）\n' +
         '4. 樣本量下限參考「10 倍法則」：至少為指向任一構念的最大路徑數之 10 倍\n' +
-        '5. 推論統計以 bootstrap 重抽建立，不需常態分布假設',
+        '5. 推論統計以 bootstrap 重抽建立，不需常態分布假設\n' +
+        '6. 若研究目的是估計「構念間的真實相關／路徑」（理論驗證），反映型構念建議開啟 PLSc 校正測量誤差衰減',
       conceptsTitle: '核心概念',
       concepts:
         '外部負荷量（loading）：指標與構念的相關；≥ .708 表示構念可解釋該指標 ≥ 50% 變異\n' +
-        "信度：Cronbach's α（下界）、rho_A（較不偏）、CR 組合信度（上界），皆建議 ≥ .70\n" +
-        'AVE 平均萃取變異量：收斂效度，≥ .50\n' +
-        'Fornell-Larcker：√AVE 應大於該構念與其他構念的相關\n' +
+        '外部權重（weight）：形成型指標對構念的貢獻（迴歸權重），以 bootstrap 檢定顯著性\n' +
+        "信度：Cronbach's α（下界）、rho_A（較不偏）、CR 組合信度（上界），皆建議 ≥ .70（僅反映型）\n" +
+        'AVE 平均萃取變異量：收斂效度，≥ .50；Fornell-Larcker：√AVE 應大於構念間相關\n' +
         'HTMT 異質-單質比：區辨效度，< .85（保守）或 < .90（寬鬆）\n' +
-        'R²：內生構念被解釋的變異；f²：移除某前置構念後 R² 的變化量\n' +
-        '內部 VIF：前置構念間共線性，< 3.3 佳、≥ 5 有疑慮\n' +
-        'Bootstrap：以放回重抽的經驗分布估計 SE、t、p 與 percentile 信賴區間',
+        'Weighting scheme：內部代理的加權法——path（預設）／factorial（相關）／centroid（相關符號），實務差異通常極小\n' +
+        'PLSc（consistent PLS）：以 rho_A 反衰減校正，讓反映型構念的路徑趨近 CB-SEM 的一致估計\n' +
+        'R²：內生構念被解釋的變異；f²：移除某前置構念後 R² 的變化量；內部 VIF：前置構念共線性\n' +
+        'Model fit：SRMR（標準化殘差均方根，< .08）、d_ULS / d_G（距離量）、NFI（≥ .90）\n' +
+        'Q²（blindfolding）：略去部分資料點再預測的交叉驗證，> 0 表示具預測相關性\n' +
+        'Bootstrap：以放回重抽的經驗分布估計 SE、t、p 與信賴區間（percentile 或 BCa）',
       readingTitle: '怎麼讀',
       reading:
         '1. 先看收斂狀態與樣本警語\n' +
-        '2. 測量模型：負荷量 ≥ .708、α / rho_A / CR ≥ .70、AVE ≥ .50\n' +
+        '2. 測量模型：反映型看負荷量 ≥ .708、α / rho_A / CR ≥ .70、AVE ≥ .50；形成型看權重顯著性與外部 VIF < 3.3（權重不顯著但負荷量 ≥ .50 可備援保留）\n' +
         '3. 區辨效度：Fornell-Larcker 通過、HTMT < .85\n' +
-        '4. 測量模型合格後，才解讀結構模型：路徑係數的 p 與 95% CI、f² 效果量、VIF\n' +
-        '5. 最後看 R²：.25 / .50 / .75 約略對應弱 / 中 / 強（依領域慣例調整）',
+        '4. 模型適配：SRMR < .08（飽和模型看測量、估計模型加結構）\n' +
+        '5. 測量模型合格後，才解讀結構模型：路徑係數的 p 與 95% CI、f² 效果量、VIF\n' +
+        '6. 最後看 R²（.25 / .50 / .75 約略對應弱 / 中 / 強）與 Q²（> 0 具預測相關性）',
     },
     apa: {
       intro:
-        '本研究以偏最小平方法結構方程模型（PLS-SEM；path weighting、Mode A）檢驗研究模型（N = {n}），' +
-        '並以 bootstrap 重抽 {nValid} 次（percentile 95% 信賴區間）進行推論。',
+        '本研究以偏最小平方法結構方程模型（PLS-SEM；{scheme} weighting scheme{plsc}）檢驗研究模型（N = {n}），' +
+        '並以 bootstrap 重抽 {nValid} 次（{ciType} 95% 信賴區間）進行推論。',
       introNoBoot:
-        '本研究以偏最小平方法結構方程模型（PLS-SEM；path weighting、Mode A）檢驗研究模型（N = {n}）。',
+        '本研究以偏最小平方法結構方程模型（PLS-SEM；{scheme} weighting scheme{plsc}）檢驗研究模型（N = {n}）。',
+      plscClause: '、consistent PLS（PLSc）校正',
+      schemeNames: { path: 'path', factorial: 'factorial', centroid: 'centroid' },
+      ciNames: { percentile: 'percentile', bca: 'BCa' },
       measurement:
-        "測量模型方面，各構念之 Cronbach's α 介於 {alphaRange}、組合信度 CR 介於 {crRange}、" +
+        "反映型測量模型方面，各構念之 Cronbach's α 介於 {alphaRange}、組合信度 CR 介於 {crRange}、" +
         '平均萃取變異量 AVE 介於 {aveRange}，{measVerdict}',
       measOk: '信度與收斂效度皆達建議門檻（CR ≥ .70、AVE ≥ .50）。',
       measBad: '部分構念未達建議門檻（CR ≥ .70、AVE ≥ .50），解讀時應留意。',
+      formative: '形成型構念（{lvs}）以外部權重之 bootstrap 檢定與指標共線性評估，外部 VIF 最大值為 {vifMax}。',
       htmt: '區辨效度方面，HTMT 最大值為 {htmtMax}，{htmtVerdict}',
       htmtOk: '低於 .85 門檻，構念間具區辨效度。',
       htmtBad: '高於 .85 門檻，部分構念間的區辨效度有疑慮。',
+      fit: '模型適配方面，估計模型之 SRMR = {srmr}，{fitVerdict}',
+      fitOk: '低於 .08 門檻。',
+      fitBad: '高於 .08 門檻，整體適配應留意。',
+      q2: '內生構念之 blindfolding Q²（D = {d}）介於 {q2Range}，{q2Verdict}',
+      q2Ok: '皆大於 0，模型具預測相關性。',
+      q2Bad: '部分構念未大於 0，預測相關性有限。',
       structuralIntro: '結構模型檢定結果：',
       path: '{from} → {to}（β = {beta}, t = {t}, {pStr}, 95% CI [{lo}, {hi}]，{sig}）',
       pathNoBoot: '{from} → {to}（β = {beta}）',

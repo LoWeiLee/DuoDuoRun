@@ -31,7 +31,7 @@ import { icc } from '../src/lib/stats/icc.js'
 import { exploratoryFactorAnalysis } from '../src/lib/stats/efa.js'
 import { oneProp, twoProp } from '../src/lib/stats/zProp.js'
 import { cfa } from '../src/lib/stats/cfa.js'
-import { runPLS } from '../src/lib/stats/pls.js'
+import { runPLS, blindfoldPLS } from '../src/lib/stats/pls.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const D = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures/datasets.json'), 'utf8'))
@@ -272,4 +272,108 @@ export const ADAPTERS = {
       crossLoadings,
     }
   },
+  // ── PLS-SEM W3 基準（模型/選項見 generate_reference.py 的 W3 區塊註記） ──
+  // M4：F1(i1-3)→F2(i4-6)；F1→C、F2→C（C=cond1-3，雙前置）；F2→Y(y 單指標)。
+  // 與 Python 端同用 tol=1e-12 收斂，讓比對誤差來自演算法而非收斂殘差。
+  pls_scheme_centroid() {
+    return plsSchemeAdapter('centroid')
+  },
+  pls_scheme_factorial() {
+    return plsSchemeAdapter('factorial')
+  },
+  // 形成型（Mode B）：XF(x1,x2,x3) → Y(y)；權重已由引擎縮放至 w'Sw=1（單位變異分數）
+  pls_formative() {
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'XF', indicators: ['x1', 'x2', 'x3'], mode: 'formative' },
+        { name: 'Y', indicators: ['y'] },
+      ],
+      paths: [{ from: 'XF', to: 'Y' }],
+    }
+    const r = runPLS(main, model, PLS_W3_OPT)
+    if (r.error) throw new Error(`runPLS failed: ${r.error} — ${r.message}`)
+    const wt = Object.fromEntries(r.outerWeights.map((q) => [q.indicator, q]))
+    const ld = Object.fromEntries(r.outerLoadings.map((q) => [q.indicator, q.loading]))
+    return {
+      weight_x1: wt.x1.weight, weight_x2: wt.x2.weight, weight_x3: wt.x3.weight,
+      loading_x1: ld.x1, loading_x2: ld.x2, loading_x3: ld.x3,
+      path_XF_Y: r.pathCoefficients[0].coef,
+      r2_Y: r.structural[0].r2,
+      vif_x1: wt.x1.vif, vif_x2: wt.x2.vif, vif_x3: wt.x3.vif,
+    }
+  },
+  // PLSc（Dijkstra & Henseler 2015）：M4、path scheme、consistent=true
+  pls_plsc() {
+    const r = runPLS(main, PLS_M4, { ...PLS_W3_OPT, consistent: true })
+    if (r.error) throw new Error(`runPLS failed: ${r.error} — ${r.message}`)
+    const ld = Object.fromEntries(r.outerLoadings.map((q) => [q.indicator, q.loading]))
+    const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b).coef
+    const r2 = (lv) => r.structural.find((q) => q.lv === lv).r2
+    return {
+      rhoA_F1: r.plsc.rhoA.F1, rhoA_F2: r.plsc.rhoA.F2, rhoA_C: r.plsc.rhoA.C,
+      cloading_i1: ld.i1, cloading_i2: ld.i2, cloading_i3: ld.i3,
+      cloading_i4: ld.i4, cloading_i5: ld.i5, cloading_i6: ld.i6,
+      cloading_cond1: ld.cond1, cloading_cond2: ld.cond2, cloading_cond3: ld.cond3,
+      cloading_y: ld.y,
+      corr_F1_F2: r.latentCorrelations.matrix[0][1],
+      corr_F2_Y: r.latentCorrelations.matrix[1][3],
+      path_F1_F2: path('F1', 'F2'), path_F1_C: path('F1', 'C'),
+      path_F2_C: path('F2', 'C'), path_F2_Y: path('F2', 'Y'),
+      r2_F2: r2('F2'), r2_C: r2('C'), r2_Y: r2('Y'),
+    }
+  },
+  // Model fit（SRMR / d_ULS / d_G / NFI；composite、path scheme、M4）
+  pls_fit() {
+    const r = runPLS(main, PLS_M4, PLS_W3_OPT)
+    if (r.error) throw new Error(`runPLS failed: ${r.error} — ${r.message}`)
+    return {
+      srmrSat: r.fit.saturated.srmr, dUlsSat: r.fit.saturated.dUls,
+      dGSat: r.fit.saturated.dG, nfiSat: r.fit.saturated.nfi,
+      srmrEst: r.fit.estimated.srmr, dUlsEst: r.fit.estimated.dUls,
+      dGEst: r.fit.estimated.dG, nfiEst: r.fit.estimated.nfi,
+    }
+  },
+  // Blindfolding Q²（D=7、構念層 cross-validated redundancy、M4）
+  pls_q2() {
+    const r = blindfoldPLS(main, PLS_M4, PLS_W3_OPT)
+    if (r.error) throw new Error(`blindfoldPLS failed: ${r.error} — ${r.message}`)
+    const q2 = Object.fromEntries(r.constructs.map((c) => [c.lv, c.q2]))
+    return { q2_F2: q2.F2, q2_C: q2.C, q2_Y: q2.Y }
+  },
+}
+
+/* ── PLS W3 共用模型與選項 ── */
+const PLS_M4 = {
+  schemaVersion: 1,
+  latentVariables: [
+    { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+    { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+    { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+    { name: 'Y', indicators: ['y'] },
+  ],
+  paths: [
+    { from: 'F1', to: 'F2' },
+    { from: 'F1', to: 'C' },
+    { from: 'F2', to: 'C' },
+    { from: 'F2', to: 'Y' },
+  ],
+}
+const PLS_W3_OPT = { tolerance: 1e-12, maxIterations: 2000 }
+
+function plsSchemeAdapter(scheme) {
+  const r = runPLS(main, PLS_M4, { ...PLS_W3_OPT, scheme })
+  if (r.error) throw new Error(`runPLS failed: ${r.error} — ${r.message}`)
+  const ld = Object.fromEntries(r.outerLoadings.map((q) => [q.indicator, q.loading]))
+  const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b).coef
+  const r2 = (lv) => r.structural.find((q) => q.lv === lv).r2
+  return {
+    loading_i1: ld.i1, loading_i2: ld.i2, loading_i3: ld.i3,
+    loading_i4: ld.i4, loading_i5: ld.i5, loading_i6: ld.i6,
+    loading_cond1: ld.cond1, loading_cond2: ld.cond2, loading_cond3: ld.cond3,
+    loading_y: ld.y,
+    path_F1_F2: path('F1', 'F2'), path_F1_C: path('F1', 'C'),
+    path_F2_C: path('F2', 'C'), path_F2_Y: path('F2', 'Y'),
+    r2_F2: r2('F2'), r2_C: r2('C'), r2_Y: r2('Y'),
+  }
 }
