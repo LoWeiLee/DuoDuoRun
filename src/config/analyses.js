@@ -71,18 +71,25 @@ export const ANALYSIS_GROUPS = [
       { id: 'cluster',         i18nKey: 'cluster',         priority: 2 },
     ],
   },
+  {
+    id: 'sem',
+    i18nKey: 'sem',
+    items: [
+      { id: 'pls-sem',         i18nKey: 'plsSem',          priority: 2 },
+    ],
+  },
 ]
 
 /**
  * 即將開放的功能（規劃中、尚未實作）。在 Sidebar 以可摺疊群組顯示，
  * 項目灰色不可點擊，純粹給使用者「未來會有什麼」的訊號。
  *
- * 順序：CB-SEM → PLS-SEM → HLM → 其他依類型分群
+ * 順序：CB-SEM → HLM → 其他依類型分群
+ * （PLS-SEM 已於 W1 上線，移入「結構方程模型」群組）
  */
 export const COMING_SOON = [
   // 結構方程模型
   { id: 'cb-sem',           i18nKey: 'cbSem' },
-  { id: 'pls-sem',           i18nKey: 'plsSem' },
   // 多層次模型
   { id: 'hlm',              i18nKey: 'hlm' },
   // 無母數補強

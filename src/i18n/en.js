@@ -144,6 +144,7 @@ export default {
     regression: 'Correlation & regression',
     scale: 'Scale analysis',
     multivariate: 'Multivariate analysis',
+    sem: 'Structural equation models',
     comingSoon: 'Coming soon',
     comingSoonHint: 'Planned, not yet available',
     cbSem: 'CB-SEM (covariance-based)',
@@ -2729,6 +2730,126 @@ export default {
         'Internal consistency is acceptable. Review items with corrected item-total r < 0.30, and consider revising/dropping items where α-if-deleted rises noticeably.',
       recommendLow:
         'Internal consistency is low. Steps to consider: (1) verify all reverse-coded items have been recoded; (2) inspect items with low corrected item-total r; (3) if α remains low, reconsider the construct definition and item wording.',
+    },
+  },
+  pls: {
+    title: 'PLS-SEM (partial least squares structural equation modeling)',
+    config: {
+      lvsTitle: 'Latent variables (constructs)',
+      lvsHint: 'Name each latent variable and tick its indicators (reflective Mode A; ≥ 3 items per construct recommended, single-indicator allowed)',
+      lvLabel: 'Construct',
+      indicatorsLabel: 'Indicators',
+      addLv: 'Add latent variable',
+      removeLv: 'Remove this construct',
+      noIndicatorsLeft: 'All available indicators are used by other constructs',
+      pathsTitle: 'Structural paths (from → to)',
+      pathsHint: 'Declare the direction of influence between constructs; the path diagram must be acyclic (recursive model)',
+      addPath: 'Add path',
+      removePath: 'Remove this path',
+      pickLv: 'Pick a construct',
+      pathIncomplete: 'Path {i} is missing its from or to construct',
+      bootstrapTitle: 'Bootstrap resamples',
+      bootstrapHint: 'Journal convention is 5000; use 500 / 1000 for quick previews on large data (default 1000)',
+      run: 'Run analysis',
+      rerun: 'Re-run analysis',
+      staleNote: 'Model settings have changed — the current results reflect the previous run. Please re-run.',
+      errorsTitle: 'Model validation failed:',
+      modeNote: 'W1 release: reflective indicators (Mode A) + path weighting scheme; formative indicators (Mode B) are planned for Wave 3. Missing data handled by casewise deletion.',
+    },
+    result: {
+      runFirst: 'Declare the latent variables and structural paths on the left, then press "Run analysis" (the bootstrap takes a few seconds).',
+      cards: { n: 'Valid N', iterations: 'PLS iterations', bootstrap: 'Valid bootstrap draws', r2: 'R²' },
+      converged: 'Converged',
+      notConverged: 'Not converged',
+      measurementTitle: 'Measurement model — outer loadings',
+      loadingNote: 'Loading thresholds: ≥ .708 good (green), .40 – .708 borderline (yellow), < .40 poor (red). SE / t / p come from the bootstrap.',
+      reliabilityTitle: 'Measurement model — reliability & convergent validity',
+      reliabilityNote: 'Pass thresholds: α ≥ .70, rho_A ≥ .70, CR ≥ .70, AVE ≥ .50; the row LED = all four pass. Single-indicator constructs are 1 by definition and shown as "—".',
+      discriminantFLTitle: 'Discriminant validity — Fornell-Larcker criterion',
+      flNote: 'Diagonal (bold) is √AVE and must exceed every inter-construct correlation in its row/column (green = pass, red = violated).',
+      discriminantHTMTTitle: 'Discriminant validity — HTMT',
+      htmtNote: 'HTMT < .85 passes (green); ≥ .85 flags a discriminant-validity concern (red). Pairs involving single-indicator constructs are undefined (—).',
+      structuralTitle: 'Structural model — path coefficients (bootstrap inference)',
+      bootstrapMeta: 'bootstrap {nValid} / {nRequested} valid resamples (seed = {seed}, percentile 95% CI, construct-level sign correction)',
+      bootstrapUnavailable: 'Bootstrap failed; only point estimates are shown: {message}',
+      r2Title: 'Structural model — explained variance',
+      effectsTitle: 'Structural model — effect sizes f² & collinearity VIF',
+      f2Note: 'f² conventions (Cohen, 1988): .02 small, .15 medium, .35 large. VIF: < 3.3 good (green), 3.3 – 5 caution (yellow), ≥ 5 collinearity concern (red).',
+      cols: {
+        lv: 'Construct',
+        indicator: 'Indicator',
+        loading: 'Loading',
+        alpha: "Cronbach's α",
+        rhoA: 'rho_A',
+        cr: 'CR',
+        ave: 'AVE',
+        path: 'Path',
+        beta: 'β',
+        se: 'Bootstrap SE',
+        t: 't',
+        p: 'p',
+        ci: '95% CI',
+        r2: 'R²',
+        adjR2: 'Adj. R²',
+        f2: 'f²',
+        vif: 'VIF',
+        effect: 'Effect size',
+      },
+      f2Interp: { none: 'negligible', small: 'small', medium: 'medium', large: 'large' },
+    },
+    notes: {
+      purposeTitle: 'Purpose',
+      purpose:
+        'Partial least squares SEM (PLS-SEM) approximates latent constructs as weighted linear composites of their indicators, ' +
+        'estimating the measurement model (construct ↔ indicators) and the structural model (paths among constructs) simultaneously.\n\n' +
+        'Best suited to: prediction-oriented research, complex models (many constructs/paths), smaller samples, non-normal data, or theory still under development.\n\n' +
+        'Versus CB-SEM: CB-SEM tests overall fit of the covariance structure (confirmatory); PLS-SEM maximizes explained variance of endogenous constructs (predictive) and offers no χ²-type global fit test.',
+      assumpTitle: 'Assumptions & scope',
+      assumptions:
+        '1. Reflective indicators (Mode A): indicators manifest the construct and should intercorrelate highly\n' +
+        '2. Recursive structural model: the path diagram is acyclic (no reciprocal causation)\n' +
+        '3. Indicators are continuous or approximately continuous (5/7-point Likert is common)\n' +
+        '4. Sample size lower bound via the "10-times rule": at least 10 × the largest number of paths aimed at any construct\n' +
+        '5. Inference relies on bootstrap resampling — no normality assumption required',
+      conceptsTitle: 'Key concepts',
+      concepts:
+        'Outer loading: correlation between indicator and construct; ≥ .708 means the construct explains ≥ 50% of the indicator variance\n' +
+        "Reliability: Cronbach's α (lower bound), rho_A (less biased), CR composite reliability (upper bound); all ≥ .70\n" +
+        'AVE (average variance extracted): convergent validity, ≥ .50\n' +
+        'Fornell-Larcker: √AVE should exceed the correlations with all other constructs\n' +
+        'HTMT (heterotrait-monotrait ratio): discriminant validity, < .85 (conservative) or < .90 (liberal)\n' +
+        'R²: explained variance of an endogenous construct; f²: change in R² when a predictor is removed\n' +
+        'Inner VIF: collinearity among predictor constructs; < 3.3 good, ≥ 5 problematic\n' +
+        'Bootstrap: SE, t, p and percentile CIs from the empirical distribution of resampled estimates',
+      readingTitle: 'How to read',
+      reading:
+        '1. Check convergence and sample-size warnings first\n' +
+        '2. Measurement model: loadings ≥ .708, α / rho_A / CR ≥ .70, AVE ≥ .50\n' +
+        '3. Discriminant validity: Fornell-Larcker passes and HTMT < .85\n' +
+        '4. Only after the measurement model qualifies, read the structural model: path p-values and 95% CIs, f², VIF\n' +
+        '5. Finally R²: .25 / .50 / .75 roughly map to weak / moderate / substantial (field-dependent)',
+    },
+    apa: {
+      intro:
+        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; path weighting, Mode A; N = {n}), ' +
+        'with inference based on {nValid} bootstrap resamples (percentile 95% confidence intervals).',
+      introNoBoot:
+        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; path weighting, Mode A; N = {n}).',
+      measurement:
+        "For the measurement model, Cronbach's α ranged {alphaRange}, composite reliability (CR) ranged {crRange}, " +
+        'and average variance extracted (AVE) ranged {aveRange}; {measVerdict}',
+      measOk: 'reliability and convergent validity met the recommended thresholds (CR ≥ .70, AVE ≥ .50).',
+      measBad: 'some constructs fell short of the recommended thresholds (CR ≥ .70, AVE ≥ .50), which should be borne in mind.',
+      htmt: 'Regarding discriminant validity, the maximum HTMT was {htmtMax}, {htmtVerdict}',
+      htmtOk: 'below the .85 threshold, supporting discriminant validity.',
+      htmtBad: 'above the .85 threshold, indicating a discriminant-validity concern for some construct pairs.',
+      structuralIntro: 'Structural model results: ',
+      path: '{from} → {to} (β = {beta}, t = {t}, {pStr}, 95% CI [{lo}, {hi}], {sig})',
+      pathNoBoot: '{from} → {to} (β = {beta})',
+      sigYes: 'significant',
+      sigNo: 'not significant',
+      r2: 'R² for {lv} = {r2}',
+      copyHint: 'Copy APA narrative',
     },
   },
 }

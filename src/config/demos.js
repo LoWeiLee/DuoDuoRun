@@ -8,6 +8,30 @@
  *
  * 設定值請參考各 analysis 的 Config DEFAULT 結構。
  */
+
+/**
+ * PLS-SEM 示範模型（employee 資料集的 Likert 題項）：
+ *   工作滿意度 (q1 工作環境, q2 同事關係, q3 主管溝通)
+ *     → 整體滿意 (q5) → 工作績效 (performance_score)
+ * 簡單中介鏈，示範測量模型（多指標構念）與兩條結構路徑。
+ * committed 直接附上（載入示範即出結果，不需再按「執行分析」）；
+ * draft 快照的 JSON 需與 Config buildModel() 的輸出逐鍵一致，否則會誤報「設定已變更」。
+ */
+const PLS_DEMO_LVS = [
+  { name: '工作滿意度', indicators: ['q1', 'q2', 'q3'] },
+  { name: '整體滿意', indicators: ['q5'] },
+  { name: '工作績效', indicators: ['performance_score'] },
+]
+const PLS_DEMO_PATHS = [
+  { from: '工作滿意度', to: '整體滿意' },
+  { from: '整體滿意', to: '工作績效' },
+]
+const PLS_DEMO_MODEL = {
+  schemaVersion: 1,
+  latentVariables: PLS_DEMO_LVS,
+  paths: PLS_DEMO_PATHS,
+}
+
 export const ANALYSIS_DEMOS = {
   // ── 敘述統計 ─────────────────────────
   'desc-stats': {
@@ -121,6 +145,22 @@ export const ANALYSIS_DEMOS = {
       method: 'kmeans',
       k: 3,
       standardize: true,
+    },
+  },
+
+  // ── 結構方程模型 ─────────────────────
+  'pls-sem': {
+    dataset: 'employee',
+    settings: {
+      lvs: PLS_DEMO_LVS,
+      paths: PLS_DEMO_PATHS,
+      bootstrapN: 1000,
+      configErrors: [],
+      committed: {
+        model: PLS_DEMO_MODEL,
+        bootstrapN: 1000,
+        draft: { model: PLS_DEMO_MODEL, bootstrapN: 1000 },
+      },
     },
   },
 }

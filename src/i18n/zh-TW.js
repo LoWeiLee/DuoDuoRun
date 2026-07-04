@@ -150,6 +150,7 @@ export default {
     regression: '相關與迴歸',
     scale: '量表分析',
     multivariate: '多變量分析',
+    sem: '結構方程模型',
     comingSoon: '即將開放功能',
     comingSoonHint: '規劃中，敬請期待',
     cbSem: 'CB-SEM 結構方程模型',
@@ -2784,6 +2785,126 @@ export default {
         '量表內部一致性可接受，建議檢視「校正項目-總分相關 < 0.30」的題目；若有「刪題後 α 明顯上升」的題目，考慮修訂或刪除。',
       recommendLow:
         '量表內部一致性偏低，建議：（1）檢視反向題是否已重新編碼；（2）檢視校正項目-總分相關過低的題目；（3）若仍偏低，需重新檢視量表的構念與題目設計。',
+    },
+  },
+  pls: {
+    title: 'PLS-SEM 偏最小平方法結構方程模型',
+    config: {
+      lvsTitle: '潛在變數（構念）',
+      lvsHint: '為每個潛在變數命名並勾選其指標題（反映型 Mode A；每構念建議 ≥ 3 題，允許單指標）',
+      lvLabel: '構念',
+      indicatorsLabel: '指標',
+      addLv: '新增潛在變數',
+      removeLv: '刪除此構念',
+      noIndicatorsLeft: '可用指標已被其他構念佔用',
+      pathsTitle: '結構路徑（from → to）',
+      pathsHint: '宣告構念之間的影響方向；路徑圖必須無環（遞迴模型）',
+      addPath: '新增路徑',
+      removePath: '刪除此路徑',
+      pickLv: '選擇構念',
+      pathIncomplete: '第 {i} 條路徑尚未同時選擇 from 與 to',
+      bootstrapTitle: 'Bootstrap 重抽次數',
+      bootstrapHint: '期刊慣例為 5000 次；資料量大或先探索時，可用 500 / 1000 快速預覽（預設 1000）',
+      run: '執行分析',
+      rerun: '重新執行分析',
+      staleNote: '模型設定已變更 — 目前結果對應的是上一次執行的設定，請重新執行。',
+      errorsTitle: '模型驗證未通過：',
+      modeNote: 'W1 版本：反映型指標（Mode A）＋ path weighting scheme；形成型指標（Mode B）規劃於 Wave 3 開通。缺失值採 casewise 剔除。',
+    },
+    result: {
+      runFirst: '請先在左側宣告潛在變數與結構路徑，按「執行分析」後才會計算（bootstrap 需要數秒鐘）。',
+      cards: { n: '有效樣本 N', iterations: 'PLS 迭代', bootstrap: 'Bootstrap 有效重抽', r2: 'R²' },
+      converged: '已收斂',
+      notConverged: '未收斂',
+      measurementTitle: '測量模型 — 外部負荷量',
+      loadingNote: '負荷量門檻：≥ .708 佳（綠）、.40 – .708 邊緣（黃）、< .40 不佳（紅）。SE / t / p 來自 bootstrap 重抽。',
+      reliabilityTitle: '測量模型 — 信度與收斂效度',
+      reliabilityNote: '通過門檻：α ≥ .70、rho_A ≥ .70、CR ≥ .70、AVE ≥ .50；列首燈號 = 四項全數通過。單指標構念定義上皆為 1，以「—」表示。',
+      discriminantFLTitle: '區辨效度 — Fornell-Larcker 準則',
+      flNote: '對角線（粗體）為 √AVE，須大於同列／同欄所有構念間相關（綠 = 通過、紅 = 違反）。',
+      discriminantHTMTTitle: '區辨效度 — HTMT',
+      htmtNote: 'HTMT < .85 通過（綠）、≥ .85 區辨效度有疑慮（紅）；含單指標構念的配對不定義（—）。',
+      structuralTitle: '結構模型 — 路徑係數（bootstrap 推論）',
+      bootstrapMeta: 'bootstrap {nValid} / {nRequested} 次有效重抽（seed = {seed}、percentile 95% CI、construct-level 符號校正）',
+      bootstrapUnavailable: 'Bootstrap 失敗，以下僅顯示點估計：{message}',
+      r2Title: '結構模型 — 解釋力',
+      effectsTitle: '結構模型 — 效果量 f² 與共線性 VIF',
+      f2Note: 'f² 慣例（Cohen, 1988）：.02 小、.15 中、.35 大。VIF：< 3.3 佳（綠）、3.3 – 5 注意（黃）、≥ 5 共線性疑慮（紅）。',
+      cols: {
+        lv: '構念',
+        indicator: '指標',
+        loading: '負荷量',
+        alpha: "Cronbach's α",
+        rhoA: 'rho_A',
+        cr: 'CR',
+        ave: 'AVE',
+        path: '路徑',
+        beta: 'β',
+        se: 'Bootstrap SE',
+        t: 't',
+        p: 'p',
+        ci: '95% CI',
+        r2: 'R²',
+        adjR2: '調整 R²',
+        f2: 'f²',
+        vif: 'VIF',
+        effect: '效果量',
+      },
+      f2Interp: { none: '不足', small: '小', medium: '中', large: '大' },
+    },
+    notes: {
+      purposeTitle: '用途',
+      purpose:
+        '偏最小平方法結構方程模型（PLS-SEM）以指標的加權線性組合近似潛在構念，' +
+        '同時估計「測量模型」（構念 ↔ 指標）與「結構模型」（構念之間的路徑）。\n\n' +
+        '適合：預測導向的研究、模型較複雜（構念多、路徑多）、樣本較小、資料非常態，或理論尚在發展階段。\n\n' +
+        '與 CB-SEM 差異：CB-SEM 檢驗共變異結構的整體適配（理論驗證取向）；PLS-SEM 最大化內生構念的被解釋變異（預測取向），不提供 χ² 類整體適配檢定。',
+      assumpTitle: '前提與適用情境',
+      assumptions:
+        '1. 指標為反映型（Mode A）：指標是構念的展現，同構念指標間應高相關\n' +
+        '2. 結構模型為遞迴模型：路徑圖無環（不允許互為因果）\n' +
+        '3. 指標為連續或近似連續變數（Likert 5 / 7 點常見）\n' +
+        '4. 樣本量下限參考「10 倍法則」：至少為指向任一構念的最大路徑數之 10 倍\n' +
+        '5. 推論統計以 bootstrap 重抽建立，不需常態分布假設',
+      conceptsTitle: '核心概念',
+      concepts:
+        '外部負荷量（loading）：指標與構念的相關；≥ .708 表示構念可解釋該指標 ≥ 50% 變異\n' +
+        "信度：Cronbach's α（下界）、rho_A（較不偏）、CR 組合信度（上界），皆建議 ≥ .70\n" +
+        'AVE 平均萃取變異量：收斂效度，≥ .50\n' +
+        'Fornell-Larcker：√AVE 應大於該構念與其他構念的相關\n' +
+        'HTMT 異質-單質比：區辨效度，< .85（保守）或 < .90（寬鬆）\n' +
+        'R²：內生構念被解釋的變異；f²：移除某前置構念後 R² 的變化量\n' +
+        '內部 VIF：前置構念間共線性，< 3.3 佳、≥ 5 有疑慮\n' +
+        'Bootstrap：以放回重抽的經驗分布估計 SE、t、p 與 percentile 信賴區間',
+      readingTitle: '怎麼讀',
+      reading:
+        '1. 先看收斂狀態與樣本警語\n' +
+        '2. 測量模型：負荷量 ≥ .708、α / rho_A / CR ≥ .70、AVE ≥ .50\n' +
+        '3. 區辨效度：Fornell-Larcker 通過、HTMT < .85\n' +
+        '4. 測量模型合格後，才解讀結構模型：路徑係數的 p 與 95% CI、f² 效果量、VIF\n' +
+        '5. 最後看 R²：.25 / .50 / .75 約略對應弱 / 中 / 強（依領域慣例調整）',
+    },
+    apa: {
+      intro:
+        '本研究以偏最小平方法結構方程模型（PLS-SEM；path weighting、Mode A）檢驗研究模型（N = {n}），' +
+        '並以 bootstrap 重抽 {nValid} 次（percentile 95% 信賴區間）進行推論。',
+      introNoBoot:
+        '本研究以偏最小平方法結構方程模型（PLS-SEM；path weighting、Mode A）檢驗研究模型（N = {n}）。',
+      measurement:
+        "測量模型方面，各構念之 Cronbach's α 介於 {alphaRange}、組合信度 CR 介於 {crRange}、" +
+        '平均萃取變異量 AVE 介於 {aveRange}，{measVerdict}',
+      measOk: '信度與收斂效度皆達建議門檻（CR ≥ .70、AVE ≥ .50）。',
+      measBad: '部分構念未達建議門檻（CR ≥ .70、AVE ≥ .50），解讀時應留意。',
+      htmt: '區辨效度方面，HTMT 最大值為 {htmtMax}，{htmtVerdict}',
+      htmtOk: '低於 .85 門檻，構念間具區辨效度。',
+      htmtBad: '高於 .85 門檻，部分構念間的區辨效度有疑慮。',
+      structuralIntro: '結構模型檢定結果：',
+      path: '{from} → {to}（β = {beta}, t = {t}, {pStr}, 95% CI [{lo}, {hi}]，{sig}）',
+      pathNoBoot: '{from} → {to}（β = {beta}）',
+      sigYes: '顯著',
+      sigNo: '未達顯著',
+      r2: '{lv} 的 R² = {r2}',
+      copyHint: '一鍵複製 APA 敘述',
     },
   },
 }
