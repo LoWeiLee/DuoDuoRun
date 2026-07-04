@@ -1,10 +1,11 @@
 /**
- * 統計核心 vs Python 黃金標準（scipy/statsmodels/pingouin/factor_analyzer/sklearn/semopy）
+ * 統計核心 vs Python 黃金標準（scipy/statsmodels/pingouin/factor_analyzer/sklearn/semopy/plspm）
  * 回歸測試。基準值由 tests/generate_reference.py 產生（固定種子，勿手改 fixtures/*.json）。
  *
  * 容差分級：
  *   預設 1e-6（相對誤差）— 演算法必須逐位對齊
  *   放寬項目見 TOL — 數值積分 / 迭代收斂細節造成的可容忍差異
+ *   PLS 迭代估計量統一 1e-4（TOL_PLS_ITERATIVE）；封閉式公式（標準化 α、HTMT）維持 1e-6
  *   SKIP — 已知且已記錄的慣例差異（詳見 docs/validation-report-v1.md）
  */
 import { describe, it, expect } from 'vitest'
@@ -27,6 +28,11 @@ const TOL = {
   'efa_pca_varimax.communalities': 1e-4,
   'logistic_regression.p_x1': 1e-5,
 }
+
+// PLS 迭代估計量（loadings/weights/path/R²/f²/rho_A/rho_c/AVE 等皆由迭代收斂的
+// 權重導出）→ 1e-4；封閉式公式（直接由指標相關矩陣計算）→ 預設 1e-6
+const TOL_PLS_ITERATIVE = 1e-4
+const PLS_CLOSED_FORM = new Set(['alphaStd_F1', 'alphaStd_F2', 'htmt_F1F2'])
 
 // 已知慣例差異，不比對（每項需在驗證報告中有對應記錄）
 const SKIP = {
@@ -54,7 +60,8 @@ describe('統計核心 vs Python 黃金標準', () => {
           it.skip(`${field} — ${SKIP[skipKey]}`, () => {})
           continue
         }
-        const tol = TOL[skipKey] ?? DEFAULT_TOL
+        const tol = TOL[skipKey] ??
+          (method === 'pls_basic' && !PLS_CLOSED_FORM.has(field) ? TOL_PLS_ITERATIVE : DEFAULT_TOL)
         it(`${field} (tol=${tol})`, () => {
           const got = actual[field]
           if (Array.isArray(expected)) {

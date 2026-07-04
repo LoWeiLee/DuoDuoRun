@@ -31,6 +31,7 @@ import { icc } from '../src/lib/stats/icc.js'
 import { exploratoryFactorAnalysis } from '../src/lib/stats/efa.js'
 import { oneProp, twoProp } from '../src/lib/stats/zProp.js'
 import { cfa } from '../src/lib/stats/cfa.js'
+import { runPLS } from '../src/lib/stats/pls.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const D = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures/datasets.json'), 'utf8'))
@@ -229,5 +230,46 @@ export const ADAPTERS = {
     ])
     return { chi2: r.chi2, df: r.df, cfi: r.fitIndices?.cfi, tli: r.fitIndices?.tli,
       rmsea: r.fitIndices?.rmsea }
+  },
+  // PLS-SEM（W1）：F1 =~ i1+i2+i3、F2 =~ i4+i5+i6、F1 → F2，path scheme、Mode A。
+  // 基準：plspm（逐欄 z-score 後輸入，見 generate_reference.py 的移植怪癖註記）
+  // ＋ numpy 手算（rho_A/rho_c/AVE/HTMT/標準化 α）。
+  pls_basic() {
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'], mode: 'reflective' },
+        { name: 'F2', indicators: ['i4', 'i5', 'i6'], mode: 'reflective' },
+      ],
+      paths: [{ from: 'F1', to: 'F2' }],
+    }
+    const r = runPLS(main, model)
+    if (r.error) throw new Error(`runPLS failed: ${r.error} — ${r.message}`)
+    const load = Object.fromEntries(r.outerLoadings.map((q) => [q.indicator, q.loading]))
+    const wt = Object.fromEntries(r.outerWeights.map((q) => [q.indicator, q.weight]))
+    const rel = Object.fromEntries(r.reliability.map((q) => [q.lv, q]))
+    const st = r.structural.find((q) => q.lv === 'F2')
+    // cross-loadings 攤平：列 = i1..i6、欄 = F1,F2（row-major，對齊 Python 端）
+    const crossLoadings = items6.flatMap((ind) => {
+      const row = r.crossLoadings.find((q) => q.indicator === ind)
+      return [row.values.F1, row.values.F2]
+    })
+    return {
+      loading_i1: load.i1, loading_i2: load.i2, loading_i3: load.i3,
+      loading_i4: load.i4, loading_i5: load.i5, loading_i6: load.i6,
+      weight_i1: wt.i1, weight_i2: wt.i2, weight_i3: wt.i3,
+      weight_i4: wt.i4, weight_i5: wt.i5, weight_i6: wt.i6,
+      path_F1_F2: r.pathCoefficients.find((q) => q.from === 'F1' && q.to === 'F2').coef,
+      r2_F2: st.r2, adjR2_F2: st.adjR2,
+      f2_F1_F2: st.predictors.find((q) => q.from === 'F1').f2,
+      alphaStd_F1: rel.F1.alpha, alphaStd_F2: rel.F2.alpha,
+      rhoA_F1: rel.F1.rhoA, rhoA_F2: rel.F2.rhoA,
+      rhoC_F1: rel.F1.rhoC, rhoC_F2: rel.F2.rhoC,
+      ave_F1: rel.F1.ave, ave_F2: rel.F2.ave,
+      sqrtAve_F1: r.fornellLarcker.matrix[0][0], sqrtAve_F2: r.fornellLarcker.matrix[1][1],
+      lvCorr_F1F2: r.latentCorrelations.matrix[0][1],
+      htmt_F1F2: r.htmt.matrix[0][1],
+      crossLoadings,
+    }
   },
 }

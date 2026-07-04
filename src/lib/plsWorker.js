@@ -1,0 +1,77 @@
+/**
+ * PLS-SEM 運算 Web Worker（Vite module worker）
+ *
+ * W2 UI 的接法（Vite 的 new Worker(new URL(...)) 模式）：
+ *   const worker = new Worker(new URL('./plsWorker.js', import.meta.url), { type: 'module' })
+ *   worker.postMessage({ type: 'run', rows, model, options })
+ *   worker.onmessage = ({ data }) => {
+ *     if (data.type === 'progress') { ... }   // bootstrap 完成進度
+ *     if (data.type === 'result')   { ... }   // { estimate, bootstrap }
+ *     if (data.type === 'error')    { ... }   // { error, message }
+ *   }
+ *
+ * 訊息協定：
+ *   in : { type: 'run', rows, model, options }
+ *        options 直接傳給 runPLS/bootstrapPLS；
+ *        options.bootstrap = false        → 只做點估計，不跑 bootstrap
+ *        options.bootstrap = { n, seed, ciAlpha, signCorrection } → bootstrap 專屬設定
+ *   out: { type: 'progress', done, total }  — bootstrap 期間定期回報（約每 1%）
+ *        { type: 'result', estimate, bootstrap }（bootstrap 關閉時為 null）
+ *        { type: 'error', error, message }
+ *
+ * 取消：bootstrap 是同步迴圈（Worker 執行中不會處理 inbound 訊息），
+ *       取消的正確方式是主執行緒呼叫 worker.terminate() 後重建 Worker。
+ *       progress 訊息由 Worker 內 postMessage 送出，不受同步迴圈影響。
+ *
+ * 引擎程式碼同構：runPLS/bootstrapPLS 為純函式，本檔在 Node（Vitest）環境
+ * import 時不會註冊任何 listener（isWorkerScope 判斷），可直接測 handleMessage。
+ */
+import { runPLS, bootstrapPLS } from './stats/pls.js'
+
+/**
+ * 處理一則 'run' 訊息。post 為訊息送出函式（Worker 中是 self.postMessage）。
+ * 抽成純函式供 Node 端單元測試。
+ */
+export function handleMessage(msg, post) {
+  if (!msg || msg.type !== 'run') {
+    post({ type: 'error', error: 'bad-message', message: `未知的訊息類型：${msg?.type}` })
+    return
+  }
+  try {
+    const { rows, model, options = {} } = msg
+    const { bootstrap: bootOpt, ...estimateOptions } = options
+
+    const estimate = runPLS(rows, model, estimateOptions)
+    if (estimate.error) {
+      post({ type: 'error', error: estimate.error, message: estimate.message })
+      return
+    }
+
+    let bootstrap = null
+    if (bootOpt !== false) {
+      const bopt = {
+        ...estimateOptions,
+        ...(typeof bootOpt === 'object' && bootOpt !== null ? bootOpt : {}),
+        onProgress: (done, total) => post({ type: 'progress', done, total }),
+      }
+      bootstrap = bootstrapPLS(rows, model, bopt)
+      if (bootstrap.error) {
+        post({ type: 'error', error: bootstrap.error, message: bootstrap.message })
+        return
+      }
+    }
+    post({ type: 'result', estimate, bootstrap })
+  } catch (err) {
+    post({ type: 'error', error: 'unexpected', message: String(err?.message ?? err) })
+  }
+}
+
+// 只在真正的 Worker 環境註冊 listener（Node/Vitest import 本檔不產生副作用）
+const isWorkerScope =
+  typeof self !== 'undefined' &&
+  typeof self.postMessage === 'function' &&
+  typeof window === 'undefined'
+
+if (isWorkerScope) {
+  self.onmessage = (e) => handleMessage(e.data, (m) => self.postMessage(m))
+}

@@ -354,6 +354,114 @@ try:
 except Exception as e:
     put("cfa_2factor", f"semopy FAILED: {e}")
 
+# --- PLS-SEM（plspm PATH scheme ＋ numpy 手算），Wave 1 基準
+# 模型：F1 =~ i1+i2+i3、F2 =~ i4+i5+i6（皆反映型 Mode A）、F1 → F2，path scheme。
+#
+# ⚠ Python plspm 的 scaled=True「不是」逐欄 z-score——它把所有欄位除以同一個
+#   pooled SD（config.treat: metric_data.stack().std()），與 R plspm / SmartPLS /
+#   seminr 的逐指標標準化不同（2026-07-04 讀源碼確認的移植怪癖）。欄位變異不等時
+#   其 Mode A 共變異數權重會收斂到不同解。因此這裡「先逐欄 z-score 再餵 plspm」，
+#   使各欄尺度相等 → 共變異數權重等價 correlation weights，對齊 SmartPLS 4 行為。
+#   （由 Kevin 本機 R seminr 抽驗複核，見 roadmap W1 驗證基準。）
+#
+# plspm 不提供的量以 numpy 依公式手算：
+#   rho_A  — Dijkstra & Henseler (2015), Psychometrika 80(2), eq. (12)，
+#            權重先正規化使 w'Sw=1（LV 分數單位變異）
+#   rho_c  — Jöreskog (1971) composite reliability
+#   AVE    — Fornell & Larcker (1981)
+#   HTMT   — Henseler, Ringle & Sarstedt (2015), JAMS 43(1)
+#   alphaStd — 標準化 Cronbach's α（相關矩陣版；PLS 對標準化資料運算，
+#              與 pingouin 原始分數版的 cronbach_alpha_f1 數值不同屬預期）
+try:
+    import plspm.config as plsc
+    from plspm.plspm import Plspm
+    from plspm.scheme import Scheme as PlsScheme
+    from plspm.mode import Mode as PlsMode
+
+    pls_items = mainc[["i1", "i2", "i3", "i4", "i5", "i6"]].astype(float)
+    pls_z = (pls_items - pls_items.mean()) / pls_items.std(ddof=1)
+    pls_structure = pd.DataFrame([[0, 0], [1, 0]], index=["F1", "F2"], columns=["F1", "F2"])
+    pls_cfg = plsc.Config(pls_structure, scaled=True)
+    pls_cfg.add_lv("F1", PlsMode.A, plsc.MV("i1"), plsc.MV("i2"), plsc.MV("i3"))
+    pls_cfg.add_lv("F2", PlsMode.A, plsc.MV("i4"), plsc.MV("i5"), plsc.MV("i6"))
+    pls = Plspm(pls_z, pls_cfg, PlsScheme.PATH, iterations=1000, tolerance=1e-12)
+
+    pls_om = pls.outer_model()
+    pls_blocks = {"F1": ["i1", "i2", "i3"], "F2": ["i4", "i5", "i6"]}
+    pls_cols = list(pls_items.columns)
+    R_ind = np.corrcoef(pls_items.values.T)  # 指標相關矩陣（原始與標準化資料相同）
+
+    def _block_R(lv):
+        idx = [pls_cols.index(cc) for cc in pls_blocks[lv]]
+        return R_ind[np.ix_(idx, idx)]
+
+    pls_load = {lv: pls_om.loc[pls_blocks[lv], "loading"].values for lv in pls_blocks}
+    # 權重正規化：w'Sw = 1（LV 分數單位樣本變異）——消除實作間縮放慣例差異
+    # （plspm 分數為母體單位變異、JS 為樣本單位變異，正規化後兩者可直接比對）
+    pls_w = {}
+    for lv in pls_blocks:
+        S = _block_R(lv)
+        wv = pls_om.loc[pls_blocks[lv], "weight"].values
+        pls_w[lv] = wv / np.sqrt(wv @ S @ wv)
+
+    def _rho_a(lv):  # Dijkstra & Henseler 2015, eq. (12)
+        S = _block_R(lv)
+        wv = pls_w[lv]
+        S0 = S - np.diag(np.diag(S))
+        W0 = np.outer(wv, wv) - np.diag(wv ** 2)
+        return float((wv @ wv) ** 2 * (wv @ S0 @ wv) / (wv @ W0 @ wv))
+
+    def _rho_c(lv):  # Jöreskog 1971
+        l = pls_load[lv]
+        return float(l.sum() ** 2 / (l.sum() ** 2 + (1 - l ** 2).sum()))
+
+    def _ave(lv):  # Fornell & Larcker 1981
+        return float((pls_load[lv] ** 2).mean())
+
+    def _alpha_std(lv):  # 標準化 α（相關矩陣版）
+        S = _block_R(lv)
+        k = S.shape[0]
+        return float(k / (k - 1) * (1 - k / S.sum()))
+
+    def _htmt(lv_a, lv_b):  # Henseler et al. 2015
+        ia = [pls_cols.index(cc) for cc in pls_blocks[lv_a]]
+        ib = [pls_cols.index(cc) for cc in pls_blocks[lv_b]]
+        hetero = R_ind[np.ix_(ia, ib)].mean()
+        def mono(idx):
+            k = len(idx)
+            S = R_ind[np.ix_(idx, idx)]
+            return (S.sum() - k) / (k * (k - 1))
+        return float(hetero / np.sqrt(mono(ia) * mono(ib)))
+
+    pls_scores = pls.scores()
+    pls_lv_corr = float(np.corrcoef(pls_scores["F1"], pls_scores["F2"])[0, 1])
+    pls_path = float(pls.path_coefficients().loc["F2", "F1"])
+    pls_r2 = float(pls.inner_summary().loc["F2", "r_squared"])
+    pls_adj_r2 = 1 - (1 - pls_r2) * (N - 1) / (N - 1 - 1)  # 1 個前置 LV
+    pls_f2 = pls_r2 / (1 - pls_r2)  # 唯一前置 LV：R²_excluded = 0
+    # cross-loadings：列 = i1..i6、欄 = F1,F2，攤平成 12 元素陣列（row-major）
+    pls_cross = pls.crossloadings().loc[pls_cols, ["F1", "F2"]].values.flatten().tolist()
+
+    put("pls_basic",
+        "plspm 0.5.7(PATH scheme, 逐欄 z-score 後輸入, tol=1e-12) + numpy 手算"
+        "（rho_A: Dijkstra-Henseler 2015 eq.12; rho_c: Jöreskog 1971; "
+        "AVE: Fornell-Larcker 1981; HTMT: Henseler et al. 2015; "
+        "權重正規化 w'Sw=1 後比對）",
+        loading_i1=pls_load["F1"][0], loading_i2=pls_load["F1"][1], loading_i3=pls_load["F1"][2],
+        loading_i4=pls_load["F2"][0], loading_i5=pls_load["F2"][1], loading_i6=pls_load["F2"][2],
+        weight_i1=pls_w["F1"][0], weight_i2=pls_w["F1"][1], weight_i3=pls_w["F1"][2],
+        weight_i4=pls_w["F2"][0], weight_i5=pls_w["F2"][1], weight_i6=pls_w["F2"][2],
+        path_F1_F2=pls_path, r2_F2=pls_r2, adjR2_F2=pls_adj_r2, f2_F1_F2=pls_f2,
+        alphaStd_F1=_alpha_std("F1"), alphaStd_F2=_alpha_std("F2"),
+        rhoA_F1=_rho_a("F1"), rhoA_F2=_rho_a("F2"),
+        rhoC_F1=_rho_c("F1"), rhoC_F2=_rho_c("F2"),
+        ave_F1=_ave("F1"), ave_F2=_ave("F2"),
+        sqrtAve_F1=math.sqrt(_ave("F1")), sqrtAve_F2=math.sqrt(_ave("F2")),
+        lvCorr_F1F2=pls_lv_corr, htmt_F1F2=_htmt("F1", "F2"),
+        crossLoadings=[round(v, 10) for v in pls_cross])
+except Exception as e:
+    put("pls_basic", f"plspm FAILED: {e}")
+
 with open(os.path.join(FIX, "reference.json"), "w") as f:
     json.dump(REF, f, indent=1)
 
