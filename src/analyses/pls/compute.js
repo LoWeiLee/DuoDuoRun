@@ -15,10 +15,11 @@
  *                                 q2 未開啟時為 null
  *   { error, message }          — 點估計本身失敗
  *
- * TODO(W4)：Worker 接線 — src/lib/plsWorker.js 已備妥訊息協定（run / progress / result / error，
+ * TODO(W5)：Worker 接線 — src/lib/plsWorker.js 已備妥訊息協定（run / progress / result / error，
  * 含 q2），本檔目前為主執行緒同步計算（bootstrap ≤ 5000 次在示範資料量約 1–3 秒；
- * BCa 另加 n 次 jackknife）。接線時把 Result/Narrative 的 useMemo 改為
- * useEffect + worker.postMessage，以 progress 訊息驅動進度條。
+ * BCa 另加 n 次 jackknife；W4 兩階段模型每次重抽跑 2–3 次估計，成本約 2–3 倍，
+ * 到 W5 的 permutation/k-fold 重運算時一併接 Worker）。接線時把 Result/Narrative 的
+ * useMemo 改為 useEffect + worker.postMessage，以 progress 訊息驅動進度條。
  */
 import { runPLS, bootstrapPLS, blindfoldPLS } from '../../lib/stats/pls.js'
 

@@ -154,6 +154,81 @@ function buildNarrative(res, lang) {
   parts.push(a.structuralIntro + pathSentences.join(sep) + period)
   parts.push(r2Sentences.join(sep) + period)
 
+  // 調節（W4）：交互效果與 simple slopes（推論需要 bootstrap）
+  if (bootOk && Array.isArray(estimate.interactions) && estimate.interactions.length > 0) {
+    const pathBoot = new Map(bootstrap.paths.map((q) => [`${q.from}→${q.to}`, q]))
+    for (const it of estimate.interactions) {
+      for (const tg of it.targets) {
+        const b = pathBoot.get(`${it.name}→${tg.to}`)
+        if (!b) continue
+        const stat = fillTemplate(a.modStat, {
+          t: fmtNum(b.t, 2),
+          pStr: pStr(b.p, lang),
+          cl: fmtNum(b.ciLower, 2),
+          ch: fmtNum(b.ciUpper, 2),
+        })
+        const sig = Number.isFinite(b.p) && b.p < 0.05 ? a.modSigYes : a.modSigNo
+        if (tg.quadratic) {
+          parts.push(fillTemplate(a.quadraticSentence, {
+            name: it.name, to: tg.to, beta: fmtNum(tg.coef, 2), stat, sig,
+          }))
+        } else {
+          let sentence = fillTemplate(a.moderation, {
+            name: it.name,
+            method: a.modMethodNames[it.method] || it.method,
+            to: tg.to,
+            beta: fmtNum(tg.coef, 2),
+            stat,
+            sig,
+          })
+          if (Array.isArray(tg.slopes)) {
+            const lo = tg.slopes.find((q) => q.level === -1)
+            const hi = tg.slopes.find((q) => q.level === 1)
+            sentence += fillTemplate(a.moderationSlopes, {
+              moderator: tg.moderator,
+              iv: tg.iv,
+              lo: fmtNum(lo.slope, 2),
+              hi: fmtNum(hi.slope, 2),
+            })
+          } else {
+            sentence += period
+          }
+          parts.push(sentence)
+        }
+      }
+    }
+  }
+
+  // 中介（W4）：效果分解與 Zhao et al. (2010) 類型判讀（推論需要 bootstrap）
+  if (bootOk && estimate.mediation && Array.isArray(bootstrap.indirectEffects)) {
+    const tiMap = new Map((bootstrap.totalIndirectEffects || []).map((q) => [`${q.from}|${q.to}`, q]))
+    const dirMap = new Map(bootstrap.paths.map((q) => [`${q.from}|${q.to}`, q]))
+    const sentences = estimate.mediation.effects.map((eff) => {
+      const key = `${eff.from}|${eff.to}`
+      const ti = tiMap.get(key)
+      const dir = eff.direct !== null ? dirMap.get(key) : null
+      const indirectSig = ti && Number.isFinite(ti.ciLower) && (ti.ciLower > 0 || ti.ciUpper < 0)
+      const directSig = dir && Number.isFinite(dir.p) && dir.p < 0.05
+      let type
+      if (indirectSig && directSig) {
+        type = Math.sign(eff.direct) === Math.sign(eff.totalIndirect) ? 'complementary' : 'competitive'
+      } else if (indirectSig) type = 'indirectOnly'
+      else if (directSig) type = 'directOnly'
+      else type = 'none'
+      return fillTemplate(a.mediationSentence, {
+        from: eff.from,
+        to: eff.to,
+        total: fmtNum(eff.total, 2),
+        direct: eff.direct === null ? a.noDirect : fmtNum(eff.direct, 2),
+        indirect: fmtNum(eff.totalIndirect, 2),
+        ci: ti ? fillTemplate(a.mediationCi, { lo: fmtNum(ti.ciLower, 2), hi: fmtNum(ti.ciUpper, 2) }) : '',
+        vaf: eff.vaf === null ? '' : fillTemplate(a.mediationVaf, { vaf: `${fmtNum(eff.vaf * 100, 1)}%` }),
+        type: fillTemplate(a.mediationType, { type: a.medTypes[type] }),
+      })
+    })
+    parts.push(a.mediationIntro + sentences.join(sep) + period)
+  }
+
   return parts.join(lang === 'en' ? ' ' : '').trim()
 }
 

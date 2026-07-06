@@ -507,3 +507,233 @@ describe('plsWorker 協定（Node 端 handleMessage 煙霧測試）', () => {
     expect(out[0].error).toBe('bad-message')
   })
 })
+
+/* ─────────────────────────  W4：調節 / 高階構念 / 中介  ───────────────────────── */
+
+const MOD_MODEL = () => ({
+  schemaVersion: 1,
+  latentVariables: [
+    { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+    { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+    { name: 'Y', indicators: ['y'] },
+  ],
+  interactions: [{ name: 'F1xC', factors: ['F1', 'C'] }],
+  paths: [{ from: 'F1', to: 'Y' }, { from: 'F1xC', to: 'Y' }],
+})
+
+const HOC_MODEL = (method) => ({
+  schemaVersion: 1,
+  latentVariables: [
+    { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+    { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+    { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+    { name: 'Y', indicators: ['y'] },
+  ],
+  higherOrder: [{ name: 'G', components: ['F1', 'F2'], mode: 'reflective', method }],
+  paths: [{ from: 'G', to: 'C' }, { from: 'C', to: 'Y' }],
+})
+
+describe('W4：模型驗證（interactions / higherOrder）', () => {
+  it('合法調節模型通過並補上預設 method（two-stage）', () => {
+    const v = validatePLSModel(MOD_MODEL())
+    expect(v.ok).toBe(true)
+    expect(v.model.interactions[0].method).toBe('two-stage')
+  })
+  it('拒絕交互項作為路徑 to', () => {
+    const m = MOD_MODEL()
+    m.paths.push({ from: 'Y', to: 'F1xC' })
+    const v = validatePLSModel(m)
+    expect(v.ok).toBe(false)
+    expect(v.errors.join()).toContain('交互項')
+  })
+  it('拒絕未宣告的 factor', () => {
+    const m = MOD_MODEL()
+    m.interactions[0].factors = ['F1', 'Nope']
+    expect(validatePLSModel(m).ok).toBe(false)
+  })
+  it('拒絕沒有任何路徑的交互項', () => {
+    const m = MOD_MODEL()
+    m.paths = [{ from: 'F1', to: 'Y' }]
+    const v = validatePLSModel(m)
+    expect(v.ok).toBe(false)
+    expect(v.errors.join()).toContain('F1xC')
+  })
+  it('拒絕混用交互 method', () => {
+    const m = MOD_MODEL()
+    m.interactions.push({ name: 'I2', factors: ['F1', 'C'], method: 'product-indicator' })
+    m.paths.push({ from: 'I2', to: 'Y' })
+    const v = validatePLSModel(m)
+    expect(v.ok).toBe(false)
+    expect(v.errors.join()).toContain('一致')
+  })
+  it('product indicator 拒絕二次效果（同構念兩次），two-stage 允許', () => {
+    const m = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'Y', indicators: ['y'] },
+      ],
+      interactions: [{ name: 'F1sq', factors: ['F1', 'F1'], method: 'product-indicator' }],
+      paths: [{ from: 'F1', to: 'Y' }, { from: 'F1sq', to: 'Y' }],
+    }
+    expect(validatePLSModel(m).ok).toBe(false)
+    m.interactions[0].method = 'two-stage'
+    expect(validatePLSModel(m).ok).toBe(true)
+  })
+  it('調節變數不可是交互項的依變數（循環）', () => {
+    const m = MOD_MODEL()
+    m.paths = [{ from: 'F1', to: 'C' }, { from: 'F1xC', to: 'C' }]
+    const v = validatePLSModel(m)
+    expect(v.ok).toBe(false)
+    expect(v.errors.join()).toContain('循環')
+  })
+  it('HOC：合法宣告通過並補上預設（reflective / repeated）', () => {
+    const m = HOC_MODEL(undefined)
+    delete m.higherOrder[0].mode
+    delete m.higherOrder[0].method
+    const v = validatePLSModel(m)
+    expect(v.ok).toBe(true)
+    expect(v.model.higherOrder[0].mode).toBe('reflective')
+    expect(v.model.higherOrder[0].method).toBe('repeated')
+  })
+  it('HOC：低階構念不可直接出現在路徑中', () => {
+    const m = HOC_MODEL('repeated')
+    m.paths.push({ from: 'F1', to: 'Y' })
+    const v = validatePLSModel(m)
+    expect(v.ok).toBe(false)
+    expect(v.errors.join()).toContain('低階構念')
+  })
+  it('HOC：名稱與既有構念衝突被拒；LOC 不可作為交互項 factor', () => {
+    const m1 = HOC_MODEL('repeated')
+    m1.higherOrder[0].name = 'F1'
+    expect(validatePLSModel(m1).ok).toBe(false)
+    const m2 = HOC_MODEL('repeated')
+    m2.interactions = [{ name: 'I', factors: ['F1', 'C'] }]
+    m2.paths.push({ from: 'I', to: 'Y' })
+    const v2 = validatePLSModel(m2)
+    expect(v2.ok).toBe(false)
+    expect(v2.errors.join()).toContain('低階構念')
+  })
+})
+
+describe('W4：two-stage 調節（引擎行為）', () => {
+  it('自動補主效果路徑（C→Y）並記錄於 meta.autoAddedPaths', () => {
+    const r = runPLS(main, MOD_MODEL())
+    expect(r.error).toBeUndefined()
+    expect(r.meta.autoAddedPaths).toEqual([{ from: 'C', to: 'Y' }])
+    expect(r.pathCoefficients.some((q) => q.from === 'C' && q.to === 'Y')).toBe(true)
+  })
+  it('交互項係數＝標準化係數 ÷ sd(乘積)；simple slopes 代數一致', () => {
+    const r = runPLS(main, MOD_MODEL())
+    const p = r.pathCoefficients.find((q) => q.from === 'F1xC')
+    const int = r.interactions[0]
+    expect(p.coef).toBeCloseTo(p.coefStd / int.sdProduct, 12)
+    const tg = int.targets[0]
+    const s = Object.fromEntries(tg.slopes.map((q) => [q.level, q.slope]))
+    expect(s[1] - s[-1]).toBeCloseTo(2 * p.coef, 10)
+    expect(s[0]).toBeCloseTo(r.pathCoefficients.find((q) => q.from === 'F1' && q.to === 'Y').coef, 12)
+  })
+  it('stage1 子報表提供原始指標量測；最終（分數層）模型不報 fit', () => {
+    const r = runPLS(main, MOD_MODEL())
+    expect(r.stage1).toBeDefined()
+    expect(r.stage1.outerLoadings.some((q) => q.indicator === 'i1')).toBe(true)
+    expect(r.stage1.fit).not.toBeNull()
+    expect(r.fit).toBeNull()
+    expect(r.outerLoadings.every((q) => q.indicator.endsWith('_score'))).toBe(true)
+  })
+  it('derived 新資料檔：構念分數欄＋交互項欄、列數 = n', () => {
+    const r = runPLS(main, MOD_MODEL())
+    expect(r.derived.columns).toContain('F1_score')
+    expect(r.derived.columns).toContain('F1xC_score')
+    expect(r.derived.rows).toHaveLength(r.meta.n)
+  })
+  it('PLSc 與調節／高階構念併用被拒', () => {
+    const r1 = runPLS(main, MOD_MODEL(), { consistent: true })
+    expect(r1.error).toBe('plsc-w4-not-supported')
+    const r2 = runPLS(main, HOC_MODEL('repeated'), { consistent: true })
+    expect(r2.error).toBe('plsc-w4-not-supported')
+  })
+  it('blindfoldPLS 拒絕 W4 模型', () => {
+    expect(blindfoldPLS(main, MOD_MODEL()).error).toBe('q2-not-supported')
+    expect(blindfoldPLS(main, HOC_MODEL('repeated')).error).toBe('q2-not-supported')
+  })
+})
+
+describe('W4：高階構念（引擎行為）', () => {
+  it('repeated：HTMT 對 G×LOC 配對為 null，其他配對照常', () => {
+    const r = runPLS(main, HOC_MODEL('repeated'))
+    expect(r.error).toBeUndefined()
+    const names = r.htmt.lvNames
+    const g = names.indexOf('G')
+    const f1 = names.indexOf('F1')
+    const c = names.indexOf('C')
+    expect(r.htmt.matrix[g][f1]).toBeNull()
+    expect(r.htmt.matrix[f1][c]).not.toBeNull()
+  })
+  it('disjoint / embedded：G 以 LOC 分數為指標，stage1 提供 LOC 量測', () => {
+    for (const method of ['disjoint', 'two-stage']) {
+      const r = runPLS(main, HOC_MODEL(method))
+      expect(r.error).toBeUndefined()
+      const gInds = r.outerLoadings.filter((q) => q.lv === 'G').map((q) => q.indicator)
+      expect(gInds).toEqual(['F1_score', 'F2_score'])
+      expect(r.stage1.outerLoadings.some((q) => q.lv === 'F1' && q.indicator === 'i1')).toBe(true)
+      expect(r.derived.rows).toHaveLength(r.meta.n)
+    }
+  })
+})
+
+describe('W4：中介與 bootstrap', () => {
+  it('M4 中介分解代數一致：indirect = 路徑乘積、total = direct + totalIndirect、VAF', () => {
+    const r = runPLS(main, M4)
+    const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b).coef
+    const f1c = r.mediation.effects.find((q) => q.from === 'F1' && q.to === 'C')
+    expect(f1c.chains).toHaveLength(1)
+    expect(f1c.chains[0].coef).toBeCloseTo(path('F1', 'F2') * path('F2', 'C'), 12)
+    expect(f1c.total).toBeCloseTo(f1c.direct + f1c.totalIndirect, 12)
+    expect(f1c.vaf).toBeCloseTo(f1c.totalIndirect / f1c.total, 12)
+    const f1y = r.mediation.effects.find((q) => q.from === 'F1' && q.to === 'Y')
+    expect(f1y.direct).toBeNull()
+    expect(f1y.total).toBeCloseTo(f1y.totalIndirect, 12)
+  })
+  it('單一路徑模型（無中介鏈）mediation 為 null', () => {
+    const r = runPLS(main, MODEL)
+    expect(r.mediation).toBeNull()
+  })
+  it('bootstrap 回報中介效果 CI 且同種子完全可重現', () => {
+    const b1 = bootstrapPLS(main, M4, { n: 150, seed: 42 })
+    const b2 = bootstrapPLS(main, M4, { n: 150, seed: 42 })
+    expect(b1.error).toBeUndefined()
+    expect(JSON.stringify(b1)).toBe(JSON.stringify(b2))
+    const ind = b1.indirectEffects.find((q) => q.from === 'F1' && q.to === 'C')
+    expect(ind.via).toEqual(['F2'])
+    expect(ind.se).toBeGreaterThan(0)
+    expect(ind.ciLower).toBeLessThan(ind.ciUpper)
+    const tot = b1.totalEffects.find((q) => q.from === 'F1' && q.to === 'C')
+    expect(tot.original).toBeCloseTo(
+      runPLS(main, M4).mediation.effects.find((q) => q.from === 'F1' && q.to === 'C').total, 12)
+  })
+  it('調節模型 bootstrap：可重現、paths 用未標準化交互係數、slopes 附 CI', () => {
+    const b1 = bootstrapPLS(main, MOD_MODEL(), { n: 100, seed: 42 })
+    const b2 = bootstrapPLS(main, MOD_MODEL(), { n: 100, seed: 42 })
+    expect(b1.error).toBeUndefined()
+    expect(JSON.stringify(b1)).toBe(JSON.stringify(b2))
+    const r = runPLS(main, MOD_MODEL())
+    const pInt = b1.paths.find((q) => q.from === 'F1xC')
+    expect(pInt.original).toBeCloseTo(
+      r.pathCoefficients.find((q) => q.from === 'F1xC').coef, 12)
+    expect(b1.slopes).toHaveLength(3)
+    for (const s of b1.slopes) {
+      expect(s.ciLower).toBeLessThan(s.ciUpper)
+      expect(Number.isFinite(s.se)).toBe(true)
+    }
+    // loadings 來自第一階段（原始指標）
+    expect(b1.loadings.some((q) => q.indicator === 'i1')).toBe(true)
+  })
+  it('HOC repeated 模型 bootstrap 可重現且路徑含 G→C', () => {
+    const b = bootstrapPLS(main, HOC_MODEL('repeated'), { n: 80, seed: 42 })
+    expect(b.error).toBeUndefined()
+    expect(b.paths.some((q) => q.from === 'G' && q.to === 'C')).toBe(true)
+    const ind = b.indirectEffects.find((q) => q.from === 'G' && q.to === 'Y')
+    expect(ind.via).toEqual(['C'])
+  })
+})

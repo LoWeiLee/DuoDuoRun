@@ -196,7 +196,7 @@ function jacobiEigen(Ain, maxSweeps = 80) {
  * 驗證模型 JSON（規則見 docs/pls-model-schema.md 第 2 節）。
  * @returns {{ok:true, model:object} | {ok:false, errors:string[]}}
  */
-export function validatePLSModel(model) {
+export function validatePLSModel(model, allowSharedIndicators = false) {
   const errors = []
   if (!model || typeof model !== 'object' || Array.isArray(model)) {
     return { ok: false, errors: ['模型必須是物件（見 docs/pls-model-schema.md）'] }
@@ -243,7 +243,7 @@ export function validatePLSModel(model) {
       }
       if (seenInBlock.has(ind)) errors.push(`指標「${ind}」在潛在變數「${name}」內重複`)
       seenInBlock.add(ind)
-      if (indicatorOwner.has(ind) && indicatorOwner.get(ind) !== name) {
+      if (!allowSharedIndicators && indicatorOwner.has(ind) && indicatorOwner.get(ind) !== name) {
         errors.push(`指標「${ind}」重複掛載於「${indicatorOwner.get(ind)}」與「${name}」（一個指標只能屬於一個潛在變數）`)
       }
       indicatorOwner.set(ind, name)
@@ -262,11 +262,127 @@ export function validatePLSModel(model) {
     }
   }
 
+  /* ── W4：higherOrder（高階構念）宣告 ── */
+  const hocByName = new Map()
+  const componentOwner = new Map() // LOC name → HOC name
+  const normalizedHOCs = []
+  if (model.higherOrder !== undefined && model.higherOrder !== null) {
+    if (!Array.isArray(model.higherOrder)) {
+      errors.push('higherOrder 必須是陣列')
+    } else {
+      const hocMethods = new Set()
+      for (let i = 0; i < model.higherOrder.length; i++) {
+        const h = model.higherOrder[i]
+        if (!h || typeof h !== 'object' || typeof h.name !== 'string' || h.name.trim() === '') {
+          errors.push(`第 ${i + 1} 個高階構念缺少有效名稱`)
+          continue
+        }
+        if (lvNames.has(h.name) || indicatorOwner.has(h.name) || hocByName.has(h.name)) {
+          errors.push(`高階構念名稱「${h.name}」與既有潛在變數／指標／高階構念重複`)
+        }
+        if (!Array.isArray(h.components) || h.components.length < 2) {
+          errors.push(`高階構念「${h.name}」的 components 必須是至少 2 個低階構念的陣列`)
+          continue
+        }
+        const seenC = new Set()
+        let compOk = true
+        for (const c of h.components) {
+          if (typeof c !== 'string' || !lvNames.has(c)) {
+            errors.push(`高階構念「${h.name}」的低階構念「${c}」不是已宣告的潛在變數`)
+            compOk = false
+            continue
+          }
+          if (seenC.has(c)) { errors.push(`高階構念「${h.name}」的低階構念「${c}」重複`); compOk = false }
+          seenC.add(c)
+          if (componentOwner.has(c)) {
+            errors.push(`低階構念「${c}」同時屬於「${componentOwner.get(c)}」與「${h.name}」（一個低階構念只能屬於一個高階構念）`)
+            compOk = false
+          }
+          componentOwner.set(c, h.name)
+        }
+        const mode = h.mode ?? 'reflective'
+        if (mode !== 'reflective' && mode !== 'formative') {
+          errors.push(`高階構念「${h.name}」的 mode 必須是 'reflective' 或 'formative'，收到「${h.mode}」`)
+        }
+        const method = h.method ?? 'repeated'
+        if (method !== 'repeated' && method !== 'two-stage' && method !== 'disjoint') {
+          errors.push(`高階構念「${h.name}」的 method 必須是 'repeated'、'two-stage' 或 'disjoint'，收到「${h.method}」`)
+        }
+        hocMethods.add(method)
+        if (compOk) {
+          hocByName.set(h.name, h)
+          normalizedHOCs.push({ name: h.name, components: [...h.components], mode, method })
+        }
+      }
+      if (hocMethods.size > 1) {
+        errors.push('多個高階構念的 method 必須一致（repeated / two-stage / disjoint 擇一）')
+      }
+    }
+  }
+
+  /* ── W4：interactions（調節／二次效果）宣告 ── */
+  const intByName = new Map()
+  const normalizedInts = []
+  if (model.interactions !== undefined && model.interactions !== null) {
+    if (!Array.isArray(model.interactions)) {
+      errors.push('interactions 必須是陣列')
+    } else {
+      const intMethods = new Set()
+      for (let i = 0; i < model.interactions.length; i++) {
+        const it = model.interactions[i]
+        if (!it || typeof it !== 'object' || typeof it.name !== 'string' || it.name.trim() === '') {
+          errors.push(`第 ${i + 1} 個交互項缺少有效名稱`)
+          continue
+        }
+        if (lvNames.has(it.name) || indicatorOwner.has(it.name)
+            || hocByName.has(it.name) || intByName.has(it.name)) {
+          errors.push(`交互項名稱「${it.name}」與既有潛在變數／指標／高階構念／交互項重複`)
+        }
+        if (!Array.isArray(it.factors) || it.factors.length < 2) {
+          errors.push(`交互項「${it.name}」的 factors 必須是至少 2 個構念的陣列`)
+          continue
+        }
+        const method = it.method ?? 'two-stage'
+        if (method !== 'two-stage' && method !== 'product-indicator' && method !== 'orthogonal') {
+          errors.push(`交互項「${it.name}」的 method 必須是 'two-stage'、'product-indicator' 或 'orthogonal'，收到「${it.method}」`)
+        }
+        intMethods.add(method)
+        for (const f of it.factors) {
+          if (typeof f !== 'string' || (!lvNames.has(f) && !hocByName.has(f))) {
+            errors.push(`交互項「${it.name}」的 factor「${f}」不是已宣告的潛在變數或高階構念`)
+          } else if (componentOwner.has(f)) {
+            errors.push(`交互項「${it.name}」的 factor「${f}」是高階構念「${componentOwner.get(f)}」的低階構念（低階構念由高階構念吸收，不能單獨作為 factor）`)
+          }
+        }
+        if (method !== 'two-stage') {
+          if (it.factors.length !== 2 || it.factors[0] === it.factors[1]) {
+            errors.push(`交互項「${it.name}」：product indicator / orthogonalizing 只支援兩個相異構念（二次效果與三向以上請用 two-stage）`)
+          } else {
+            for (const f of it.factors) {
+              const flv = normalizedLVs.find((q) => q.name === f)
+              if (!flv) {
+                errors.push(`交互項「${it.name}」：product indicator / orthogonalizing 的 factor 必須是一般（非高階）構念，「${f}」不是`)
+              } else if (flv.mode !== 'reflective') {
+                errors.push(`交互項「${it.name}」：product indicator / orthogonalizing 只支援反映型 factor（「${f}」是形成型）`)
+              }
+            }
+          }
+        }
+        intByName.set(it.name, it)
+        normalizedInts.push({ name: it.name, factors: [...it.factors], method })
+      }
+      if (intMethods.size > 1) {
+        errors.push('多個交互項的 method 必須一致（two-stage / product-indicator / orthogonal 擇一）')
+      }
+    }
+  }
+
   const paths = model.paths
   if (!Array.isArray(paths) || paths.length < 1) {
     errors.push('paths 必須是陣列且至少包含 1 條路徑')
     return { ok: false, errors }
   }
+  const isConstruct = (x) => lvNames.has(x) || hocByName.has(x)
   const pathKeys = new Set()
   for (let i = 0; i < paths.length; i++) {
     const p = paths[i]
@@ -274,23 +390,50 @@ export function validatePLSModel(model) {
       errors.push(`第 ${i + 1} 條路徑必須含 from 與 to（字串）`)
       continue
     }
-    if (!lvNames.has(p.from)) errors.push(`路徑 from「${p.from}」不是已宣告的潛在變數`)
-    if (!lvNames.has(p.to)) errors.push(`路徑 to「${p.to}」不是已宣告的潛在變數`)
+    if (!isConstruct(p.from) && !intByName.has(p.from)) {
+      errors.push(`路徑 from「${p.from}」不是已宣告的潛在變數`)
+    }
+    if (intByName.has(p.to)) {
+      errors.push(`路徑 to「${p.to}」是交互項——交互項只能作為前置（from），不能被解釋（to）`)
+    } else if (!isConstruct(p.to)) {
+      errors.push(`路徑 to「${p.to}」不是已宣告的潛在變數`)
+    }
+    if (componentOwner.has(p.from) || componentOwner.has(p.to)) {
+      const loc = componentOwner.has(p.from) ? p.from : p.to
+      errors.push(`路徑「${p.from} → ${p.to}」使用了低階構念「${loc}」——低階構念由高階構念「${componentOwner.get(loc)}」吸收，結構路徑請改用高階構念`)
+    }
     if (p.from === p.to) errors.push(`路徑「${p.from} → ${p.to}」是自環，不允許`)
     const key = `${p.from}→${p.to}`
     if (pathKeys.has(key)) errors.push(`路徑「${key}」重複宣告`)
     pathKeys.add(key)
   }
 
-  // 無環檢查（Kahn 拓撲排序）
-  if (errors.length === 0) {
-    const indeg = new Map([...lvNames].map((n) => [n, 0]))
-    const adj = new Map([...lvNames].map((n) => [n, []]))
-    for (const p of paths) {
-      adj.get(p.from).push(p.to)
-      indeg.set(p.to, indeg.get(p.to) + 1)
+  // 交互項必須出現在至少一條路徑（作為 from）
+  for (const name of intByName.keys()) {
+    if (!paths.some((p) => p && p.from === name)) {
+      errors.push(`交互項「${name}」未出現在任何路徑中（至少需要一條 ${name} → 依變數 的路徑）`)
     }
-    const queue = [...lvNames].filter((n) => indeg.get(n) === 0)
+  }
+
+  // 無環檢查（Kahn 拓撲排序）：節點 = 一般構念（非 LOC）＋高階構念；
+  // 交互項路徑 I→Y 以「各 factor→Y」的依賴邊展開（調節變數不可同時是其依變數）
+  if (errors.length === 0) {
+    const nodes = new Set([...lvNames].filter((n) => !componentOwner.has(n)))
+    for (const h of hocByName.keys()) nodes.add(h)
+    const indeg = new Map([...nodes].map((n) => [n, 0]))
+    const adj = new Map([...nodes].map((n) => [n, []]))
+    const addEdge = (a, b) => {
+      adj.get(a).push(b)
+      indeg.set(b, indeg.get(b) + 1)
+    }
+    for (const p of paths) {
+      if (intByName.has(p.from)) {
+        for (const f of new Set(intByName.get(p.from).factors)) addEdge(f, p.to)
+      } else {
+        addEdge(p.from, p.to)
+      }
+    }
+    const queue = [...nodes].filter((n) => indeg.get(n) === 0)
     let visited = 0
     while (queue.length) {
       const u = queue.shift()
@@ -300,13 +443,17 @@ export function validatePLSModel(model) {
         if (indeg.get(v) === 0) queue.push(v)
       }
     }
-    if (visited !== lvNames.size) {
-      errors.push('結構模型含循環路徑（PLS-SEM 要求遞迴模型，路徑圖必須無環）')
+    if (visited !== nodes.size) {
+      errors.push('結構模型含循環路徑（PLS-SEM 要求遞迴模型，路徑圖必須無環；含調節時，調節變數與其交互項的依變數之間也不可形成循環）')
     }
-    // 孤立 LV
+    // 孤立構念：一般構念（非 LOC）與高階構念必須出現在路徑中或作為交互項 factor
     const connected = new Set()
-    for (const p of paths) { connected.add(p.from); connected.add(p.to) }
-    for (const n of lvNames) {
+    for (const p of paths) {
+      if (!intByName.has(p.from)) connected.add(p.from)
+      connected.add(p.to)
+    }
+    for (const it of intByName.values()) for (const f of it.factors) connected.add(f)
+    for (const n of nodes) {
       if (!connected.has(n)) errors.push(`潛在變數「${n}」未出現在任何路徑中（孤立 LV 無法估計內部權重）`)
     }
   }
@@ -314,7 +461,13 @@ export function validatePLSModel(model) {
   if (errors.length > 0) return { ok: false, errors }
   return {
     ok: true,
-    model: { schemaVersion: ver, latentVariables: normalizedLVs, paths: paths.map((p) => ({ from: p.from, to: p.to })) },
+    model: {
+      schemaVersion: ver,
+      latentVariables: normalizedLVs,
+      paths: paths.map((p) => ({ from: p.from, to: p.to })),
+      ...(normalizedHOCs.length > 0 ? { higherOrder: normalizedHOCs } : {}),
+      ...(normalizedInts.length > 0 ? { interactions: normalizedInts } : {}),
+    },
   }
 }
 
@@ -620,8 +773,10 @@ function blockReliability(blockIdx, weights, loadings, indCorr) {
   return { alpha, rhoA, rhoC, ave }
 }
 
-/** HTMT 矩陣（Henseler et al. 2015）；不合格配對（單指標或形成型）為 null */
-function htmtMatrix(blocks, eligible, indCorr, L) {
+/** HTMT 矩陣（Henseler et al. 2015）；不合格配對（單指標或形成型）為 null。
+ *  blockedPairs（W4）：`a|b` 索引鍵集合——repeated indicators 高階構念與其低階構念
+ *  共用指標，HTMT 分母含重複指標的 r=1，數值無效 → 該配對回傳 null */
+function htmtMatrix(blocks, eligible, indCorr, L, blockedPairs = null) {
   const monoMean = blocks.map((b, j) => {
     const k = b.length
     if (!eligible[j] || k < 2) return null
@@ -635,6 +790,7 @@ function htmtMatrix(blocks, eligible, indCorr, L) {
     for (let b = 0; b < L; b++) {
       if (a === b) continue
       if (monoMean[a] === null || monoMean[b] === null) continue
+      if (blockedPairs && (blockedPairs.has(`${a}|${b}`) || blockedPairs.has(`${b}|${a}`))) continue
       let s = 0
       for (const g of blocks[a]) for (const h of blocks[b]) s += indCorr[g][h]
       const hetero = s / (blocks[a].length * blocks[b].length)
@@ -797,8 +953,8 @@ function fitStats(S, lamFlat, owner, Rlv, eigS) {
 
 /* ─────────────────────────  模型規格前處理（共用）  ───────────────────────── */
 
-function buildSpec(model, options) {
-  const v = validatePLSModel(model)
+function buildSpec(model, options, allowSharedIndicators = false) {
+  const v = validatePLSModel(model, allowSharedIndicators)
   if (!v.ok) return { error: 'invalid-model', message: v.errors.join('；'), errors: v.errors }
   const m = v.model
 
@@ -880,39 +1036,424 @@ function coreEstimates(cols, n, spec) {
   return { est, rawLoadingsByLV, lvCorr, effLoadingsByLV, effLvCorr, plsc, sm }
 }
 
-/* ─────────────────────────  主 API：runPLS  ───────────────────────── */
+/* ─────────────────────────  W4 管線（調節／高階構念／中介）  ───────────────────────── */
+
+/** rows-major 矩陣 → 欄位池（name → 原始值 Float64Array） */
+function toColumnPool(X, names) {
+  const n = X.length
+  const pool = new Map()
+  names.forEach((name, j) => {
+    const col = new Float64Array(n)
+    for (let i = 0; i < n; i++) col[i] = X[i][j]
+    pool.set(name, col)
+  })
+  return pool
+}
+
+/** 欄位陣列逐欄 z-score（ddof=1；不改動原欄）。零變異回傳該欄 index。 */
+function standardizeColArrays(raws) {
+  const cols = []
+  for (let j = 0; j < raws.length; j++) {
+    const srcCol = raws[j]
+    const n = srcCol.length
+    const m = meanOf(srcCol)
+    let ss = 0
+    for (let i = 0; i < n; i++) { const d = srcCol[i] - m; ss += d * d }
+    const s = Math.sqrt(ss / (n - 1))
+    if (!(s > 0)) return { zeroVarIndex: j }
+    const col = new Float64Array(n)
+    for (let i = 0; i < n; i++) col[i] = (srcCol[i] - m) / s
+    cols.push(col)
+  }
+  return { cols }
+}
+
+/** y 對 [1, xcols…] 的 OLS 殘差（orthogonalizing 法用；Little et al. 2006） */
+function residualizeOn(y, xcols) {
+  const n = y.length
+  const k = xcols.length + 1
+  const Xd = [(new Float64Array(n)).fill(1), ...xcols]
+  const XtX = []
+  for (let a = 0; a < k; a++) {
+    XtX.push(new Array(k))
+    for (let b = 0; b < k; b++) {
+      let s = 0
+      for (let i = 0; i < n; i++) s += Xd[a][i] * Xd[b][i]
+      XtX[a][b] = s
+    }
+  }
+  const Xty = new Array(k)
+  for (let a = 0; a < k; a++) {
+    let s = 0
+    for (let i = 0; i < n; i++) s += Xd[a][i] * y[i]
+    Xty[a] = s
+  }
+  const inv = inverse(XtX)
+  if (!inv) return null
+  const beta = inv.map((row) => row.reduce((s, v, q) => s + v * Xty[q], 0))
+  const res = new Float64Array(n)
+  for (let i = 0; i < n; i++) {
+    let yhat = 0
+    for (let a = 0; a < k; a++) yhat += beta[a] * Xd[a][i]
+    res[i] = y[i] - yhat
+  }
+  return res
+}
 
 /**
- * @param {object[]} rows  資料（物件陣列，欄位名 → 值）
- * @param {object} model   模型 JSON（docs/pls-model-schema.md）
- * @param {object} options { scheme:'path'|'factorial'|'centroid', consistent:boolean,
- *                           tolerance, maxIterations, missing:'casewise'|'mean' }
+ * 模型層計畫：驗證 → 正規化 → 自動補調節主效果路徑 → 需要的原始指標清單。
+ * 純模型/選項層，與資料無關（bootstrap 只建一次）。
  */
-export function runPLS(rows, model, options = {}) {
-  const spec = buildSpec(model, options)
+function buildPlan(model, options) {
+  const v = validatePLSModel(model)
+  if (!v.ok) return { error: 'invalid-model', message: v.errors.join('；'), errors: v.errors }
+  const m = v.model
+  const rawScheme = options.scheme ?? 'path'
+  const scheme = SCHEME_ALIASES[rawScheme]
+  if (!scheme) {
+    return { error: 'scheme-not-supported', message: `未知的 weighting scheme「${rawScheme}」（支援 path / factorial / centroid）` }
+  }
+  const hocs = m.higherOrder || []
+  const ints = m.interactions || []
+  if (options.consistent === true && (hocs.length > 0 || ints.length > 0)) {
+    return {
+      error: 'plsc-w4-not-supported',
+      message: 'PLSc（consistent PLS）目前不支援與調節／高階構念併用；請關閉 PLSc 或改用一般（composite）估計',
+    }
+  }
+  // 自動補主效果路徑（SmartPLS 4 Moderation 行為：交互項指向 Y 時，各 factor 也須直接指向 Y）
+  const pathKeys = new Set(m.paths.map((q) => `${q.from}→${q.to}`))
+  const autoAddedPaths = []
+  for (const it of ints) {
+    for (const q of m.paths) {
+      if (q.from !== it.name) continue
+      for (const f of new Set(it.factors)) {
+        const k = `${f}→${q.to}`
+        if (!pathKeys.has(k)) {
+          pathKeys.add(k)
+          autoAddedPaths.push({ from: f, to: q.to })
+        }
+      }
+    }
+  }
+  const fullPaths = [...m.paths.map((q) => ({ from: q.from, to: q.to })), ...autoAddedPaths]
+  const baseIndicators = []
+  const seen = new Set()
+  for (const lv of m.latentVariables) {
+    for (const ind of lv.indicators) {
+      if (!seen.has(ind)) { seen.add(ind); baseIndicators.push(ind) }
+    }
+  }
+  return {
+    model: m,
+    hocs,
+    ints,
+    hocMethod: hocs.length > 0 ? hocs[0].method : null,
+    interactionMethod: ints.length > 0 ? ints[0].method : null,
+    hasStages: (hocs.length > 0 && hocs[0].method !== 'repeated')
+      || (ints.length > 0 && ints[0].method === 'two-stage'),
+    autoAddedPaths,
+    fullPaths,
+    baseIndicators,
+    scheme,
+    consistent: options.consistent === true,
+    tolerance: options.tolerance ?? 1e-7,
+    maxIterations: options.maxIterations ?? 300,
+    missing: options.missing ?? 'casewise',
+  }
+}
+
+/** 在欄位池上執行一次完整 PLS 估計（buildSpec → 標準化 → coreEstimates） */
+function estimateStage(pool, n, modelS, plan, allowShared) {
+  const spec = buildSpec(modelS, {
+    scheme: plan.scheme,
+    consistent: plan.consistent,
+    tolerance: plan.tolerance,
+    maxIterations: plan.maxIterations,
+    missing: plan.missing,
+  }, allowShared)
   if (spec.error) return spec
-
-  const ext = extractMatrix(rows, spec.indicators, spec.missing)
-  if (ext.error) return ext
-  const { X, n, nDropped } = ext
-  if (n < 5) return { error: 'too-few-cases', message: `缺失值處理後樣本數只剩 ${n} 筆（至少需要 5 筆）` }
-
-  const std = standardizeColumns(X)
+  const raws = []
+  for (const name of spec.indicators) {
+    const col = pool.get(name)
+    if (!col) return { error: 'missing-column', message: `管線內部錯誤：找不到欄位「${name}」` }
+    raws.push(col)
+  }
+  const std = standardizeColArrays(raws)
   if (std.zeroVarIndex !== undefined) {
     return { error: 'zero-variance', message: `指標「${spec.indicators[std.zeroVarIndex]}」變異數為零，無法標準化` }
   }
-  const cols = std.cols
-
-  const ce = coreEstimates(cols, n, spec)
-  if (!ce) return { error: 'estimation-failed', message: 'PLS 迭代過程出現數值退化（零變異 LV 分數或奇異矩陣），請檢查指標間是否極度共線' }
+  const ce = coreEstimates(std.cols, n, spec)
+  if (!ce) {
+    return { error: 'estimation-failed', message: 'PLS 迭代過程出現數值退化（零變異 LV 分數或奇異矩陣），請檢查指標間是否極度共線' }
+  }
   if (ce.notConverged) {
     return { error: 'not-converged', message: `PLS 迭代在 ${spec.maxIterations} 次內未收斂（準則 ${spec.tolerance}），不回傳半成品結果；請檢查資料品質或模型設定` }
   }
+  return { spec, cols: std.cols, n, ce }
+}
+
+/** repeated indicators 展開：HOC 區塊 = 全部 LOC 指標；反映型 HOC→LOC、形成型 LOC→HOC */
+function hocExpandModel(lvsArr, pathsArr, hocs, allLVs) {
+  const lvs = lvsArr.map((l) => ({ name: l.name, indicators: [...l.indicators], mode: l.mode }))
+  const paths = pathsArr.map((q) => ({ from: q.from, to: q.to }))
+  for (const h of hocs) {
+    const inds = []
+    for (const c of h.components) {
+      const lv = allLVs.find((q) => q.name === c)
+      inds.push(...lv.indicators)
+    }
+    lvs.push({ name: h.name, indicators: inds, mode: h.mode })
+    for (const c of h.components) {
+      paths.push(h.mode === 'formative' ? { from: c, to: h.name } : { from: h.name, to: c })
+    }
+  }
+  return { lvs, paths }
+}
+
+/** disjoint 第一階段：無 HOC，由 LOC 直接承接 HOC 的所有結構關係 */
+function hocDisjointStage1(lvsArr, pathsArr, hocs) {
+  const hocNames = new Set(hocs.map((h) => h.name))
+  const compOf = new Map(hocs.map((h) => [h.name, h.components]))
+  const lvs = lvsArr.map((l) => ({ name: l.name, indicators: [...l.indicators], mode: l.mode }))
+  const paths = []
+  const key = new Set()
+  const push = (a, b) => {
+    const k = `${a}→${b}`
+    if (!key.has(k)) { key.add(k); paths.push({ from: a, to: b }) }
+  }
+  for (const q of pathsArr) {
+    const fromH = hocNames.has(q.from)
+    const toH = hocNames.has(q.to)
+    if (!fromH && !toH) push(q.from, q.to)
+    else if (fromH && !toH) for (const c of compOf.get(q.from)) push(c, q.to)
+    else if (!fromH && toH) for (const c of compOf.get(q.to)) push(q.from, c)
+    else for (const ca of compOf.get(q.from)) for (const cb of compOf.get(q.to)) push(ca, cb)
+  }
+  return { lvs, paths }
+}
+
+/**
+ * 執行整條估計管線：HOC 解析（repeated 展開／two-stage／disjoint）→
+ * 交互項解析（two-stage 分數乘積／product indicator／orthogonalizing）→ 最終估計。
+ * anchors（bootstrap 符號校正用）：依估計順序的原始 effLoadingsByLV 陣列；
+ * 中間階段的翻轉寫入下一階段資料（分數欄 × flip），最終階段翻轉由呼叫端套用於輸出。
+ */
+function executePlan(pool, n, plan, anchors) {
+  const intNames = new Set(plan.ints.map((q) => q.name))
+  const basePaths = plan.fullPaths.filter((q) => !intNames.has(q.from))
+  const intPaths = plan.fullPaths.filter((q) => intNames.has(q.from))
+  let curPool = pool
+  let curLVs = plan.model.latentVariables.map((l) => ({ name: l.name, indicators: [...l.indicators], mode: l.mode }))
+  let curPaths = basePaths
+  let relaxed = false
+  const estimations = [] // { st, flip } 依執行順序
+  const notes = []
+  const interactionInfo = []
+
+  const computeFlip = (st) => {
+    const L = st.spec.lvNames.length
+    const flip = new Array(L).fill(1)
+    const anchor = anchors ? anchors[estimations.length] : null
+    if (!anchor) return flip
+    for (let j = 0; j < L; j++) {
+      const lj = st.ce.effLoadingsByLV[j]
+      const aj = anchor[j]
+      let dot = 0
+      for (let h = 0; h < lj.length; h++) dot += lj[h] * aj[h]
+      if (dot < 0) flip[j] = -1
+    }
+    return flip
+  }
+  const scoreColumn = (st, flip, name) => {
+    const j = st.spec.lvNames.indexOf(name)
+    const y = st.ce.est.scores[j]
+    const f = flip[j]
+    const c = new Float64Array(n)
+    for (let i = 0; i < n; i++) c[i] = f * y[i]
+    return c
+  }
+
+  /* ── 步驟 1：高階構念 ── */
+  if (plan.hocs.length > 0) {
+    if (plan.hocMethod === 'repeated') {
+      const exp = hocExpandModel(curLVs, curPaths, plan.hocs, plan.model.latentVariables)
+      curLVs = exp.lvs
+      curPaths = exp.paths
+      relaxed = true
+      notes.push('高階構念（repeated indicators）：高階構念區塊＝全部低階構念指標，與最終模型同一次估計')
+    } else {
+      let s1
+      if (plan.hocMethod === 'disjoint') {
+        const dj = hocDisjointStage1(curLVs, curPaths, plan.hocs)
+        s1 = estimateStage(curPool, n, { schemaVersion: 1, latentVariables: dj.lvs, paths: dj.paths }, plan, false)
+      } else { // embedded two-stage
+        const exp = hocExpandModel(curLVs, curPaths, plan.hocs, plan.model.latentVariables)
+        s1 = estimateStage(curPool, n, { schemaVersion: 1, latentVariables: exp.lvs, paths: exp.paths }, plan, true)
+      }
+      if (s1.error) return s1
+      const flip1 = computeFlip(s1)
+      estimations.push({ st: s1, flip: flip1 })
+      const compSet = new Set(plan.hocs.flatMap((h) => h.components))
+      const pool2 = new Map()
+      const lvs2 = []
+      for (const h of plan.hocs) {
+        const inds = h.components.map((c) => `${c}_score`)
+        for (const c of h.components) pool2.set(`${c}_score`, scoreColumn(s1, flip1, c))
+        lvs2.push({ name: h.name, indicators: inds, mode: h.mode })
+      }
+      for (const lv of curLVs) {
+        if (compSet.has(lv.name)) continue
+        if (plan.hocMethod === 'disjoint') {
+          for (const ind of lv.indicators) pool2.set(ind, curPool.get(ind))
+          lvs2.push({ name: lv.name, indicators: [...lv.indicators], mode: lv.mode })
+        } else {
+          pool2.set(`${lv.name}_score`, scoreColumn(s1, flip1, lv.name))
+          lvs2.push({ name: lv.name, indicators: [`${lv.name}_score`], mode: 'reflective' })
+        }
+      }
+      curPool = pool2
+      curLVs = lvs2
+      // curPaths 不變：驗證器保證使用者路徑只用 HOC 名稱、不含 LOC
+      notes.push(plan.hocMethod === 'disjoint'
+        ? '高階構念（disjoint two-stage）：第一階段低階構念直連結構、第二階段以其 LV 分數作為高階構念指標（其餘構念用原始指標）'
+        : '高階構念（embedded two-stage）：第一階段 repeated indicators 取分數、第二階段全構念以分數估計')
+    }
+  }
+
+  /* ── 步驟 2：交互項 ── */
+  if (plan.ints.length > 0) {
+    if (plan.interactionMethod === 'two-stage') {
+      const sMain = estimateStage(curPool, n, { schemaVersion: 1, latentVariables: curLVs, paths: curPaths }, plan, relaxed)
+      if (sMain.error) return sMain
+      const flipM = computeFlip(sMain)
+      estimations.push({ st: sMain, flip: flipM })
+      const pool3 = new Map()
+      const lvs3 = []
+      for (const lv of curLVs) {
+        pool3.set(`${lv.name}_score`, scoreColumn(sMain, flipM, lv.name))
+        lvs3.push({ name: lv.name, indicators: [`${lv.name}_score`], mode: 'reflective' })
+      }
+      for (const it of plan.ints) {
+        const prod = new Float64Array(n).fill(1)
+        for (const f of it.factors) {
+          const s = pool3.get(`${f}_score`)
+          for (let i = 0; i < n; i++) prod[i] *= s[i]
+        }
+        const sd = sdOf(prod)
+        if (!(sd > 0) || !Number.isFinite(sd)) {
+          return { error: 'interaction-degenerate', message: `交互項「${it.name}」的分數乘積變異為零，無法估計` }
+        }
+        pool3.set(`${it.name}_score`, prod)
+        lvs3.push({ name: it.name, indicators: [`${it.name}_score`], mode: 'reflective' })
+        interactionInfo.push({ name: it.name, factors: [...it.factors], method: it.method, sdProduct: sd })
+      }
+      curPool = pool3
+      curLVs = lvs3
+      curPaths = [...curPaths, ...intPaths]
+      relaxed = false
+      notes.push('調節（two-stage）：第二階段以第一階段 LV 分數為單指標構念；交互項＝分數乘積、不標準化（SmartPLS 4 慣例），其路徑係數以未標準化乘積量尺回報')
+    } else {
+      // product indicator / orthogonalizing：資料層擴充，單一估計
+      const isOrtho = plan.interactionMethod === 'orthogonal'
+      curPool = new Map(curPool)
+      curLVs = curLVs.map((l) => ({ name: l.name, indicators: [...l.indicators], mode: l.mode }))
+      const zCache = new Map()
+      const zOf = (name) => {
+        if (zCache.has(name)) return zCache.get(name)
+        const std = standardizeColArrays([curPool.get(name)])
+        if (std.zeroVarIndex !== undefined) return null
+        zCache.set(name, std.cols[0])
+        return std.cols[0]
+      }
+      for (const it of plan.ints) {
+        const lvA = curLVs.find((q) => q.name === it.factors[0])
+        const lvB = curLVs.find((q) => q.name === it.factors[1])
+        const prodNames = []
+        for (const a of lvA.indicators) {
+          for (const b of lvB.indicators) {
+            const za = zOf(a)
+            const zb = zOf(b)
+            if (!za || !zb) return { error: 'zero-variance', message: `指標「${!za ? a : b}」變異數為零，無法建立交互項乘積指標` }
+            let c = new Float64Array(n)
+            for (let i = 0; i < n; i++) c[i] = za[i] * zb[i]
+            if (isOrtho) {
+              const firsts = [...lvA.indicators, ...lvB.indicators].map(zOf)
+              c = residualizeOn(c, firsts)
+              if (!c) return { error: 'estimation-failed', message: `交互項「${it.name}」的正交化殘差計算失敗（一階指標共線）` }
+            }
+            const nm = `${it.name}·${a}×${b}`
+            curPool.set(nm, c)
+            prodNames.push(nm)
+          }
+        }
+        curLVs.push({ name: it.name, indicators: prodNames, mode: 'reflective' })
+        interactionInfo.push({ name: it.name, factors: [...it.factors], method: it.method, sdProduct: null })
+      }
+      curPaths = [...curPaths, ...intPaths]
+      notes.push(isOrtho
+        ? '調節（orthogonalizing）：乘積指標對全部一階指標殘差化後作為交互構念指標（Little et al. 2006；係數為標準化量尺，對齊 seminr）'
+        : '調節（product indicator）：交互構念指標＝兩構念標準化指標全配對乘積（Chin et al. 2003；係數為標準化量尺，對齊 seminr）')
+    }
+  }
+
+  /* ── 步驟 3：最終估計 ── */
+  const sF = estimateStage(curPool, n, { schemaVersion: 1, latentVariables: curLVs, paths: curPaths }, plan, relaxed)
+  if (sF.error) return sF
+  const flipF = computeFlip(sF)
+  estimations.push({ st: sF, flip: flipF })
+
+  // repeated HOC：HTMT 對 HOC×LOC 配對無效（共用指標）
+  let htmtBlockedIdx = null
+  if (plan.hocs.length > 0 && plan.hocMethod === 'repeated') {
+    htmtBlockedIdx = new Set()
+    for (const h of plan.hocs) {
+      const a = sF.spec.lvNames.indexOf(h.name)
+      for (const c of h.components) {
+        const b = sF.spec.lvNames.indexOf(c)
+        if (a >= 0 && b >= 0) htmtBlockedIdx.add(`${a}|${b}`)
+      }
+    }
+  }
+
+  // 「以 LV 分數產生新資料檔」：多階段時輸出最終階段的輸入資料
+  let derived = null
+  if (estimations.length > 1) {
+    const columns = []
+    const seenCol = new Set()
+    for (const name of sF.spec.indicators) {
+      if (!seenCol.has(name)) { seenCol.add(name); columns.push(name) }
+    }
+    const rows = []
+    for (let i = 0; i < n; i++) {
+      rows.push(columns.map((c) => curPool.get(c)[i]))
+    }
+    derived = { columns, rows }
+  }
+
+  return {
+    final: sF,
+    finalFlip: flipF,
+    stage1: estimations.length > 1 ? estimations[0].st : null,
+    estimations,
+    interactionInfo,
+    htmtBlockedIdx,
+    derived,
+    notes,
+  }
+}
+
+/* ─────────────────────────  報表組裝  ───────────────────────── */
+
+/**
+ * 由單一估計階段組裝完整報表（W1–W3 的 runPLS 報表本體，抽出供多階段共用）。
+ * ctx: { nRows, nDropped, warnings, htmtBlocked, skipFit }
+ */
+function reportFromStage(stage, ctx) {
+  const { spec, cols, n, ce } = stage
   const { est, rawLoadingsByLV, effLoadingsByLV, effLvCorr, plsc, sm } = ce
 
-  const warnings = []
-  if (n < 30) warnings.push(`樣本數偏低（n = ${n}），PLS 估計與 bootstrap 推論的穩定性有限`)
-  if (nDropped > 0) warnings.push(`casewise deletion 剔除 ${nDropped} 筆含缺失值的資料列`)
+  const warnings = [...(ctx.warnings || [])]
   if (plsc) warnings.push(...plsc.warnings)
 
   const { weights, scores } = est
@@ -966,7 +1507,6 @@ export function runPLS(rows, model, options = {}) {
     }
     const base = blockReliability(b, Array.from(weights[j]), rawLoadingsByLV[j], indCorr)
     if (spec.consistent && b.length >= 2) {
-      // PLSc：CR / AVE 改用一致 loadings；α 與 rho_A 不變
       const lamC = effLoadingsByLV[j]
       const sumL = lamC.reduce((s, l) => s + l, 0)
       const sumL2 = lamC.reduce((s, l) => s + l * l, 0)
@@ -985,35 +1525,37 @@ export function runPLS(rows, model, options = {}) {
     }))
 
   const htmtEligible = spec.blocks.map((b, j) => spec.modes[j] === 'A' && b.length >= 2)
-  const htmt = htmtMatrix(spec.blocks, htmtEligible, indCorr, L)
+  const htmt = htmtMatrix(spec.blocks, htmtEligible, indCorr, L, ctx.htmtBlocked || null)
 
-  // Model fit（SRMR / d_ULS / d_G / NFI；saturated vs estimated）
-  const lamFlat = []
-  const owner = []
-  for (let j = 0; j < L; j++) {
-    for (let h = 0; h < spec.blocks[j].length; h++) {
-      lamFlat.push(effLoadingsByLV[j][h])
-      owner.push(j)
-    }
-  }
+  // Model fit（多階段最終模型不報 fit：分數層級的殘差矩陣不具標準詮釋）
   let fit = null
-  const eigS = jacobiEigen(indCorr)
-  if (eigS.values.every((v) => v > 1e-10)) {
-    const RlvEst = impliedLvCorr(effLvCorr, sm.structural, spec)
-    const saturated = fitStats(indCorr, lamFlat, owner, effLvCorr, eigS)
-    const estimated = fitStats(indCorr, lamFlat, owner, RlvEst, eigS)
-    fit = { saturated, estimated }
-    if (saturated.dG === null || estimated.dG === null) {
-      warnings.push('Model fit：模型隱含相關矩陣非正定（PLSc 一致 loadings > 1 時可能發生），d_G 與 NFI 無法計算')
+  if (!ctx.skipFit) {
+    const lamFlat = []
+    const owner = []
+    for (let j = 0; j < L; j++) {
+      for (let h = 0; h < spec.blocks[j].length; h++) {
+        lamFlat.push(effLoadingsByLV[j][h])
+        owner.push(j)
+      }
     }
-  } else {
-    warnings.push('Model fit：指標相關矩陣接近奇異，SRMR/d_ULS/d_G/NFI 無法計算')
+    const eigS = jacobiEigen(indCorr)
+    if (eigS.values.every((v) => v > 1e-10)) {
+      const RlvEst = impliedLvCorr(effLvCorr, sm.structural, spec)
+      const saturated = fitStats(indCorr, lamFlat, owner, effLvCorr, eigS)
+      const estimated = fitStats(indCorr, lamFlat, owner, RlvEst, eigS)
+      fit = { saturated, estimated }
+      if (saturated.dG === null || estimated.dG === null) {
+        warnings.push('Model fit：模型隱含相關矩陣非正定（PLSc 一致 loadings > 1 時可能發生），d_G 與 NFI 無法計算')
+      }
+    } else {
+      warnings.push('Model fit：指標相關矩陣接近奇異（重複掛載指標的 repeated indicators 模型屬預期情況），SRMR/d_ULS/d_G/NFI 無法計算')
+    }
   }
 
   return {
     meta: {
       schemaVersion: PLS_SCHEMA_VERSION,
-      n, nRows: rows.length, nDropped, missing: spec.missing,
+      n, nRows: ctx.nRows, nDropped: ctx.nDropped, missing: spec.missing,
       scheme: spec.scheme, consistent: spec.consistent,
       tolerance: spec.tolerance, maxIterations: spec.maxIterations,
       iterations: est.iterations, converged: est.converged,
@@ -1036,6 +1578,200 @@ export function runPLS(rows, model, options = {}) {
   }
 }
 
+/** 交互項路徑係數重標：two-stage 的交互項以未標準化乘積量尺回報（coefStd 保留標準化值） */
+function applyInteractionRescale(report, interactionInfo) {
+  if (!interactionInfo || interactionInfo.length === 0) return
+  const sdBy = new Map()
+  for (const q of interactionInfo) {
+    if (q.sdProduct !== null && Number.isFinite(q.sdProduct)) sdBy.set(q.name, q.sdProduct)
+  }
+  if (sdBy.size === 0) return
+  for (const q of report.pathCoefficients) {
+    if (sdBy.has(q.from)) {
+      q.coefStd = q.coef
+      q.coef = q.coef / sdBy.get(q.from)
+    }
+  }
+  for (const s of report.structural) {
+    for (const q of s.predictors) {
+      if (sdBy.has(q.from)) {
+        q.coefStd = q.coef
+        q.coef = q.coef / sdBy.get(q.from)
+      }
+    }
+  }
+}
+
+/** 交互項摘要（含 two-stage 二因子的 simple slopes；Aiken & West 1991：調節值 ±1 SD） */
+function buildInteractionSummary(report, plan, exec) {
+  const coefBy = new Map(report.pathCoefficients.map((q) => [`${q.from}→${q.to}`, q]))
+  return plan.ints.map((it) => {
+    const info = exec.interactionInfo.find((q) => q.name === it.name) || null
+    const targets = []
+    for (const q of report.pathCoefficients) {
+      if (q.from !== it.name) continue
+      const to = q.to
+      const entry = { to, coef: q.coef, coefStd: q.coefStd ?? q.coef }
+      if (it.method === 'two-stage' && it.factors.length === 2) {
+        const [fa, fb] = it.factors
+        if (fa === fb) {
+          const bLin = coefBy.get(`${fa}→${to}`)?.coef ?? 0
+          entry.quadratic = true
+          entry.iv = fa
+          entry.curve = { linear: bLin, quad: q.coef }
+          entry.slopes = [-1, 0, 1].map((x) => ({ level: x, slope: bLin + 2 * q.coef * x }))
+        } else {
+          const bIv = coefBy.get(`${fa}→${to}`)?.coef ?? 0
+          const bMod = coefBy.get(`${fb}→${to}`)?.coef ?? 0
+          entry.quadratic = false
+          entry.iv = fa
+          entry.moderator = fb
+          entry.slopes = [-1, 0, 1].map((m) => ({ level: m, slope: bIv + q.coef * m, intercept: bMod * m }))
+        }
+      }
+      targets.push(entry)
+    }
+    return {
+      name: it.name,
+      factors: [...it.factors],
+      method: it.method,
+      sdProduct: info ? info.sdProduct : null,
+      targets,
+    }
+  })
+}
+
+/* ─────────────────────────  中介效果  ───────────────────────── */
+
+/**
+ * 由最終模型路徑清單枚舉全部中介鏈（DFS 簡單路徑，長度 ≥ 2 條邊）。
+ * 交互項不參與中介鏈（不作為來源也不作為中介）。
+ * 回傳 [{ from, to, directIdx|null, chains: [{ idxSeq, via }] }]，
+ * idxSeq 為 pathList 索引序列（bootstrap 以逐重抽乘積計算 CI）。
+ */
+function buildMediationChains(pathList, intFrom) {
+  const adj = new Map()
+  const idxByEdge = new Map()
+  pathList.forEach((q, i) => {
+    idxByEdge.set(`${q.from}→${q.to}`, i)
+    if (intFrom.has(q.from)) return
+    if (!adj.has(q.from)) adj.set(q.from, [])
+    adj.get(q.from).push(q.to)
+  })
+  const nodes = []
+  const seen = new Set()
+  for (const q of pathList) {
+    for (const nm of [q.from, q.to]) {
+      if (!seen.has(nm) && !intFrom.has(nm)) { seen.add(nm); nodes.push(nm) }
+    }
+  }
+  const pairs = []
+  for (const a of nodes) {
+    const chainsTo = new Map()
+    const walk = (node, viaEdges, viaNodes) => {
+      for (const nxt of adj.get(node) || []) {
+        if (viaNodes.has(nxt)) continue
+        const e = idxByEdge.get(`${node}→${nxt}`)
+        const seq = [...viaEdges, e]
+        if (seq.length >= 2) {
+          if (!chainsTo.has(nxt)) chainsTo.set(nxt, [])
+          chainsTo.get(nxt).push(seq)
+        }
+        viaNodes.add(nxt)
+        walk(nxt, seq, viaNodes)
+        viaNodes.delete(nxt)
+      }
+    }
+    walk(a, [], new Set([a]))
+    for (const [b, chains] of chainsTo) {
+      const dKey = `${a}→${b}`
+      pairs.push({
+        from: a,
+        to: b,
+        directIdx: idxByEdge.has(dKey) ? idxByEdge.get(dKey) : null,
+        chains: chains.map((seq) => ({
+          idxSeq: seq,
+          via: seq.slice(0, -1).map((ei) => pathList[ei].to),
+        })),
+      })
+    }
+  }
+  return pairs
+}
+
+/** 中介分解點估計：direct / specific indirect / total indirect / total / VAF */
+function buildMediationReport(pathCoefficients, plan) {
+  const intFrom = new Set(plan.ints.map((q) => q.name))
+  const pairs = buildMediationChains(pathCoefficients, intFrom)
+  if (pairs.length === 0) return null
+  const effects = pairs.map((pr) => {
+    const chains = pr.chains.map((c) => ({
+      via: c.via,
+      coef: c.idxSeq.reduce((s, i) => s * pathCoefficients[i].coef, 1),
+    }))
+    const totalIndirect = chains.reduce((s, c) => s + c.coef, 0)
+    const direct = pr.directIdx !== null ? pathCoefficients[pr.directIdx].coef : null
+    const total = (direct ?? 0) + totalIndirect
+    const vaf = Math.abs(total) > 1e-12 ? totalIndirect / total : null
+    return { from: pr.from, to: pr.to, direct, chains, totalIndirect, total, vaf }
+  })
+  return { effects }
+}
+
+/* ─────────────────────────  主 API：runPLS  ───────────────────────── */
+
+/**
+ * @param {object[]} rows  資料（物件陣列，欄位名 → 值）
+ * @param {object} model   模型 JSON（docs/pls-model-schema.md；W4 起支援
+ *                          interactions[] 與 higherOrder[]）
+ * @param {object} options { scheme:'path'|'factorial'|'centroid', consistent:boolean,
+ *                           tolerance, maxIterations, missing:'casewise'|'mean' }
+ */
+export function runPLS(rows, model, options = {}) {
+  const plan = buildPlan(model, options)
+  if (plan.error) return plan
+
+  const ext = extractMatrix(rows, plan.baseIndicators, plan.missing)
+  if (ext.error) return ext
+  const { X, n, nDropped } = ext
+  if (n < 5) return { error: 'too-few-cases', message: `缺失值處理後樣本數只剩 ${n} 筆（至少需要 5 筆）` }
+
+  const pool = toColumnPool(X, plan.baseIndicators)
+  const exec = executePlan(pool, n, plan, null)
+  if (exec.error) return exec
+
+  const baseWarnings = []
+  if (n < 30) baseWarnings.push(`樣本數偏低（n = ${n}），PLS 估計與 bootstrap 推論的穩定性有限`)
+  if (nDropped > 0) baseWarnings.push(`casewise deletion 剔除 ${nDropped} 筆含缺失值的資料列`)
+
+  const report = reportFromStage(exec.final, {
+    nRows: rows.length,
+    nDropped,
+    warnings: baseWarnings,
+    htmtBlocked: exec.htmtBlockedIdx,
+    skipFit: exec.stage1 !== null,
+  })
+
+  applyInteractionRescale(report, exec.interactionInfo)
+
+  if (exec.stage1) {
+    report.stage1 = reportFromStage(exec.stage1, {
+      nRows: rows.length, nDropped, warnings: [], htmtBlocked: null, skipFit: false,
+    })
+  }
+  if (plan.ints.length > 0) {
+    report.interactions = buildInteractionSummary(report, plan, exec)
+    report.meta.interactionMethod = plan.interactionMethod
+  }
+  if (plan.hocs.length > 0) report.meta.hocMethod = plan.hocMethod
+  if (plan.autoAddedPaths.length > 0) report.meta.autoAddedPaths = plan.autoAddedPaths
+  if (exec.notes.length > 0) report.meta.stages = exec.notes
+  if (exec.derived) report.derived = exec.derived
+  report.mediation = buildMediationReport(report.pathCoefficients, plan)
+
+  return report
+}
+
 /* ─────────────────────────  Blindfolding Q²  ───────────────────────── */
 
 /**
@@ -1045,6 +1781,13 @@ export function runPLS(rows, model, options = {}) {
  * @returns {{ omissionDistance, constructs:[{lv, q2, sse, sso}], warnings }} | { error, message }
  */
 export function blindfoldPLS(rows, model, options = {}) {
+  if ((Array.isArray(model?.interactions) && model.interactions.length > 0)
+      || (Array.isArray(model?.higherOrder) && model.higherOrder.length > 0)) {
+    return {
+      error: 'q2-not-supported',
+      message: 'blindfolding Q² 目前不支援含調節／高階構念的模型（W4 範圍限制；此類模型的預測評估留待 W5 PLSpredict）',
+    }
+  }
   const D = options.omissionDistance ?? 7
   if (!Number.isInteger(D) || D < 2) {
     return { error: 'bad-omission-distance', message: `omission distance 必須是 ≥ 2 的整數，收到「${options.omissionDistance}」` }
@@ -1181,9 +1924,12 @@ export function bcaInterval(draws, jackknife, original, ciAlpha = 0.05) {
 /**
  * Bootstrap 重抽樣（確定性 PRNG、construct-level 符號校正、percentile/BCa CI、
  * consistent=true 時為 consistent bootstrapping——每次重抽含 PLSc 校正）。
+ * W4：每次重抽重跑整條管線（含 HOC／調節的多階段估計與交互項重標）；
+ * 另回報中介效果（specific/total indirect、total）與 two-stage 調節的
+ * simple slope 之 bootstrap 推論。
  * @param {object} options { n=5000, seed=42, ciAlpha=0.05,
  *                           signCorrection='construct'|'none',
- *                           ciType='percentile'|'bca',
+ *                           ciType:'percentile'|'bca',
  *                           onProgress(done, total), ...runPLS options }
  */
 export function bootstrapPLS(rows, model, options = {}) {
@@ -1200,44 +1946,67 @@ export function bootstrapPLS(rows, model, options = {}) {
   const original = runPLS(rows, model, options)
   if (original.error) return original
 
-  const spec = buildSpec(model, options)
-  const ext = extractMatrix(rows, spec.indicators, spec.missing)
+  const plan = buildPlan(model, options)
+  const ext = extractMatrix(rows, plan.baseIndicators, plan.missing)
   const { X, n } = ext
-  const L = spec.lvNames.length
-  const lvIdx = new Map(spec.lvNames.map((name, j) => [name, j]))
 
-  // 參數清單與原始值（loadings/weights 依區塊順序攤平；paths 依結構模型順序）
+  // 原始管線（供符號校正 anchors 與量測階段清單）
+  const pool0 = toColumnPool(X, plan.baseIndicators)
+  const exec0 = executePlan(pool0, n, plan, null)
+  if (exec0.error) return exec0
+  const anchors = signCorrection === 'construct'
+    ? exec0.estimations.map((e) => e.st.ce.effLoadingsByLV)
+    : null
+
+  // 量測（loadings/weights）來源階段：多階段時為第一階段（原始指標），否則最終階段
+  const measIdx = exec0.stage1 ? 0 : exec0.estimations.length - 1
+  const measSpec = exec0.estimations[measIdx].st.spec
+  const finalSpec = exec0.final.spec
+  const lvIdxF = new Map(finalSpec.lvNames.map((name, j) => [name, j]))
+  const intFrom = new Set(plan.ints.map((q) => q.name))
+
   const pathList = original.pathCoefficients.map((q) => ({ from: q.from, to: q.to }))
-  const loadList = original.outerLoadings.map((q) => ({ lv: q.lv, indicator: q.indicator }))
-  const origPaths = original.pathCoefficients.map((q) => q.coef)
-  const origLoads = original.outerLoadings.map((q) => q.loading)
-  const origWts = original.outerWeights.map((q) => q.weight)
-  const origLoadsByLV = spec.blocks.map((b, j) =>
-    original.outerLoadings.filter((q) => q.lv === spec.lvNames[j]).map((q) => q.loading))
-
-  /** 單次估計 → 攤平參數（含符號校正）；重抽與 jackknife 共用 */
-  const flatEstimates = (Xs) => {
-    const std = standardizeColumns(Xs)
-    if (std.zeroVarIndex !== undefined) return null
-    const ce = coreEstimates(std.cols, Xs.length, spec)
-    if (!ce || ce.notConverged) return null
-    const flip = new Array(L).fill(1)
-    if (signCorrection === 'construct') {
-      for (let j = 0; j < L; j++) {
-        let dot = 0
-        const lj = ce.effLoadingsByLV[j]
-        for (let h = 0; h < lj.length; h++) dot += lj[h] * origLoadsByLV[j][h]
-        if (dot < 0) flip[j] = -1
-      }
+  const idxByEdge = new Map(pathList.map((q, i) => [`${q.from}→${q.to}`, i]))
+  const loadList = []
+  for (let j = 0; j < measSpec.lvNames.length; j++) {
+    for (const h of measSpec.blocks[j]) {
+      loadList.push({ lv: measSpec.lvNames[j], indicator: measSpec.indicators[h] })
     }
-    // ce.sm.pathCoefficients 的順序由 spec 決定，與 original 逐一對應
-    const paths = ce.sm.pathCoefficients.map((q) => q.coef * flip[lvIdx.get(q.from)] * flip[lvIdx.get(q.to)])
+  }
+  const origPaths = original.pathCoefficients.map((q) => q.coef)
+  const measCE0 = exec0.estimations[measIdx].st.ce
+  const origLoads = []
+  const origWts = []
+  for (let j = 0; j < measSpec.lvNames.length; j++) {
+    for (let h = 0; h < measSpec.blocks[j].length; h++) {
+      origLoads.push(measCE0.effLoadingsByLV[j][h])
+      origWts.push(measCE0.est.weights[j][h])
+    }
+  }
+
+  /** 單次估計 → 攤平參數（含逐階段符號校正與交互項重標）；重抽與 jackknife 共用 */
+  const flatEstimates = (Xs) => {
+    const poolB = toColumnPool(Xs, plan.baseIndicators)
+    const ex = executePlan(poolB, Xs.length, plan, anchors)
+    if (ex.error) return null
+    const flipF = ex.finalFlip
+    const sdBy = new Map()
+    for (const q of ex.interactionInfo) {
+      if (q.sdProduct !== null && Number.isFinite(q.sdProduct)) sdBy.set(q.name, q.sdProduct)
+    }
+    const paths = ex.final.ce.sm.pathCoefficients.map((q) => {
+      let v = q.coef * flipF[lvIdxF.get(q.from)] * flipF[lvIdxF.get(q.to)]
+      if (sdBy.has(q.from)) v /= sdBy.get(q.from)
+      return v
+    })
+    const me = ex.estimations[measIdx]
     const loads = []
     const wts = []
-    for (let j = 0; j < L; j++) {
-      for (let h = 0; h < spec.blocks[j].length; h++) {
-        loads.push(ce.effLoadingsByLV[j][h] * flip[j])
-        wts.push(ce.est.weights[j][h] * flip[j])
+    for (let j = 0; j < measSpec.lvNames.length; j++) {
+      const f = me.flip[j]
+      for (let h = 0; h < measSpec.blocks[j].length; h++) {
+        loads.push(me.st.ce.effLoadingsByLV[j][h] * f)
+        wts.push(me.st.ce.est.weights[j][h] * f)
       }
     }
     return { paths, loads, wts }
@@ -1253,7 +2022,6 @@ export function bootstrapPLS(rows, model, options = {}) {
 
   const Xb = new Array(n)
   for (let rep = 0; rep < B; rep++) {
-    // 放回重抽 n 列
     for (let i = 0; i < n; i++) Xb[i] = X[Math.floor(rand() * n)]
     const fe = flatEstimates(Xb)
     if (!fe) { nSkipped++; continue }
@@ -1271,7 +2039,7 @@ export function bootstrapPLS(rows, model, options = {}) {
     return { error: 'bootstrap-failed', message: `有效 bootstrap 重抽僅 ${nValid} 次（要求 ${B} 次），無法建立推論` }
   }
 
-  // BCa：n 次 jackknife（leave-one-out 全模型重估）求加速常數 a
+  // BCa：n 次 jackknife（leave-one-out 全管線重估）求加速常數 a
   let jackPaths = null
   let jackLoads = null
   let jackWts = null
@@ -1317,6 +2085,79 @@ export function bootstrapPLS(rows, model, options = {}) {
     return { original: origValue, mean: m, se, t, p: pval, ciLower, ciUpper }
   }
 
+  /** 由 pathDraws 派生的複合統計量（中介鏈乘積、加總、simple slope） */
+  const derive = (source, fn) => {
+    const m = source[0] ? source[0].length : 0
+    const out = new Array(m)
+    for (let i = 0; i < m; i++) out[i] = fn((idx) => source[idx][i])
+    return out
+  }
+
+  // 中介效果：specific indirect（鏈乘積）、total indirect、total effect
+  let indirectEffects = null
+  let totalIndirectEffects = null
+  let totalEffects = null
+  if (original.mediation && original.mediation.effects.length > 0) {
+    const pairs = buildMediationChains(pathList, intFrom)
+    indirectEffects = []
+    totalIndirectEffects = []
+    totalEffects = []
+    for (const pr of pairs) {
+      const orig = original.mediation.effects.find((q) => q.from === pr.from && q.to === pr.to)
+      const chainDraws = pr.chains.map((c) =>
+        derive(pathDraws, (get) => c.idxSeq.reduce((s, idx) => s * get(idx), 1)))
+      const chainJacks = jackPaths
+        ? pr.chains.map((c) => derive(jackPaths, (get) => c.idxSeq.reduce((s, idx) => s * get(idx), 1)))
+        : pr.chains.map(() => null)
+      pr.chains.forEach((c, ci) => {
+        indirectEffects.push({
+          from: pr.from, to: pr.to, via: c.via,
+          ...summarize(chainDraws[ci], orig.chains[ci].coef, chainJacks[ci]),
+        })
+      })
+      const tiDraws = derive(pathDraws, (get) =>
+        pr.chains.reduce((s, c) => s + c.idxSeq.reduce((m2, idx) => m2 * get(idx), 1), 0))
+      const tiJack = jackPaths
+        ? derive(jackPaths, (get) =>
+            pr.chains.reduce((s, c) => s + c.idxSeq.reduce((m2, idx) => m2 * get(idx), 1), 0))
+        : null
+      totalIndirectEffects.push({ from: pr.from, to: pr.to, ...summarize(tiDraws, orig.totalIndirect, tiJack) })
+      const totFn = (get) => {
+        let s = pr.directIdx !== null ? get(pr.directIdx) : 0
+        for (const c of pr.chains) s += c.idxSeq.reduce((m2, idx) => m2 * get(idx), 1)
+        return s
+      }
+      const totDraws = derive(pathDraws, totFn)
+      const totJack = jackPaths ? derive(jackPaths, totFn) : null
+      totalEffects.push({ from: pr.from, to: pr.to, ...summarize(totDraws, orig.total, totJack) })
+    }
+  }
+
+  // simple slopes（two-stage 二因子交互；斜率 = b_iv + b_int·m，二次：b_iv + 2·b_q·x）
+  let slopes = null
+  if (Array.isArray(original.interactions)) {
+    slopes = []
+    for (const it of original.interactions) {
+      for (const tg of it.targets) {
+        if (!Array.isArray(tg.slopes)) continue
+        const idxInt = idxByEdge.get(`${it.name}→${tg.to}`)
+        const idxIv = idxByEdge.get(`${tg.iv}→${tg.to}`)
+        if (idxInt === undefined || idxIv === undefined) continue
+        for (const sl of tg.slopes) {
+          const mult = tg.quadratic ? 2 * sl.level : sl.level
+          const drawsS = derive(pathDraws, (get) => get(idxIv) + mult * get(idxInt))
+          const jackS = jackPaths ? derive(jackPaths, (get) => get(idxIv) + mult * get(idxInt)) : null
+          slopes.push({
+            interaction: it.name, to: tg.to, level: sl.level,
+            quadratic: tg.quadratic === true,
+            ...summarize(drawsS, sl.slope, jackS),
+          })
+        }
+      }
+    }
+    if (slopes.length === 0) slopes = null
+  }
+
   return {
     nRequested: B, nValid, nSkipped, seed, ciAlpha, signCorrection, ciType,
     ...(nJackknife !== null ? { nJackknife } : {}),
@@ -1332,5 +2173,7 @@ export function bootstrapPLS(rows, model, options = {}) {
       lv: q.lv, indicator: q.indicator,
       ...summarize(wtDraws[i], origWts[i], jackWts ? jackWts[i] : null),
     })),
+    ...(indirectEffects ? { indirectEffects, totalIndirectEffects, totalEffects } : {}),
+    ...(slopes ? { slopes } : {}),
   }
 }

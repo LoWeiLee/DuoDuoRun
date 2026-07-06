@@ -43,9 +43,14 @@ const DEFAULT_LVS = () => [
 ]
 const DEFAULT_PATHS = () => [{ from: '', to: '' }]
 
+/** 交互項顯示名（同時是模型內的構念名）：A×B（×C） */
+function intName(q) {
+  return q.c ? `${q.a}×${q.b}×${q.c}` : `${q.a}×${q.b}`
+}
+
 /** 把表單草稿組成 docs/pls-model-schema.md 的模型 JSON（不含 UI 專屬欄位） */
-function buildModel(lvs, paths) {
-  return {
+function buildModel(lvs, paths, ints, intMethod, hocs, hocMethod) {
+  const model = {
     schemaVersion: 1,
     latentVariables: (lvs || []).map((f) => ({
       name: (f.name || '').trim(),
@@ -56,10 +61,28 @@ function buildModel(lvs, paths) {
       .filter((p) => p.from || p.to)
       .map((p) => ({ from: p.from, to: p.to })),
   }
+  const hocsN = (hocs || [])
+    .filter((h) => (h.name || '').trim() !== '' && Array.isArray(h.components) && h.components.length >= 2)
+    .map((h) => ({
+      name: h.name.trim(),
+      components: [...h.components],
+      mode: h.mode === 'formative' ? 'formative' : 'reflective',
+      method: hocMethod,
+    }))
+  if (hocsN.length > 0) model.higherOrder = hocsN
+  const intsN = (ints || [])
+    .filter((q) => q.a && q.b)
+    .map((q) => ({
+      name: intName(q),
+      factors: q.c ? [q.a, q.b, q.c] : [q.a, q.b],
+      method: intMethod,
+    }))
+  if (intsN.length > 0) model.interactions = intsN
+  return model
 }
 
-function draftSignature(lvs, paths, bootstrapN, options) {
-  return JSON.stringify({ model: buildModel(lvs, paths), bootstrapN, options })
+function draftSignature(lvs, paths, ints, intMethod, hocs, hocMethod, bootstrapN, options) {
+  return JSON.stringify({ model: buildModel(lvs, paths, ints, intMethod, hocs, hocMethod), bootstrapN, options })
 }
 
 function SectionTitle({ children }) {
@@ -129,6 +152,12 @@ function Config() {
   const ciType = state.ciType === 'bca' ? 'bca' : 'percentile'
   const q2 = state.q2 === true
   const options = { scheme, consistent, ciType, q2 }
+  const ints = state.ints || []
+  const intMethod = ['two-stage', 'product-indicator', 'orthogonal'].includes(state.intMethod)
+    ? state.intMethod : 'two-stage'
+  const hocs = state.hocs || []
+  const hocMethod = ['repeated', 'disjoint', 'two-stage'].includes(state.hocMethod)
+    ? state.hocMethod : 'disjoint'
   // 檢視模式：'form' 表單 / 'canvas' 畫布；窄幅一律退回表單
   const plsView = narrow ? 'form' : (state.plsView === 'canvas' ? 'canvas' : 'form')
 
@@ -160,6 +189,12 @@ function Config() {
   const lvNameOptions = curLvs
     .map((f) => (f.name || '').trim())
     .filter((name) => name !== '')
+  const hocNames = hocs.map((h) => (h.name || '').trim()).filter((name) => name !== '')
+  const absorbedSet = new Set(hocs.flatMap((h) => h.components || []))
+  // 結構層可用構念：一般構念（未被 HOC 吸收）＋ 高階構念
+  const constructOptions = [...lvNameOptions.filter((name) => !absorbedSet.has(name)), ...hocNames]
+  const intNames = ints.filter((q) => q.a && q.b).map(intName)
+  const pathFromOptions = [...constructOptions, ...intNames]
 
   /* ── 構念操作 ── */
   const setLvs = (next) => update({ lvs: next })
@@ -191,6 +226,26 @@ function Config() {
   const setPathEnd = (pi, key, value) =>
     setPaths(curPaths.map((p, idx) => (idx === pi ? { ...p, [key]: value } : p)))
 
+  /* ── 高階構念操作 ── */
+  const setHocs = (next) => update({ hocs: next })
+  const addHoc = () => setHocs([...hocs, { name: `HOC${hocs.length + 1}`, components: [], mode: 'reflective' }])
+  const removeHoc = (hi) => setHocs(hocs.filter((_, idx) => idx !== hi))
+  const setHocField = (hi, key, value) =>
+    setHocs(hocs.map((h, idx) => (idx === hi ? { ...h, [key]: value } : h)))
+  const toggleHocComponent = (hi, name) =>
+    setHocs(hocs.map((h, idx) => {
+      if (idx !== hi) return h
+      const has = (h.components || []).includes(name)
+      return { ...h, components: has ? h.components.filter((x) => x !== name) : [...(h.components || []), name] }
+    }))
+
+  /* ── 交互項操作 ── */
+  const setInts = (next) => update({ ints: next })
+  const addInt = () => setInts([...ints, { a: '', b: '', c: '' }])
+  const removeInt = (ii) => setInts(ints.filter((_, idx) => idx !== ii))
+  const setIntField = (ii, key, value) =>
+    setInts(ints.map((q, idx) => (idx === ii ? { ...q, [key]: value } : q)))
+
   /* ── 執行 ── */
   const handleRun = () => {
     const errors = []
@@ -200,7 +255,17 @@ function Config() {
         errors.push(fillTemplate(c.pathIncomplete, { i: idx + 1 }))
       }
     })
-    const model = buildModel(curLvs, curPaths)
+    ints.forEach((q, idx) => {
+      const touched = q.a || q.b || q.c
+      if (touched && (!q.a || !q.b)) errors.push(fillTemplate(c.intIncomplete, { i: idx + 1 }))
+    })
+    hocs.forEach((h) => {
+      const touched = (h.name || '').trim() !== '' || (h.components || []).length > 0
+      if (touched && ((h.name || '').trim() === '' || (h.components || []).length < 2)) {
+        errors.push(fillTemplate(c.hocIncomplete, { name: h.name || '?' }))
+      }
+    })
+    const model = buildModel(curLvs, curPaths, ints, intMethod, hocs, hocMethod)
     const v = validatePLSModel(model)
     if (!v.ok) errors.push(...v.errors)
     if (errors.length > 0) {
@@ -221,7 +286,7 @@ function Config() {
   const committed = state.committed
   const stale =
     committed &&
-    JSON.stringify(committed.draft) !== draftSignature(curLvs, curPaths, bootstrapN, options)
+    JSON.stringify(committed.draft) !== draftSignature(curLvs, curPaths, ints, intMethod, hocs, hocMethod, bootstrapN, options)
 
   const errors = state.configErrors || []
 
@@ -345,6 +410,178 @@ function Config() {
         </button>
       </div>
 
+      {/* 高階構念（W4） */}
+      <div>
+        <SectionTitle>{c.hocTitle}</SectionTitle>
+        <p className="text-[11px] text-duo-cocoa-400 mb-2 leading-snug">{c.hocHint}</p>
+        {hocs.length > 0 && (
+          <div className="mb-2">
+            <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.hocMethodTitle}</div>
+            <Segmented
+              items={['disjoint', 'two-stage', 'repeated'].map((m) => ({ key: m, label: c.hocMethodNames[m] }))}
+              value={hocMethod}
+              onChange={(key) => update({ hocMethod: key })}
+            />
+            <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.hocMethodHint}</p>
+          </div>
+        )}
+        <div className="space-y-3">
+          {hocs.map((h, hi) => {
+            const usedElsewhere = new Set(
+              hocs.flatMap((o, oi) => (oi === hi ? [] : o.components || [])))
+            return (
+              <div key={hi} className="bg-white border border-duo-cocoa-100 rounded-md p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] uppercase tracking-wider text-duo-cocoa-400">{c.hocNameLabel}</span>
+                  <input
+                    type="text"
+                    value={h.name}
+                    onChange={(e) => setHocField(hi, 'name', e.target.value)}
+                    className="flex-1 h-7 px-2 text-sm rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeHoc(hi)}
+                    title={c.removeHoc}
+                    className="p-1 text-duo-cocoa-300 hover:text-duo-sig-bad transition"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                         strokeWidth="1.75" strokeLinecap="round">
+                      <path d="M4 4l8 8M12 4l-8 8" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="mb-2">
+                  <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.modeLabel}</div>
+                  <Segmented
+                    items={[
+                      { key: 'reflective', label: c.modeReflective },
+                      { key: 'formative', label: c.modeFormative },
+                    ]}
+                    value={h.mode === 'formative' ? 'formative' : 'reflective'}
+                    onChange={(key) => setHocField(hi, 'mode', key)}
+                  />
+                </div>
+                <div className="text-[11px] text-duo-cocoa-500 mb-1.5">
+                  {c.hocComponentsLabel}（{(h.components || []).length}）
+                </div>
+                <ul className="space-y-1 max-h-40 overflow-y-auto">
+                  {lvNameOptions.filter((name) => !usedElsewhere.has(name)).map((name) => {
+                    const checked = (h.components || []).includes(name)
+                    return (
+                      <li key={name}>
+                        <label
+                          className={[
+                            'flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer transition',
+                            checked ? 'bg-duo-amber-50' : 'hover:bg-duo-cream-50',
+                          ].join(' ')}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleHocComponent(hi, name)}
+                            className="accent-duo-amber-500 w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <div className="text-xs text-duo-cocoa-800 truncate">{name}</div>
+                        </label>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={addHoc}
+          className="w-full mt-2 px-2.5 py-1.5 text-[11px] font-medium rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-700 hover:bg-duo-cream-100 transition"
+        >
+          + {c.addHoc}
+        </button>
+      </div>
+
+      {/* 調節與二次效果（W4） */}
+      <div>
+        <SectionTitle>{c.interactionsTitle}</SectionTitle>
+        <p className="text-[11px] text-duo-cocoa-400 mb-2 leading-snug">{c.interactionsHint}</p>
+        {ints.length > 0 && (
+          <div className="mb-2">
+            <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.intMethodTitle}</div>
+            <Segmented
+              items={['two-stage', 'product-indicator', 'orthogonal'].map((m) => ({
+                key: m, label: c.intMethodNames[m],
+              }))}
+              value={intMethod}
+              onChange={(key) => update({ intMethod: key })}
+            />
+            <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.intMethodHint}</p>
+          </div>
+        )}
+        <div className="space-y-2">
+          {ints.map((q, ii) => (
+            <div key={ii} className="bg-white border border-duo-cocoa-100 rounded-md p-2 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={q.a}
+                  onChange={(e) => setIntField(ii, 'a', e.target.value)}
+                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                >
+                  <option value="">{c.intFactor1}</option>
+                  {constructOptions.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <span className="text-duo-cocoa-400 text-xs shrink-0">×</span>
+                <select
+                  value={q.b}
+                  onChange={(e) => setIntField(ii, 'b', e.target.value)}
+                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                >
+                  <option value="">{c.intFactor2}</option>
+                  {constructOptions.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeInt(ii)}
+                  title={c.removeInteraction}
+                  className="p-1 shrink-0 text-duo-cocoa-300 hover:text-duo-sig-bad transition"
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                       strokeWidth="1.75" strokeLinecap="round">
+                    <path d="M4 4l8 8M12 4l-8 8" />
+                  </svg>
+                </button>
+              </div>
+              {intMethod === 'two-stage' && (
+                <select
+                  value={q.c || ''}
+                  onChange={(e) => setIntField(ii, 'c', e.target.value)}
+                  className="w-full h-7 px-2 text-[11px] rounded-md bg-duo-cream-50 border border-duo-cream-200 text-duo-cocoa-600 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                >
+                  <option value="">{c.intFactor3}</option>
+                  {constructOptions.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              )}
+              {q.a && q.b && (
+                <div className="text-[11px] font-mono text-duo-cocoa-500">→ {intName(q)}</div>
+              )}
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addInt}
+          className="w-full mt-2 px-2.5 py-1.5 text-[11px] font-medium rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-700 hover:bg-duo-cream-100 transition"
+        >
+          + {c.addInteraction}
+        </button>
+      </div>
+
       {/* 結構路徑 */}
       <div>
         <SectionTitle>{c.pathsTitle}</SectionTitle>
@@ -358,7 +595,7 @@ function Config() {
                 className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.pickLv}</option>
-                {lvNameOptions.map((name) => (
+                {pathFromOptions.map((name) => (
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>
@@ -369,7 +606,7 @@ function Config() {
                 className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.pickLv}</option>
-                {lvNameOptions
+                {constructOptions
                   .filter((name) => name !== p.from)
                   .map((name) => (
                     <option key={name} value={name}>{name}</option>

@@ -159,6 +159,24 @@ blindfolding 手算小例對齊。
 
 ## Wave 4：研究設計進階（調節、高階構念、中介）
 
+**進度註記（2026-07-04）**：全數交付 ✅——
+- [x] 調節 two-stage（自動補主效果路徑、交互項不標準化；`coefStd` 保留標準化值）
+- [x] 三向以上交互（分數連乘）；二次效果（同機制，分數平方）
+- [x] simple slope（±1 SD 條件斜率，點估計＋bootstrap CI；Result 附三線圖／二次曲線 SVG）
+- [x] product indicator 與 orthogonalizing 選配（對齊 seminr，標準化量尺）
+- [x] 高階構念三法：repeated indicators／disjoint two-stage／embedded two-stage
+- [x] 「以 LV 分數產生新資料檔」（result.derived；UI 可下載 CSV）
+- [x] 中介分解：direct／specific indirect／total indirect／total、VAF、
+      Zhao et al. (2010) 類型判讀（Narrative）；bootstrap CI（percentile／BCa 皆支援）
+- 模型 JSON schema v3：`interactions[]` 與 `higherOrder[]` 欄位（schemaVersion 維持 1，只加不改）
+- 範圍限制：PLSc 與 blindfolding Q² 不支援 W4 模型（引擎明確報錯）；
+  Worker 接線順延 W5（兩階段 bootstrap 成本約 2–3 倍，示範資料量仍在秒級）
+
+驗證：plspm（two-stage 第一階段、HOC repeated 欄位別名雙實作）＋ numpy 手算
+（全部 9 組 W4 基準，附文獻出處）全部對齊至機器精度（≤ 1.5e-14），
+`npm test` 423 過（見 `validation-report-v1.md` W4 增補節）；
+two-stage 交互項係數、HOC 兩階段流程、PI／orthogonal 待 Kevin 本機 SmartPLS 4／seminr 抽驗。
+
 **範圍**
 - 調節：**two-stage 為對齊 SmartPLS 4 的主路徑**（自動補「調節變數→依變數」路徑、
   交互項不標準化——官方文件明載的兩個行為都要複製）；三向以上交互；

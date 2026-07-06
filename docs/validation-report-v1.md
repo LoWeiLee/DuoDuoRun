@@ -97,6 +97,46 @@ jackknife 入 fixture、JS `bcaInterval()` 複算公式」的逐值比對。
 5. **construct-level 符號校正**（沿 W1 記錄）：SmartPLS 預設 individual sign change 的
    精確定義沙盒不可查證，本實作用 construct-level（與原始 loadings 內積為負則翻轉）。
 
+## W4 增補（2026-07-04）：調節／高階構念／中介的基準驗證
+
+W4 新增 9 組 PLS 基準（`generate_reference.py` 的「PLS-SEM Wave 4 基準」區塊），
+`reference.json` **只增不改**（44 → 53 個方法、既有值逐位元不變、`datasets.json` 不變）。
+測試由 343 項增至 429 項（423 過、6 記錄性跳過；compare +63、PLS 單元測試 +23）。
+
+| 基準 | 來源 | 實測最大相對差 |
+|---|---|---|
+| `pls_mediation`（間接效果分解＋VAF） | numpy PLS 路徑乘積（Baron & Kenny 1986；VAF: Hair et al. 2017） | 6.2e-16 |
+| `pls_mod_twostage`（含 simple slopes、f²、sd 乘積） | numpy 手算（Chin et al. 2003；SmartPLS 4 慣例），第一階段與 plspm 交叉驗證 | 1.5e-14 |
+| `pls_quadratic`（二次效果） | numpy 手算（同 two-stage 機制） | 4.4e-15 |
+| `pls_mod_threeway`（三向＋全部兩向項） | numpy 手算 | 1.5e-14 |
+| `pls_mod_pi`（product indicator） | numpy 手算（Chin et al. 2003；對齊 seminr） | 1.1e-15 |
+| `pls_mod_ortho`（orthogonalizing） | numpy 手算（Little et al. 2006；對齊 seminr） | 1.1e-15 |
+| `pls_hoc_repeated`（repeated indicators HOC） | numpy PLS ＋ **plspm（欄位複製別名）雙實作交叉驗證** | 5.6e-16 |
+| `pls_hoc_disjoint`（disjoint two-stage HOC） | numpy 手算（Becker et al. 2023 程序） | 4.0e-16 |
+| `pls_hoc_embedded`（embedded two-stage HOC） | numpy 手算（Sarstedt et al. 2019 程序） | 5.8e-16 |
+
+沙盒單次指令有 45 秒上限、完整 `generate_reference.py`（含 semopy/pingouin）會超時，
+新增 `tests/run_pls_ref_only.py`：以 exec 抽取 generate_reference.py 的 PLS 區塊執行並
+合併回 `reference.json`（單一事實來源不變；本機／CI 仍可整支重跑，2026-07-04 已驗證
+兩種跑法對既有 44 個方法逐位元一致）。
+
+### W4 慣例決策與待抽驗清單（Kevin 本機 SmartPLS 4 / seminr）
+
+1. **two-stage 調節的兩個 SmartPLS 4 行為**（roadmap v1 依官方 Moderation 文件查證）：
+   (a) 自動補調節變數主效果路徑（引擎記錄於 `meta.autoAddedPaths`）；
+   (b) **交互項不標準化**——回報係數 = 標準化係數 ÷ sd(第一階段分數乘積)，
+   標準化值保留於 `coefStd`。高優先抽驗：同模型在 SmartPLS 4 的交互項係數。
+2. **product indicator / orthogonalizing 為 seminr 對齊**（SmartPLS 4 不提供）：
+   係數為標準化量尺，與 two-stage 數值不同屬預期。建議 seminr
+   `product_indicator` / `orthogonal` 抽驗。
+3. **HOC 三法程序**：repeated 已由 plspm 雙實作互證；disjoint / embedded 為文獻程序的
+   忠實手算（分數銜接、第二階段重新標準化），建議 SmartPLS 4 內建 HOC 流程抽驗。
+4. **中介 bootstrap CI**：specific indirect 以「逐重抽的路徑乘積」建 CI
+   （Preacher & Hayes 2008 慣例，同 SmartPLS）；bootstrap 隨機性使跨實作逐值比對不可能，
+   以點估計逐值（機器精度）＋ JS 內部確定性（同種子逐位元重現）測試取代。
+5. **W4 範圍限制（已在引擎與 UI 雙處把關）**：PLSc 與 blindfolding Q² 不支援含
+   調節／高階構念的模型（明確中文錯誤訊息，不靜默降級）。
+
 ## 如何重跑
 
 ```bash

@@ -794,6 +794,259 @@ try:
 except Exception as e:
     put("pls_w3", f"PLS W3 baselines FAILED: {e}")
 
+# --- PLS-SEM Wave 4 基準（2026-07-04） ------------------------------------
+# 內容與來源：
+#   pls_mediation
+#       — 中介效果分解（specific/total indirect、VAF）：路徑係數乘積（Baron & Kenny 1986
+#         的路徑分解；bootstrap CI 慣例依 Preacher & Hayes 2008；VAF 依 Hair et al. 2017
+#         第 7 章）。點估計由與 plspm 交叉驗證過的 numpy PLS（M4、path scheme）路徑相乘
+#   pls_mod_twostage
+#       — 調節 two-stage（Chin, Marcolin & Newsted 2003 的兩階段法；SmartPLS 4 官方
+#         Moderation 文件行為：交互項 = 第一階段標準化 LV 分數乘積、**不標準化**、
+#         自動補調節變數主效果路徑）。第二階段全單指標構念 → 路徑 = 分數 OLS；
+#         交互項係數以「未標準化乘積」量尺回報（= 標準化係數 ÷ sd(乘積)）。
+#         simple slope（Aiken & West 1991）：調節值 ±1 SD 下的條件斜率。
+#         待 Kevin 本機 SmartPLS 4 / seminr 抽驗
+#   pls_quadratic — 二次效果：同一 two-stage 機制，交互項 = 分數平方（SmartPLS 4
+#         Nonlinear/Quadratic Effect 同法）；條件斜率 dY/dX = b1 + 2·b_q·x
+#   pls_mod_threeway — 三向交互：two-stage 之下三個 LV 分數乘積（含全部兩向項）
+#   pls_mod_pi — product indicator 法（Chin et al. 2003）：交互構念指標 =
+#         兩構念標準化指標的全配對乘積（再與其他指標一起 z-score 進引擎）；
+#         係數為標準化量尺（對齊 seminr product_indicator，非 SmartPLS 慣例）
+#   pls_mod_ortho — orthogonalizing 法（Little, Bovaird & Widaman 2006）：
+#         乘積指標對全部一階指標 OLS 殘差化後作為交互構念指標（對齊 seminr）
+#   pls_hoc_repeated — 高階構念 repeated indicators（Wold 原始法；程序依
+#         Becker, Klein & Wetzels 2012）：HOC 區塊 = 全部 LOC 指標（重複掛載）、
+#         反映型 HOC 之內部路徑 HOC→LOC。以 plspm（欄位複製別名）交叉驗證
+#   pls_hoc_disjoint / pls_hoc_embedded — 兩階段 HOC（disjoint：Becker et al. 2023
+#         guidelines；embedded：Sarstedt et al. 2019）：第一階段取 LOC 分數，
+#         第二階段以 LOC 分數為 HOC 指標（disjoint 其他構念用原始指標、
+#         embedded 全構念用第一階段分數）
+# 手算部分沿用 W3 的獨立 numpy PLS 引擎 _pls_engine（已與 plspm 交叉驗證 <1e-6）。
+try:
+    if "_pls_engine" not in dir():
+        raise RuntimeError("W3 區塊未成功（_pls_engine 不存在），W4 基準略過")
+
+    def _ols_std(Xcols, yv):
+        """全部欄位已置中；回傳 (coefs, R²)。yv 為單位變異。"""
+        Xm = np.column_stack(Xcols)
+        b, *_ = np.linalg.lstsq(Xm, yv, rcond=None)
+        r2 = 1 - np.sum((yv - Xm @ b) ** 2) / np.sum(yv ** 2)
+        return b, float(r2)
+
+    # ── 中介（M4、path scheme）：路徑乘積分解 ──
+    _W4m, _Y4m, _L4m, _ = _pls_engine(_m4_Z.values, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
+    _Rm = np.corrcoef(_Y4m, rowvar=False)
+    _p_f1_f2 = float(_Rm[0, 1])
+    _bCm = np.linalg.solve(_Rm[np.ix_([0, 1], [0, 1])], _Rm[[0, 1], 2])
+    _p_f1_c, _p_f2_c = float(_bCm[0]), float(_bCm[1])
+    _p_f2_y = float(_Rm[1, 3])
+    _ind_f1_f2_c = _p_f1_f2 * _p_f2_c
+    _tot_f1_c = _p_f1_c + _ind_f1_f2_c
+    _ind_f1_f2_y = _p_f1_f2 * _p_f2_y
+    put("pls_mediation",
+        "numpy PLS（與 plspm 交叉驗證）路徑乘積分解：specific indirect = 鏈上路徑係數"
+        "乘積（Baron & Kenny 1986；bootstrap CI 慣例 Preacher & Hayes 2008）；"
+        "VAF = indirect/total（Hair et al. 2017 第 7 章）。M4、path scheme",
+        indirect_F1_F2_C=_ind_f1_f2_c, direct_F1_C=_p_f1_c,
+        total_F1_C=_tot_f1_c, vaf_F1_C=_ind_f1_f2_c / _tot_f1_c,
+        indirect_F1_F2_Y=_ind_f1_f2_y, total_F1_Y=_ind_f1_f2_y)
+
+    # ── 調節 two-stage：X=F1(i1-3)、M=C(cond1-3)、Y=y ──
+    _mo_cols = ["i1", "i2", "i3", "cond1", "cond2", "cond3", "y"]
+    _mo_blocks = [[0, 1, 2], [3, 4, 5], [6]]
+    _mo_pairs = [(0, 2), (1, 2)]  # 第一階段：主效果模型
+    _mo_Z = _zsc(mainc[_mo_cols].astype(float))
+    _Wmo, _Ymo, _Lmo, _ = _pls_engine(_mo_Z.values, _mo_blocks, ["A"] * 3, _mo_pairs, "path")
+    # plspm 交叉驗證第一階段（同 W3 慣例；取絕對值避免符號慣例差異）
+    _mo_st = pd.DataFrame(0, index=["F1", "C", "Y"], columns=["F1", "C", "Y"])
+    _mo_st.loc["Y", "F1"] = 1
+    _mo_st.loc["Y", "C"] = 1
+    _mo_cfg = plsc3.Config(_mo_st, scaled=True)
+    _mo_cfg.add_lv("F1", PlsMode3.A, plsc3.MV("i1"), plsc3.MV("i2"), plsc3.MV("i3"))
+    _mo_cfg.add_lv("C", PlsMode3.A, plsc3.MV("cond1"), plsc3.MV("cond2"), plsc3.MV("cond3"))
+    _mo_cfg.add_lv("Y", PlsMode3.A, plsc3.MV("y"))
+    _mo_p = Plspm3(_mo_Z, _mo_cfg, PlsScheme3.PATH, iterations=2000, tolerance=1e-12)
+    _mo_om = _mo_p.outer_model()
+    _mo_plspm_load = np.abs(_mo_om.loc[_mo_cols, "loading"].values)
+    assert np.max(np.abs(np.abs(np.concatenate(_Lmo)) - _mo_plspm_load)) < 1e-6, \
+        "two-stage 第一階段與 plspm 不一致"
+    _s1, _s2, _sy = _Ymo[:, 0], _Ymo[:, 1], _Ymo[:, 2]
+    _prod = _s1 * _s2
+    _sd_p = float(_prod.std(ddof=1))
+    _zp = (_prod - _prod.mean()) / _sd_p
+    _b2, _r2_full = _ols_std([_s1, _s2, _zp], _sy)
+    _b_int_unstd = float(_b2[2]) / _sd_p
+    _, _r2_wo = _ols_std([_s1, _s2], _sy)
+    _f2_int = (_r2_full - _r2_wo) / (1 - _r2_full)
+    put("pls_mod_twostage",
+        "numpy 手算 two-stage 調節（Chin et al. 2003；SmartPLS 4 Moderation 文件慣例："
+        "交互項=第一階段標準化 LV 分數乘積、不標準化、自動補主效果路徑）；"
+        "第一階段與 plspm 交叉驗證 <1e-6；第二階段全單指標 → 路徑 = 分數 OLS；"
+        "交互項係數 = 標準化係數 ÷ sd(乘積)；simple slope：Aiken & West 1991。"
+        "待 Kevin 本機 SmartPLS 4 / seminr 抽驗",
+        path_F1_Y=float(_b2[0]), path_C_Y=float(_b2[1]),
+        path_int_Y=_b_int_unstd, path_int_Y_std=float(_b2[2]),
+        sd_product=_sd_p, r2_Y=_r2_full, f2_int=float(_f2_int),
+        slope_lo=float(_b2[0]) - _b_int_unstd, slope_mid=float(_b2[0]),
+        slope_hi=float(_b2[0]) + _b_int_unstd)
+
+    # ── 二次效果（quadratic）：F1(i1-3) → Y(y)，交互項 = 分數平方 ──
+    _q_cols = ["i1", "i2", "i3", "y"]
+    _q_Z = _zsc(mainc[_q_cols].astype(float))
+    _Wq, _Yq, _Lq, _ = _pls_engine(_q_Z.values, [[0, 1, 2], [3]], ["A"] * 2, [(0, 1)], "path")
+    _qs, _qy = _Yq[:, 0], _Yq[:, 1]
+    _qp = _qs * _qs
+    _sd_qp = float(_qp.std(ddof=1))
+    _zqp = (_qp - _qp.mean()) / _sd_qp
+    _bq, _r2_q = _ols_std([_qs, _zqp], _qy)
+    _b_q_unstd = float(_bq[1]) / _sd_qp
+    put("pls_quadratic",
+        "numpy 手算二次效果（SmartPLS 4 Quadratic Effect：two-stage 機制、"
+        "交互項=分數平方、不標準化）；條件斜率 dY/dX = b1 + 2·b_q·x",
+        path_F1_Y=float(_bq[0]), path_quad_Y=_b_q_unstd, sd_product=_sd_qp,
+        r2_Y=_r2_q,
+        slope_lo=float(_bq[0]) + 2 * _b_q_unstd * (-1), slope_mid=float(_bq[0]),
+        slope_hi=float(_bq[0]) + 2 * _b_q_unstd * (+1))
+
+    # ── 三向交互：X=F1、M=C、W=F2 → Y（含全部兩向項；階層完整規格） ──
+    _t_cols = ["i1", "i2", "i3", "cond1", "cond2", "cond3", "i4", "i5", "i6", "y"]
+    _t_blocks = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+    _t_pairs = [(0, 3), (1, 3), (2, 3)]
+    _t_Z = _zsc(mainc[_t_cols].astype(float))
+    _Wt, _Yt, _Lt, _ = _pls_engine(_t_Z.values, _t_blocks, ["A"] * 4, _t_pairs, "path")
+    _t1, _t2, _t3, _ty = (_Yt[:, j] for j in range(4))
+    _tprods = [_t1 * _t2, _t1 * _t3, _t2 * _t3, _t1 * _t2 * _t3]
+    _t_sds = [float(pv.std(ddof=1)) for pv in _tprods]
+    _t_zps = [(pv - pv.mean()) / sd for pv, sd in zip(_tprods, _t_sds)]
+    _bt, _r2_t = _ols_std([_t1, _t2, _t3, *_t_zps], _ty)
+    put("pls_mod_threeway",
+        "numpy 手算三向交互（two-stage；三 LV 分數乘積＋全部兩向項，交互項皆不標準化）",
+        path_F1_Y=float(_bt[0]), path_C_Y=float(_bt[1]), path_F2_Y=float(_bt[2]),
+        path_F1xC_Y=float(_bt[3]) / _t_sds[0], path_F1xF2_Y=float(_bt[4]) / _t_sds[1],
+        path_CxF2_Y=float(_bt[5]) / _t_sds[2], path_F1xCxF2_Y=float(_bt[6]) / _t_sds[3],
+        r2_Y=_r2_t)
+
+    # ── product indicator（Chin et al. 2003）與 orthogonalizing（Little et al. 2006） ──
+    _pi_first = _mo_Z[["i1", "i2", "i3", "cond1", "cond2", "cond3", "y"]].values
+    _pi_prods = np.column_stack([
+        _pi_first[:, a] * _pi_first[:, 3 + b] for a in range(3) for b in range(3)])
+    _pi_X = np.column_stack([_pi_first, _pi_prods])  # 7 + 9 欄
+    _pi_Xz = (_pi_X - _pi_X.mean(axis=0)) / _pi_X.std(axis=0, ddof=1)
+    _pi_blocks = [[0, 1, 2], [3, 4, 5], [6], list(range(7, 16))]
+    _pi_pairs = [(0, 2), (1, 2), (3, 2)]
+    _Wpi, _Ypi, _Lpi, _ = _pls_engine(_pi_Xz, _pi_blocks, ["A"] * 4, _pi_pairs, "path")
+    _Rpi = np.corrcoef(_Ypi, rowvar=False)
+    _bpi = np.linalg.solve(_Rpi[np.ix_([0, 1, 3], [0, 1, 3])], _Rpi[[0, 1, 3], 2])
+    _r2_pi = float(_bpi @ _Rpi[[0, 1, 3], 2])
+    put("pls_mod_pi",
+        "numpy 手算 product indicator 調節（Chin, Marcolin & Newsted 2003）：交互構念"
+        "指標 = 兩構念標準化指標全配對乘積（乘積欄再 z-score 進引擎）；係數為標準化量尺"
+        "（對齊 seminr product_indicator）。待 Kevin 本機 seminr 抽驗",
+        path_F1_Y=float(_bpi[0]), path_C_Y=float(_bpi[1]), path_int_Y=float(_bpi[2]),
+        r2_Y=_r2_pi)
+
+    _oX = _pi_first[:, :6]  # 一階指標（z-scored）
+    _oXi = np.column_stack([np.ones(_oX.shape[0]), _oX])
+    _ortho = np.column_stack([
+        pv - _oXi @ np.linalg.lstsq(_oXi, pv, rcond=None)[0]
+        for pv in _pi_prods.T])
+    _or_X = np.column_stack([_pi_first, _ortho])
+    _or_Xz = (_or_X - _or_X.mean(axis=0)) / _or_X.std(axis=0, ddof=1)
+    _Wor, _Yor, _Lor, _ = _pls_engine(_or_Xz, _pi_blocks, ["A"] * 4, _pi_pairs, "path")
+    _Ror = np.corrcoef(_Yor, rowvar=False)
+    _bor = np.linalg.solve(_Ror[np.ix_([0, 1, 3], [0, 1, 3])], _Ror[[0, 1, 3], 2])
+    _r2_or = float(_bor @ _Ror[[0, 1, 3], 2])
+    put("pls_mod_ortho",
+        "numpy 手算 orthogonalizing 調節（Little, Bovaird & Widaman 2006）：乘積指標"
+        "對全部一階指標 OLS 殘差化後作為交互構念指標（對齊 seminr orthogonal）。"
+        "待 Kevin 本機 seminr 抽驗",
+        path_F1_Y=float(_bor[0]), path_C_Y=float(_bor[1]), path_int_Y=float(_bor[2]),
+        r2_Y=_r2_or)
+
+    # ── HOC repeated indicators：G={F1,F2}（反映型）、G→C、C→Y ──
+    _h_cols = ["i1", "i2", "i3", "i4", "i5", "i6", "cond1", "cond2", "cond3", "y"]
+    _h_X = mainc[_h_cols].astype(float)
+    _h_Z = _zsc(_h_X)
+    #    區塊以欄索引重複參照（等價於欄位複製）：G=[0..5]
+    _h_blocks = [list(range(6)), [0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+    _h_lv = ["G", "F1", "F2", "C", "Y"]
+    _h_pairs = [(0, 1), (0, 2), (0, 3), (3, 4)]  # G→F1、G→F2、G→C、C→Y
+    _Wh, _Yh, _Lh, _ = _pls_engine(_h_Z.values, _h_blocks, ["A"] * 5, _h_pairs, "path")
+    _Rh = np.corrcoef(_Yh, rowvar=False)
+    # plspm 交叉驗證：以欄位複製別名宣告重複指標
+    _hp = _h_Z.copy()
+    for _c in ["i1", "i2", "i3", "i4", "i5", "i6"]:
+        _hp[_c + "_g"] = _hp[_c]
+    _h_st = pd.DataFrame(0, index=_h_lv, columns=_h_lv)
+    _h_st.loc["F1", "G"] = 1
+    _h_st.loc["F2", "G"] = 1
+    _h_st.loc["C", "G"] = 1
+    _h_st.loc["Y", "C"] = 1
+    _h_cfg = plsc3.Config(_h_st, scaled=True)
+    _h_cfg.add_lv("G", PlsMode3.A, *[plsc3.MV(c + "_g") for c in
+                                     ["i1", "i2", "i3", "i4", "i5", "i6"]])
+    _h_cfg.add_lv("F1", PlsMode3.A, plsc3.MV("i1"), plsc3.MV("i2"), plsc3.MV("i3"))
+    _h_cfg.add_lv("F2", PlsMode3.A, plsc3.MV("i4"), plsc3.MV("i5"), plsc3.MV("i6"))
+    _h_cfg.add_lv("C", PlsMode3.A, plsc3.MV("cond1"), plsc3.MV("cond2"), plsc3.MV("cond3"))
+    _h_cfg.add_lv("Y", PlsMode3.A, plsc3.MV("y"))
+    _h_p = Plspm3(_hp, _h_cfg, PlsScheme3.PATH, iterations=2000, tolerance=1e-12)
+    _h_pc = _h_p.path_coefficients()
+    _h_own = {
+        ("G", "F1"): float(_Rh[0, 1]), ("G", "F2"): float(_Rh[0, 2]),
+        ("G", "C"): float(_Rh[0, 3]), ("C", "Y"): float(_Rh[3, 4]),
+    }
+    for (_a, _b), _v in [(("G", "F1"), _h_pc.loc["F1", "G"]), (("G", "F2"), _h_pc.loc["F2", "G"]),
+                         (("G", "C"), _h_pc.loc["C", "G"]), (("C", "Y"), _h_pc.loc["Y", "C"])]:
+        assert abs(abs(_h_own[(_a, _b)]) - abs(float(_v))) < 1e-6, \
+            f"HOC repeated：{_a}→{_b} 與 plspm 不一致"
+    put("pls_hoc_repeated",
+        "repeated indicators HOC（Wold 原始法；程序依 Becker, Klein & Wetzels 2012）："
+        "HOC 區塊=全部 LOC 指標（重複掛載）、反映型 HOC 內部路徑 HOC→LOC；"
+        "numpy PLS 與 plspm（欄位複製別名）雙實作交叉驗證 <1e-6",
+        **{f"loading_G_{_h_cols[i]}": float(_Lh[0][i]) for i in range(6)},
+        path_G_F1=_h_own[("G", "F1")], path_G_F2=_h_own[("G", "F2")],
+        path_G_C=_h_own[("G", "C")], path_C_Y=_h_own[("C", "Y")],
+        r2_C=_h_own[("G", "C")] ** 2, r2_Y=_h_own[("C", "Y")] ** 2)
+
+    # ── HOC disjoint two-stage（Becker et al. 2023）──
+    #    第一階段：無 HOC，LOC 直接連 HOC 的下游（F1→C、F2→C、C→Y）→ 取 LOC 分數
+    _d1_blocks = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+    _d1_pairs = [(0, 2), (1, 2), (2, 3)]
+    _Wd1, _Yd1, _Ld1, _ = _pls_engine(_h_Z.values, _d1_blocks, ["A"] * 4, _d1_pairs, "path")
+    #    第二階段：G=[sF1,sF2]（Mode A）、C 用原始指標、Y 原始；G→C、C→Y
+    _d2_X = np.column_stack([_Yd1[:, 0], _Yd1[:, 1],
+                             _h_X[["cond1", "cond2", "cond3", "y"]].values])
+    _d2_Xz = (_d2_X - _d2_X.mean(axis=0)) / _d2_X.std(axis=0, ddof=1)
+    _Wd2, _Yd2, _Ld2, _ = _pls_engine(_d2_Xz, [[0, 1], [2, 3, 4], [5]], ["A"] * 3,
+                                      [(0, 1), (1, 2)], "path")
+    _Rd2 = np.corrcoef(_Yd2, rowvar=False)
+    put("pls_hoc_disjoint",
+        "disjoint two-stage HOC（Becker, Cheah, Gholamzade, Ringle & Sarstedt 2023 "
+        "guidelines）：第一階段無 HOC、LOC 直連下游取分數；第二階段 HOC 指標 = LOC 分數、"
+        "其他構念用原始指標。numpy PLS（與 plspm 交叉驗證過的引擎）複算。"
+        "待 Kevin 本機 SmartPLS 4 / seminr 抽驗",
+        loading_G_sF1=float(_Ld2[0][0]), loading_G_sF2=float(_Ld2[0][1]),
+        path_G_C=float(_Rd2[0, 1]), path_C_Y=float(_Rd2[1, 2]),
+        r2_C=float(_Rd2[0, 1]) ** 2, r2_Y=float(_Rd2[1, 2]) ** 2)
+
+    # ── HOC embedded two-stage（Sarstedt et al. 2019）──
+    #    第一階段：repeated indicators 模型取全構念分數；第二階段：G=[sF1,sF2]、C/Y=分數單指標
+    _e2_X = np.column_stack([_Yh[:, 1], _Yh[:, 2], _Yh[:, 3], _Yh[:, 4]])
+    _e2_Xz = (_e2_X - _e2_X.mean(axis=0)) / _e2_X.std(axis=0, ddof=1)
+    _We2, _Ye2, _Le2, _ = _pls_engine(_e2_Xz, [[0, 1], [2], [3]], ["A"] * 3,
+                                      [(0, 1), (1, 2)], "path")
+    _Re2 = np.corrcoef(_Ye2, rowvar=False)
+    put("pls_hoc_embedded",
+        "embedded two-stage HOC（Sarstedt, Hair, Cheah, Becker & Ringle 2019）："
+        "第一階段 repeated indicators 模型取分數；第二階段 HOC 指標 = LOC 分數、"
+        "其他構念 = 分數單指標。numpy PLS 複算。待 Kevin 本機抽驗",
+        loading_G_sF1=float(_Le2[0][0]), loading_G_sF2=float(_Le2[0][1]),
+        path_G_C=float(_Re2[0, 1]), path_C_Y=float(_Re2[1, 2]),
+        r2_C=float(_Re2[0, 1]) ** 2, r2_Y=float(_Re2[1, 2]) ** 2)
+except Exception as e:
+    put("pls_w4", f"PLS W4 baselines FAILED: {e}")
+
 with open(os.path.join(FIX, "reference.json"), "w") as f:
     json.dump(REF, f, indent=1)
 

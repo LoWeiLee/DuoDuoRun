@@ -341,6 +341,134 @@ export const ADAPTERS = {
     const q2 = Object.fromEntries(r.constructs.map((c) => [c.lv, c.q2]))
     return { q2_F2: q2.F2, q2_C: q2.C, q2_Y: q2.Y }
   },
+
+  /* ── PLS-SEM W4 基準（模型/程序見 generate_reference.py 的 W4 區塊註記） ── */
+  // 中介：M4 的路徑乘積分解（F1→F2→C 有直接效果；F1→F2→Y 無）
+  pls_mediation() {
+    const r = plsRun(PLS_M4, PLS_W3_OPT)
+    const eff = (a, b) => r.mediation.effects.find((q) => q.from === a && q.to === b)
+    const f1c = eff('F1', 'C')
+    const f1y = eff('F1', 'Y')
+    return {
+      indirect_F1_F2_C: f1c.chains.find((c) => c.via.join() === 'F2').coef,
+      direct_F1_C: f1c.direct,
+      total_F1_C: f1c.total,
+      vaf_F1_C: f1c.vaf,
+      indirect_F1_F2_Y: f1y.chains.find((c) => c.via.join() === 'F2').coef,
+      total_F1_Y: f1y.total,
+    }
+  },
+  // 調節 two-stage：F1×C→Y（C→Y 主效果由引擎自動補），交互項不標準化
+  pls_mod_twostage() {
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+        { name: 'Y', indicators: ['y'] },
+      ],
+      interactions: [{ name: 'F1xC', factors: ['F1', 'C'], method: 'two-stage' }],
+      paths: [{ from: 'F1', to: 'Y' }, { from: 'F1xC', to: 'Y' }],
+    }
+    const r = plsRun(model, PLS_W3_OPT)
+    const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b)
+    const int = r.interactions[0]
+    const tg = int.targets.find((q) => q.to === 'Y')
+    const slope = (lv) => tg.slopes.find((s) => s.level === lv).slope
+    const stY = r.structural.find((q) => q.lv === 'Y')
+    return {
+      path_F1_Y: path('F1', 'Y').coef,
+      path_C_Y: path('C', 'Y').coef, // 自動補的主效果
+      path_int_Y: path('F1xC', 'Y').coef,
+      path_int_Y_std: path('F1xC', 'Y').coefStd,
+      sd_product: int.sdProduct,
+      r2_Y: stY.r2,
+      f2_int: stY.predictors.find((q) => q.from === 'F1xC').f2,
+      slope_lo: slope(-1), slope_mid: slope(0), slope_hi: slope(1),
+    }
+  },
+  // 二次效果：F1 的平方項（two-stage 機制）
+  pls_quadratic() {
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'Y', indicators: ['y'] },
+      ],
+      interactions: [{ name: 'F1sq', factors: ['F1', 'F1'], method: 'two-stage' }],
+      paths: [{ from: 'F1', to: 'Y' }, { from: 'F1sq', to: 'Y' }],
+    }
+    const r = plsRun(model, PLS_W3_OPT)
+    const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b)
+    const tg = r.interactions[0].targets.find((q) => q.to === 'Y')
+    const slope = (lv) => tg.slopes.find((s) => s.level === lv).slope
+    return {
+      path_F1_Y: path('F1', 'Y').coef,
+      path_quad_Y: path('F1sq', 'Y').coef,
+      sd_product: r.interactions[0].sdProduct,
+      r2_Y: r.structural.find((q) => q.lv === 'Y').r2,
+      slope_lo: slope(-1), slope_mid: slope(0), slope_hi: slope(1),
+    }
+  },
+  // 三向交互（含全部兩向項；階層完整規格）
+  pls_mod_threeway() {
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+        { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+        { name: 'Y', indicators: ['y'] },
+      ],
+      interactions: [
+        { name: 'F1xC', factors: ['F1', 'C'], method: 'two-stage' },
+        { name: 'F1xF2', factors: ['F1', 'F2'], method: 'two-stage' },
+        { name: 'CxF2', factors: ['C', 'F2'], method: 'two-stage' },
+        { name: 'F1xCxF2', factors: ['F1', 'C', 'F2'], method: 'two-stage' },
+      ],
+      paths: [
+        { from: 'F1', to: 'Y' }, { from: 'C', to: 'Y' }, { from: 'F2', to: 'Y' },
+        { from: 'F1xC', to: 'Y' }, { from: 'F1xF2', to: 'Y' },
+        { from: 'CxF2', to: 'Y' }, { from: 'F1xCxF2', to: 'Y' },
+      ],
+    }
+    const r = plsRun(model, PLS_W3_OPT)
+    const path = (a) => r.pathCoefficients.find((q) => q.from === a && q.to === 'Y').coef
+    return {
+      path_F1_Y: path('F1'), path_C_Y: path('C'), path_F2_Y: path('F2'),
+      path_F1xC_Y: path('F1xC'), path_F1xF2_Y: path('F1xF2'),
+      path_CxF2_Y: path('CxF2'), path_F1xCxF2_Y: path('F1xCxF2'),
+      r2_Y: r.structural.find((q) => q.lv === 'Y').r2,
+    }
+  },
+  // product indicator / orthogonalizing（標準化量尺，對齊 seminr）
+  pls_mod_pi() {
+    return plsModPIAdapter('product-indicator')
+  },
+  pls_mod_ortho() {
+    return plsModPIAdapter('orthogonal')
+  },
+  // HOC repeated indicators：G={F1,F2} 反映型、G→C→Y
+  pls_hoc_repeated() {
+    const r = plsRun(PLS_HOC_MODEL('repeated'), PLS_W3_OPT)
+    const ld = Object.fromEntries(
+      r.outerLoadings.filter((q) => q.lv === 'G').map((q) => [q.indicator, q.loading]))
+    const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b).coef
+    const r2 = (lv) => r.structural.find((q) => q.lv === lv).r2
+    return {
+      loading_G_i1: ld.i1, loading_G_i2: ld.i2, loading_G_i3: ld.i3,
+      loading_G_i4: ld.i4, loading_G_i5: ld.i5, loading_G_i6: ld.i6,
+      path_G_F1: path('G', 'F1'), path_G_F2: path('G', 'F2'),
+      path_G_C: path('G', 'C'), path_C_Y: path('C', 'Y'),
+      r2_C: r2('C'), r2_Y: r2('Y'),
+    }
+  },
+  pls_hoc_disjoint() {
+    return plsHocTwoStageAdapter('disjoint')
+  },
+  pls_hoc_embedded() {
+    return plsHocTwoStageAdapter('two-stage')
+  },
 }
 
 /* ── PLS W3 共用模型與選項 ── */
@@ -360,6 +488,59 @@ const PLS_M4 = {
   ],
 }
 const PLS_W3_OPT = { tolerance: 1e-12, maxIterations: 2000 }
+
+/* ── PLS W4 共用 ── */
+function plsRun(model, opt) {
+  const r = runPLS(main, model, opt)
+  if (r.error) throw new Error(`runPLS failed: ${r.error} — ${r.message}`)
+  return r
+}
+
+function plsModPIAdapter(method) {
+  const model = {
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+      { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+      { name: 'Y', indicators: ['y'] },
+    ],
+    interactions: [{ name: 'F1xC', factors: ['F1', 'C'], method }],
+    paths: [{ from: 'F1', to: 'Y' }, { from: 'C', to: 'Y' }, { from: 'F1xC', to: 'Y' }],
+  }
+  const r = plsRun(model, PLS_W3_OPT)
+  const path = (a) => r.pathCoefficients.find((q) => q.from === a && q.to === 'Y').coef
+  return {
+    path_F1_Y: path('F1'), path_C_Y: path('C'), path_int_Y: path('F1xC'),
+    r2_Y: r.structural.find((q) => q.lv === 'Y').r2,
+  }
+}
+
+function PLS_HOC_MODEL(method) {
+  return {
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+      { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+      { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+      { name: 'Y', indicators: ['y'] },
+    ],
+    higherOrder: [{ name: 'G', components: ['F1', 'F2'], mode: 'reflective', method }],
+    paths: [{ from: 'G', to: 'C' }, { from: 'C', to: 'Y' }],
+  }
+}
+
+function plsHocTwoStageAdapter(method) {
+  const r = plsRun(PLS_HOC_MODEL(method), PLS_W3_OPT)
+  const ld = Object.fromEntries(
+    r.outerLoadings.filter((q) => q.lv === 'G').map((q) => [q.indicator, q.loading]))
+  const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b).coef
+  const r2 = (lv) => r.structural.find((q) => q.lv === lv).r2
+  return {
+    loading_G_sF1: ld.F1_score, loading_G_sF2: ld.F2_score,
+    path_G_C: path('G', 'C'), path_C_Y: path('C', 'Y'),
+    r2_C: r2('C'), r2_Y: r2('Y'),
+  }
+}
 
 function plsSchemeAdapter(scheme) {
   const r = runPLS(main, PLS_M4, { ...PLS_W3_OPT, scheme })

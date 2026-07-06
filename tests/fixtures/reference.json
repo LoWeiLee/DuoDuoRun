@@ -1608,5 +1608,113 @@
     40.257728813559325
    ]
   }
+ },
+ "pls_mediation": {
+  "source": "numpy PLS\uff08\u8207 plspm \u4ea4\u53c9\u9a57\u8b49\uff09\u8def\u5f91\u4e58\u7a4d\u5206\u89e3\uff1aspecific indirect = \u93c8\u4e0a\u8def\u5f91\u4fc2\u6578\u4e58\u7a4d\uff08Baron & Kenny 1986\uff1bbootstrap CI \u6163\u4f8b Preacher & Hayes 2008\uff09\uff1bVAF = indirect/total\uff08Hair et al. 2017 \u7b2c 7 \u7ae0\uff09\u3002M4\u3001path scheme",
+  "values": {
+   "indirect_F1_F2_C": -0.07679915065063944,
+   "direct_F1_C": -0.23010988632444182,
+   "total_F1_C": -0.30690903697508126,
+   "vaf_F1_C": 0.2502342433692331,
+   "indirect_F1_F2_Y": 0.05633037603658671,
+   "total_F1_Y": 0.05633037603658671
+  }
+ },
+ "pls_mod_twostage": {
+  "source": "numpy \u624b\u7b97 two-stage \u8abf\u7bc0\uff08Chin et al. 2003\uff1bSmartPLS 4 Moderation \u6587\u4ef6\u6163\u4f8b\uff1a\u4ea4\u4e92\u9805=\u7b2c\u4e00\u968e\u6bb5\u6a19\u6e96\u5316 LV \u5206\u6578\u4e58\u7a4d\u3001\u4e0d\u6a19\u6e96\u5316\u3001\u81ea\u52d5\u88dc\u4e3b\u6548\u679c\u8def\u5f91\uff09\uff1b\u7b2c\u4e00\u968e\u6bb5\u8207 plspm \u4ea4\u53c9\u9a57\u8b49 <1e-6\uff1b\u7b2c\u4e8c\u968e\u6bb5\u5168\u55ae\u6307\u6a19 \u2192 \u8def\u5f91 = \u5206\u6578 OLS\uff1b\u4ea4\u4e92\u9805\u4fc2\u6578 = \u6a19\u6e96\u5316\u4fc2\u6578 \u00f7 sd(\u4e58\u7a4d)\uff1bsimple slope\uff1aAiken & West 1991\u3002\u5f85 Kevin \u672c\u6a5f SmartPLS 4 / seminr \u62bd\u9a57",
+  "values": {
+   "path_F1_Y": -0.13480075477096787,
+   "path_C_Y": -0.2793507007525251,
+   "path_int_Y": 0.1472794957559121,
+   "path_int_Y_std": 0.15431181488438292,
+   "sd_product": 1.0477481206217976,
+   "r2_Y": 0.08525006079692321,
+   "f2_int": 0.02213010898285939,
+   "slope_lo": -0.28208025052687996,
+   "slope_mid": -0.13480075477096787,
+   "slope_hi": 0.012478740984944225
+  }
+ },
+ "pls_quadratic": {
+  "source": "numpy \u624b\u7b97\u4e8c\u6b21\u6548\u679c\uff08SmartPLS 4 Quadratic Effect\uff1atwo-stage \u6a5f\u5236\u3001\u4ea4\u4e92\u9805=\u5206\u6578\u5e73\u65b9\u3001\u4e0d\u6a19\u6e96\u5316\uff09\uff1b\u689d\u4ef6\u659c\u7387 dY/dX = b1 + 2\u00b7b_q\u00b7x",
+  "values": {
+   "path_F1_Y": -0.1234120056198991,
+   "path_quad_Y": 0.051425723956440274,
+   "sd_product": 1.2014130580904485,
+   "r2_Y": 0.018959509441094147,
+   "slope_lo": -0.22626345353277966,
+   "slope_mid": -0.1234120056198991,
+   "slope_hi": -0.020560557707018548
+  }
+ },
+ "pls_mod_threeway": {
+  "source": "numpy \u624b\u7b97\u4e09\u5411\u4ea4\u4e92\uff08two-stage\uff1b\u4e09 LV \u5206\u6578\u4e58\u7a4d\uff0b\u5168\u90e8\u5169\u5411\u9805\uff0c\u4ea4\u4e92\u9805\u7686\u4e0d\u6a19\u6e96\u5316\uff09",
+  "values": {
+   "path_F1_Y": -0.1757050149924963,
+   "path_C_Y": -0.2588268104591449,
+   "path_F2_Y": 0.1050478419216711,
+   "path_F1xC_Y": 0.1575151478886166,
+   "path_F1xF2_Y": 0.028468481032692394,
+   "path_CxF2_Y": 0.07642897906905918,
+   "path_F1xCxF2_Y": -0.15677662097973782,
+   "r2_Y": 0.11530489284300416
+  }
+ },
+ "pls_mod_pi": {
+  "source": "numpy \u624b\u7b97 product indicator \u8abf\u7bc0\uff08Chin, Marcolin & Newsted 2003\uff09\uff1a\u4ea4\u4e92\u69cb\u5ff5\u6307\u6a19 = \u5169\u69cb\u5ff5\u6a19\u6e96\u5316\u6307\u6a19\u5168\u914d\u5c0d\u4e58\u7a4d\uff08\u4e58\u7a4d\u6b04\u518d z-score \u9032\u5f15\u64ce\uff09\uff1b\u4fc2\u6578\u70ba\u6a19\u6e96\u5316\u91cf\u5c3a\uff08\u5c0d\u9f4a seminr product_indicator\uff09\u3002\u5f85 Kevin \u672c\u6a5f seminr \u62bd\u9a57",
+  "values": {
+   "path_F1_Y": -0.15148874763300096,
+   "path_C_Y": -0.17421475366862832,
+   "path_int_Y": -0.19469017537989847,
+   "r2_Y": 0.09931780967903468
+  }
+ },
+ "pls_mod_ortho": {
+  "source": "numpy \u624b\u7b97 orthogonalizing \u8abf\u7bc0\uff08Little, Bovaird & Widaman 2006\uff09\uff1a\u4e58\u7a4d\u6307\u6a19\u5c0d\u5168\u90e8\u4e00\u968e\u6307\u6a19 OLS \u6b98\u5dee\u5316\u5f8c\u4f5c\u70ba\u4ea4\u4e92\u69cb\u5ff5\u6307\u6a19\uff08\u5c0d\u9f4a seminr orthogonal\uff09\u3002\u5f85 Kevin \u672c\u6a5f seminr \u62bd\u9a57",
+  "values": {
+   "path_F1_Y": -0.11558221034434779,
+   "path_C_Y": -0.22342772781889458,
+   "path_int_Y": 0.3347180898761779,
+   "r2_Y": 0.1770427446406524
+  }
+ },
+ "pls_hoc_repeated": {
+  "source": "repeated indicators HOC\uff08Wold \u539f\u59cb\u6cd5\uff1b\u7a0b\u5e8f\u4f9d Becker, Klein & Wetzels 2012\uff09\uff1aHOC \u5340\u584a=\u5168\u90e8 LOC \u6307\u6a19\uff08\u91cd\u8907\u639b\u8f09\uff09\u3001\u53cd\u6620\u578b HOC \u5167\u90e8\u8def\u5f91 HOC\u2192LOC\uff1bnumpy PLS \u8207 plspm\uff08\u6b04\u4f4d\u8907\u88fd\u5225\u540d\uff09\u96d9\u5be6\u4f5c\u4ea4\u53c9\u9a57\u8b49 <1e-6",
+  "values": {
+   "loading_G_i1": 0.6360506789685374,
+   "loading_G_i2": 0.772787693032412,
+   "loading_G_i3": 0.6206366325773007,
+   "loading_G_i4": 0.6951351914185372,
+   "loading_G_i5": 0.6148209488983956,
+   "loading_G_i6": 0.5931079601691613,
+   "path_G_F1": 0.8281010008357796,
+   "path_G_F2": 0.8025301530004038,
+   "path_G_C": -0.3478897368105931,
+   "path_C_Y": -0.21715010916465638,
+   "r2_C": 0.12102726897814374,
+   "r2_Y": 0.047154169910222185
+  }
+ },
+ "pls_hoc_disjoint": {
+  "source": "disjoint two-stage HOC\uff08Becker, Cheah, Gholamzade, Ringle & Sarstedt 2023 guidelines\uff09\uff1a\u7b2c\u4e00\u968e\u6bb5\u7121 HOC\u3001LOC \u76f4\u9023\u4e0b\u6e38\u53d6\u5206\u6578\uff1b\u7b2c\u4e8c\u968e\u6bb5 HOC \u6307\u6a19 = LOC \u5206\u6578\u3001\u5176\u4ed6\u69cb\u5ff5\u7528\u539f\u59cb\u6307\u6a19\u3002numpy PLS\uff08\u8207 plspm \u4ea4\u53c9\u9a57\u8b49\u904e\u7684\u5f15\u64ce\uff09\u8907\u7b97\u3002\u5f85 Kevin \u672c\u6a5f SmartPLS 4 / seminr \u62bd\u9a57",
+  "values": {
+   "loading_G_sF1": 0.8035289735842475,
+   "loading_G_sF2": 0.8261768228586641,
+   "path_G_C": -0.40214789850913685,
+   "path_C_Y": -0.21786402506904767,
+   "r2_C": 0.16172293227531503,
+   "r2_Y": 0.047464733419286635
+  }
+ },
+ "pls_hoc_embedded": {
+  "source": "embedded two-stage HOC\uff08Sarstedt, Hair, Cheah, Becker & Ringle 2019\uff09\uff1a\u7b2c\u4e00\u968e\u6bb5 repeated indicators \u6a21\u578b\u53d6\u5206\u6578\uff1b\u7b2c\u4e8c\u968e\u6bb5 HOC \u6307\u6a19 = LOC \u5206\u6578\u3001\u5176\u4ed6\u69cb\u5ff5 = \u5206\u6578\u55ae\u6307\u6a19\u3002numpy PLS \u8907\u7b97\u3002\u5f85 Kevin \u672c\u6a5f\u62bd\u9a57",
+  "values": {
+   "loading_G_sF1": 0.7880607802588525,
+   "loading_G_sF2": 0.8414074276800061,
+   "path_G_C": -0.34521351830107233,
+   "path_C_Y": -0.21715010916465635,
+   "r2_C": 0.1191723732178048,
+   "r2_Y": 0.04715416991022217
+  }
  }
 }

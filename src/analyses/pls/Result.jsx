@@ -623,6 +623,298 @@ function Q2Table({ q2res, r }) {
   )
 }
 
+/** simple slope 三線圖／二次效果曲線（SVG，design tokens 用 currentColor） */
+function SlopePlot({ target, interaction, r }) {
+  const W = 320
+  const H = 190
+  const PAD = { l: 34, r: 10, t: 10, b: 26 }
+  const xs = [-2, -1, 0, 1, 2]
+  let series
+  if (target.quadratic) {
+    const pts = []
+    for (let x = -2; x <= 2.001; x += 0.2) {
+      pts.push([x, target.curve.linear * x + target.curve.quad * x * x])
+    }
+    series = [{ key: 'mid', pts, cls: 'text-duo-amber-500', dash: '' }]
+  } else {
+    const mk = (m) => xs.map((x) => {
+      const sl = target.slopes.find((q) => q.level === m)
+      return [x, sl.slope * x + sl.intercept]
+    })
+    series = [
+      { key: 'lo', pts: mk(-1), cls: 'text-duo-cocoa-300', dash: '4 3' },
+      { key: 'mid', pts: mk(0), cls: 'text-duo-cocoa-500', dash: '' },
+      { key: 'hi', pts: mk(1), cls: 'text-duo-amber-500', dash: '' },
+    ]
+  }
+  const ys = series.flatMap((s) => s.pts.map((q) => q[1]))
+  let yMin = Math.min(...ys, 0)
+  let yMax = Math.max(...ys, 0)
+  const padY = Math.max((yMax - yMin) * 0.1, 0.1)
+  yMin -= padY
+  yMax += padY
+  const sx = (x) => PAD.l + ((x + 2) / 4) * (W - PAD.l - PAD.r)
+  const sy = (y) => PAD.t + ((yMax - y) / (yMax - yMin)) * (H - PAD.t - PAD.b)
+  const lvNames = r.slopeLevelNames
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-sm" role="img"
+         aria-label={`simple slopes: ${interaction.name}`}>
+      {/* 軸線 */}
+      <line x1={PAD.l} y1={sy(0)} x2={W - PAD.r} y2={sy(0)}
+            className="text-duo-cream-200" stroke="currentColor" strokeWidth="1" />
+      <line x1={sx(0)} y1={PAD.t} x2={sx(0)} y2={H - PAD.b}
+            className="text-duo-cream-200" stroke="currentColor" strokeWidth="1" />
+      {[-2, -1, 0, 1, 2].map((x) => (
+        <text key={x} x={sx(x)} y={H - 8} textAnchor="middle"
+              className="text-duo-cocoa-400 font-mono" fill="currentColor" fontSize="9">
+          {x}
+        </text>
+      ))}
+      {[yMin + padY, yMax - padY].map((y, i) => (
+        <text key={i} x={PAD.l - 4} y={sy(y) + 3} textAnchor="end"
+              className="text-duo-cocoa-400 font-mono" fill="currentColor" fontSize="9">
+          {y.toFixed(1)}
+        </text>
+      ))}
+      {series.map((s) => (
+        <polyline
+          key={s.key}
+          points={s.pts.map((q) => `${sx(q[0])},${sy(q[1])}`).join(' ')}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeDasharray={s.dash}
+          className={s.cls}
+        />
+      ))}
+      {/* 圖例 */}
+      {!target.quadratic && series.map((s, i) => (
+        <g key={s.key} className={s.cls} transform={`translate(${PAD.l + 6 + i * 92}, ${PAD.t + 6})`}>
+          <line x1="0" y1="0" x2="16" y2="0" stroke="currentColor" strokeWidth="2" strokeDasharray={s.dash} />
+          <text x="20" y="3" fill="currentColor" fontSize="9" className="font-mono">
+            {lvNames[s.key]}
+          </text>
+        </g>
+      ))}
+      <text x={W - PAD.r} y={H - 8} textAnchor="end"
+            className="text-duo-cocoa-400" fill="currentColor" fontSize="9">
+        {fillTemplate(r.slopeAxisX, { iv: target.iv })}
+      </text>
+    </svg>
+  )
+}
+
+/** 調節：交互效果摘要 ＋ simple slopes（two-stage 二因子／二次） */
+function InteractionBlock({ estimate, boot, bootOk, r }) {
+  const c = r.cols
+  const slopeMap = new Map()
+  if (bootOk && Array.isArray(boot.slopes)) {
+    for (const s of boot.slopes) slopeMap.set(`${s.interaction}|${s.to}|${s.level}`, s)
+  }
+  const levelName = (lv) => (lv < 0 ? r.slopeLevelNames.lo : lv > 0 ? r.slopeLevelNames.hi : r.slopeLevelNames.mid)
+  return (
+    <div>
+      <Heading>{r.interactionTitle}</Heading>
+      {estimate.interactions.map((it) => (
+        <div key={it.name} className="mb-4">
+          <p className="text-[11px] text-duo-cocoa-400 mb-1.5 font-mono">
+            {it.name}｜{fillTemplate(r.interactionMethodLine, { method: it.method })}
+            {it.sdProduct !== null ? r.sdProductTag : ''}
+          </p>
+          {it.targets.map((tg) => (
+            <div key={tg.to} className="mb-3">
+              {Array.isArray(tg.slopes) && (
+                <div className="flex flex-wrap gap-4 items-start">
+                  <div className="bg-white border border-duo-cream-200 rounded-lg p-2 shrink-0">
+                    <SlopePlot target={tg} interaction={it} r={r} />
+                  </div>
+                  <div className="flex-1 min-w-[240px]">
+                    <TableBox>
+                      <thead className="bg-duo-cream-50">
+                        <tr>
+                          <Th align="left">
+                            {tg.quadratic ? tg.iv : tg.moderator}
+                            {tg.quadratic ? `（${r.quadraticTag}）` : ''}
+                          </Th>
+                          <Th>{r.slopeCol}</Th>
+                          {bootOk && (
+                            <>
+                              <Th>{c.se}</Th>
+                              <Th>{c.t}</Th>
+                              <Th>{c.p}</Th>
+                              <Th>{c.ci}</Th>
+                            </>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tg.slopes.map((sl) => {
+                          const b = slopeMap.get(`${it.name}|${tg.to}|${sl.level}`)
+                          return (
+                            <tr key={sl.level}>
+                              <Td align="left" mono={false} bold>{levelName(sl.level)}</Td>
+                              <Td>{fmtNum(sl.slope, 3)}</Td>
+                              {bootOk && (
+                                <>
+                                  <Td>{fmtNum(b?.se, 3)}</Td>
+                                  <Td>{fmtNum(b?.t, 2)}</Td>
+                                  <Td>
+                                    <span className={TONE_TEXT[toneForP(b?.p)] || ''}>{fmtP(b?.p)}</span>
+                                  </Td>
+                                  <Td>[{fmtNum(b?.ciLower, 3)}, {fmtNum(b?.ciUpper, 3)}]</Td>
+                                </>
+                              )}
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </TableBox>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+      <Note>{r.slopesNote}</Note>
+    </div>
+  )
+}
+
+/** 中介：直接／特定間接／間接總和／總效果 分解表（bootstrap CI） */
+function MediationTable({ estimate, boot, bootOk, r }) {
+  const c = r.cols
+  const indMap = new Map()
+  const tiMap = new Map()
+  const totMap = new Map()
+  const pathMap = new Map()
+  if (bootOk) {
+    for (const q of boot.indirectEffects || []) indMap.set(`${q.from}|${q.to}|${q.via.join('→')}`, q)
+    for (const q of boot.totalIndirectEffects || []) tiMap.set(`${q.from}|${q.to}`, q)
+    for (const q of boot.totalEffects || []) totMap.set(`${q.from}|${q.to}`, q)
+    for (const q of boot.paths) pathMap.set(`${q.from}|${q.to}`, q)
+  }
+  const bootCells = (b) => (
+    <>
+      <Td>{fmtNum(b ? b.se : null, 3)}</Td>
+      <Td>{fmtNum(b ? b.t : null, 2)}</Td>
+      <Td>{b ? <span className={TONE_TEXT[toneForP(b.p)] || ''}>{fmtP(b.p)}</span> : '—'}</Td>
+      <Td>{b ? `[${fmtNum(b.ciLower, 3)}, ${fmtNum(b.ciUpper, 3)}]` : '—'}</Td>
+    </>
+  )
+  return (
+    <div>
+      <Heading>{r.mediationTitle}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{c.path}</Th>
+            <Th align="left">{r.effectCol}</Th>
+            <Th>{c.beta}</Th>
+            {bootOk && (
+              <>
+                <Th>{c.se}</Th>
+                <Th>{c.t}</Th>
+                <Th>{c.p}</Th>
+                <Th>{c.ci}</Th>
+              </>
+            )}
+            <Th>{r.vafCol}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {estimate.mediation.effects.flatMap((eff) => {
+            const key = `${eff.from}|${eff.to}`
+            const rows = []
+            const pairLabel = `${eff.from} → ${eff.to}`
+            rows.push(
+              <tr key={`${key}-direct`}>
+                <Td align="left" mono={false} bold>{pairLabel}</Td>
+                <Td align="left" mono={false}>{r.directLabel}</Td>
+                <Td>{eff.direct === null ? '—' : fmtNum(eff.direct, 3)}</Td>
+                {bootOk && bootCells(eff.direct === null ? null : pathMap.get(key))}
+                <Td>—</Td>
+              </tr>
+            )
+            eff.chains.forEach((ch, ci) => {
+              const b = bootOk ? indMap.get(`${key}|${ch.via.join('→')}`) : null
+              const sig = b && Number.isFinite(b.ciLower) && (b.ciLower > 0 || b.ciUpper < 0)
+              rows.push(
+                <tr key={`${key}-ch${ci}`}>
+                  <Td align="left" mono={false}> </Td>
+                  <Td align="left" mono={false}>
+                    <span className="inline-flex items-center gap-2">
+                      {bootOk && <Led status={sig ? 'ok' : 'bad'} />}
+                      {fillTemplate(r.indirectVia, { via: ch.via.join(' → ') })}
+                    </span>
+                  </Td>
+                  <Td>{fmtNum(ch.coef, 3)}</Td>
+                  {bootOk && bootCells(b)}
+                  <Td>—</Td>
+                </tr>
+              )
+            })
+            rows.push(
+              <tr key={`${key}-ti`}>
+                <Td align="left" mono={false}> </Td>
+                <Td align="left" mono={false}>{r.totalIndirectLabel}</Td>
+                <Td>{fmtNum(eff.totalIndirect, 3)}</Td>
+                {bootOk && bootCells(tiMap.get(key))}
+                <Td>{eff.vaf === null ? '—' : `${fmtNum(eff.vaf * 100, 1)}%`}</Td>
+              </tr>
+            )
+            rows.push(
+              <tr key={`${key}-tot`}>
+                <Td align="left" mono={false}> </Td>
+                <Td align="left" mono={false} bold>{r.totalLabel}</Td>
+                <Td>{fmtNum(eff.total, 3)}</Td>
+                {bootOk && bootCells(totMap.get(key))}
+                <Td>—</Td>
+              </tr>
+            )
+            return rows
+          })}
+        </tbody>
+      </TableBox>
+      <Note>{r.mediationNote}</Note>
+    </div>
+  )
+}
+
+/** 第二階段資料（LV 分數新資料檔）下載 */
+function DerivedBlock({ derived, r }) {
+  const download = () => {
+    const esc = (v) => (typeof v === 'string' && /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : String(v))
+    const lines = [derived.columns.map(esc).join(',')]
+    for (const row of derived.rows) lines.push(row.map((v) => (Number.isFinite(v) ? String(v) : '')).join(','))
+    const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'pls_stage2_scores.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+  return (
+    <div>
+      <Heading>{r.derivedTitle}</Heading>
+      <div className="bg-white border border-duo-cream-200 rounded-lg p-3 flex items-center justify-between gap-3">
+        <span className="text-[11px] text-duo-cocoa-500 font-mono">
+          {derived.columns.join('、')}（n = {derived.rows.length}）
+        </span>
+        <button
+          type="button"
+          onClick={download}
+          className="px-2.5 py-1.5 text-[11px] font-medium rounded-md bg-duo-amber-500 text-white hover:bg-duo-amber-600 transition shrink-0"
+        >
+          {r.downloadDerived}
+        </button>
+      </div>
+      <Note>{r.derivedNote}</Note>
+    </div>
+  )
+}
+
 /* ─────────────────────  主元件  ───────────────────── */
 
 function Result() {
@@ -656,7 +948,9 @@ function Result() {
   const { estimate, bootstrap: boot, q2: q2res } = res
   const bootOk = Boolean(boot && !boot.error)
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
-  const lvModes = estimate.lvModes || {}
+  // 多階段模型（two-stage 調節／HOC）：量測統計量取第一階段（原始指標），結構取最終階段
+  const meas = estimate.stage1 || estimate
+  const lvModes = meas.lvModes || {}
 
   // bootstrap loadings / weights 查表
   const loadMap = new Map()
@@ -666,14 +960,14 @@ function Result() {
     for (const q of boot.weights || []) weightMap.set(`${q.lv}｜${q.indicator}`, q)
   }
   const loadingByKey = new Map(
-    estimate.outerLoadings.map((q) => [`${q.lv}｜${q.indicator}`, q.loading]))
+    meas.outerLoadings.map((q) => [`${q.lv}｜${q.indicator}`, q.loading]))
   // 每個構念的指標數（單指標構念的信度定義上為 1，顯示為 —）
   const kByLv = new Map()
-  for (const q of estimate.outerLoadings) kByLv.set(q.lv, (kByLv.get(q.lv) || 0) + 1)
+  for (const q of meas.outerLoadings) kByLv.set(q.lv, (kByLv.get(q.lv) || 0) + 1)
 
-  const reflectiveLoadings = estimate.outerLoadings.filter((q) => lvModes[q.lv] !== 'formative')
-  const formativeWeights = estimate.outerWeights.filter((q) => lvModes[q.lv] === 'formative')
-  const reflectiveReliability = estimate.reliability.filter((q) => q.mode !== 'formative')
+  const reflectiveLoadings = meas.outerLoadings.filter((q) => lvModes[q.lv] !== 'formative')
+  const formativeWeights = meas.outerWeights.filter((q) => lvModes[q.lv] === 'formative')
+  const reflectiveReliability = meas.reliability.filter((q) => q.mode !== 'formative')
 
   const lastStructural = estimate.structural[estimate.structural.length - 1]
 
@@ -719,6 +1013,18 @@ function Result() {
           plsc: estimate.meta.consistent ? r.plscTag : '',
         })}
       </p>
+      {Array.isArray(estimate.meta.autoAddedPaths) && estimate.meta.autoAddedPaths.length > 0 && (
+        <p className="text-[11px] text-duo-cocoa-400 mb-1 font-mono">
+          {fillTemplate(r.autoAddedLine, {
+            paths: estimate.meta.autoAddedPaths.map((q) => `${q.from} → ${q.to}`).join('、'),
+          })}
+        </p>
+      )}
+      {estimate.stage1 && (
+        <p className="text-[11px] text-duo-cocoa-500 leading-snug bg-duo-cream-50 border border-duo-cocoa-100 rounded-md px-3 py-2 mb-2">
+          {r.stage1Note}
+        </p>
+      )}
 
       {reflectiveLoadings.length > 0 && (
         <LoadingsTable rows={reflectiveLoadings} loadMap={loadMap} bootOk={bootOk} r={r} labelMap={labelMap} />
@@ -736,12 +1042,19 @@ function Result() {
       {reflectiveReliability.length > 0 && (
         <ReliabilityTable rows={reflectiveReliability} kByLv={kByLv} r={r} />
       )}
-      <FornellLarckerTable estimate={estimate} r={r} />
-      <HtmtTable estimate={estimate} r={r} />
+      <FornellLarckerTable estimate={meas} r={r} />
+      <HtmtTable estimate={meas} r={r} />
       <PathsTable estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
+      {Array.isArray(estimate.interactions) && estimate.interactions.length > 0 && (
+        <InteractionBlock estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
+      )}
       <R2Table estimate={estimate} r={r} />
       <EffectsTable estimate={estimate} r={r} />
-      {estimate.fit && <FitTable fit={estimate.fit} r={r} />}
+      {estimate.mediation && (
+        <MediationTable estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
+      )}
+      {meas.fit && <FitTable fit={meas.fit} r={r} />}
+      {estimate.derived && <DerivedBlock derived={estimate.derived} r={r} />}
       {q2res && q2res.error && (
         <WarnBox>{fillTemplate(r.q2Unavailable, { message: q2res.message || q2res.error })}</WarnBox>
       )}
