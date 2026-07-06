@@ -21,7 +21,39 @@
  * 到 W5 的 permutation/k-fold 重運算時一併接 Worker）。接線時把 Result/Narrative 的
  * useMemo 改為 useEffect + worker.postMessage，以 progress 訊息驅動進度條。
  */
-import { runPLS, bootstrapPLS, blindfoldPLS } from '../../lib/stats/pls.js'
+import {
+  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS,
+} from '../../lib/stats/pls.js'
+
+/** committed.options.w5 → 各 W5 API 的 options（worker 與同步路徑共用） */
+export function buildW5Options(committed) {
+  const w5 = (committed.options || {}).w5 || {}
+  const grp = w5.groupColumn && w5.g1 !== undefined && w5.g2 !== undefined
+    ? { groupColumn: w5.groupColumn, groups: [w5.g1, w5.g2], permutations: w5.permutations ?? 500, seed: 42 }
+    : null
+  return {
+    mga: w5.mga && grp ? { ...grp, bootstrapN: committed.bootstrapN ?? 1000 } : null,
+    micom: w5.micom && grp ? grp : null,
+    predict: w5.predict ? { k: w5.k ?? 10, seed: 42 } : null,
+    ipma: w5.ipma && w5.target ? { target: w5.target } : null,
+  }
+}
+
+/** committed → plsWorker 'run' 訊息的 options（與下方同步計算同一組設定） */
+export function buildWorkerOptions(committed) {
+  const opts = committed.options || {}
+  return {
+    scheme: opts.scheme ?? 'path',
+    consistent: opts.consistent === true,
+    bootstrap: {
+      n: committed.bootstrapN ?? 1000,
+      seed: 42,
+      ciType: opts.ciType === 'bca' ? 'bca' : 'percentile',
+    },
+    q2: opts.q2 === true,
+    ...buildW5Options(committed),
+  }
+}
 
 // Result 與 Narrative 會在同一次 render 各自呼叫一次；
 // 以「最後一次引數」快取避免 bootstrap 重跑兩遍（rows / committed 引用不變即命中）。
@@ -52,7 +84,16 @@ export function runPLSAnalysis(rows, committed) {
     const q2 = opts.q2 === true
       ? blindfoldPLS(rows, committed.model, estimateOptions)
       : null
-    lastResult = { estimate, bootstrap, q2 }
+    const w5 = buildW5Options(committed)
+    lastResult = {
+      estimate,
+      bootstrap,
+      q2,
+      mga: w5.mga ? mgaPLS(rows, committed.model, { ...estimateOptions, ...w5.mga }) : null,
+      micom: w5.micom ? micomPLS(rows, committed.model, { ...estimateOptions, ...w5.micom }) : null,
+      predict: w5.predict ? plspredictPLS(rows, committed.model, { ...estimateOptions, ...w5.predict }) : null,
+      ipma: w5.ipma ? ipmaPLS(rows, committed.model, { ...estimateOptions, ...w5.ipma }) : null,
+    }
   }
   lastRows = rows
   lastCommitted = committed

@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   validatePLSModel, runPLS, bootstrapPLS, blindfoldPLS, bcaInterval, PLS_SCHEMA_VERSION,
+  mgaPLS, micomPLS, plspredictPLS, ipmaPLS, henselerMgaP,
 } from '../src/lib/stats/pls.js'
 import { handleMessage } from '../src/lib/plsWorker.js'
 
@@ -735,5 +736,106 @@ describe('W4：中介與 bootstrap', () => {
     expect(b.paths.some((q) => q.from === 'G' && q.to === 'C')).toBe(true)
     const ind = b.indirectEffects.find((q) => q.from === 'G' && q.to === 'Y')
     expect(ind.via).toEqual(['C'])
+  })
+})
+
+/* ─────────────────────────  W5：群組與預測  ───────────────────────── */
+
+const MODEL2 = {
+  schemaVersion: 1,
+  latentVariables: [
+    { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+    { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+  ],
+  paths: [{ from: 'F1', to: 'F2' }],
+}
+const GRP = { groupColumn: 'group2', groups: ['M', 'F'] }
+
+describe('W5：PLS-MGA', () => {
+  it('同種子完全可重現；三法並列且 p 值合法', () => {
+    const o = { ...GRP, bootstrapN: 60, permutations: 25, seed: 42 }
+    const r1 = mgaPLS(main, MODEL2, o)
+    const r2 = mgaPLS(main, MODEL2, o)
+    expect(r1.error).toBeUndefined()
+    expect(JSON.stringify(r1)).toBe(JSON.stringify(r2))
+    const p0 = r1.paths[0]
+    expect(p0.group1.coef).not.toBeCloseTo(p0.group2.coef, 2)
+    for (const pv of [p0.henselerP, p0.parametric.p, p0.welch.p, p0.permutation.p]) {
+      expect(pv).toBeGreaterThan(0)
+      expect(pv).toBeLessThanOrEqual(1)
+    }
+    expect(p0.henselerP2).toBeCloseTo(2 * Math.min(p0.henselerP, 1 - p0.henselerP), 12)
+  })
+  it('henselerMgaP：完全分離的 draws → p ≈ 0；同分布 → p ≈ .5', () => {
+    const d1 = Array.from({ length: 50 }, (_, i) => 0.8 + i * 1e-4)
+    const d2 = Array.from({ length: 50 }, (_, i) => 0.1 + i * 1e-4)
+    expect(henselerMgaP(d1, d2, 0.8, 0.1)).toBeLessThan(0.01)
+    expect(henselerMgaP(d1, d1, 0.8, 0.8)).toBeGreaterThan(0.4)
+  })
+  it('壞群組設定報錯', () => {
+    expect(mgaPLS(main, MODEL2, { groupColumn: 'group2', groups: ['M'] }).error).toBe('mga-bad-groups')
+    expect(mgaPLS(main, MODEL2, { groupColumn: 'group2', groups: ['M', 'X'] }).error).toBe('mga-too-few')
+  })
+})
+
+describe('W5：MICOM', () => {
+  it('c ≤ 1、報表結構完整；W4 模型被拒', () => {
+    const r = micomPLS(main, MODEL2, { ...GRP, permutations: 25, seed: 42 })
+    expect(r.error).toBeUndefined()
+    expect(r.constructs).toHaveLength(2)
+    for (const c of r.constructs) {
+      expect(c.c).toBeLessThanOrEqual(1)
+      expect(c.c).toBeGreaterThan(0.5)
+      expect(c.mean.ciLower).toBeLessThan(c.mean.ciUpper)
+    }
+    expect(micomPLS(main, MOD_MODEL(), { ...GRP }).error).toBe('w4-model-not-supported')
+  })
+})
+
+describe('W5：PLSpredict ＋ CVPAT', () => {
+  it('同種子可重現；Q²predict 合理；CVPAT 對 IA 顯著（模型有預測力）', () => {
+    const r1 = plspredictPLS(main, M4, { k: 5, seed: 42 })
+    const r2 = plspredictPLS(main, M4, { k: 5, seed: 42 })
+    expect(r1.error).toBeUndefined()
+    expect(JSON.stringify(r1)).toBe(JSON.stringify(r2))
+    expect(r1.indicators).toHaveLength(7) // F2(3) + C(3) + Y(1)
+    for (const q of r1.indicators) {
+      expect(q.rmse).toBeGreaterThan(0)
+      expect(q.mae).toBeLessThanOrEqual(q.rmse + 1e-12)
+      expect(q.q2predict).toBeLessThan(1)
+    }
+    expect(Number.isFinite(r1.cvpat.vsIA.t)).toBe(true)
+    expect(Number.isFinite(r1.cvpat.vsLM.p)).toBe(true)
+  })
+  it('壞 k 報錯；W4 模型被拒', () => {
+    expect(plspredictPLS(main, M4, { k: 1 }).error).toBe('bad-k')
+    expect(plspredictPLS(main, MOD_MODEL(), {}).error).toBe('w4-model-not-supported')
+  })
+})
+
+describe('W5：IT 準則與 IPMA', () => {
+  it('IT 準則代數一致（AIC 與 BIC 之差 = (k+1)(ln n − 2)）', () => {
+    const r = runPLS(main, M4)
+    for (const st of r.structural) {
+      const k = st.predictors.length
+      expect(st.itCriteria.bic - st.itCriteria.aic)
+        .toBeCloseTo((k + 1) * (Math.log(60) - 2), 10)
+      expect(st.itCriteria.aicc).toBeGreaterThan(st.itCriteria.aic)
+    }
+  })
+  it('IPMA：performance 落在 0–100、目標必須內生、指標層 importance 分解一致', () => {
+    const r = ipmaPLS(main, M4, { target: 'C' })
+    expect(r.error).toBeUndefined()
+    for (const c of r.constructs) {
+      expect(c.performance).toBeGreaterThan(0)
+      expect(c.performance).toBeLessThan(100)
+    }
+    const f1 = r.constructs.find((q) => q.lv === 'F1')
+    const sumInd = r.indicators
+      .filter((q) => q.lv === 'F1')
+      .reduce((s, q) => s + q.importance, 0)
+    expect(sumInd).toBeCloseTo(f1.importance, 10) // Σ w̃ = 1
+    expect(ipmaPLS(main, M4, { target: 'F1' }).error).toBe('ipma-bad-target')
+    expect(ipmaPLS(main, MOD_MODEL(), { target: 'Y' }).error).toBe('w4-model-not-supported')
   })
 })

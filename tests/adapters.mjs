@@ -31,7 +31,10 @@ import { icc } from '../src/lib/stats/icc.js'
 import { exploratoryFactorAnalysis } from '../src/lib/stats/efa.js'
 import { oneProp, twoProp } from '../src/lib/stats/zProp.js'
 import { cfa } from '../src/lib/stats/cfa.js'
-import { runPLS, blindfoldPLS } from '../src/lib/stats/pls.js'
+import {
+  runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS,
+  mgaParametricTest, henselerMgaP,
+} from '../src/lib/stats/pls.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const D = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures/datasets.json'), 'utf8'))
@@ -463,11 +466,119 @@ export const ADAPTERS = {
       r2_C: r2('C'), r2_Y: r2('Y'),
     }
   },
+  // GoF index（Tenenhaus et al. 2005；M4）
+  pls_gof() {
+    const r = plsRun(PLS_M4, PLS_W3_OPT)
+    const comm = r.outerLoadings.filter((q) => q.lv !== 'Y').map((q) => q.loading * q.loading)
+    return {
+      gof: r.gof,
+      meanCommunality: comm.reduce((s, v) => s + v, 0) / comm.length,
+      meanR2: r.structural.reduce((s, q) => s + q.r2, 0) / r.structural.length,
+    }
+  },
   pls_hoc_disjoint() {
     return plsHocTwoStageAdapter('disjoint')
   },
   pls_hoc_embedded() {
     return plsHocTwoStageAdapter('two-stage')
+  },
+
+  /* ── PLS-SEM W5 基準（模型/程序見 generate_reference.py 的 W5 區塊註記） ── */
+  // MGA 公式層：群組路徑（引擎）＋固定 se/draws 的參數檢定與 Henseler p（公式函式）
+  pls_mga_formulas() {
+    const ref = REF.pls_mga_formulas.values
+    const th1 = plsRun2(mainBy('M'), PLS_MODEL2, PLS_W3_OPT).pathCoefficients[0].coef
+    const th2 = plsRun2(mainBy('F'), PLS_MODEL2, PLS_W3_OPT).pathCoefficients[0].coef
+    const par = mgaParametricTest(ref.th1, ref.se1, ref.n1, ref.th2, ref.se2, ref.n2)
+    return {
+      th1, th2, n1: ref.n1, n2: ref.n2, se1: ref.se1, se2: ref.se2,
+      tPooled: par.pooled.t, dfPooled: par.pooled.df, pPooled: par.pooled.p,
+      tWelch: par.welch.t, dfWelch: par.welch.df, pWelch: par.welch.p,
+      henselerP: henselerMgaP(ref.draws1, ref.draws2, ref.th1, ref.th2),
+      draws1: ref.draws1, draws2: ref.draws2,
+    }
+  },
+  // MGA permutation：注入固定指派 → 引擎層級逐值比對
+  pls_mga_perm() {
+    const r = mgaPLS(main, PLS_MODEL2, {
+      ...PLS_W3_OPT,
+      groupColumn: 'group2', groups: ['M', 'F'],
+      bootstrapN: 50, seed: 42,
+      permutationIndices: permPositions(),
+    })
+    if (r.error) throw new Error(`mgaPLS failed: ${r.error} — ${r.message}`)
+    const p0 = r.paths[0]
+    return {
+      diffObs: p0.diff,
+      pPerm: p0.permutation.p,
+      permDiffs: p0.permutation.diffs,
+    }
+  },
+  pls_micom() {
+    const r = micomPLS(main, PLS_MODEL2, {
+      ...PLS_W3_OPT,
+      groupColumn: 'group2', groups: ['M', 'F'],
+      permutationIndices: permPositions(),
+    })
+    if (r.error) throw new Error(`micomPLS failed: ${r.error} — ${r.message}`)
+    const c = Object.fromEntries(r.constructs.map((q) => [q.lv, q]))
+    return {
+      c_F1: c.F1.c, c_F2: c.F2.c,
+      cQuant5_F1: c.F1.cQuantile5, cQuant5_F2: c.F2.cQuantile5,
+      cP_F1: c.F1.cP, cP_F2: c.F2.cP,
+      meanDiff_F1: c.F1.mean.diff, varDiff_F1: c.F1.variance.diff,
+      meanDiff_F2: c.F2.mean.diff, varDiff_F2: c.F2.variance.diff,
+      meanCiLo_F1: c.F1.mean.ciLower, meanCiHi_F1: c.F1.mean.ciUpper,
+      varCiLo_F1: c.F1.variance.ciLower, varCiHi_F1: c.F1.variance.ciUpper,
+      meanCiLo_F2: c.F2.mean.ciLower, meanCiHi_F2: c.F2.mean.ciUpper,
+      varCiLo_F2: c.F2.variance.ciLower, varCiHi_F2: c.F2.variance.ciUpper,
+    }
+  },
+  pls_predict() {
+    const ref = REF.pls_predict.values
+    const r = plspredictPLS(main, PLS_M4, { ...PLS_W3_OPT, foldIndices: ref.foldOf })
+    if (r.error) throw new Error(`plspredictPLS failed: ${r.error} — ${r.message}`)
+    const out = { foldOf: ref.foldOf }
+    for (const q of r.indicators) {
+      out[`rmse_pls_${q.indicator}`] = q.rmse
+      out[`mae_pls_${q.indicator}`] = q.mae
+      out[`q2p_pls_${q.indicator}`] = q.q2predict
+      out[`rmse_lm_${q.indicator}`] = q.lm.rmse
+      out[`mae_lm_${q.indicator}`] = q.lm.mae
+      out[`q2p_lm_${q.indicator}`] = q.lm.q2predict
+    }
+    out.cvpat_ia_dbar = r.cvpat.vsIA.dBar
+    out.cvpat_ia_t = r.cvpat.vsIA.t
+    out.cvpat_ia_p = r.cvpat.vsIA.p
+    out.cvpat_lm_dbar = r.cvpat.vsLM.dBar
+    out.cvpat_lm_t = r.cvpat.vsLM.t
+    out.cvpat_lm_p = r.cvpat.vsLM.p
+    return out
+  },
+  pls_itcriteria() {
+    const r = plsRun(PLS_M4, PLS_W3_OPT)
+    const out = {}
+    for (const st of r.structural) {
+      out[`aic_${st.lv}`] = st.itCriteria.aic
+      out[`aicc_${st.lv}`] = st.itCriteria.aicc
+      out[`bic_${st.lv}`] = st.itCriteria.bic
+      out[`hq_${st.lv}`] = st.itCriteria.hq
+    }
+    return out
+  },
+  pls_ipma() {
+    const r = ipmaPLS(main, PLS_M4, { ...PLS_W3_OPT, target: 'C' })
+    if (r.error) throw new Error(`ipmaPLS failed: ${r.error} — ${r.message}`)
+    const c = Object.fromEntries(r.constructs.map((q) => [q.lv, q]))
+    const up = (a, b) => r.unstandardizedPaths.find((q) => q.from === a && q.to === b).coef
+    const i1 = r.indicators.find((q) => q.indicator === 'i1')
+    return {
+      perf_F1: c.F1.performance, perf_F2: c.F2.performance,
+      perf_C: r.targetPerformance,
+      upath_F1_F2: up('F1', 'F2'), upath_F1_C: up('F1', 'C'), upath_F2_C: up('F2', 'C'),
+      importance_F1: c.F1.importance, importance_F2: c.F2.importance,
+      indImp_i1: i1.importance, indPerf_i1: i1.performance,
+    }
   },
 }
 
@@ -527,6 +638,35 @@ function PLS_HOC_MODEL(method) {
     higherOrder: [{ name: 'G', components: ['F1', 'F2'], mode: 'reflective', method }],
     paths: [{ from: 'G', to: 'C' }, { from: 'C', to: 'Y' }],
   }
+}
+
+/* ── PLS W5 共用 ── */
+const PLS_MODEL2 = {
+  schemaVersion: 1,
+  latentVariables: [
+    { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+    { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+  ],
+  paths: [{ from: 'F1', to: 'F2' }],
+}
+
+function mainBy(g) {
+  return main.filter((row) => row.group2 === g)
+}
+
+function plsRun2(rows, model, opt) {
+  const r = runPLS(rows, model, opt)
+  if (r.error) throw new Error(`runPLS failed: ${r.error} — ${r.message}`)
+  return r
+}
+
+/** fixture 的 permutation（原始列索引）→ 合併列（M 在前、F 在後）位置索引 */
+function permPositions() {
+  const combinedOrig = []
+  main.forEach((row, i) => { if (row.group2 === 'M') combinedOrig.push(i) })
+  main.forEach((row, i) => { if (row.group2 === 'F') combinedOrig.push(i) })
+  const posOf = new Map(combinedOrig.map((orig, pos) => [orig, pos]))
+  return REF.pls_mga_perm_inputs.values.permutations.map((pm) => pm.map((orig) => posOf.get(orig)))
 }
 
 function plsHocTwoStageAdapter(method) {

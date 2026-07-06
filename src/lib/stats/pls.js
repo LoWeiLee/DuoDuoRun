@@ -723,6 +723,18 @@ function structuralFromCorr(lvCorr, pred, lvNames, n) {
       if (!Rinv) return null
       vifs = Rinv.map((row, i) => row[i])
     }
+    // IT 模型選擇準則（Sharma et al. 2019）：SSE = (n−1)(1−R²)（標準化分數）
+    const sse = (n - 1) * (1 - full.r2)
+    let itc = null
+    if (sse > 1e-12 && n - k - 2 > 0) {
+      const base = n * Math.log(sse / n)
+      itc = {
+        aic: base + 2 * (k + 1),
+        aicc: base + 2 * (k + 1) + (2 * (k + 1) * (k + 2)) / (n - k - 2),
+        bic: base + (k + 1) * Math.log(n),
+        hq: base + 2 * (k + 1) * Math.log(Math.log(n)),
+      }
+    }
     const predictors = P.map((a, idx) => {
       // f²：移除該前置 LV 後的 R²
       const rest = P.filter((_, q) => q !== idx)
@@ -734,7 +746,7 @@ function structuralFromCorr(lvCorr, pred, lvNames, n) {
     })
     if (predictors.some((q) => q === null)) return null
     for (const q of predictors) pathCoefficients.push({ from: q.from, to: lvNames[j], coef: q.coef })
-    structural.push({ lv: lvNames[j], r2: full.r2, adjR2, predictors })
+    structural.push({ lv: lvNames[j], r2: full.r2, adjR2, itCriteria: itc, predictors })
   }
   return { pathCoefficients, structural }
 }
@@ -1552,6 +1564,22 @@ function reportFromStage(stage, ctx) {
     }
   }
 
+  // GoF index（Tenenhaus et al. 2005；官方文件不建議作為適配指標，報表附註記）：
+  // sqrt(mean communality × mean R²)——communality 限反映型多指標區塊、R² 取全部內生構念
+  let gof = null
+  if (!ctx.skipFit && sm.structural.length > 0) {
+    const comm = []
+    for (let j = 0; j < L; j++) {
+      if (spec.modes[j] !== 'A' || spec.blocks[j].length < 2) continue
+      for (const lam of effLoadingsByLV[j]) comm.push(lam * lam)
+    }
+    if (comm.length > 0) {
+      const mC = comm.reduce((s, v) => s + v, 0) / comm.length
+      const mR = sm.structural.reduce((s, q) => s + q.r2, 0) / sm.structural.length
+      if (mC > 0 && mR > 0) gof = Math.sqrt(mC * mR)
+    }
+  }
+
   return {
     meta: {
       schemaVersion: PLS_SCHEMA_VERSION,
@@ -1574,6 +1602,7 @@ function reportFromStage(stage, ctx) {
     crossLoadings,
     htmt: { lvNames: spec.lvNames, matrix: htmt },
     fit,
+    gof,
     ...(plsc ? { plsc: { rhoA: Object.fromEntries(spec.lvNames.map((name, j) => [name, plsc.rhoA[j]])) } } : {}),
   }
 }
@@ -2160,6 +2189,7 @@ export function bootstrapPLS(rows, model, options = {}) {
 
   return {
     nRequested: B, nValid, nSkipped, seed, ciAlpha, signCorrection, ciType,
+    ...(options._keepDraws ? { draws: { paths: pathDraws } } : {}),
     ...(nJackknife !== null ? { nJackknife } : {}),
     paths: pathList.map((q, i) => ({
       from: q.from, to: q.to,
@@ -2175,5 +2205,650 @@ export function bootstrapPLS(rows, model, options = {}) {
     })),
     ...(indirectEffects ? { indirectEffects, totalIndirectEffects, totalEffects } : {}),
     ...(slopes ? { slopes } : {}),
+  }
+}
+
+/* ─────────────────────────  W5：群組與預測  ───────────────────────── */
+
+/** Fisher–Yates 洗牌（mulberry32；permutation 檢定用） */
+function shuffledPositions(n, rand) {
+  const a = Array.from({ length: n }, (_, i) => i)
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    const t = a[i]; a[i] = a[j]; a[j] = t
+  }
+  return a
+}
+
+/** W4 模型（調節／高階構念）擋下——W5 群組/預測 API 目前僅支援一般模型 */
+function rejectW4(model, api) {
+  if ((Array.isArray(model?.interactions) && model.interactions.length > 0)
+      || (Array.isArray(model?.higherOrder) && model.higherOrder.length > 0)) {
+    return {
+      error: 'w4-model-not-supported',
+      message: `${api} 目前不支援含調節／高階構念的模型（W5 範圍限制，見 roadmap）`,
+    }
+  }
+  return null
+}
+
+/**
+ * MGA 參數檢定（供 mgaPLS 與測試共用）。
+ * pooled：Keil et al. (2000)（等變異假設）；welch：Welch–Satterthwaite
+ * （Sarstedt, Henseler & Ringle 2011）。se 為 bootstrap 標準誤。
+ */
+export function mgaParametricTest(th1, se1, n1, th2, se2, n2) {
+  const diff = th1 - th2
+  const sp = Math.sqrt(
+    (((n1 - 1) ** 2) / (n1 + n2 - 2)) * se1 * se1
+    + (((n2 - 1) ** 2) / (n1 + n2 - 2)) * se2 * se2,
+  ) * Math.sqrt(1 / n1 + 1 / n2)
+  const tPooled = sp > 0 ? diff / sp : null
+  const dfPooled = n1 + n2 - 2
+  const sw = Math.sqrt(se1 * se1 + se2 * se2)
+  const tWelch = sw > 0 ? diff / sw : null
+  const dfWelch = (se1 * se1 + se2 * se2) ** 2
+    / ((se1 ** 4) / (n1 - 1) + (se2 ** 4) / (n2 - 1))
+  return {
+    diff,
+    pooled: { t: tPooled, df: dfPooled, p: tPooled === null ? null : pT(Math.abs(tPooled), dfPooled) },
+    welch: { t: tWelch, df: dfWelch, p: tWelch === null ? null : pT(Math.abs(tWelch), dfWelch) },
+  }
+}
+
+/**
+ * Henseler's MGA 單尾 p（Henseler, Ringle & Sinkovics 2009）：
+ * 偏誤校正 draws（2θ̂ − θ*）成對比較，回傳 P(θ1 ≤ θ2) 的估計——
+ * p 小 → 群組 1 顯著大於群組 2（SmartPLS 報表同義）。
+ */
+export function henselerMgaP(draws1, draws2, th1, th2) {
+  const B1 = draws1.length
+  const B2 = draws2.length
+  if (B1 === 0 || B2 === 0) return null
+  // 排序後雙指針：count(c1 > c2) 的 O(B log B) 版
+  const c1 = draws1.map((v) => 2 * th1 - v).sort((a, b) => a - b)
+  const c2 = draws2.map((v) => 2 * th2 - v).sort((a, b) => a - b)
+  let count = 0
+  let j = 0
+  for (let i = 0; i < B1; i++) {
+    while (j < B2 && c2[j] < c1[i]) j++
+    count += j // c2[0..j-1] < c1[i]
+  }
+  return 1 - count / (B1 * B2)
+}
+
+/** rows 依群組欄位切分（值以字串比對；維持原列序） */
+function splitGroups(rows, groupColumn, groups) {
+  const g1 = []
+  const g2 = []
+  for (const row of rows) {
+    const v = row?.[groupColumn]
+    if (v === undefined || v === null) continue
+    const s = String(v)
+    if (s === String(groups[0])) g1.push(row)
+    else if (s === String(groups[1])) g2.push(row)
+  }
+  return { g1, g2 }
+}
+
+/**
+ * PLS-MGA：兩群組路徑係數差異檢定，三法並列（對齊 SmartPLS 4 MGA 報表）。
+ * @param {object} options { groupColumn, groups:[g1,g2], bootstrapN=1000, seed=42,
+ *                           permutations=1000, permutationIndices?（測試注入：
+ *                           位置索引陣列的陣列，前 n1 個為 pseudo-group1）,
+ *                           onProgress?, ...runPLS options }
+ */
+export function mgaPLS(rows, model, options = {}) {
+  const { groupColumn, groups } = options
+  if (!groupColumn || !Array.isArray(groups) || groups.length !== 2) {
+    return { error: 'mga-bad-groups', message: 'MGA 需要 groupColumn 與恰好兩個群組值（groups: [g1, g2]）' }
+  }
+  const { g1, g2 } = splitGroups(rows, groupColumn, groups)
+  if (g1.length < 5 || g2.length < 5) {
+    return { error: 'mga-too-few', message: `群組樣本過少（${groups[0]}: ${g1.length}、${groups[1]}: ${g2.length}；每組至少 5 筆）` }
+  }
+  const baseOpts = { ...options }
+  delete baseOpts.groupColumn; delete baseOpts.groups; delete baseOpts.bootstrapN
+  delete baseOpts.permutations; delete baseOpts.permutationIndices; delete baseOpts.onProgress
+
+  const r1 = runPLS(g1, model, baseOpts)
+  if (r1.error) return { error: r1.error, message: `群組「${groups[0]}」估計失敗：${r1.message}` }
+  const r2 = runPLS(g2, model, baseOpts)
+  if (r2.error) return { error: r2.error, message: `群組「${groups[1]}」估計失敗：${r2.message}` }
+
+  const B = options.bootstrapN ?? 1000
+  const seed = options.seed ?? 42
+  const b1 = bootstrapPLS(g1, model, { ...baseOpts, n: B, seed, _keepDraws: true })
+  if (b1.error) return b1
+  const b2 = bootstrapPLS(g2, model, { ...baseOpts, n: B, seed: seed + 1, _keepDraws: true })
+  if (b2.error) return b2
+
+  // permutation：合併列（group1 在前）
+  const combined = [...g1, ...g2]
+  const n1 = g1.length
+  const P = options.permutationIndices ? options.permutationIndices.length : (options.permutations ?? 1000)
+  const rand = mulberry32((options.seed ?? 42) + 7)
+  const permDiffsByPath = r1.pathCoefficients.map(() => [])
+  let nPermValid = 0
+  let nPermFailed = 0
+  for (let pi = 0; pi < P; pi++) {
+    const pos = options.permutationIndices
+      ? options.permutationIndices[pi]
+      : shuffledPositions(combined.length, rand)
+    const rowsA = []
+    const rowsB = []
+    for (let i = 0; i < pos.length; i++) (i < n1 ? rowsA : rowsB).push(combined[pos[i]])
+    const ra = runPLS(rowsA, model, baseOpts)
+    const rb = runPLS(rowsB, model, baseOpts)
+    if (ra.error || rb.error) { nPermFailed++; continue }
+    for (let q = 0; q < permDiffsByPath.length; q++) {
+      permDiffsByPath[q].push(ra.pathCoefficients[q].coef - rb.pathCoefficients[q].coef)
+    }
+    nPermValid++
+    if (options.onProgress && (pi + 1) % 20 === 0) options.onProgress(pi + 1, P)
+  }
+  if (options.onProgress) options.onProgress(P, P)
+
+  const paths = r1.pathCoefficients.map((q, i) => {
+    const th1 = q.coef
+    const th2 = r2.pathCoefficients[i].coef
+    const se1 = b1.paths[i].se
+    const se2 = b2.paths[i].se
+    const par = mgaParametricTest(th1, se1, g1.length, th2, se2, g2.length)
+    const hp = henselerMgaP(b1.draws.paths[i], b2.draws.paths[i], th1, th2)
+    const diffs = permDiffsByPath[i]
+    const pPerm = diffs.length > 0
+      ? (diffs.filter((d) => Math.abs(d) >= Math.abs(par.diff)).length + 1) / (diffs.length + 1)
+      : null
+    return {
+      from: q.from,
+      to: q.to,
+      group1: { coef: th1, se: se1 },
+      group2: { coef: th2, se: se2 },
+      diff: par.diff,
+      henselerP: hp,
+      henselerP2: hp === null ? null : 2 * Math.min(hp, 1 - hp),
+      parametric: par.pooled,
+      welch: par.welch,
+      permutation: { p: pPerm, diffs },
+    }
+  })
+  return {
+    groupColumn, groups: [...groups], n1: g1.length, n2: g2.length,
+    bootstrapN: B, nPermValid, nPermFailed,
+    paths,
+    warnings: [
+      ...(g1.length < 30 || g2.length < 30 ? [`群組樣本偏低（${g1.length}／${g2.length}），MGA 檢定力有限`] : []),
+    ],
+  }
+}
+
+/**
+ * MICOM 測量恆等性（Henseler, Ringle & Sarstedt 2016）三步驟：
+ * step 1 configural（程序性，報表以檢核清單呈現）；
+ * step 2 compositional invariance：c = corr(Z_pooled·w_g1, Z_pooled·w_g2)＋permutation；
+ * step 3 等平均／等變異：pooled 權重分數的組間差＋permutation CI。
+ * 僅支援一般模型（W4 管線模型回傳錯誤）。
+ */
+export function micomPLS(rows, model, options = {}) {
+  const bad = rejectW4(model, 'MICOM')
+  if (bad) return bad
+  const { groupColumn, groups } = options
+  if (!groupColumn || !Array.isArray(groups) || groups.length !== 2) {
+    return { error: 'micom-bad-groups', message: 'MICOM 需要 groupColumn 與恰好兩個群組值' }
+  }
+  const plan = buildPlan(model, options)
+  if (plan.error) return plan
+  const { g1, g2 } = splitGroups(rows, groupColumn, groups)
+  if (g1.length < 5 || g2.length < 5) {
+    return { error: 'micom-too-few', message: `群組樣本過少（${g1.length}／${g2.length}；每組至少 5 筆）` }
+  }
+  // 合併（group1 在前）＋ casewise
+  const ext = extractMatrix([...g1, ...g2], plan.baseIndicators, 'casewise')
+  if (ext.error) return ext
+  const labels = []
+  {
+    // extractMatrix casewise 會剔列——以同規則重建標籤
+    const all = [...g1.map(() => 0), ...g2.map(() => 1)]
+    const src = [...g1, ...g2]
+    for (let i = 0; i < src.length; i++) {
+      const ok = plan.baseIndicators.every((c) => {
+        const v = src[i]?.[c]
+        return !isMissing(v) && Number.isFinite(Number(v))
+      })
+      if (ok) labels.push(all[i])
+    }
+  }
+  const X = ext.X
+  const n = ext.n
+  const n1 = labels.filter((v) => v === 0).length
+  const n2 = n - n1
+
+  const stdP = standardizeColumns(X)
+  if (stdP.zeroVarIndex !== undefined) {
+    return { error: 'zero-variance', message: `指標「${plan.baseIndicators[stdP.zeroVarIndex]}」變異數為零` }
+  }
+  const spec = buildSpec(plan.model, plan)
+  if (spec.error) return spec
+
+  /** 位置集合 → 該 pseudo-group 的權重（組內標準化後估計） */
+  const groupWeights = (posArr) => {
+    const Xg = posArr.map((i) => X[i])
+    const stdG = standardizeColumns(Xg)
+    if (stdG.zeroVarIndex !== undefined) return null
+    const ce = coreEstimates(stdG.cols, Xg.length, spec)
+    if (!ce || ce.notConverged) return null
+    return ce.est.weights
+  }
+  /** 兩組權重 → 各構念 c（pooled Z 上的分數相關） */
+  const compC = (w1, w2) => spec.blocks.map((b, j) => {
+    const s1 = new Float64Array(n)
+    const s2 = new Float64Array(n)
+    for (let h = 0; h < b.length; h++) {
+      const z = stdP.cols[b[h]]
+      for (let i = 0; i < n; i++) {
+        s1[i] += w1[j][h] * z[i]
+        s2[i] += w2[j][h] * z[i]
+      }
+    }
+    return corrOf(s1, s2)
+  })
+
+  const pos1 = []
+  const pos2 = []
+  labels.forEach((v, i) => (v === 0 ? pos1 : pos2).push(i))
+  const w1 = groupWeights(pos1)
+  const w2 = groupWeights(pos2)
+  if (!w1 || !w2) return { error: 'micom-estimation-failed', message: 'MICOM：群組估計未收斂或退化' }
+  const cObs = compC(w1, w2)
+
+  // step 3：pooled 分數
+  const ceP = coreEstimates(stdP.cols, n, spec)
+  if (!ceP || ceP.notConverged) return { error: 'micom-estimation-failed', message: 'MICOM：pooled 估計未收斂' }
+  const mvOf = (p1, p2) => spec.lvNames.map((_, j) => {
+    const s = ceP.est.scores[j]
+    const m1 = p1.reduce((a, i) => a + s[i], 0) / p1.length
+    const m2 = p2.reduce((a, i) => a + s[i], 0) / p2.length
+    const v1 = p1.reduce((a, i) => a + (s[i] - m1) ** 2, 0) / (p1.length - 1)
+    const v2 = p2.reduce((a, i) => a + (s[i] - m2) ** 2, 0) / (p2.length - 1)
+    return [m1 - m2, v1 - v2]
+  })
+  const mvObs = mvOf(pos1, pos2)
+
+  const P = options.permutationIndices ? options.permutationIndices.length : (options.permutations ?? 1000)
+  const rand = mulberry32((options.seed ?? 42) + 11)
+  const cPerm = spec.lvNames.map(() => [])
+  const mPerm = spec.lvNames.map(() => [])
+  const vPerm = spec.lvNames.map(() => [])
+  let nPermValid = 0
+  for (let pi = 0; pi < P; pi++) {
+    const pos = options.permutationIndices
+      ? options.permutationIndices[pi]
+      : shuffledPositions(n, rand)
+    const pa = pos.slice(0, n1)
+    const pb = pos.slice(n1)
+    const wa = groupWeights(pa)
+    const wb = groupWeights(pb)
+    if (!wa || !wb) continue
+    const cs = compC(wa, wb)
+    const mv = mvOf(pa, pb)
+    for (let j = 0; j < spec.lvNames.length; j++) {
+      cPerm[j].push(cs[j])
+      mPerm[j].push(mv[j][0])
+      vPerm[j].push(mv[j][1])
+    }
+    nPermValid++
+    if (options.onProgress && (pi + 1) % 20 === 0) options.onProgress(pi + 1, P)
+  }
+  if (options.onProgress) options.onProgress(P, P)
+  if (nPermValid < 10) return { error: 'micom-permutation-failed', message: `有效 permutation 僅 ${nPermValid} 次` }
+
+  const constructs = spec.lvNames.map((lv, j) => {
+    const sortedC = [...cPerm[j]].sort((a, b) => a - b)
+    const sortedM = [...mPerm[j]].sort((a, b) => a - b)
+    const sortedV = [...vPerm[j]].sort((a, b) => a - b)
+    return {
+      lv,
+      c: cObs[j],
+      cQuantile5: quantile(sortedC, 0.05),
+      cP: (cPerm[j].filter((v) => v <= cObs[j]).length + 1) / (nPermValid + 1),
+      mean: { diff: mvObs[j][0], ciLower: quantile(sortedM, 0.025), ciUpper: quantile(sortedM, 0.975) },
+      variance: { diff: mvObs[j][1], ciLower: quantile(sortedV, 0.025), ciUpper: quantile(sortedV, 0.975) },
+    }
+  })
+  return { groupColumn, groups: [...groups], n1, n2, nPermValid, constructs }
+}
+
+/** OLS 預測（含截距；PLSpredict 的 LM 基準與 IPMA 非標準化路徑共用） */
+function olsFit(Xcols, y, rowsIdx) {
+  const k = Xcols.length + 1
+  const XtX = Array.from({ length: k }, () => new Array(k).fill(0))
+  const Xty = new Array(k).fill(0)
+  const val = (c, i) => (c === 0 ? 1 : Xcols[c - 1][i])
+  for (const i of rowsIdx) {
+    for (let a = 0; a < k; a++) {
+      const va = val(a, i)
+      Xty[a] += va * y[i]
+      for (let b = a; b < k; b++) XtX[a][b] += va * val(b, i)
+    }
+  }
+  for (let a = 0; a < k; a++) for (let b = 0; b < a; b++) XtX[a][b] = XtX[b][a]
+  const inv = inverse(XtX)
+  if (!inv) return null
+  const beta = inv.map((row) => row.reduce((s, v, q) => s + v * Xty[q], 0))
+  return {
+    beta,
+    predict: (i) => {
+      let s = beta[0]
+      for (let c = 0; c < Xcols.length; c++) s += beta[c + 1] * Xcols[c][i]
+      return s
+    },
+  }
+}
+
+/**
+ * PLSpredict（Shmueli et al. 2016；判讀依 Shmueli et al. 2019）＋
+ * CVPAT（Liengaard et al. 2021：PLS vs IA、PLS vs LM 的逐案損失成對 t 檢定）。
+ * k-fold 交叉驗證；LM 基準 = 各內生指標對全部外生指標的 OLS。
+ * 僅支援一般模型。
+ * @param {object} options { k=10, seed=42, foldIndices?（測試注入：長度 n 的 fold id 陣列）,
+ *                           ...runPLS options }
+ */
+export function plspredictPLS(rows, model, options = {}) {
+  const bad = rejectW4(model, 'PLSpredict')
+  if (bad) return bad
+  const plan = buildPlan(model, options)
+  if (plan.error) return plan
+  const ext = extractMatrix(rows, plan.baseIndicators, 'casewise')
+  if (ext.error) return ext
+  const { X, n } = ext
+  const k = options.k ?? 10
+  if (!Number.isInteger(k) || k < 2 || k > n) {
+    return { error: 'bad-k', message: `k-fold 的 k 必須是 2–n 的整數，收到「${options.k}」` }
+  }
+  const spec = buildSpec(plan.model, plan)
+  if (spec.error) return spec
+
+  // fold 指派
+  let foldOf
+  if (options.foldIndices) {
+    if (options.foldIndices.length !== n) {
+      return { error: 'bad-folds', message: `foldIndices 長度（${options.foldIndices.length}）與有效樣本數（${n}）不符` }
+    }
+    foldOf = options.foldIndices
+  } else {
+    const rand = mulberry32((options.seed ?? 42) + 13)
+    const pos = shuffledPositions(n, rand)
+    foldOf = new Array(n)
+    pos.forEach((p, i) => { foldOf[p] = i % k })
+  }
+
+  const exoIdx = []
+  for (let j = 0; j < spec.lvNames.length; j++) if (spec.pred[j].length === 0) exoIdx.push(j)
+  const endoIdx = []
+  for (let j = 0; j < spec.lvNames.length; j++) if (spec.pred[j].length > 0) endoIdx.push(j)
+  if (endoIdx.length === 0) return { error: 'no-endogenous', message: 'PLSpredict 需要至少一個內生構念' }
+  const exoCols = exoIdx.flatMap((j) => spec.blocks[j])
+  const endoCols = endoIdx.flatMap((j) => spec.blocks[j])
+
+  // spec.indicators 與 baseIndicators 同序（一般模型無重複掛載）
+  const rawCols = plan.baseIndicators.map((_, c) => {
+    const col = new Float64Array(n)
+    for (let i = 0; i < n; i++) col[i] = X[i][c]
+    return col
+  })
+
+  const predPls = spec.indicators.map(() => new Float64Array(n).fill(NaN))
+  const predLm = spec.indicators.map(() => new Float64Array(n).fill(NaN))
+  const predNaive = spec.indicators.map(() => new Float64Array(n).fill(NaN))
+
+  for (let f = 0; f < k; f++) {
+    const tr = []
+    const ho = []
+    for (let i = 0; i < n; i++) (foldOf[i] === f ? ho : tr).push(i)
+    if (ho.length === 0) continue
+    if (tr.length < 5) return { error: 'fold-too-small', message: `第 ${f + 1} 摺的訓練樣本不足` }
+    // 訓練摺標準化參數
+    const mu = new Array(spec.indicators.length)
+    const sd = new Array(spec.indicators.length)
+    const Ztr = []
+    for (let c = 0; c < spec.indicators.length; c++) {
+      let s = 0
+      for (const i of tr) s += rawCols[c][i]
+      const m = s / tr.length
+      let ss = 0
+      for (const i of tr) { const d = rawCols[c][i] - m; ss += d * d }
+      const sdv = Math.sqrt(ss / (tr.length - 1))
+      if (!(sdv > 0)) return { error: 'zero-variance', message: `第 ${f + 1} 摺：指標「${spec.indicators[c]}」訓練變異為零` }
+      mu[c] = m
+      sd[c] = sdv
+      const col = new Float64Array(tr.length)
+      tr.forEach((i, t) => { col[t] = (rawCols[c][i] - m) / sdv })
+      Ztr.push(col)
+    }
+    const ce = coreEstimates(Ztr, tr.length, spec)
+    if (!ce || ce.notConverged) return { error: 'predict-estimation-failed', message: `第 ${f + 1} 摺的 PLS 估計未收斂` }
+    const coefBy = new Map()
+    for (const st of ce.sm.structural) {
+      coefBy.set(spec.lvNames.indexOf(st.lv), st.predictors.map((q) => q.coef))
+    }
+    // holdout 分數（拓撲順序遞迴）
+    const scoreHat = spec.lvNames.map(() => new Float64Array(ho.length))
+    for (const j of spec.topoOrder) {
+      if (spec.pred[j].length === 0) {
+        const b = spec.blocks[j]
+        for (let t = 0; t < ho.length; t++) {
+          let s = 0
+          for (let h = 0; h < b.length; h++) {
+            s += ce.est.weights[j][h] * ((rawCols[b[h]][ho[t]] - mu[b[h]]) / sd[b[h]])
+          }
+          scoreHat[j][t] = s
+        }
+      } else {
+        const bc = coefBy.get(j)
+        const P = spec.pred[j]
+        for (let t = 0; t < ho.length; t++) {
+          let s = 0
+          for (let q = 0; q < P.length; q++) s += bc[q] * scoreHat[P[q]][t]
+          scoreHat[j][t] = s
+        }
+      }
+    }
+    // 指標預測（僅內生）＋ naive
+    for (const j of endoIdx) {
+      const b = spec.blocks[j]
+      for (let h = 0; h < b.length; h++) {
+        const lam = ce.rawLoadingsByLV[j][h]
+        for (let t = 0; t < ho.length; t++) {
+          predPls[b[h]][ho[t]] = lam * scoreHat[j][t] * sd[b[h]] + mu[b[h]]
+          predNaive[b[h]][ho[t]] = mu[b[h]]
+        }
+      }
+    }
+    // LM 基準
+    const exoRaw = exoCols.map((c) => rawCols[c])
+    for (const c of endoCols) {
+      const fit = olsFit(exoRaw, rawCols[c], tr)
+      if (!fit) return { error: 'lm-failed', message: `第 ${f + 1} 摺的 LM 基準估計失敗（外生指標共線）` }
+      for (const i of ho) predLm[c][i] = fit.predict(i)
+    }
+  }
+
+  const indicators = []
+  for (const j of endoIdx) {
+    for (const c of spec.blocks[j]) {
+      const x = rawCols[c]
+      const metrics = (pr) => {
+        let se2 = 0
+        let ae = 0
+        let sn = 0
+        for (let i = 0; i < n; i++) {
+          const e = x[i] - pr[i]
+          se2 += e * e
+          ae += Math.abs(e)
+          const en = x[i] - predNaive[c][i]
+          sn += en * en
+        }
+        return {
+          rmse: Math.sqrt(se2 / n),
+          mae: ae / n,
+          q2predict: sn > 1e-12 ? 1 - se2 / sn : null,
+        }
+      }
+      indicators.push({
+        lv: spec.lvNames[j],
+        indicator: spec.indicators[c],
+        ...metrics(predPls[c]),
+        lm: metrics(predLm[c]),
+      })
+    }
+  }
+
+  // CVPAT：逐案平均平方損失
+  const lossOf = (pr) => {
+    const out = new Float64Array(n)
+    for (let i = 0; i < n; i++) {
+      let s = 0
+      for (const c of endoCols) { const e = rawCols[c][i] - pr[c][i]; s += e * e }
+      out[i] = s / endoCols.length
+    }
+    return out
+  }
+  const lPls = lossOf(predPls)
+  const cvOne = (lBench) => {
+    const D = new Float64Array(n)
+    for (let i = 0; i < n; i++) D[i] = lBench[i] - lPls[i]
+    const dBar = meanOf(D)
+    const sdD = sdOf(D)
+    const t = sdD > 0 ? dBar / (sdD / Math.sqrt(n)) : null
+    return { dBar, t, df: n - 1, p: t === null ? null : pT(Math.abs(t), n - 1) }
+  }
+  return {
+    k,
+    n,
+    indicators,
+    cvpat: { vsIA: cvOne(lossOf(predNaive)), vsLM: cvOne(lossOf(predLm)) },
+    warnings: [],
+  }
+}
+
+/**
+ * IPMA 重要性－績效地圖分析（Ringle & Sarstedt 2016）。
+ * 指標 0–100 重標定（觀察 min/max）、非標準化權重正規化 Σw̃=1、
+ * 非標準化路徑（0–100 分數的 OLS）、importance = 對目標的非標準化總效果。
+ * 僅支援一般模型。
+ * @param {object} options { target, ...runPLS options }
+ */
+export function ipmaPLS(rows, model, options = {}) {
+  const bad = rejectW4(model, 'IPMA')
+  if (bad) return bad
+  const plan = buildPlan(model, options)
+  if (plan.error) return plan
+  const target = options.target
+  const ext = extractMatrix(rows, plan.baseIndicators, plan.missing)
+  if (ext.error) return ext
+  const { X, n } = ext
+  const spec = buildSpec(plan.model, plan)
+  if (spec.error) return spec
+  const tIdx = spec.lvNames.indexOf(target)
+  if (tIdx < 0 || spec.pred[tIdx].length === 0) {
+    return { error: 'ipma-bad-target', message: `IPMA 目標「${target}」必須是模型中的內生構念` }
+  }
+  const std = standardizeColumns(X)
+  if (std.zeroVarIndex !== undefined) {
+    return { error: 'zero-variance', message: `指標「${spec.indicators[std.zeroVarIndex]}」變異數為零` }
+  }
+  const ce = coreEstimates(std.cols, n, spec)
+  if (!ce || ce.notConverged) return { error: 'ipma-estimation-failed', message: 'IPMA：PLS 估計未收斂或退化' }
+
+  const warnings = []
+  // 0–100 重標定（觀察 min/max；SmartPLS 以量表理論界線，UI 註記差異）
+  const p = spec.indicators.length
+  const resc = []
+  for (let c = 0; c < p; c++) {
+    let mn = Infinity
+    let mx = -Infinity
+    for (let i = 0; i < n; i++) {
+      const v = X[i][c]
+      if (v < mn) mn = v
+      if (v > mx) mx = v
+    }
+    if (!(mx > mn)) return { error: 'ipma-degenerate', message: `指標「${spec.indicators[c]}」無變異，無法重標定` }
+    const col = new Float64Array(n)
+    for (let i = 0; i < n; i++) col[i] = ((X[i][c] - mn) / (mx - mn)) * 100
+    resc.push(col)
+  }
+  // 非標準化權重正規化
+  const s100 = []
+  const wNorm = []
+  for (let j = 0; j < spec.lvNames.length; j++) {
+    const b = spec.blocks[j]
+    const wu = b.map((c, h) => ce.est.weights[j][h] / std.sds[c])
+    const sum = wu.reduce((s, v) => s + v, 0)
+    if (!(Math.abs(sum) > 1e-12)) {
+      return { error: 'ipma-degenerate', message: `構念「${spec.lvNames[j]}」的非標準化權重總和為零，無法正規化` }
+    }
+    const wn = wu.map((v) => v / sum)
+    if (wn.some((v) => v < 0)) {
+      warnings.push(`構念「${spec.lvNames[j]}」含負的正規化權重，IPMA 解讀請留意（Ringle & Sarstedt 2016 的已知限制）`)
+    }
+    wNorm.push(wn)
+    const col = new Float64Array(n)
+    for (let h = 0; h < b.length; h++) {
+      for (let i = 0; i < n; i++) col[i] += wn[h] * resc[b[h]][i]
+    }
+    s100.push(col)
+  }
+  // 非標準化路徑（OLS with 截距）
+  const allIdx = Array.from({ length: n }, (_, i) => i)
+  const upaths = []
+  const uCoefBy = new Map()
+  for (let j = 0; j < spec.lvNames.length; j++) {
+    const P = spec.pred[j]
+    if (P.length === 0) continue
+    const fit = olsFit(P.map((a) => s100[a]), s100[j], allIdx)
+    if (!fit) return { error: 'ipma-estimation-failed', message: 'IPMA：非標準化路徑 OLS 失敗' }
+    uCoefBy.set(j, fit.beta.slice(1))
+    P.forEach((a, q) => upaths.push({ from: spec.lvNames[a], to: spec.lvNames[j], coef: fit.beta[q + 1] }))
+  }
+  // 對目標的非標準化總效果（拓撲遞迴）
+  const totalTo = new Map([[tIdx, 1]])
+  const order = [...spec.topoOrder].reverse()
+  for (const j of order) {
+    if (j === tIdx) continue
+    let te = 0
+    spec.succ[j].forEach((s) => {
+      const bc = uCoefBy.get(s)
+      const qi = spec.pred[s].indexOf(j)
+      const direct = bc ? bc[qi] : 0
+      const down = totalTo.get(s)
+      if (down !== undefined) te += direct * down
+    })
+    if (te !== 0 || spec.succ[j].some((s) => totalTo.has(s))) totalTo.set(j, te)
+  }
+  const constructs = []
+  const indicators = []
+  for (let j = 0; j < spec.lvNames.length; j++) {
+    if (j === tIdx || !totalTo.has(j)) continue
+    const imp = totalTo.get(j)
+    const perf = meanOf(s100[j])
+    constructs.push({ lv: spec.lvNames[j], importance: imp, performance: perf })
+    const b = spec.blocks[j]
+    for (let h = 0; h < b.length; h++) {
+      indicators.push({
+        lv: spec.lvNames[j],
+        indicator: spec.indicators[b[h]],
+        importance: imp * wNorm[j][h],
+        performance: meanOf(resc[b[h]]),
+      })
+    }
+  }
+  return {
+    target,
+    targetPerformance: meanOf(s100[tIdx]),
+    constructs,
+    indicators,
+    unstandardizedPaths: upaths,
+    warnings,
   }
 }

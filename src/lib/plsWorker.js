@@ -27,7 +27,9 @@
  * 引擎程式碼同構：runPLS/bootstrapPLS/blindfoldPLS 為純函式，本檔在 Node（Vitest）
  * 環境 import 時不會註冊任何 listener（isWorkerScope 判斷），可直接測 handleMessage。
  */
-import { runPLS, bootstrapPLS, blindfoldPLS } from './stats/pls.js'
+import {
+  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS,
+} from './stats/pls.js'
 
 /**
  * 處理一則 'run' 訊息。post 為訊息送出函式（Worker 中是 self.postMessage）。
@@ -40,7 +42,11 @@ export function handleMessage(msg, post) {
   }
   try {
     const { rows, model, options = {} } = msg
-    const { bootstrap: bootOpt, q2: q2Opt, ...estimateOptions } = options
+    const {
+      bootstrap: bootOpt, q2: q2Opt,
+      mga: mgaOpt, micom: micomOpt, predict: predictOpt, ipma: ipmaOpt,
+      ...estimateOptions
+    } = options
 
     const estimate = runPLS(rows, model, estimateOptions)
     if (estimate.error) {
@@ -72,7 +78,22 @@ export function handleMessage(msg, post) {
       q2 = blindfoldPLS(rows, model, qopt)
     }
 
-    post({ type: 'result', estimate, bootstrap, q2 })
+    // W5（各項獨立開關；錯誤以 { error, message } 內嵌回傳，不中斷其他結果）
+    const progress = (done, total) => post({ type: 'progress', done, total })
+    const mga = mgaOpt
+      ? mgaPLS(rows, model, { ...estimateOptions, ...mgaOpt, onProgress: progress })
+      : null
+    const micom = micomOpt
+      ? micomPLS(rows, model, { ...estimateOptions, ...micomOpt, onProgress: progress })
+      : null
+    const predict = predictOpt
+      ? plspredictPLS(rows, model, { ...estimateOptions, ...predictOpt })
+      : null
+    const ipma = ipmaOpt
+      ? ipmaPLS(rows, model, { ...estimateOptions, ...ipmaOpt })
+      : null
+
+    post({ type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma })
   } catch (err) {
     post({ type: 'error', error: 'unexpected', message: String(err?.message ?? err) })
   }

@@ -130,8 +130,9 @@ bootstrap 比對用「大 B 下的統計容差」而非逐值相等。
 - [x] BCa bootstrap CI（percentile 維持預設）
 - [x] Model fit：SRMR、d_ULS、d_G、NFI（saturated vs estimated 兩欄；χ² 與 GoF 未列）
 - [x] Blindfolding Q²（omission distance 預設 7、構念層 cross-validated redundancy）
-- [ ] 標準化／非標準化／mean-centered 三種估計（IPMA 前置，順延）
-- [ ] pairwise deletion；CCA 工作流程指引；GoF index（順延）
+- [x] 標準化／非標準化估計（2026-07-06：併入 W5 IPMA 的非標準化流程）
+- [x] CCA 工作流程指引（Notes「怎麼讀」步驟 7）；GoF index（附不建議註記）
+- [ ] pairwise deletion（相關矩陣驅動引擎設計完成，實作交接 → handoff-roadmap）
 
 驗證：plspm（scheme／形成型）＋ numpy 手算（PLSc／fit／Q²／BCa，附文獻出處）全部對齊，
 `npm test` 337 過（見 `validation-report-v1.md` W3 增補節）；
@@ -197,6 +198,27 @@ simple slope 為代數導出，手算入 fixture。
 高階構念兩法結果可互驗；中介報表含完整 CI；`npm test` 綠燈。
 
 ## Wave 5：群組與預測
+
+**進度註記（2026-07-06）**：核心交付 ✅——
+- [x] PLS-MGA：Henseler's MGA（單尾 bootstrap 比較）＋ permutation ＋ 參數檢定
+      （pooled／Welch-Satterthwaite）三法並列
+- [x] MICOM 三步驟：configural（程序性）＋ compositional invariance（c 與
+      permutation 5% 分位）＋ 等平均/等變異（permutation 95% CI）
+- [x] PLSpredict：k-fold（預設 10）、Q²predict、LM 基準、RMSE/MAE 比較表與
+      Shmueli et al. (2019) 四級判讀 Notes
+- [x] CVPAT：PLS vs IA 與 PLS vs LM（逐案損失成對 t 檢定）
+- [x] 模型比較 IT 準則：AIC／AICc／BIC／HQ（每個內生構念自動回報）
+- [x] IPMA：構念層＋指標層、非標準化總效果 × 0–100 績效、象限圖（SVG）
+- [x] 群組變數 UI（欄位＋兩群組值選擇器）；Worker 接線（bootstrap 與
+      permutation 全部進 Web Worker，進度條驅動）
+- 順延：MGA 的 consistent（PLSc）版（PLSc 目前限一般單群組模型）；
+  PLSpredict 多次重複取平均（SmartPLS 預設 10 reps，本版單次固定種子）；
+  MICOM／PLSpredict／IPMA 對 W4 管線模型的支援——見 handoff-roadmap
+
+驗證：pls_mga_perm 與 pls_predict 用「固定 permutation／fold 指派」做引擎層級
+交叉驗證（numpy 與 JS 兩套實作的逐 pseudo-group 估計差逐值對齊 ≤ 1.9e-14）；
+公式層（參數檢定／Henseler p／IT 準則／IPMA／GoF）numpy 手算全對齊。
+`npm test` 541 過（見 validation-report W5 增補節）。
 
 **範圍**
 - PLS-MGA：Henseler's MGA ＋ permutation test ＋ 參數檢定（含 Welch-Satterthwaite），

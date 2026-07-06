@@ -2797,6 +2797,27 @@ export default {
       hocMethodNames: { repeated: 'Repeated indicators', disjoint: 'Disjoint two-stage', 'two-stage': 'Embedded two-stage' },
       hocMethodHint: 'Disjoint two-stage is the current methodological recommendation (Becker et al., 2023); repeated indicators is a single, transparent estimation but inflates R² of the HOC→LOC paths.',
       hocIncomplete: 'Higher-order construct "{name}" needs a name and at least 2 components',
+      w5Title: 'Groups & prediction (W5)',
+      w5GroupColumn: 'Grouping column',
+      w5PickColumn: 'Pick a column',
+      w5PickValue: 'Pick a value',
+      w5G1: 'Group 1',
+      w5G2: 'Group 2',
+      w5MgaLabel: 'PLS-MGA multigroup analysis',
+      w5MgaHint: 'Three tests of path-coefficient differences between two groups (Henseler MGA / permutation / parametric); run MICOM first to establish measurement invariance.',
+      w5MicomLabel: 'MICOM measurement invariance',
+      w5MicomHint: 'Prerequisite for MGA: permutation tests of compositional invariance (step 2) and equal means/variances (step 3).',
+      w5PermsTitle: 'Permutations',
+      w5PermsHint: '1000 for formal reporting; 200 for quick exploration.',
+      w5PredictLabel: 'PLSpredict (k-fold out-of-sample)',
+      w5PredictHint: 'Includes the LM benchmark and CVPAT (Shmueli et al., 2019; Liengaard et al., 2021).',
+      w5KTitle: 'k (folds)',
+      w5IpmaLabel: 'IPMA importance–performance map',
+      w5IpmaHint: 'Unstandardized total effects (importance) × mean of 0–100 rescaled scores (performance); pick the target construct.',
+      w5Target: 'Target construct',
+      w5NeedGroups: 'MGA / MICOM need a grouping column and two distinct group values',
+      w5NeedTarget: 'IPMA needs a target construct (must be endogenous)',
+      w5W4Note: 'Note: MICOM / PLSpredict / IPMA do not yet support models with interactions or higher-order constructs.',
     },
     canvas: {
       hint: 'Drag a construct to move it; drag from a construct’s bottom handle to another to add a path; click a path to delete it; click a construct to open its indicator panel (with reflective / formative toggle); double-click to rename.',
@@ -2809,6 +2830,8 @@ export default {
     },
     result: {
       runFirst: 'Declare the latent variables and structural paths on the left, then press "Run analysis" (the bootstrap takes a few seconds).',
+      computing: 'Computing… bootstrap {pct}% (runs on a background thread; the UI stays responsive)',
+      computingShort: 'Computing… results will appear automatically.',
       cards: { n: 'Valid N', iterations: 'PLS iterations', bootstrap: 'Valid bootstrap draws', r2: 'R²' },
       converged: 'Converged',
       notConverged: 'Not converged',
@@ -2831,7 +2854,7 @@ export default {
       effectsTitle: 'Structural model — effect sizes f² & collinearity VIF',
       f2Note: 'f² conventions (Cohen, 1988): .02 small, .15 medium, .35 large. VIF: < 3.3 good (green), 3.3 – 5 caution (yellow), ≥ 5 collinearity concern (red).',
       fitTitle: 'Model fit — SRMR / d_ULS / d_G / NFI',
-      fitNote: 'SRMR: < .08 good (green), .08 – .10 borderline (yellow), ≥ .10 poor (red); NFI ≥ .90 good. d_ULS / d_G are distance measures for model comparison (smaller is better). "Saturated" frees all construct correlations (measurement model only); "estimated" implies them from the structural paths. Computed from the original formulas (SmartPLS does not fully document its implementation) — cross-check with SmartPLS / seminr recommended.',
+      fitNote: 'SRMR: < .08 good (green), .08 – .10 borderline (yellow), ≥ .10 poor (red); NFI ≥ .90 good. d_ULS / d_G are distance measures for model comparison (smaller is better). "Saturated" frees all construct correlations (measurement model only); "estimated" implies them from the structural paths. Computed from the original formulas (SmartPLS does not fully document its implementation) — cross-check with SmartPLS / seminr recommended.\nGoF (Tenenhaus et al., 2005) = sqrt(mean communality × mean R²): officially NOT recommended as a fit index, provided only for comparison with older literature; communality from reflective multi-item constructs.',
       q2Title: 'Predictive relevance — blindfolding Q²',
       q2Note: 'Q² > 0 indicates predictive relevance for that endogenous construct (green); ≤ 0 means no better than mean prediction (red). Construct-level cross-validated redundancy, omission distance D = {d}.',
       q2Unavailable: 'Q² computation failed: {message}',
@@ -2884,6 +2907,36 @@ export default {
       derivedTitle: 'Stage-two data — LV scores data file',
       derivedNote: 'Input data of the final stage in two-stage procedures (construct scores and interaction products), matching the SmartPLS 4 "generate data file from LV scores" workflow; download for records or to reproduce stage two elsewhere.',
       downloadDerived: 'Download CSV',
+      mgaTitle: 'Multigroup analysis — PLS-MGA (three tests)',
+      mgaMeta: 'Groups: {g1} (n = {n1}) vs {g2} (n = {n2}) | bootstrap {b} per group | {np} valid permutations',
+      mgaNote: 'Interpret primarily via the permutation test (Chin & Dibbern, 2010; distribution-free). Henseler MGA p is the one-tailed P(β₁ ≤ β₂) — values near 0 or 1 both signal a group difference; parametric tests (pooled / Welch) are shown for reference. Establish compositional invariance (MICOM) before MGA, otherwise differences may reflect measurement rather than structure.',
+      mgaColG1: 'β ({g})',
+      mgaColG2: 'β ({g})',
+      mgaColDiff: 'Δβ',
+      mgaColHenseler: 'p (Henseler)',
+      mgaColPerm: 'p (permutation)',
+      mgaColParam: 'p (pooled t)',
+      mgaColWelch: 'p (Welch)',
+      micomTitle: 'Measurement invariance — MICOM',
+      micomNote: 'Step 1 (configural): identical model, indicators and treatment across groups — satisfied by construction here. Step 2 (compositional invariance): pass when c ≥ the 5% permutation quantile (green). Step 3: mean/variance differences inside the permutation 95% CI = full invariance; step 2 only = partial invariance (MGA is fine; comparing latent means is not).',
+      micomColC: 'c (step 2)',
+      micomColQ5: '5% quantile',
+      micomColMean: 'Mean diff [95% CI]',
+      micomColVar: 'Variance diff [95% CI]',
+      predictTitle: 'Out-of-sample prediction — PLSpredict (k = {k})',
+      predictNote: 'Interpretation (Shmueli et al., 2019): require Q²predict > 0 first; then compare PLS vs LM RMSE — all lower = high predictive power, majority lower = medium, minority = low, none = lacking. CVPAT (Liengaard et al., 2021): d̄ > 0 with p < .05 means the PLS average loss is significantly below the benchmark.',
+      predictColQ2p: 'Q²predict',
+      predictColRmsePls: 'RMSE (PLS)',
+      predictColRmseLm: 'RMSE (LM)',
+      predictColMae: 'MAE (PLS)',
+      cvpatVsIA: 'CVPAT: PLS vs indicator average (IA)',
+      cvpatVsLM: 'CVPAT: PLS vs linear model (LM)',
+      ipmaTitle: 'Importance–performance map — IPMA (target: {target})',
+      ipmaNote: 'Importance = unstandardized total effect on the target; performance = mean of 0–100 rescaled scores (Ringle & Sarstedt, 2016). The lower-right quadrant (important, low performance) is the priority area. Rescaling uses observed min/max (SmartPLS uses theoretical scale bounds — they differ when extremes are unobserved); target performance = {targetPerf}.',
+      ipmaColImportance: 'Importance (total effect)',
+      ipmaColPerformance: 'Performance (0–100)',
+      ipmaIndicatorTitle: 'Indicator-level IPMA',
+      w5ErrorPrefix: '{feature} unavailable: {message}',
     },
     notes: {
       purposeTitle: 'Purpose',
@@ -2920,7 +2973,16 @@ export default {
         '3. Discriminant validity: Fornell-Larcker passes and HTMT < .85\n' +
         '4. Model fit: SRMR < .08 (saturated = measurement; estimated adds the structural model)\n' +
         '5. Only after the measurement model qualifies, read the structural model: path p-values and 95% CIs, f², VIF\n' +
-        '6. Finally R² (.25 / .50 / .75 ≈ weak / moderate / substantial) and Q² (> 0 = predictive relevance)',
+        '6. Finally R² (.25 / .50 / .75 ≈ weak / moderate / substantial) and Q² (> 0 = predictive relevance)\n' +
+        '7. CCA (confirmatory composite analysis) workflow: when constructs are positioned as composites rather than reflective factors — check in order (a) weight/loading significance (bootstrap), (b) outer VIF, (c) composite reliability rho_A/rho_c, (d) discriminant validity HTMT — the existing report covers every step; reading it in this order IS the CCA (Hair et al., 2020)',
+      w5Title: 'Groups & prediction (W5)',
+      w5:
+        'PLS-MGA: estimate per group, then compare path coefficients. The permutation test is the primary criterion; Henseler MGA is a one-tailed bootstrap comparison; parametric tests carry stronger assumptions. Prerequisite: MICOM step 2 at least\n' +
+        'MICOM: configural (by construction) → compositional (c vs the 5% permutation quantile) → equal means/variances (full invariance required for pooling or latent mean comparison)\n' +
+        'PLSpredict: k-fold out-of-sample prediction; Q²predict > 0 is the baseline; compare RMSE against the LM benchmark for a four-level verdict; CVPAT gives an overall test\n' +
+        'IT criteria (AIC/AICc/BIC/HQ): compare alternative predictor sets for the same endogenous construct — smaller is better; never compare across datasets\n' +
+        'IPMA: importance (unstandardized total effects) × performance (0–100 means) locates constructs/indicators that matter but underperform\n' +
+        'Limits: MICOM/PLSpredict/IPMA do not support interaction/HOC models; MGA does (each group runs the full pipeline)',
       w4Title: 'Moderation, higher-order constructs & mediation (W4)',
       w4:
         'Moderation (two-stage): stage one estimates the main-effects model to obtain LV scores; stage two uses the product of scores as the interaction term. Two SmartPLS 4 behaviors are replicated — main-effect paths are added automatically, and the interaction term is NOT standardized (coefficient = standardized coefficient ÷ SD of the product). For the interaction f², prefer Kenny (2018) thresholds: .005 / .01 / .025\n' +

@@ -8,10 +8,9 @@
  *   3. 模型適配（估計模型 SRMR）與 blindfolding Q²（開啟時）
  *   4. 結構模型路徑檢定（β, t, p, 95% CI）與 R²
  */
-import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import NarrativeBlock from '../../components/NarrativeBlock'
-import { runPLSAnalysis } from './compute'
+import { usePLSResult } from './usePLSResult'
 import { fmtNum, fillTemplate } from '../../lib/format'
 import { getStrings } from '../../i18n'
 
@@ -237,15 +236,19 @@ function Narrative() {
   const [rawState] = useAnalysisState()
   const committed = rawState?.committed || null
 
-  const res = useMemo(
-    () => (dataset && committed ? runPLSAnalysis(dataset.rows, committed) : null),
-    [dataset, committed]
-  )
+  const { status, result: res } = usePLSResult(dataset, committed)
 
   if (!dataset) return null
-  if (!committed || !res) {
+  if (!committed) {
     return (
       <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.pls.result.runFirst}</div>
+    )
+  }
+  if (status === 'running' || !res) {
+    return (
+      <div className="text-sm text-duo-cocoa-400 leading-relaxed">
+        {t.pls.result.computingShort}
+      </div>
     )
   }
   if (res.error) {

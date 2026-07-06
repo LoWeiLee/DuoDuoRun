@@ -15,9 +15,9 @@
  * 檢視模式：state.plsView === 'canvas'（桌面）時，本元件改渲染 Canvas（拖拉式畫布）。
  * 計算觸發：Config 按「執行分析」把驗證過的模型與選項寫入 state.committed。
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
-import { runPLSAnalysis } from './compute'
+import { usePLSResult } from './usePLSResult'
 import Canvas from './Canvas'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtInt, fmtP, fillTemplate, toneForP } from '../../lib/format'
@@ -539,8 +539,8 @@ function EffectsTable({ estimate, r }) {
   )
 }
 
-/** 模型適配：SRMR / d_ULS / d_G / NFI（飽和 vs 估計模型；SRMR 與 NFI 帶 LED） */
-function FitTable({ fit, r }) {
+/** 模型適配：SRMR / d_ULS / d_G / NFI（飽和 vs 估計模型；SRMR 與 NFI 帶 LED）＋ GoF（附不建議註記） */
+function FitTable({ fit, gof, r }) {
   const c = r.cols
   const rows = [
     { key: 'SRMR', get: (f) => f.srmr, led: srmrStatus, dec: 3 },
@@ -581,6 +581,13 @@ function FitTable({ fit, r }) {
               {cell(row, fit.estimated)}
             </tr>
           ))}
+          {Number.isFinite(gof) && (
+            <tr>
+              <Td align="left" mono bold>GoF</Td>
+              <Td>—</Td>
+              <Td>{fmtNum(gof, 3)}</Td>
+            </tr>
+          )}
         </tbody>
       </TableBox>
       <Note>{r.fitNote}</Note>
@@ -915,6 +922,273 @@ function DerivedBlock({ derived, r }) {
   )
 }
 
+/** W5：PLS-MGA 三法並列表 */
+function MgaBlock({ mga, r }) {
+  return (
+    <div>
+      <Heading>{r.mgaTitle}</Heading>
+      <p className="text-[11px] text-duo-cocoa-400 mb-1.5 font-mono">
+        {fillTemplate(r.mgaMeta, {
+          g1: mga.groups[0], n1: mga.n1, g2: mga.groups[1], n2: mga.n2,
+          b: mga.bootstrapN, np: mga.nPermValid,
+        })}
+      </p>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{r.cols.path}</Th>
+            <Th>{fillTemplate(r.mgaColG1, { g: mga.groups[0] })}</Th>
+            <Th>{fillTemplate(r.mgaColG2, { g: mga.groups[1] })}</Th>
+            <Th>{r.mgaColDiff}</Th>
+            <Th>{r.mgaColPerm}</Th>
+            <Th>{r.mgaColHenseler}</Th>
+            <Th>{r.mgaColParam}</Th>
+            <Th>{r.mgaColWelch}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {mga.paths.map((q) => {
+            const sig = Number.isFinite(q.permutation.p) && q.permutation.p < 0.05
+            return (
+              <tr key={`${q.from}-${q.to}`}>
+                <Td align="left" mono={false} bold>{q.from} → {q.to}</Td>
+                <Td>{fmtNum(q.group1.coef, 3)}</Td>
+                <Td>{fmtNum(q.group2.coef, 3)}</Td>
+                <Td>{fmtNum(q.diff, 3)}</Td>
+                <Td>
+                  <span className="inline-flex items-center gap-2">
+                    <Led status={sig ? 'ok' : 'warn'} />
+                    <span className={TONE_TEXT[toneForP(q.permutation.p)] || ''}>{fmtP(q.permutation.p)}</span>
+                  </span>
+                </Td>
+                <Td>{fmtNum(q.henselerP, 3)}</Td>
+                <Td><span className={TONE_TEXT[toneForP(q.parametric.p)] || ''}>{fmtP(q.parametric.p)}</span></Td>
+                <Td><span className={TONE_TEXT[toneForP(q.welch.p)] || ''}>{fmtP(q.welch.p)}</span></Td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </TableBox>
+      <Note>{r.mgaNote}</Note>
+    </div>
+  )
+}
+
+/** W5：MICOM 三步表 */
+function MicomBlock({ micom, r }) {
+  return (
+    <div>
+      <Heading>{r.micomTitle}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{r.cols.lv}</Th>
+            <Th>{r.micomColC}</Th>
+            <Th>{r.micomColQ5}</Th>
+            <Th>{r.micomColMean}</Th>
+            <Th>{r.micomColVar}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {micom.constructs.map((q) => {
+            const step2ok = q.c >= q.cQuantile5
+            const meanOk = q.mean.diff >= q.mean.ciLower && q.mean.diff <= q.mean.ciUpper
+            const varOk = q.variance.diff >= q.variance.ciLower && q.variance.diff <= q.variance.ciUpper
+            return (
+              <tr key={q.lv}>
+                <Td align="left" mono={false} bold>{q.lv}</Td>
+                <Td>
+                  <span className="inline-flex items-center gap-2">
+                    <Led status={step2ok ? 'ok' : 'bad'} />
+                    <span className={step2ok ? TONE_TEXT.ok : TONE_TEXT.bad}>{fmtNum(q.c, 3)}</span>
+                  </span>
+                </Td>
+                <Td>{fmtNum(q.cQuantile5, 3)}</Td>
+                <Td>
+                  <span className="inline-flex items-center gap-2">
+                    <Led status={meanOk ? 'ok' : 'warn'} />
+                    {fmtNum(q.mean.diff, 3)} [{fmtNum(q.mean.ciLower, 3)}, {fmtNum(q.mean.ciUpper, 3)}]
+                  </span>
+                </Td>
+                <Td>
+                  <span className="inline-flex items-center gap-2">
+                    <Led status={varOk ? 'ok' : 'warn'} />
+                    {fmtNum(q.variance.diff, 3)} [{fmtNum(q.variance.ciLower, 3)}, {fmtNum(q.variance.ciUpper, 3)}]
+                  </span>
+                </Td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </TableBox>
+      <Note>{r.micomNote}</Note>
+    </div>
+  )
+}
+
+/** W5：PLSpredict ＋ CVPAT */
+function PredictBlock({ predict, r }) {
+  const cvRow = (label, cv) => (
+    <tr key={label}>
+      <Td align="left" mono={false} bold>{label}</Td>
+      <Td>{fmtNum(cv.dBar, 3)}</Td>
+      <Td>{fmtNum(cv.t, 2)}</Td>
+      <Td><span className={TONE_TEXT[toneForP(cv.p)] || ''}>{fmtP(cv.p)}</span></Td>
+      <Td> </Td>
+    </tr>
+  )
+  return (
+    <div>
+      <Heading>{fillTemplate(r.predictTitle, { k: predict.k })}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{r.cols.lv}</Th>
+            <Th align="left">{r.cols.indicator}</Th>
+            <Th>{r.predictColQ2p}</Th>
+            <Th>{r.predictColRmsePls}</Th>
+            <Th>{r.predictColRmseLm}</Th>
+            <Th>{r.predictColMae}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {predict.indicators.map((q, i, arr) => {
+            const q2ok = Number.isFinite(q.q2predict) && q.q2predict > 0
+            const beatsLm = q.rmse < q.lm.rmse
+            const firstOfBlock = i === 0 || arr[i - 1].lv !== q.lv
+            return (
+              <tr key={`${q.lv}-${q.indicator}`}>
+                <Td align="left" mono={false} bold>{firstOfBlock ? q.lv : ''}</Td>
+                <Td align="left" mono={false}>{q.indicator}</Td>
+                <Td>
+                  <span className="inline-flex items-center gap-2">
+                    <Led status={q2ok ? 'ok' : 'bad'} />
+                    <span className={q2ok ? TONE_TEXT.ok : TONE_TEXT.bad}>{fmtNum(q.q2predict, 3)}</span>
+                  </span>
+                </Td>
+                <Td>
+                  <span className={beatsLm ? TONE_TEXT.ok : TONE_TEXT.bad}>{fmtNum(q.rmse, 3)}</span>
+                </Td>
+                <Td>{fmtNum(q.lm.rmse, 3)}</Td>
+                <Td>{fmtNum(q.mae, 3)}</Td>
+              </tr>
+            )
+          })}
+          {cvRow(r.cvpatVsIA, predict.cvpat.vsIA)}
+          {cvRow(r.cvpatVsLM, predict.cvpat.vsLM)}
+        </tbody>
+      </TableBox>
+      <Note>{r.predictNote}</Note>
+    </div>
+  )
+}
+
+/** W5：IPMA 象限散布圖＋表 */
+function IpmaBlock({ ipma, r }) {
+  const W = 340
+  const H = 240
+  const PAD = { l: 42, r: 14, t: 12, b: 30 }
+  const pts = ipma.constructs
+  const xs = pts.map((q) => q.importance)
+  const ys = pts.map((q) => q.performance)
+  const xMin = Math.min(...xs, 0)
+  const xMax = Math.max(...xs, 0)
+  const xPad = Math.max((xMax - xMin) * 0.15, 0.05)
+  const yMin = Math.max(Math.min(...ys) - 8, 0)
+  const yMax = Math.min(Math.max(...ys) + 8, 100)
+  const sx = (x) => PAD.l + ((x - (xMin - xPad)) / ((xMax + xPad) - (xMin - xPad))) * (W - PAD.l - PAD.r)
+  const sy = (y) => PAD.t + ((yMax - y) / (yMax - yMin)) * (H - PAD.t - PAD.b)
+  const xMean = xs.reduce((s, v) => s + v, 0) / xs.length
+  const yMean = ys.reduce((s, v) => s + v, 0) / ys.length
+  return (
+    <div>
+      <Heading>{fillTemplate(r.ipmaTitle, { target: ipma.target })}</Heading>
+      <div className="flex flex-wrap gap-4 items-start">
+        <div className="bg-white border border-duo-cream-200 rounded-lg p-2 shrink-0">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-sm" role="img" aria-label="IPMA">
+            <line x1={sx(xMean)} y1={PAD.t} x2={sx(xMean)} y2={H - PAD.b}
+                  className="text-duo-cream-200" stroke="currentColor" strokeDasharray="4 3" />
+            <line x1={PAD.l} y1={sy(yMean)} x2={W - PAD.r} y2={sy(yMean)}
+                  className="text-duo-cream-200" stroke="currentColor" strokeDasharray="4 3" />
+            <line x1={PAD.l} y1={H - PAD.b} x2={W - PAD.r} y2={H - PAD.b}
+                  className="text-duo-cocoa-200" stroke="currentColor" />
+            <line x1={PAD.l} y1={PAD.t} x2={PAD.l} y2={H - PAD.b}
+                  className="text-duo-cocoa-200" stroke="currentColor" />
+            {pts.map((q) => (
+              <g key={q.lv}>
+                <circle cx={sx(q.importance)} cy={sy(q.performance)} r="5"
+                        className="text-duo-amber-500" fill="currentColor" />
+                <text x={sx(q.importance) + 8} y={sy(q.performance) + 3}
+                      className="text-duo-cocoa-800" fill="currentColor" fontSize="10">
+                  {q.lv}
+                </text>
+              </g>
+            ))}
+            <text x={W - PAD.r} y={H - 8} textAnchor="end"
+                  className="text-duo-cocoa-400" fill="currentColor" fontSize="9">
+              {r.ipmaColImportance}
+            </text>
+            <text x={12} y={PAD.t + 8} className="text-duo-cocoa-400" fill="currentColor" fontSize="9">
+              {r.ipmaColPerformance}
+            </text>
+            {[xMin, xMax].map((x, i) => (
+              <text key={i} x={sx(x)} y={H - 14} textAnchor="middle"
+                    className="text-duo-cocoa-400 font-mono" fill="currentColor" fontSize="9">
+                {x.toFixed(2)}
+              </text>
+            ))}
+            {[yMin, yMax].map((y, i) => (
+              <text key={i} x={PAD.l - 4} y={sy(y) + 3} textAnchor="end"
+                    className="text-duo-cocoa-400 font-mono" fill="currentColor" fontSize="9">
+                {Math.round(y)}
+              </text>
+            ))}
+          </svg>
+        </div>
+        <div className="flex-1 min-w-[240px]">
+          <TableBox>
+            <thead className="bg-duo-cream-50">
+              <tr>
+                <Th align="left">{r.cols.lv}</Th>
+                <Th>{r.ipmaColImportance}</Th>
+                <Th>{r.ipmaColPerformance}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {ipma.constructs.map((q) => (
+                <tr key={q.lv}>
+                  <Td align="left" mono={false} bold>{q.lv}</Td>
+                  <Td>{fmtNum(q.importance, 3)}</Td>
+                  <Td>{fmtNum(q.performance, 1)}</Td>
+                </tr>
+              ))}
+              {ipma.indicators.map((q) => (
+                <tr key={`${q.lv}-${q.indicator}`}>
+                  <Td align="left" mono={false}>
+                    <span className="pl-4 text-duo-cocoa-500">{q.indicator}</span>
+                  </Td>
+                  <Td>{fmtNum(q.importance, 3)}</Td>
+                  <Td>{fmtNum(q.performance, 1)}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </TableBox>
+        </div>
+      </div>
+      <Note>{fillTemplate(r.ipmaNote, { targetPerf: fmtNum(ipma.targetPerformance, 1) })}</Note>
+    </div>
+  )
+}
+
+/** W5 功能的錯誤/結果包裝 */
+function W5Section({ data, feature, r, children }) {
+  if (!data) return null
+  if (data.error) {
+    return <WarnBox>{fillTemplate(r.w5ErrorPrefix, { feature, message: data.message || data.error })}</WarnBox>
+  }
+  return children
+}
+
 /* ─────────────────────  主元件  ───────────────────── */
 
 function Result() {
@@ -924,18 +1198,31 @@ function Result() {
   const narrow = useIsNarrow()
   const canvasMode = !narrow && rawState?.plsView === 'canvas'
 
-  const res = useMemo(
-    () => (dataset && committed ? runPLSAnalysis(dataset.rows, committed) : null),
-    [dataset, committed]
-  )
+  const { status, progress, result: res } = usePLSResult(dataset, committed)
 
   const r = t.pls.result
   if (!dataset) return null
 
   // 畫布模式：主區顯示 Canvas（佔滿 Result 面板寬度），與表單共用同一份模型 state
   if (canvasMode) return <Canvas />
-  if (!committed || !res) {
+  if (!committed) {
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{r.runFirst}</div>
+  }
+  if (status === 'running' || !res) {
+    const pct = Math.round(progress * 100)
+    return (
+      <div className="max-w-sm">
+        <div className="text-sm text-duo-cocoa-500 mb-2">
+          {fillTemplate(r.computing, { pct })}
+        </div>
+        <div className="h-2 rounded-full bg-duo-cream-100 overflow-hidden">
+          <div
+            className="h-full bg-duo-amber-500 rounded-full transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+    )
   }
   if (res.error) {
     return (
@@ -945,7 +1232,7 @@ function Result() {
     )
   }
 
-  const { estimate, bootstrap: boot, q2: q2res } = res
+  const { estimate, bootstrap: boot, q2: q2res, mga, micom, predict, ipma } = res
   const bootOk = Boolean(boot && !boot.error)
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   // 多階段模型（two-stage 調節／HOC）：量測統計量取第一階段（原始指標），結構取最終階段
@@ -1053,12 +1340,24 @@ function Result() {
       {estimate.mediation && (
         <MediationTable estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
       )}
-      {meas.fit && <FitTable fit={meas.fit} r={r} />}
+      {meas.fit && <FitTable fit={meas.fit} gof={meas.gof} r={r} />}
       {estimate.derived && <DerivedBlock derived={estimate.derived} r={r} />}
       {q2res && q2res.error && (
         <WarnBox>{fillTemplate(r.q2Unavailable, { message: q2res.message || q2res.error })}</WarnBox>
       )}
       {q2res && !q2res.error && <Q2Table q2res={q2res} r={r} />}
+      <W5Section data={micom} feature="MICOM" r={r}>
+        <MicomBlock micom={micom} r={r} />
+      </W5Section>
+      <W5Section data={mga} feature="PLS-MGA" r={r}>
+        <MgaBlock mga={mga} r={r} />
+      </W5Section>
+      <W5Section data={predict} feature="PLSpredict" r={r}>
+        <PredictBlock predict={predict} r={r} />
+      </W5Section>
+      <W5Section data={ipma} feature="IPMA" r={r}>
+        <IpmaBlock ipma={ipma} r={r} />
+      </W5Section>
     </div>
   )
 }

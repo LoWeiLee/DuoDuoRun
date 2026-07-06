@@ -2852,6 +2852,27 @@ export default {
       hocMethodNames: { repeated: 'Repeated indicators', disjoint: 'Disjoint two-stage', 'two-stage': 'Embedded two-stage' },
       hocMethodHint: 'Disjoint two-stage 為近年方法文獻的建議（Becker et al., 2023）；repeated indicators 單次估計最透明，但高階構念指向低階構念的路徑會墊高其 R²，解讀時留意。',
       hocIncomplete: '高階構念「{name}」需要名稱與至少 2 個低階構念',
+      w5Title: '群組與預測（W5）',
+      w5GroupColumn: '分組欄位',
+      w5PickColumn: '選擇欄位',
+      w5PickValue: '選擇群組值',
+      w5G1: '群組 1',
+      w5G2: '群組 2',
+      w5MgaLabel: 'PLS-MGA 多群組分析',
+      w5MgaHint: '兩群組路徑係數差異的三法檢定（Henseler MGA／permutation／參數檢定）；建議先看 MICOM 確認測量恆等性。',
+      w5MicomLabel: 'MICOM 測量恆等性',
+      w5MicomHint: 'MGA 的前置檢核：compositional invariance（step 2）與等平均/等變異（step 3）的 permutation 檢定。',
+      w5PermsTitle: 'Permutation 次數',
+      w5PermsHint: '正式報告建議 1000；探索用 200 較快。',
+      w5PredictLabel: 'PLSpredict（k-fold 樣本外預測）',
+      w5PredictHint: '含 LM 基準比較與 CVPAT 檢定（Shmueli et al., 2019；Liengaard et al., 2021）。',
+      w5KTitle: 'k（folds）',
+      w5IpmaLabel: 'IPMA 重要性－績效地圖',
+      w5IpmaHint: '非標準化總效果（importance）×0–100 重標定分數平均（performance）；選擇目標構念。',
+      w5Target: '目標構念',
+      w5NeedGroups: 'MGA／MICOM 需要選擇分組欄位與兩個不同的群組值',
+      w5NeedTarget: 'IPMA 需要選擇目標構念（必須是內生構念）',
+      w5W4Note: '注意：MICOM／PLSpredict／IPMA 目前不支援含調節或高階構念的模型。',
     },
     canvas: {
       hint: '拖曳構念移動位置；從一個構念的下方端點拉到另一構念建立路徑；點路徑可刪；點構念開指標面板（可切換反映型／形成型）；雙擊改名。',
@@ -2864,6 +2885,8 @@ export default {
     },
     result: {
       runFirst: '請先在左側宣告潛在變數與結構路徑，按「執行分析」後才會計算（bootstrap 需要數秒鐘）。',
+      computing: '計算中……bootstrap {pct}%（已移至背景執行緒，介面不會卡住）',
+      computingShort: '計算中……完成後自動顯示。',
       cards: { n: '有效樣本 N', iterations: 'PLS 迭代', bootstrap: 'Bootstrap 有效重抽', r2: 'R²' },
       converged: '已收斂',
       notConverged: '未收斂',
@@ -2886,7 +2909,7 @@ export default {
       effectsTitle: '結構模型 — 效果量 f² 與共線性 VIF',
       f2Note: 'f² 慣例（Cohen, 1988）：.02 小、.15 中、.35 大。VIF：< 3.3 佳（綠）、3.3 – 5 注意（黃）、≥ 5 共線性疑慮（紅）。',
       fitTitle: '模型適配 — SRMR / d_ULS / d_G / NFI',
-      fitNote: 'SRMR：< .08 佳（綠）、.08 – .10 邊緣（黃）、≥ .10 不佳（紅）；NFI ≥ .90 佳。d_ULS / d_G 供模型間比較（越小越好）。「飽和模型」構念相關自由（只評測量模型）、「估計模型」依結構路徑隱含相關。依原始文獻公式計算（SmartPLS 未完整公開實作細節），建議與 SmartPLS / seminr 抽驗互證。',
+      fitNote: 'SRMR：< .08 佳（綠）、.08 – .10 邊緣（黃）、≥ .10 不佳（紅）；NFI ≥ .90 佳。d_ULS / d_G 供模型間比較（越小越好）。「飽和模型」構念相關自由（只評測量模型）、「估計模型」依結構路徑隱含相關。依原始文獻公式計算（SmartPLS 未完整公開實作細節），建議與 SmartPLS / seminr 抽驗互證。\nGoF（Tenenhaus et al., 2005）＝ √(平均 communality × 平均 R²)：官方文件明載**不建議**作為適配指標，僅供舊文獻對照；communality 取反映型多指標構念。',
       q2Title: '預測相關性 — Blindfolding Q²',
       q2Note: 'Q² > 0 表示對該內生構念具預測相關性（綠）；≤ 0 表示不優於以平均數預測（紅）。構念層 cross-validated redundancy，omission distance D = {d}。',
       q2Unavailable: 'Q² 計算失敗：{message}',
@@ -2939,6 +2962,36 @@ export default {
       derivedTitle: '第二階段資料 — LV 分數新資料檔',
       derivedNote: '兩階段程序最終階段的輸入資料（構念分數與交互項乘積），對齊 SmartPLS 4「由 LV 分數產生資料檔」的工作流程；可下載留檔或供其他軟體重現第二階段。',
       downloadDerived: '下載 CSV',
+      mgaTitle: '多群組分析 — PLS-MGA（三法並列）',
+      mgaMeta: '群組：{g1}（n = {n1}）vs {g2}（n = {n2}）｜bootstrap {b} 次／組｜permutation {np} 次有效',
+      mgaNote: '判讀以 permutation 檢定為主（Chin & Dibbern, 2010；分布無母數假設），Henseler MGA p 為單尾 P(β₁ ≤ β₂)——接近 0 或 1 都代表組間差異；參數檢定（pooled／Welch）供對照。進行 MGA 前應先以 MICOM 確認 compositional invariance，否則差異可能來自測量而非結構。',
+      mgaColG1: 'β（{g}）',
+      mgaColG2: 'β（{g}）',
+      mgaColDiff: 'Δβ',
+      mgaColHenseler: 'p (Henseler)',
+      mgaColPerm: 'p (permutation)',
+      mgaColParam: 'p (pooled t)',
+      mgaColWelch: 'p (Welch)',
+      micomTitle: '測量恆等性 — MICOM',
+      micomNote: 'Step 1（configural）：兩群組使用相同模型設定、指標與資料處理——由本工具的執行方式自動滿足。Step 2（compositional invariance）：c ≥ 5% 分位（permutation）即成立（綠）。Step 3：平均差／變異差落在 permutation 95% CI 內即等平均／等變異（完全恆等）；只過 step 2 為部分恆等（可做 MGA，比較平均時留意）。',
+      micomColC: 'c（step 2）',
+      micomColQ5: '5% 分位',
+      micomColMean: '平均差 [95% CI]',
+      micomColVar: '變異差 [95% CI]',
+      predictTitle: '樣本外預測 — PLSpredict（k = {k}）',
+      predictNote: '判讀（Shmueli et al., 2019）：先看 Q²predict > 0（優於訓練摺平均）；再比 PLS 與 LM 的 RMSE——全部指標 PLS 較低＝高預測力、多數較低＝中、少數較低＝低、全部較高＝缺乏預測力。CVPAT（Liengaard et al., 2021）：d̄ > 0 且 p < .05 表示 PLS 的平均損失顯著低於基準。',
+      predictColQ2p: 'Q²predict',
+      predictColRmsePls: 'RMSE (PLS)',
+      predictColRmseLm: 'RMSE (LM)',
+      predictColMae: 'MAE (PLS)',
+      cvpatVsIA: 'CVPAT：PLS vs 指標平均（IA）',
+      cvpatVsLM: 'CVPAT：PLS vs 線性模型（LM）',
+      ipmaTitle: '重要性－績效地圖 — IPMA（目標：{target}）',
+      ipmaNote: 'Importance = 對目標構念的非標準化總效果、performance = 0–100 重標定分數平均（Ringle & Sarstedt, 2016）。右下象限（重要但績效低）為優先改善區。重標定用觀察到的 min/max（SmartPLS 用量表理論界線，兩者在極端值未出現時會有差異）；目標績效 = {targetPerf}。',
+      ipmaColImportance: 'Importance（總效果）',
+      ipmaColPerformance: 'Performance（0–100）',
+      ipmaIndicatorTitle: '指標層 IPMA',
+      w5ErrorPrefix: '{feature} 無法計算：{message}',
     },
     notes: {
       purposeTitle: '用途',
@@ -2975,7 +3028,16 @@ export default {
         '3. 區辨效度：Fornell-Larcker 通過、HTMT < .85\n' +
         '4. 模型適配：SRMR < .08（飽和模型看測量、估計模型加結構）\n' +
         '5. 測量模型合格後，才解讀結構模型：路徑係數的 p 與 95% CI、f² 效果量、VIF\n' +
-        '6. 最後看 R²（.25 / .50 / .75 約略對應弱 / 中 / 強）與 Q²（> 0 具預測相關性）',
+        '6. 最後看 R²（.25 / .50 / .75 約略對應弱 / 中 / 強）與 Q²（> 0 具預測相關性）\n' +
+        '7. CCA（確認性組合分析）工作流程：若研究定位是「組合（composite）」而非反映型因素——依序檢核 (a) 權重／負荷量顯著性（bootstrap）、(b) 外部 VIF 共線性、(c) 組合信度 rho_A/rho_c、(d) 區辨效度 HTMT——本工具的既有報表已涵蓋全部步驟，依此順序讀表即為 CCA（Hair et al., 2020）',
+      w5Title: '群組與預測（W5）',
+      w5:
+        'PLS-MGA：兩群組各自估計後比較路徑係數。permutation 檢定為主判準；Henseler MGA 為單尾 bootstrap 比較；參數檢定假設較強、供對照。前置：MICOM 至少通過 step 2（compositional invariance），否則組間差異可能是測量差異\n' +
+        'MICOM 三步：configural（同模型同處理，工具自動滿足）→ compositional（c 與 permutation 5% 分位比較）→ 等平均/等變異（完全恆等才可合併樣本或比較平均）\n' +
+        'PLSpredict：k-fold 樣本外預測；Q²predict > 0 是底線，與 LM（指標對指標的線性基準）比 RMSE 分四級判讀；CVPAT 給整體檢定\n' +
+        'IT 準則（AIC/AICc/BIC/HQ）：比較「同一內生構念的不同前置組合」哪個更簡約有效，越小越好；跨資料集不可比\n' +
+        'IPMA：importance（非標準化總效果）× performance（0–100 平均）辨識「重要但表現差」的優先改善構念/指標\n' +
+        '限制：MICOM/PLSpredict/IPMA 不支援含調節/高階構念的模型；MGA 支援（各組獨立跑完整管線）',
       w4Title: '調節、高階構念與中介（W4）',
       w4:
         '調節（two-stage）：第一階段估計主效果模型取得 LV 分數，第二階段以「分數乘積」作為交互項。對齊 SmartPLS 4 的兩個行為——自動補主效果路徑、交互項不標準化（係數 = 標準化係數 ÷ 乘積之標準差）。交互項 f² 建議用 Kenny（2018）較小門檻：.005 / .01 / .025\n' +

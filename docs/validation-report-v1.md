@@ -137,6 +137,40 @@ W4 新增 9 組 PLS 基準（`generate_reference.py` 的「PLS-SEM Wave 4 基準
 5. **W4 範圍限制（已在引擎與 UI 雙處把關）**：PLSc 與 blindfolding Q² 不支援含
    調節／高階構念的模型（明確中文錯誤訊息，不靜默降級）。
 
+## W5 增補（2026-07-06）：群組與預測＋W3 順延項的基準驗證
+
+W5 新增 8 組 PLS 基準（`generate_reference.py` 的「Wave 5」與「W3 順延項」區塊），
+`reference.json` 只增不改（53 → 61 個方法）。測試由 429 項增至 547 項
+（541 過、6 記錄性跳過）。
+
+| 基準 | 來源 | 實測最大相對差 |
+|---|---|---|
+| `pls_gof`（GoF index，W3 順延） | numpy 手算（Tenenhaus et al. 2005） | 4.4e-16 |
+| `pls_mga_formulas`（pooled t／Welch／Henseler p） | 固定 se/draws 輸入的公式層驗證（Keil et al. 2000；Sarstedt et al. 2011；Henseler et al. 2009） | 7.9e-13 |
+| `pls_mga_perm`（permutation 檢定） | **40 組固定標籤指派的引擎層級交叉驗證**（每組 pseudo-group 的 PLS 路徑差逐值比對） | 1.8e-14 |
+| `pls_micom`（step 2 c＋step 3 平均/變異差＋permutation 分位） | numpy 手算（Henseler et al. 2016 程序）＋同一批固定指派 | 1.9e-15 |
+| `pls_predict`（k=10、LM 基準、Q²predict）＋CVPAT | 固定 fold 指派的引擎層級交叉驗證（Shmueli et al. 2016/2019；Liengaard et al. 2021） | 3.9e-12 |
+| `pls_itcriteria`（AIC/AICc/BIC/HQ） | 封閉式（Sharma et al. 2019） | 1.1e-14 |
+| `pls_ipma`（0–100 重標定、非標準化總效果） | numpy 手算（Ringle & Sarstedt 2016 程序） | 2.4e-14 |
+
+### W5 慣例決策與待抽驗清單（Kevin 本機 SmartPLS 4 / R）
+
+1. **MGA 判讀主從**：permutation 為主判準（報表 LED 掛 permutation p）；
+   Henseler MGA 回報單尾 P(β₁≤β₂)。SmartPLS 的 Henseler p 定義向（單/雙尾）
+   建議本機抽驗一次確認方向一致。
+2. **MICOM step 2 的 c**：各組權重估自組內標準化資料、分數算在 pooled 標準化資料；
+   SmartPLS 的實作細節未完整文件化，屬高優先抽驗項（cSEM `testMICOM` 可交叉）。
+3. **PLSpredict**：預設 10 folds、1 次重複（SmartPLS 預設 10 次重複取平均——
+   本實作為單次固定種子，數字會與 SmartPLS 有小差；與 seminr `predict_pls`
+   同設定可逐值抽驗）。LM 基準 = 內生指標對全部外生指標之 OLS（Shmueli 2019 慣例）。
+4. **IPMA 重標定**：用觀察 min/max（SmartPLS 用量表理論界線）——量表極端值
+   未被觀察到時兩者會不同，UI 註記此差異；量表界線設定介面列入 backlog。
+5. **CVPAT**：損失 = 內生指標平方誤差的逐案平均（全模型層級檢定）；
+   Liengaard et al. (2021) 的公開程式碼可複算。
+6. **W3 順延項處置**：三種估計尺度已併入 IPMA 的非標準化流程；pairwise deletion
+   設計完成但實作交接 W6+（見 handoff-roadmap）；CCA 以報表導覽呈現（Notes 步驟 7）；
+   GoF 已實作（附「不建議」註記）。
+
 ## 如何重跑
 
 ```bash

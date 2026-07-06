@@ -151,13 +151,19 @@ function Config() {
   const consistent = state.consistent === true
   const ciType = state.ciType === 'bca' ? 'bca' : 'percentile'
   const q2 = state.q2 === true
-  const options = { scheme, consistent, ciType, q2 }
+  const w5Draft = state.w5 || {}
+  const options = {
+    scheme, consistent, ciType, q2,
+    ...(w5Draft.mga || w5Draft.micom || w5Draft.predict || w5Draft.ipma ? { w5: w5Draft } : {}),
+  }
   const ints = state.ints || []
   const intMethod = ['two-stage', 'product-indicator', 'orthogonal'].includes(state.intMethod)
     ? state.intMethod : 'two-stage'
   const hocs = state.hocs || []
   const hocMethod = ['repeated', 'disjoint', 'two-stage'].includes(state.hocMethod)
     ? state.hocMethod : 'disjoint'
+  const w5 = state.w5 || {}
+  const setW5 = (patch) => update({ w5: { ...w5, ...patch } })
   // 檢視模式：'form' 表單 / 'canvas' 畫布；窄幅一律退回表單
   const plsView = narrow ? 'form' : (state.plsView === 'canvas' ? 'canvas' : 'form')
 
@@ -195,6 +201,13 @@ function Config() {
   const constructOptions = [...lvNameOptions.filter((name) => !absorbedSet.has(name)), ...hocNames]
   const intNames = ints.filter((q) => q.a && q.b).map(intName)
   const pathFromOptions = [...constructOptions, ...intNames]
+  // W5：群組值（所選欄位的唯一值，最多 20 個）與內生構念（IPMA 目標）
+  const w5col = (state.w5 || {}).groupColumn
+  const groupValues = w5col
+    ? [...new Set(dataset.rows.map((row) => row?.[w5col]).filter((v) => v !== undefined && v !== null && v !== ''))]
+        .slice(0, 20).map(String)
+    : []
+  const endoOptions = [...new Set(curPaths.filter((p) => p.to).map((p) => p.to))]
 
   /* ── 構念操作 ── */
   const setLvs = (next) => update({ lvs: next })
@@ -265,6 +278,11 @@ function Config() {
         errors.push(fillTemplate(c.hocIncomplete, { name: h.name || '?' }))
       }
     })
+    if ((w5.mga || w5.micom)
+        && (!w5.groupColumn || w5.g1 === undefined || w5.g2 === undefined || w5.g1 === w5.g2)) {
+      errors.push(c.w5NeedGroups)
+    }
+    if (w5.ipma && !w5.target) errors.push(c.w5NeedTarget)
     const model = buildModel(curLvs, curPaths, ints, intMethod, hocs, hocMethod)
     const v = validatePLSModel(model)
     if (!v.ok) errors.push(...v.errors)
@@ -700,6 +718,115 @@ function Config() {
             />
           </div>
         )}
+      </div>
+
+      {/* 群組與預測（W5） */}
+      <div>
+        <SectionTitle>{c.w5Title}</SectionTitle>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Toggle
+              checked={w5.mga === true}
+              onChange={(v) => setW5({ mga: v })}
+              label={c.w5MgaLabel}
+              hint={c.w5MgaHint}
+            />
+            <Toggle
+              checked={w5.micom === true}
+              onChange={(v) => setW5({ micom: v })}
+              label={c.w5MicomLabel}
+              hint={c.w5MicomHint}
+            />
+            {(w5.mga || w5.micom) && (
+              <div className="pl-1 space-y-2">
+                <div>
+                  <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5GroupColumn}</div>
+                  <select
+                    value={w5.groupColumn || ''}
+                    onChange={(e) => setW5({ groupColumn: e.target.value, g1: undefined, g2: undefined })}
+                    className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                  >
+                    <option value="">{c.w5PickColumn}</option>
+                    {Object.keys(variables).map((col) => (
+                      <option key={col} value={col}>{labelMap[col] || col}</option>
+                    ))}
+                  </select>
+                </div>
+                {w5.groupColumn && (
+                  <div className="flex items-center gap-1.5">
+                    {['g1', 'g2'].map((key) => (
+                      <select
+                        key={key}
+                        value={w5[key] ?? ''}
+                        onChange={(e) => setW5({ [key]: e.target.value })}
+                        className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                      >
+                        <option value="">{key === 'g1' ? c.w5G1 : c.w5G2}</option>
+                        {groupValues.map((v) => (
+                          <option key={v} value={v}>{v}</option>
+                        ))}
+                      </select>
+                    ))}
+                  </div>
+                )}
+                <div>
+                  <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5PermsTitle}</div>
+                  <Segmented
+                    items={[200, 500, 1000].map((n) => ({ key: n, label: String(n) }))}
+                    value={w5.permutations ?? 500}
+                    onChange={(key) => setW5({ permutations: key })}
+                    mono
+                  />
+                  <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.w5PermsHint}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Toggle
+              checked={w5.predict === true}
+              onChange={(v) => setW5({ predict: v })}
+              label={c.w5PredictLabel}
+              hint={c.w5PredictHint}
+            />
+            {w5.predict && (
+              <div className="pl-1">
+                <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5KTitle}</div>
+                <Segmented
+                  items={[5, 10].map((n) => ({ key: n, label: String(n) }))}
+                  value={w5.k ?? 10}
+                  onChange={(key) => setW5({ k: key })}
+                  mono
+                />
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Toggle
+              checked={w5.ipma === true}
+              onChange={(v) => setW5({ ipma: v })}
+              label={c.w5IpmaLabel}
+              hint={c.w5IpmaHint}
+            />
+            {w5.ipma && (
+              <select
+                value={w5.target || ''}
+                onChange={(e) => setW5({ target: e.target.value })}
+                className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+              >
+                <option value="">{c.w5Target}</option>
+                {endoOptions.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          {(w5.micom || w5.predict || w5.ipma) && (ints.length > 0 || hocs.length > 0) && (
+            <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">
+              {c.w5W4Note}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* 執行 */}

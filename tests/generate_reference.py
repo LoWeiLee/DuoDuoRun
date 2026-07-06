@@ -1047,6 +1047,317 @@ try:
 except Exception as e:
     put("pls_w4", f"PLS W4 baselines FAILED: {e}")
 
+# --- PLS-SEM W3 順延項基準（2026-07-06）：GoF index ------------------------
+# GoF = sqrt(平均 communality × 平均 R²)（Tenenhaus et al. 2005）。
+# 慣例：communality 取「反映型且多指標」區塊的 loading²（單指標 communality=1 屬
+# 平凡值，納入會虛增 GoF，故排除——與 plspm R 版慣例一致）；R² 取全部內生構念。
+# 官方文件列出 GoF 但不建議作為適配指標，報表附註記。
+try:
+    _W4g, _Y4g, _L4g, _ = _pls_engine(_m4_Z.values, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
+    _Rg = np.corrcoef(_Y4g, rowvar=False)
+    _bCg = np.linalg.solve(_Rg[np.ix_([0, 1], [0, 1])], _Rg[[0, 1], 2])
+    _r2s = [_Rg[0, 1] ** 2, float(_bCg @ _Rg[[0, 1], 2]), _Rg[1, 3] ** 2]
+    _comm = np.concatenate([_L4g[j] ** 2 for j in range(3)])  # F1/F2/C（Y 單指標排除）
+    put("pls_gof",
+        "numpy 手算 GoF（Tenenhaus, Vinzi, Chatelin & Lauro 2005）："
+        "sqrt(mean communality × mean R²)；communality 限反映型多指標區塊、"
+        "R² 取全部內生構念。M4、path scheme。官方文件不建議作為適配指標",
+        gof=float(np.sqrt(_comm.mean() * np.mean(_r2s))),
+        meanCommunality=float(_comm.mean()), meanR2=float(np.mean(_r2s)))
+except Exception as e:
+    put("pls_gof", f"GoF baseline FAILED: {e}")
+
+# --- PLS-SEM Wave 5 基準（2026-07-06）：群組與預測 ------------------------
+# 跨實作驗證策略（bootstrap/permutation/k-fold 的隨機性使逐值比對不可能，
+# 沿用 W3 BCa「固定輸入入 fixture」模式）：
+#   pls_mga_formulas — 參數檢定（Keil et al. 2000 pooled；Welch-Satterthwaite:
+#       Sarstedt, Henseler & Ringle 2011）與 Henseler MGA p（Henseler, Ringle &
+#       Sinkovics 2009：偏誤校正 draws 的成對比較）——以「固定 se/draws 輸入」
+#       逐值比對 JS 公式函式
+#   pls_mga_perm — permutation 檢定（Chin & Dibbern 2010）：40 組固定標籤指派
+#       入 fixture，numpy 引擎算每組 pseudo-group 路徑差，JS 注入同指派逐值比對
+#       （引擎層級交叉驗證）；p = (#{|diff*|≥|diff|}+1)/(P+1)
+#   pls_micom — MICOM（Henseler, Ringle & Sarstedt 2016）：step 2 compositional
+#       invariance c = corr(Z_pooled·w_g1, Z_pooled·w_g2)；step 3 平均/變異差
+#       （pooled 分數的組間差）；permutation 用同一批固定指派
+#   pls_predict — PLSpredict（Shmueli, Ray, Estrada & Chatla 2016；程序依
+#       Shmueli et al. 2019 指南）：k=10 固定 fold 指派入 fixture、訓練摺標準化、
+#       結構遞迴預測、LM 基準（內生指標 ~ 全部外生指標 OLS）；
+#       CVPAT（Liengaard, Sharma, Hult, Jensen, Sarstedt, Hair & Ringle 2021）：
+#       成對 t 檢定 on 逐案損失差（PLS vs IA、PLS vs LM）
+#   pls_itcriteria — IT 準則（Sharma, Shmueli, Sarstedt, Danks & Ray 2019）：
+#       AIC/AICc/BIC/HQ，由 SSE=(n−1)(1−R²) 封閉式
+#   pls_ipma — IPMA（Ringle & Sarstedt 2016）：0–100 重標定、非標準化權重
+#       正規化 Σw̃=1、非標準化路徑 OLS、importance = 對目標的非標準化總效果
+try:
+    if "_pls_engine" not in dir():
+        raise RuntimeError("W3 區塊未成功（_pls_engine 不存在），W5 基準略過")
+    _rng5 = np.random.default_rng(20260706)
+
+    # ── 共用：兩群組（group2 = M / F）＋ 簡單模型 F1(i1-3)→F2(i4-6) ──
+    _g_cols = ["i1", "i2", "i3", "i4", "i5", "i6"]
+    _g_blocks = [[0, 1, 2], [3, 4, 5]]
+    _g_pairs = [(0, 1)]
+    _gvals = mainc["group2"].values
+    _rowsM = np.where(_gvals == "M")[0]
+    _rowsF = np.where(_gvals == "F")[0]
+
+    def _grp_path(row_idx):
+        Xg = mainc.iloc[row_idx][_g_cols].astype(float)
+        Zg = _zsc(Xg)
+        _, Yg, Lg, _ = _pls_engine(Zg.values, _g_blocks, ["A"] * 2, _g_pairs, "path")
+        return float(np.corrcoef(Yg[:, 0], Yg[:, 1])[0, 1]), Yg, Lg
+
+    _thM, _YM, _LM_ = _grp_path(_rowsM)
+    _thF, _YF, _LF_ = _grp_path(_rowsF)
+
+    # ── pls_mga_formulas：固定輸入的公式層驗證 ──
+    _n1, _n2 = len(_rowsM), len(_rowsF)
+    _se1, _se2 = 0.0812, 0.1147  # 固定假想 bootstrap SE（公式層驗證用）
+    _sp = math.sqrt(((_n1 - 1) ** 2 / (_n1 + _n2 - 2)) * _se1 ** 2
+                    + ((_n2 - 1) ** 2 / (_n1 + _n2 - 2)) * _se2 ** 2) \
+        * math.sqrt(1 / _n1 + 1 / _n2)
+    _t_pool = (_thM - _thF) / _sp
+    _df_pool = _n1 + _n2 - 2
+    _p_pool = 2 * sps.t.sf(abs(_t_pool), _df_pool)
+    _sw = math.sqrt(_se1 ** 2 + _se2 ** 2)
+    _t_w = (_thM - _thF) / _sw
+    _df_w = (_se1 ** 2 + _se2 ** 2) ** 2 / (_se1 ** 4 / (_n1 - 1) + _se2 ** 4 / (_n2 - 1))
+    _p_w = 2 * sps.t.sf(abs(_t_w), _df_w)
+    _dr1 = (_thM + _rng5.normal(0, 0.09, 200)).tolist()
+    _dr2 = (_thF + _rng5.normal(0, 0.12, 200)).tolist()
+    _c1 = 2 * _thM - np.array(_dr1)
+    _c2 = 2 * _thF - np.array(_dr2)
+    _hp = 1.0 - float(np.mean(_c1[:, None] > _c2[None, :]))  # P(θ1 ≤ θ2) 之估計
+    put("pls_mga_formulas",
+        "MGA 公式層基準（固定輸入）：pooled t（Keil, Tan, Wei, Saarinen, Tuunainen & "
+        "Wassenaar 2000）、Welch-Satterthwaite（Sarstedt, Henseler & Ringle 2011）、"
+        "Henseler MGA p（Henseler et al. 2009：偏誤校正 2θ̂−θ* 成對比較，"
+        "回報 one-tailed P(θ1≤θ2)）。draws/se 固定入 fixture 供 JS 公式函式逐值比對",
+        th1=_thM, th2=_thF, n1=_n1, n2=_n2, se1=_se1, se2=_se2,
+        tPooled=_t_pool, dfPooled=_df_pool, pPooled=_p_pool,
+        tWelch=_t_w, dfWelch=_df_w, pWelch=_p_w,
+        henselerP=_hp, draws1=_dr1, draws2=_dr2)
+
+    # ── pls_mga_perm ＋ pls_micom：40 組固定 permutation 指派 ──
+    _rows_all = np.concatenate([_rowsM, _rowsF])  # 前 30 = group1
+    _P = 40
+    _perms = [_rng5.permutation(_rows_all).tolist() for _ in range(_P)]
+    _diff_obs = _thM - _thF
+    _pdiffs = []
+    for _pm in _perms:
+        _t1, _, _ = _grp_path(np.array(_pm[:_n1]))
+        _t2, _, _ = _grp_path(np.array(_pm[_n1:]))
+        _pdiffs.append(_t1 - _t2)
+    _p_perm = (sum(1 for d in _pdiffs if abs(d) >= abs(_diff_obs)) + 1) / (_P + 1)
+    put("pls_mga_perm",
+        "MGA permutation 基準（Chin & Dibbern 2010 程序）：40 組固定標籤指派"
+        "（permutations 欄，值為原始資料列索引、前 n1 個為 pseudo-group1），"
+        "numpy 引擎逐組估計路徑差；p=(#{|d*|≥|d|}+1)/(P+1)。"
+        "JS 以 options.permutationIndices 注入同指派 → 引擎層級交叉驗證",
+        diffObs=_diff_obs, pPerm=_p_perm,
+        permDiffs=[float(d) for d in _pdiffs])
+    put("pls_mga_perm_inputs",
+        "pls_mga_perm / pls_micom 的固定 permutation 指派（原始資料列索引；"
+        "前 n1 個為 pseudo-group1）。無 adapter——僅供測試注入，不直接比對",
+        permutations=[[int(i) for i in pm] for pm in _perms])
+
+    # MICOM：step 2 c ＋ step 3 平均/變異差（pooled 標準化資料）
+    _Xp = mainc.iloc[_rows_all][_g_cols].astype(float)
+    _Zp = _zsc(_Xp).values  # pooled z（列序 = _rows_all）
+    def _micom_c(idx1, idx2):
+        cs = []
+        w1s, w2s = [], []
+        for idx, store in [(idx1, w1s), (idx2, w2s)]:
+            Zg = _zsc(mainc.iloc[idx][_g_cols].astype(float))
+            Wg, _, _, _ = _pls_engine(Zg.values, _g_blocks, ["A"] * 2, _g_pairs, "path")
+            store.extend(Wg)
+        for j, b in enumerate(_g_blocks):
+            s1 = _Zp[:, b] @ w1s[j]
+            s2 = _Zp[:, b] @ w2s[j]
+            cs.append(float(np.corrcoef(s1, s2)[0, 1]))
+        return cs
+    # 觀察值：idx 需對映 _Zp 列序——用 _rows_all 內位置
+    _pos = {r: i for i, r in enumerate(_rows_all)}
+    def _micom_c_pos(pos1, pos2):
+        cs = []
+        wpair = []
+        for pos in (pos1, pos2):
+            sub = _Xp.iloc[pos]
+            Zg = _zsc(sub)
+            Wg, _, _, _ = _pls_engine(Zg.values, _g_blocks, ["A"] * 2, _g_pairs, "path")
+            wpair.append(Wg)
+        for j, b in enumerate(_g_blocks):
+            s1 = _Zp[:, b] @ wpair[0][j]
+            s2 = _Zp[:, b] @ wpair[1][j]
+            cs.append(float(np.corrcoef(s1, s2)[0, 1]))
+        return cs
+    _pos1 = list(range(_n1))
+    _pos2 = list(range(_n1, _n1 + _n2))
+    _c_obs = _micom_c_pos(_pos1, _pos2)
+    _c_perm = []
+    for _pm in _perms:
+        _pp = [_pos[r] for r in _pm]
+        _c_perm.append(_micom_c_pos(_pp[:_n1], _pp[_n1:]))
+    _c_perm = np.array(_c_perm)  # P × 2
+    # step 3：pooled 權重分數的組間平均/變異差 ＋ permutation 分布
+    _Wp, _Yp, _Lp, _ = _pls_engine(_Zp, _g_blocks, ["A"] * 2, _g_pairs, "path")
+    def _mv_diff(pos1, pos2):
+        out = []
+        for j in range(2):
+            s = _Yp[:, j]
+            out.append([float(s[pos1].mean() - s[pos2].mean()),
+                        float(s[pos1].var(ddof=1) - s[pos2].var(ddof=1))])
+        return out
+    _mv_obs = _mv_diff(_pos1, _pos2)
+    _mv_perm = []
+    for _pm in _perms:
+        _pp = [_pos[r] for r in _pm]
+        _mv_perm.append(_mv_diff(_pp[:_n1], _pp[_n1:]))
+    _mv_perm = np.array(_mv_perm)  # P × 2構念 × 2(mean,var)
+    put("pls_micom",
+        "MICOM 基準（Henseler, Ringle & Sarstedt 2016）：step2 c = corr(Z_pooled·w_g1, "
+        "Z_pooled·w_g2)（各組權重估自組內標準化資料、分數算在 pooled 標準化資料）；"
+        "step3 = pooled 權重分數的組間 平均差/變異差；permutation 用 pls_mga_perm 的"
+        "同 40 組固定指派；c 的 p=(#{c*≤c}+1)/(P+1)、5% 分位為 type-7",
+        c_F1=_c_obs[0], c_F2=_c_obs[1],
+        cQuant5_F1=float(np.quantile(_c_perm[:, 0], 0.05)),
+        cQuant5_F2=float(np.quantile(_c_perm[:, 1], 0.05)),
+        cP_F1=(int(np.sum(_c_perm[:, 0] <= _c_obs[0])) + 1) / (_P + 1),
+        cP_F2=(int(np.sum(_c_perm[:, 1] <= _c_obs[1])) + 1) / (_P + 1),
+        meanDiff_F1=_mv_obs[0][0], varDiff_F1=_mv_obs[0][1],
+        meanDiff_F2=_mv_obs[1][0], varDiff_F2=_mv_obs[1][1],
+        meanCiLo_F1=float(np.quantile(_mv_perm[:, 0, 0], 0.025)),
+        meanCiHi_F1=float(np.quantile(_mv_perm[:, 0, 0], 0.975)),
+        varCiLo_F1=float(np.quantile(_mv_perm[:, 0, 1], 0.025)),
+        varCiHi_F1=float(np.quantile(_mv_perm[:, 0, 1], 0.975)),
+        meanCiLo_F2=float(np.quantile(_mv_perm[:, 1, 0], 0.025)),
+        meanCiHi_F2=float(np.quantile(_mv_perm[:, 1, 0], 0.975)),
+        varCiLo_F2=float(np.quantile(_mv_perm[:, 1, 1], 0.025)),
+        varCiHi_F2=float(np.quantile(_mv_perm[:, 1, 1], 0.975)))
+
+    # ── pls_predict：M4、k=10 固定 fold ──
+    _pd_cols = _m4_cols
+    _pd_X = mainc[_pd_cols].astype(float).values
+    _n = _pd_X.shape[0]
+    _fold_of = np.zeros(_n, dtype=int)
+    _shuf = _rng5.permutation(_n)
+    for f in range(10):
+        _fold_of[_shuf[f * 6:(f + 1) * 6]] = f
+    _endo = {1: [3, 4, 5], 2: [6, 7, 8], 3: [9]}  # F2/C/Y 的指標欄
+    _exo_cols = [0, 1, 2]  # F1 指標（唯一外生）
+    _pred_pls = np.full((_n, 10), np.nan)  # 10 = 全部指標欄
+    _pred_lm = np.full((_n, 10), np.nan)
+    _pred_naive = np.full((_n, 10), np.nan)
+    for f in range(10):
+        _tr = np.where(_fold_of != f)[0]
+        _ho = np.where(_fold_of == f)[0]
+        _mu = _pd_X[_tr].mean(axis=0)
+        _sd = _pd_X[_tr].std(axis=0, ddof=1)
+        _Ztr = (_pd_X[_tr] - _mu) / _sd
+        _Wt, _Yt, _Lt, _ = _pls_engine(_Ztr, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
+        _Rt = np.corrcoef(_Yt, rowvar=False)
+        _b_f2 = _Rt[0, 1]
+        _b_c = np.linalg.solve(_Rt[np.ix_([0, 1], [0, 1])], _Rt[[0, 1], 2])
+        _b_y = _Rt[1, 3]
+        _Zho = (_pd_X[_ho] - _mu) / _sd
+        _sF1 = _Zho[:, [0, 1, 2]] @ _Wt[0]
+        _sF2 = _b_f2 * _sF1
+        _sC = _b_c[0] * _sF1 + _b_c[1] * _sF2
+        _sY = _b_y * _sF2
+        for j, sc in [(1, _sF2), (2, _sC), (3, _sY)]:
+            for hi, h in enumerate(_m4_blocks[j]):
+                _pred_pls[_ho, h] = (_Lt[j][hi] * sc) * _sd[h] + _mu[h]
+                _pred_naive[_ho, h] = _mu[h]
+        # LM 基準：各內生指標 ~ 全部外生指標（含截距、原始量尺）
+        _Xtr_lm = np.column_stack([np.ones(len(_tr)), _pd_X[_tr][:, _exo_cols]])
+        _Xho_lm = np.column_stack([np.ones(len(_ho)), _pd_X[_ho][:, _exo_cols]])
+        for j in (1, 2, 3):
+            for h in _m4_blocks[j]:
+                _bb, *_ = np.linalg.lstsq(_Xtr_lm, _pd_X[_tr][:, h], rcond=None)
+                _pred_lm[_ho, h] = _Xho_lm @ _bb
+    _pd_vals = {}
+    _endo_cols_flat = [3, 4, 5, 6, 7, 8, 9]
+    for h in _endo_cols_flat:
+        x = _pd_X[:, h]
+        for tag, pr in [("pls", _pred_pls), ("lm", _pred_lm)]:
+            e = x - pr[:, h]
+            _pd_vals[f"rmse_{tag}_{_pd_cols[h]}"] = float(np.sqrt(np.mean(e ** 2)))
+            _pd_vals[f"mae_{tag}_{_pd_cols[h]}"] = float(np.mean(np.abs(e)))
+            _pd_vals[f"q2p_{tag}_{_pd_cols[h]}"] = float(
+                1 - np.sum(e ** 2) / np.sum((x - _pred_naive[:, h]) ** 2))
+    # CVPAT：逐案損失 = 內生指標平方誤差之平均；D = loss_bench − loss_pls
+    _l_pls = np.mean((_pd_X[:, _endo_cols_flat] - _pred_pls[:, _endo_cols_flat]) ** 2, axis=1)
+    _l_ia = np.mean((_pd_X[:, _endo_cols_flat] - _pred_naive[:, _endo_cols_flat]) ** 2, axis=1)
+    _l_lm = np.mean((_pd_X[:, _endo_cols_flat] - _pred_lm[:, _endo_cols_flat]) ** 2, axis=1)
+    for tag, lb in [("ia", _l_ia), ("lm", _l_lm)]:
+        D = lb - _l_pls
+        tstat = D.mean() / (D.std(ddof=1) / math.sqrt(_n))
+        _pd_vals[f"cvpat_{tag}_dbar"] = float(D.mean())
+        _pd_vals[f"cvpat_{tag}_t"] = float(tstat)
+        _pd_vals[f"cvpat_{tag}_p"] = float(2 * sps.t.sf(abs(tstat), _n - 1))
+    put("pls_predict",
+        "PLSpredict 基準（Shmueli et al. 2016；程序依 Shmueli et al. 2019 指南）："
+        "k=10 固定 fold（foldOf 欄）、訓練摺標準化、外生分數→結構遞迴預測→"
+        "loading 還原、Q²predict 以訓練摺平均為 naive；LM = 內生指標對全部外生指標"
+        "OLS（原始量尺、含截距）。CVPAT（Liengaard et al. 2021）：逐案平均平方損失"
+        "之成對 t 檢定（PLS vs IA、PLS vs LM）。JS 注入同 fold 指派交叉驗證",
+        foldOf=[int(v) for v in _fold_of], **_pd_vals)
+
+    # ── pls_itcriteria：AIC/AICc/BIC/HQ（Sharma et al. 2019；SSE=(n−1)(1−R²)） ──
+    _W5m, _Y5m, _L5m, _ = _pls_engine(_m4_Z.values, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
+    _R5 = np.corrcoef(_Y5m, rowvar=False)
+    _bC5 = np.linalg.solve(_R5[np.ix_([0, 1], [0, 1])], _R5[[0, 1], 2])
+    _its = {}
+    for lv, r2, k in [("F2", _R5[0, 1] ** 2, 1),
+                      ("C", float(_bC5 @ _R5[[0, 1], 2]), 2),
+                      ("Y", _R5[1, 3] ** 2, 1)]:
+        sse = (N - 1) * (1 - r2)
+        _its[f"aic_{lv}"] = N * math.log(sse / N) + 2 * (k + 1)
+        _its[f"aicc_{lv}"] = N * math.log(sse / N) + 2 * (k + 1) + \
+            2 * (k + 1) * (k + 2) / (N - k - 2)
+        _its[f"bic_{lv}"] = N * math.log(sse / N) + (k + 1) * math.log(N)
+        _its[f"hq_{lv}"] = N * math.log(sse / N) + 2 * (k + 1) * math.log(math.log(N))
+    put("pls_itcriteria",
+        "IT 模型選擇準則（Sharma, Shmueli, Sarstedt, Danks & Ray 2019）："
+        "SSE=(n−1)(1−R²)（標準化分數），AIC=n·ln(SSE/n)+2(k+1)、"
+        "AICc=AIC+2(k+1)(k+2)/(n−k−2)、BIC=n·ln(SSE/n)+(k+1)·ln(n)、"
+        "HQ=n·ln(SSE/n)+2(k+1)·ln(ln n)。M4、path scheme", **_its)
+
+    # ── pls_ipma：M4、目標 C（Ringle & Sarstedt 2016 程序） ──
+    _raw = mainc[_m4_cols].astype(float).values
+    _mins = _raw.min(axis=0)
+    _maxs = _raw.max(axis=0)
+    _resc = (_raw - _mins) / (_maxs - _mins) * 100.0
+    _s100 = np.zeros((N, 4))
+    _wnorm_store = {}
+    for j, b in enumerate(_m4_blocks):
+        w_un = np.array([_W5m[j][hi] / _raw[:, h].std(ddof=1) for hi, h in enumerate(b)])
+        w_n = w_un / w_un.sum()
+        _wnorm_store[j] = w_n
+        _s100[:, j] = _resc[:, b] @ w_n
+    def _ols_i(Xc, yv):
+        Xi = np.column_stack([np.ones(N), *Xc])
+        bb, *_ = np.linalg.lstsq(Xi, yv, rcond=None)
+        return bb[1:]
+    _u_f1f2 = float(_ols_i([_s100[:, 0]], _s100[:, 1])[0])
+    _u_c = _ols_i([_s100[:, 0], _s100[:, 1]], _s100[:, 2])
+    _imp_F1 = float(_u_c[0] + _u_f1f2 * _u_c[1])  # 總效果（直接＋經 F2）
+    _imp_F2 = float(_u_c[1])
+    put("pls_ipma",
+        "IPMA 基準（Ringle & Sarstedt 2016）：指標 0–100 重標定（觀察 min/max）、"
+        "非標準化權重 w/sd 後正規化 Σw̃=1、構念分數=Σw̃·x′、performance=分數平均、"
+        "非標準化路徑=分數 OLS（含截距）、importance=對目標 C 的非標準化總效果。"
+        "M4、path scheme。待 Kevin 本機 SmartPLS 4 抽驗",
+        perf_F1=float(_s100[:, 0].mean()), perf_F2=float(_s100[:, 1].mean()),
+        perf_C=float(_s100[:, 2].mean()),
+        upath_F1_F2=_u_f1f2, upath_F1_C=float(_u_c[0]), upath_F2_C=_imp_F2,
+        importance_F1=_imp_F1, importance_F2=_imp_F2,
+        indImp_i1=float(_imp_F1 * _wnorm_store[0][0]),
+        indPerf_i1=float(_resc[:, 0].mean()))
+except Exception as e:
+    put("pls_w5", f"PLS W5 baselines FAILED: {e}")
+
 with open(os.path.join(FIX, "reference.json"), "w") as f:
     json.dump(REF, f, indent=1)
 
