@@ -149,6 +149,7 @@ export default {
     comingSoonHint: 'Planned, not yet available',
     cbSem: 'CB-SEM (covariance-based)',
     plsSem: 'PLS-SEM',
+    nca: 'NCA (Necessary Condition Analysis)',
     hlm: 'HLM (multilevel)',
     mcnemar: "McNemar's test",
     friedman: 'Friedman test',
@@ -3043,6 +3044,77 @@ export default {
       },
       noDirect: 'none (no direct path specified)',
       copyHint: 'Copy APA narrative to clipboard',
+    },
+  },
+  nca: {
+    title: 'Necessary Condition Analysis (NCA)',
+    config: {
+      xLabel: 'Condition X (necessary condition)',
+      yLabel: 'Outcome Y',
+      pickX: 'Select condition variable',
+      pickY: 'Select outcome variable',
+      sameVar: 'X and Y must differ',
+      hint: 'NCA asks whether X is necessary for Y: if a high Y always requires a high X, the upper-left corner of the scatterplot is empty. Unlike regression’s average effect, NCA looks at the ceiling.',
+    },
+    result: {
+      scopeTitle: 'Scope',
+      scope: 'scope area',
+      ceilingTitle: 'Ceiling line summary',
+      ceilingHint: 'CE-FDH is a non-decreasing step function (envelopment), accuracy always 100%; CR-FDH is an OLS line through the ceiling points. d = ceiling zone / scope.',
+      bottleneckTitle: 'Bottleneck table (CE-FDH)',
+      readingTitle: 'Reading',
+      nn: 'NN',
+      nnHint: 'NN (Not Necessary) = the X required for that Y level is at or below the minimum, so X is not a bottleneck there. Required X is monotonically non-decreasing in Y.',
+      cols: {
+        dCe: 'd (CE-FDH)', dCr: 'd (CR-FDH)', p: 'p (permutation)', nPeers: 'ceiling points',
+        ceiling: 'Ceiling', zone: 'Zone', d: 'd', effect: 'Effect', accuracy: 'Accuracy',
+        yLevel: 'level', yValue: 'Y value', xRequired: 'required', xPercent: 'required %',
+      },
+    },
+    effect: {
+      small: 'small', medium: 'medium', large: 'large', veryLarge: 'very large',
+    },
+    notes: {
+      purposeTitle: 'Purpose',
+      purpose:
+        'Necessary Condition Analysis (NCA; Dul, 2016) examines whether X is a necessary but not sufficient condition for Y.\n' +
+        'It answers:\n(1) Does reaching a level of Y require reaching a level of X? (is the upper-left empty)\n' +
+        '(2) How strong is the necessity? (effect size d)\n(3) What minimum X is required for each Y level? (bottleneck table)',
+      assumpTitle: 'Assumptions & boundaries',
+      assumptions:
+        '1. NCA is necessity logic — complementary to (not a substitute for) regression’s average incremental effect; a significant slope does not imply necessity, and vice versa.\n' +
+        '2. Sensitive to outliers (a single upper-left point can shift the ceiling) — always inspect the scatterplot and robustness.\n' +
+        '3. Scope defaults to empirical min/max; effect size changes with theoretical bounds (report both when relevant).\n' +
+        '4. The permutation test is an approximate significance test; claim necessity only when d ≥ .1 and p < .05.',
+      formulasTitle: 'Core formulas',
+      formulaCeiling: 'CE-FDH: ceiling(x) = max{ y_i : x_i ≤ x } (non-decreasing step)',
+      formulaScope: 'scope S = (X_max − X_min)(Y_max − Y_min)',
+      formulaD: 'effect size d = ceiling zone C / scope S, range 0–1',
+      readingTitle: 'How to read',
+      reading:
+        '1. Check effect size d and permutation p — claim necessity only when d ≥ .1 and p < .05.\n' +
+        '2. Effect benchmarks (Dul): 0<d<.1 small, .1≤d<.3 medium, .3≤d<.5 large, d≥.5 very large.\n' +
+        '3. Read the bottleneck table — minimum X required for each Y level; NN means X is not a bottleneck there.\n' +
+        '4. CE-FDH (step) and CR-FDH (linear) side by side — agreement indicates robustness.',
+      refTitle: 'References',
+      ref:
+        'Dul, J. (2016). Necessary Condition Analysis (NCA). Organizational Research Methods, 19(1), 10–52.\n' +
+        'Dul, J., van der Laan, E., & Kuik, R. (2020). A statistical significance test for NCA. Organizational Research Methods.\n' +
+        'Implemented from the R NCA package’s closed-form definitions; convention alignment pending local R spot-check (see validation-report).',
+    },
+    apa: {
+      sentence:
+        'Necessary Condition Analysis (NCA; Dul, 2016) indicated that {xLabel} is necessary for {yLabel} (CE-FDH d = {dCe}, a {effectWord} effect; CR-FDH d = {dCr}), with the effect size significant by an approximate permutation test (p = {pStr}, n = {n}). The bottleneck analysis reports the minimum {xLabel} required to reach each level of {yLabel}.',
+      sentenceNs:
+        'Necessary Condition Analysis (NCA; Dul, 2016) found insufficient evidence that {xLabel} is necessary for {yLabel} (CE-FDH d = {dCe}; CR-FDH d = {dCr}), with the approximate permutation test not significant (p = {pStr}, n = {n}).',
+      copyHint: 'Copy APA narrative to clipboard',
+    },
+    interp: {
+      sentence:
+        'Conclusion: {xLabel} {concl} a necessary condition for {yLabel} (CE-FDH d = {d}, a {effectWord} effect, permutation p = {pStr}). ' +
+        'When necessity holds, falling short on {xLabel} caps {yLabel} at a lower level; but a high {xLabel} does not guarantee a high {yLabel} (necessary, not sufficient).',
+      supported: 'is',
+      notSupported: 'is not sufficiently',
     },
   },
 }

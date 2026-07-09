@@ -4852,5 +4852,66 @@
     ]
    ]
   }
+ },
+ "nca_ce_fdh": {
+  "source": "Dul (2016) NCA CE-FDH\uff1ascope \u7528\u5be6\u8b49 min/max\u3001ceiling(x)=max{y:x_i\u2264x} \u968e\u68af\u3001\u7a7a\u767d\u5340/scope=d\u3002numpy \u5c01\u9589\u5f0f\u624b\u7b97\uff0c\u5f85 Kevin \u672c\u6a5f R NCA::nca(ceiling='ce_fdh') \u62bd\u9a57",
+  "values": {
+   "xmin": 12.9495,
+   "xmax": 86.334,
+   "ymin": 1.0,
+   "ymax": 48.7151,
+   "scope": 3501.54875595,
+   "n_peers": 8.0,
+   "ceiling_zone": 835.0133539099999,
+   "d": 0.23846972071746966,
+   "peers_x": [
+    12.9495,
+    14.8039,
+    20.3327,
+    23.4081,
+    45.3518,
+    53.4781,
+    61.7612,
+    76.4722
+   ],
+   "peers_y": [
+    12.1885,
+    15.1187,
+    29.7227,
+    33.6525,
+    35.2303,
+    44.0808,
+    45.6817,
+    48.7151
+   ]
+  }
+ },
+ "nca_cr_fdh": {
+  "source": "Dul (2016) NCA CR-FDH\uff1a\u904e CE-FDH ceiling \u9ede OLS \u5f97\u7dda\u6027 ceiling\uff0cscope \u5167\u593e\u64e0\u4e0a\u65b9\u7a7a\u767d/scope=d\u3002\u5f85 Kevin \u672c\u6a5f R NCA::nca(ceiling='cr_fdh') \u62bd\u9a57",
+  "values": {
+   "intercept": 13.142063688454602,
+   "slope": 0.5161235442093068,
+   "ceiling_zone": 808.5301478992599,
+   "d": 0.2309064371945033
+  }
+ },
+ "nca_bottleneck": {
+  "source": "Dul (2016) NCA bottleneck\uff08CE-FDH\uff09\uff1a\u5404 Y \u6c34\u6e96\uff08%\uff09\u53cd\u8b80 ceiling \u6240\u9700 X \u5be6\u969b\u503c\u3002\u5f85 Kevin \u672c\u6a5f R NCA::bottleneck \u62bd\u9a57",
+  "values": {
+   "x_required": [
+    12.9495,
+    12.9495,
+    12.9495,
+    20.3327,
+    20.3327,
+    20.3327,
+    20.3327,
+    45.3518,
+    53.4781,
+    53.4781,
+    76.4722
+   ],
+   "p_ce": 0.005025125628140704
+  }
  }
 }

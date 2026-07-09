@@ -13,7 +13,8 @@
     model fit／Q²；W4 調節（two-stage＋PI/ortho）／二次／三向／HOC 三法／
     中介分解；W5 MGA／MICOM／PLSpredict＋CVPAT／IT 準則／IPMA／GoF／
     CCA 指引／Worker 接線
-- 測試：`npm test` **541 過、6 記錄性跳過**；61 組基準方法（reference.json）
+- 測試：`npm test` **573 過、6 記錄性跳過**；64 組基準方法（reference.json）
+  （W6.1 NCA 交付後由 541→573；見下 §6.4 與 validation-report「W6 增補」）
 - 關鍵文件：`docs/pls-sem-roadmap-v1.md`（波次規畫與進度）、
   `docs/pls-model-schema.md`（模型 JSON v3.1 與引擎 API）、
   `docs/validation-report-v1.md`（逐波驗證記錄與 Kevin 本機抽驗清單）、
@@ -87,9 +88,15 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
   tetrads τ = σ12σ34 − σ13σ24 等，bootstrap CI（Bonferroni 調整）判反映型/形成型。
 - 基準：tetrad 封閉式 numpy 手算；bootstrap 用固定 draws 模式。
 ### 6.4 NCA（必要條件分析）＋ cIPMA
-- CE-FDH/CR-FDH ceiling、effect size d、bottleneck 表、permutation p。
-- 基準：R `NCA` 套件（Kevin 本機產 fixture JSON，管線支援外部貢獻 fixture）；
-  沙盒可先手算 CE-FDH（階梯函數封閉式）。完成後 cIPMA（與既有 ipmaPLS 組合）。
+- **核心 NCA 已交付（2026-07-09）**：`src/lib/stats/nca.js`（CE-FDH/CR-FDH
+  ceiling、scope、effect size d、bottleneck 表、permutation p），分析模組六件套
+  ＋側欄（sem 群組）＋示範（employee: tenure→performance）＋中英 i18n。
+  基準 3 組（nca_ce_fdh/cr_fdh/bottleneck，`run_nca_ref_only.py` 沙盒可跑），
+  JS↔numpy bit-for-bit；行為測試 `tests/nca.test.js` 16 項（手算錨定 d=0.5）。
+- **待辦（NCA 下一步）**：(a) Kevin 本機 R `NCA` 套件抽驗慣例對齊
+  （見 validation-report「W6/NCA 待抽驗清單」7 項）；(b) **cIPMA**（與既有
+  `ipmaPLS` 組合）本輪未做，為 NCA 的後續交付；(c) 可選：散佈圖＋ceiling line
+  視覺化（目前為表格呈現）、scope 理論界線 UI 設定。
 ### 6.5 Gaussian copula 內生性檢查
 - Park & Gupta (2012)；Hult et al. (2018) 流程：copula 項 = Φ⁻¹(ECDF(x))，
   加入迴歸檢定顯著性；前提：解釋變數非常態（先做 KS 檢定把關）。
@@ -142,11 +149,13 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
 ## 9. 建議 session 切分（供排程）
 
 1. 抽驗回饋消化 session：Kevin 本機數字回來後對表、修正慣例差異
-2. W6 依價值序：NCA → CTA-PLS → Gaussian copula → FIMIX → PLS-POS →
-   WPLS＋pairwise（合併）
+   （現含 W6/NCA 的 R `NCA` 抽驗 7 項）
+2. W6 依價值序：~~NCA~~（✓ 核心已交付 2026-07-09；cIPMA 順延）→ CTA-PLS →
+   Gaussian copula → FIMIX → PLS-POS → WPLS＋pairwise（合併）
 3. 品質 session：§6.8 清單＋docx 報表輸出
 4. CB-SEM spike session
 
 ## 版本紀錄
 
 - v1（2026-07-06）：初版。W5 交付當日撰寫，Fable 5 → Opus 4.8 交接。
+- v1.1（2026-07-09）：W6.1 NCA 核心交付後更新 §1／§6.4／§9（Opus 4.8）。

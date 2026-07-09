@@ -35,6 +35,7 @@ import {
   runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS,
   mgaParametricTest, henselerMgaP,
 } from '../src/lib/stats/pls.js'
+import { runNCA } from '../src/lib/stats/nca.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const D = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures/datasets.json'), 'utf8'))
@@ -579,6 +580,27 @@ export const ADAPTERS = {
       importance_F1: c.F1.importance, importance_F2: c.F2.importance,
       indImp_i1: i1.importance, indPerf_i1: i1.performance,
     }
+  },
+
+  // ── NCA 必要條件分析（Dul 2016）：注入固定 permutations 做交叉驗證 ──
+  nca_ce_fdh() {
+    const r = runNCA(D.nca.x, D.nca.y)
+    if (r.error) throw new Error(`runNCA failed: ${r.error}`)
+    const ce = r.ceilings.ce_fdh
+    return {
+      xmin: r.scope.xmin, xmax: r.scope.xmax, ymin: r.scope.ymin, ymax: r.scope.ymax,
+      scope: r.scope.area, n_peers: ce.peers.length,
+      ceiling_zone: ce.ceilingZone, d: ce.effectSize,
+      peers_x: ce.peers.map((p) => p.x), peers_y: ce.peers.map((p) => p.y),
+    }
+  },
+  nca_cr_fdh() {
+    const cr = runNCA(D.nca.x, D.nca.y).ceilings.cr_fdh
+    return { intercept: cr.intercept, slope: cr.slope, ceiling_zone: cr.ceilingZone, d: cr.effectSize }
+  },
+  nca_bottleneck() {
+    const r = runNCA(D.nca.x, D.nca.y, { permutations: D.nca.perms })
+    return { x_required: r.ceilings.ce_fdh.bottleneck.map((b) => b.xValue), p_ce: r.test.p_ce }
   },
 }
 

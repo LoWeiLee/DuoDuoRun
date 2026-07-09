@@ -88,10 +88,21 @@ ties = pd.DataFrame({  # 大量並列（Likert 型）
     "v": [3, 4, 3, 2, 4, 3, 5, 3, 4, 2, 3, 4, 4, 5, 4, 3, 5, 4, 5, 5, 4, 3, 5, 4],
 })
 
+# NCA 必要條件分析資料集（獨立種子，不擾動既有 rng 序列）：
+# 設計為左上角空白的必要條件結構——高 Y 需要高 X。
+_ncarng = np.random.default_rng(19)
+_nca_n = 48
+nca_x = np.round(_ncarng.uniform(10, 90, _nca_n), 4)
+nca_u = _ncarng.uniform(0.1, 1.0, _nca_n)
+nca_y = np.round(np.clip((0.45 * nca_x + 20) * nca_u + _ncarng.normal(0, 7, _nca_n), 1, None), 4)
+# 固定 permutation draws（注入引擎做交叉驗證，見 pls_mga_perm 慣例）
+nca_perms = [_ncarng.permutation(_nca_n).tolist() for _ in range(199)]
+
 datasets = {
     "main": main.to_dict(orient="records"),
     "small": small.to_dict(orient="records"),
     "ties": ties.to_dict(orient="records"),
+    "nca": {"x": nca_x.tolist(), "y": nca_y.tolist(), "perms": nca_perms},
 }
 with open(os.path.join(FIX, "datasets.json"), "w") as f:
     json.dump(datasets, f, default=str)
@@ -1357,6 +1368,92 @@ try:
         indPerf_i1=float(_resc[:, 0].mean()))
 except Exception as e:
     put("pls_w5", f"PLS W5 baselines FAILED: {e}")
+
+# --- NCA（必要條件分析）基準區塊 起 ------------------------------------------
+# Dul (2016) ORM 19(1):10–52；統計檢定 Dul, van der Laan & Kuik (2020) ORM。
+# 沙盒無 R NCA 套件 → 依封閉式定義以 numpy 手算作引擎交叉驗證基準；
+# CE-FDH 為封閉式階梯，CR-FDH 為過 ceiling 點 OLS＋scope 夾擠，permutation 用固定 draws。
+# 慣例對齊（scope 用實證 min/max、CE-FDH 階梯上方空白）待 Kevin 本機 R NCA::nca 抽驗。
+_nx = np.asarray(datasets["nca"]["x"], float)
+_ny = np.asarray(datasets["nca"]["y"], float)
+_nperms = [np.asarray(p) for p in datasets["nca"]["perms"]]
+
+
+def _nca_ce_peers(xx, yy):
+    order = np.lexsort((yy, xx))
+    xs, ys = xx[order], yy[order]
+    rx, ry, run, i, m = [], [], -np.inf, 0, len(xs)
+    while i < m:
+        xv = xs[i]
+        mm = ys[i]
+        j = i
+        while j < m and xs[j] == xv:
+            mm = max(mm, ys[j]); j += 1
+        if mm > run:
+            rx.append(xv); ry.append(mm); run = mm
+        i = j
+    return np.array(rx), np.array(ry)
+
+
+def _nca_zone_ce(xx, yy):
+    xmin, xmax, ymin, ymax = xx.min(), xx.max(), yy.min(), yy.max()
+    rx, ry = _nca_ce_peers(xx, yy)
+    C = 0.0
+    for j in range(len(rx)):
+        nx = rx[j + 1] if j + 1 < len(rx) else xmax
+        C += (ymax - ry[j]) * (nx - rx[j])
+    S = (xmax - xmin) * (ymax - ymin)
+    return C, S, C / S, rx, ry
+
+
+def _nca_area_clamped(a, b, xmin, xmax, ymin, ymax):
+    bps = {xmin, xmax}
+    if b != 0:
+        for yv in (ymin, ymax):
+            xc = (yv - a) / b
+            if xmin < xc < xmax:
+                bps.add(xc)
+    pts = sorted(bps)
+
+    def gap(xv):
+        L = a + b * xv
+        return ymax - min(max(L, ymin), ymax)
+    return sum((pts[k + 1] - pts[k]) * (gap(pts[k]) + gap(pts[k + 1])) / 2 for k in range(len(pts) - 1))
+
+
+_C, _S, _d, _rx, _ry = _nca_zone_ce(_nx, _ny)
+_xmin, _xmax, _ymin, _ymax = _nx.min(), _nx.max(), _ny.min(), _ny.max()
+# CR-FDH：過 CE peers 的 OLS
+_mx, _my = _rx.mean(), _ry.mean()
+_b = ((_rx - _mx) * (_ry - _my)).sum() / ((_rx - _mx) ** 2).sum()
+_a = _my - _b * _mx
+_Ccr = _nca_area_clamped(_a, _b, _xmin, _xmax, _ymin, _ymax)
+# bottleneck（CE-FDH，Y 0..100% → 所需 X 實際值）
+_levels = list(range(0, 101, 10))
+_bx = []
+for _pct in _levels:
+    _ystar = _ymin + _pct / 100.0 * (_ymax - _ymin)
+    _idx = int(np.searchsorted(_ry, _ystar, side="left"))
+    _bx.append(_xmax if _idx >= len(_ry) else _rx[_idx])
+# permutation p（統計量 = CE-FDH d）
+_cnt = sum(1 for _p in _nperms if _nca_zone_ce(_nx, _ny[_p])[2] >= _d)
+_p_ce = _cnt / len(_nperms)
+
+put("nca_ce_fdh",
+    "Dul (2016) NCA CE-FDH：scope 用實證 min/max、ceiling(x)=max{y:x_i≤x} 階梯、"
+    "空白區/scope=d。numpy 封閉式手算，待 Kevin 本機 R NCA::nca(ceiling='ce_fdh') 抽驗",
+    xmin=_xmin, xmax=_xmax, ymin=_ymin, ymax=_ymax, scope=_S,
+    n_peers=len(_rx), ceiling_zone=_C, d=_d,
+    peers_x=_rx.tolist(), peers_y=_ry.tolist())
+put("nca_cr_fdh",
+    "Dul (2016) NCA CR-FDH：過 CE-FDH ceiling 點 OLS 得線性 ceiling，"
+    "scope 內夾擠上方空白/scope=d。待 Kevin 本機 R NCA::nca(ceiling='cr_fdh') 抽驗",
+    intercept=_a, slope=_b, ceiling_zone=_Ccr, d=_Ccr / _S)
+put("nca_bottleneck",
+    "Dul (2016) NCA bottleneck（CE-FDH）：各 Y 水準（%）反讀 ceiling 所需 X 實際值。"
+    "待 Kevin 本機 R NCA::bottleneck 抽驗",
+    x_required=_bx, p_ce=_p_ce)
+# --- NCA 基準區塊 迄 ---------------------------------------------------------
 
 with open(os.path.join(FIX, "reference.json"), "w") as f:
     json.dump(REF, f, indent=1)

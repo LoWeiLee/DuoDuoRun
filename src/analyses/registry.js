@@ -35,6 +35,7 @@ import lda from './lda'
 import cluster from './cluster'
 import cfa from './cfa'
 import pls from './pls'
+import nca from './nca'
 
 const REGISTRY = {
   'desc-stats':         descriptive,
@@ -64,6 +65,7 @@ const REGISTRY = {
   'cluster':            cluster,
   'cfa':                cfa,
   'pls-sem':            pls,
+  'nca':                nca,
 }
 
 export function getAnalysisModule(id) {

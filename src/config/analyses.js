@@ -76,6 +76,7 @@ export const ANALYSIS_GROUPS = [
     i18nKey: 'sem',
     items: [
       { id: 'pls-sem',         i18nKey: 'plsSem',          priority: 2 },
+      { id: 'nca',             i18nKey: 'nca',             priority: 2 },
     ],
   },
 ]

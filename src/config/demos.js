@@ -163,6 +163,13 @@ export const ANALYSIS_DEMOS = {
       },
     },
   },
+
+  // ── 必要條件分析 ─────────────────────
+  // 年資（條件）是否為高績效的必要條件？（employee 資料集）
+  'nca': {
+    dataset: 'employee',
+    settings: { xVar: 'tenure_years', yVar: 'performance_score' },
+  },
 }
 
 export function getDemo(analysisId) {

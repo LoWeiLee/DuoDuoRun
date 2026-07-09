@@ -171,9 +171,52 @@ W5 新增 8 組 PLS 基準（`generate_reference.py` 的「Wave 5」與「W3 順
    設計完成但實作交接 W6+（見 handoff-roadmap）；CCA 以報表導覽呈現（Notes 步驟 7）；
    GoF 已實作（附「不建議」註記）。
 
+## W6 增補（2026-07-09）：NCA 必要條件分析的基準驗證
+
+W6 首項交付 NCA（Dul 2016）。新增 3 組基準（`generate_reference.py` 的
+「NCA 基準區塊」，附專屬固定種子資料集 `datasets.json:nca`，n=48），
+`reference.json` 只增不改（61 → 64 個方法）。測試由 547 項增至 579 項
+（573 過、6 記錄性跳過）；另加 `tests/nca.test.js` 16 項行為測試
+（含手算錨定 d=0.5 的小資料集）。
+
+| 基準 | 來源 | 實測最大相對差 |
+|---|---|---|
+| `nca_ce_fdh`（scope／peers／ceiling zone／effect size d） | numpy 封閉式手算（Dul 2016：ceiling(x)=max{y:xᵢ≤x} 階梯、空白區/scope=d） | < 1e-9 |
+| `nca_cr_fdh`（線性 ceiling 截距/斜率／zone／d） | numpy 手算（過 CE-FDH ceiling 點的 OLS＋scope 內夾擠分段線性積分） | < 1e-9 |
+| `nca_bottleneck`（各 Y 水準所需 X）＋`p_ce`（permutation 檢定） | **199 組固定 permutation 注入的引擎層級交叉驗證**（統計量=CE-FDH d，逐值比對） | < 1e-9 |
+
+引擎（`src/lib/stats/nca.js`）JS 對 numpy 逐欄位相對差為 0（bit-for-bit），
+全項以預設 1e-6 容差通過（非迭代、皆封閉式）。
+
+### W6/NCA 慣例決策與待抽驗清單（Kevin 本機 R `NCA` 套件）
+
+沙盒無 R `NCA` 套件 → 本輪基準以「Dul (2016) 封閉式定義」由 numpy 手算，
+JS 引擎與其 bit-for-bit 一致；**慣例對齊仍待本機 R 抽驗**。抽驗方式：同一
+資料（可用 employee 示範或匯出 `datasets.json:nca` 的 x/y）跑 R：
+`NCA::nca_analysis(data, x, y, ceilings=c("ce_fdh","cr_fdh"))`，比對下列各項。
+
+1. **scope 界線**：本實作用實證 min/max（R 預設同）；若 Kevin 要用理論界線
+   （`scope.theory`），效果量 d 會變——雙軌報告時本機各跑一次確認。屬高優先。
+2. **CE-FDH ceiling zone**：階梯上方空白區 = Σ(y_max−ry_j)(下一轉角x−rx_j)。
+   R 的 `ceiling` 面積演算法逐值比對（d 應與 `effect size` 欄一致）。高優先。
+3. **CR-FDH 迴歸線**：本實作對「CE-FDH ceiling 記錄點（peers）」做 OLS；
+   R 的 CR-FDH 迴歸樣本點選取細節（是否含水平段上的觀察值）未完整文件化，
+   屬高優先抽驗項——截距/斜率若不同會連動 d_cr。
+4. **CR-FDH scope 內夾擠**：線性 ceiling 超出 [y_min,y_max] 的部分以夾擠處理
+   （分段線性精確積分）；確認 R 是否同樣夾擠或允許外溢。
+5. **permutation 檢定**：p = #{d_perm ≥ d_obs}/P，統計量取 CE-FDH d（Dul,
+   van der Laan & Kuik 2020 近似檢定）。UI 用固定 seed 生成 permutations
+   （近似、可重現），R 的 `test.rep` 預設 10000、隨機種子不同——p 應相近但非逐位相同；
+   引擎正確性已由 199 組**注入**排列在 fixture 中逐值鎖定。
+6. **bottleneck 表達**：本輪回報「所需 X 實際值＋% of range」，NN=所需 X≤x_min；
+   R `bottleneck` 另支援 percentile/actual 等表達，數字口徑一致即可。
+7. **cIPMA（後續）**：§6.4 的 cIPMA（與既有 `ipmaPLS` 組合）本輪未做，
+   列為 NCA 的下一步（handoff-roadmap §6.4）。
+
 ## 如何重跑
 
 ```bash
+python3 tests/run_nca_ref_only.py       # 只重生 NCA 基準（沙盒可跑，不需 R/semopy）
 npm test                                # 回歸比對（不需 Python）
 python3 tests/generate_reference.py     # 重生基準值（改測試資料時才需要）
 node tests/probe.mjs                    # 除錯：逐欄位列出實際 vs 基準與相對差

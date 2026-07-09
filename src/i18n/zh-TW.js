@@ -155,6 +155,7 @@ export default {
     comingSoonHint: '規劃中，敬請期待',
     cbSem: 'CB-SEM 結構方程模型',
     plsSem: 'PLS-SEM',
+    nca: 'NCA 必要條件分析',
     hlm: 'HLM 多層次模型',
     mcnemar: 'McNemar 檢定',
     friedman: 'Friedman 檢定',
@@ -3098,6 +3099,77 @@ export default {
       },
       noDirect: '無（未設定直接路徑）',
       copyHint: '一鍵複製 APA 敘述',
+    },
+  },
+  nca: {
+    title: 'NCA 必要條件分析',
+    config: {
+      xLabel: '條件變數 X（必要條件）',
+      yLabel: '結果變數 Y',
+      pickX: '請選條件變數',
+      pickY: '請選結果變數',
+      sameVar: 'X 與 Y 不可為同一變項',
+      hint: 'NCA 檢視「X 是否為 Y 的必要條件」：若高 Y 一定需要高 X，散佈圖左上角會是空的。與迴歸的「平均效果」不同，NCA 看的是「天花板」。',
+    },
+    result: {
+      scopeTitle: 'Scope（分析範圍）',
+      scope: 'scope 面積',
+      ceilingTitle: 'Ceiling line 摘要',
+      ceilingHint: 'CE-FDH 為非遞減階梯（envelopment），準確度恆為 100%；CR-FDH 為過 ceiling 點的 OLS 線性 ceiling。d = 空白區 / scope。',
+      bottleneckTitle: 'Bottleneck 表（CE-FDH）',
+      readingTitle: '解讀',
+      nn: 'NN',
+      nnHint: 'NN（Not Necessary）= 該 Y 水準所需的 X 已在最小值之下，X 在此水準非為瓶頸。所需 X 隨 Y 水準單調非遞減。',
+      cols: {
+        dCe: 'd（CE-FDH）', dCr: 'd（CR-FDH）', p: 'p（permutation）', nPeers: 'ceiling 點數',
+        ceiling: 'Ceiling', zone: '空白區', d: 'd', effect: '效果', accuracy: '準確度',
+        yLevel: '水準', yValue: 'Y 值', xRequired: '所需值', xPercent: '所需 %',
+      },
+    },
+    effect: {
+      small: '小', medium: '中', large: '大', veryLarge: '非常大',
+    },
+    notes: {
+      purposeTitle: '用途',
+      purpose:
+        '必要條件分析（NCA, Dul 2016）檢視「X 是否為 Y 的必要但不充分條件」。\n' +
+        '回答的問題是：\n（1）要達到某水準的 Y，是否一定需要達到某水準的 X？（左上角是否為空）\n' +
+        '（2）這個必要性有多強？（effect size d）\n（3）達到各 Y 水準，最低需要多少 X？（bottleneck 表）',
+      assumpTitle: '前提與界線',
+      assumptions:
+        '1. NCA 是「必要性」邏輯，與迴歸的「平均增量效果」互補而非替代——顯著的迴歸係數不保證必要性，反之亦然。\n' +
+        '2. 對離群值敏感（單一左上角的點可讓 ceiling 大幅位移）——務必檢視散佈圖與穩健性。\n' +
+        '3. scope 預設用實證 min/max；理論上下限不同時效果量會變（宜雙軌報告）。\n' +
+        '4. permutation 檢定為近似顯著性；建議效果量 d ≥ .1 且 p < .05 才主張必要性。',
+      formulasTitle: '核心公式',
+      formulaCeiling: 'CE-FDH：ceiling(x) = max{ y_i : x_i ≤ x }（非遞減階梯）',
+      formulaScope: 'scope S = (X_max − X_min)(Y_max − Y_min)',
+      formulaD: 'effect size d = 空白區（ceiling zone C）/ scope S，範圍 0–1',
+      readingTitle: '怎麼讀',
+      reading:
+        '1. 看 effect size d 與 permutation p — d ≥ .1 且 p < .05 才主張 X 為 Y 的必要條件。\n' +
+        '2. 效果量分級（Dul）：0<d<.1 小、.1≤d<.3 中、.3≤d<.5 大、d≥.5 非常大。\n' +
+        '3. 看 bottleneck 表 — 要達到某水準的 Y，最低需要多少 X；NN 表該水準 X 非瓶頸。\n' +
+        '4. CE-FDH（階梯）與 CR-FDH（線性）並列 — 結論一致時穩健性較高。',
+      refTitle: '文獻出處',
+      ref:
+        'Dul, J. (2016). Necessary Condition Analysis (NCA). Organizational Research Methods, 19(1), 10–52.\n' +
+        'Dul, J., van der Laan, E., & Kuik, R. (2020). A statistical significance test for NCA. Organizational Research Methods.\n' +
+        '數值以 R NCA 套件封閉式定義實作；慣例對齊仍待本機 R 抽驗（見 validation-report）。',
+    },
+    apa: {
+      sentence:
+        '必要條件分析（NCA; Dul, 2016）結果顯示，{xLabel} 是 {yLabel} 的必要條件（CE-FDH d = {dCe}，效果量{effectWord}；CR-FDH d = {dCr}），效果量以近似 permutation 檢定達顯著（p = {pStr}，n = {n}）。bottleneck 分析指出達到各水準之 {yLabel} 所需的最低 {xLabel} 水準。',
+      sentenceNs:
+        '必要條件分析（NCA; Dul, 2016）結果顯示，{xLabel} 作為 {yLabel} 之必要條件的證據不足（CE-FDH d = {dCe}；CR-FDH d = {dCr}），近似 permutation 檢定未達顯著（p = {pStr}，n = {n}）。',
+      copyHint: '一鍵複製 APA 敘述',
+    },
+    interp: {
+      sentence:
+        '結論：{xLabel} {concl} {yLabel} 的必要條件（CE-FDH d = {d}，效果量{effectWord}，permutation p = {pStr}）。' +
+        '必要性成立時，代表若 {xLabel} 未達門檻，{yLabel} 就到不了對應水準；但這不保證高 {xLabel} 一定帶來高 {yLabel}（必要非充分）。',
+      supported: '是',
+      notSupported: '不足以作為',
     },
   },
 }
