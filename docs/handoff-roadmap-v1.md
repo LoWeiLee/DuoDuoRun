@@ -13,8 +13,8 @@
     model fit／Q²；W4 調節（two-stage＋PI/ortho）／二次／三向／HOC 三法／
     中介分解；W5 MGA／MICOM／PLSpredict＋CVPAT／IT 準則／IPMA／GoF／
     CCA 指引／Worker 接線
-- 測試：`npm test` **573 過、6 記錄性跳過**；64 組基準方法（reference.json）
-  （W6.1 NCA 交付後由 541→573；見下 §6.4 與 validation-report「W6 增補」）
+- 測試：`npm test` **589 過、6 記錄性跳過**；65 組基準方法（reference.json）
+  （W6.1 NCA＋cIPMA 交付後由 541→589；見下 §6.4 與 validation-report「W6 增補」）
 - 關鍵文件：`docs/pls-sem-roadmap-v1.md`（波次規畫與進度）、
   `docs/pls-model-schema.md`（模型 JSON v3.1 與引擎 API）、
   `docs/validation-report-v1.md`（逐波驗證記錄與 Kevin 本機抽驗清單）、
@@ -93,10 +93,18 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
   ＋側欄（sem 群組）＋示範（employee: tenure→performance）＋中英 i18n。
   基準 3 組（nca_ce_fdh/cr_fdh/bottleneck，`run_nca_ref_only.py` 沙盒可跑），
   JS↔numpy bit-for-bit；行為測試 `tests/nca.test.js` 16 項（手算錨定 d=0.5）。
-- **待辦（NCA 下一步）**：(a) Kevin 本機 R `NCA` 套件抽驗慣例對齊
-  （見 validation-report「W6/NCA 待抽驗清單」7 項）；(b) **cIPMA**（與既有
-  `ipmaPLS` 組合）本輪未做，為 NCA 的後續交付；(c) 可選：散佈圖＋ceiling line
-  視覺化（目前為表格呈現）、scope 理論界線 UI 設定。
+- **cIPMA 已交付（2026-07-10）**：`cipmaPLS`（`ipmaPLS`＋`runNCA` 組合；
+  Hauff et al. 2024——0–100 分數、直接前置構念、d≥.1 且 p<.05、bottleneck
+  附未達案例 %）。UI 為 PLS 模組 IPMA 下的 cIPMA 開關（同步＋Worker 雙路徑）、
+  條件表＋bottleneck 表；基準 `pls_cipma`（numpy 重用 _s100＋NCA 助手、
+  199 組固定排列）。
+- **待辦（NCA 剩餘）**：(a) Kevin 本機 R `NCA` 套件抽驗慣例對齊
+  （見 validation-report「W6/NCA 待抽驗清單」7 項）＋ SmartPLS 4 cIPMA 抽驗；
+  (b) 可選：散佈圖＋ceiling line 視覺化（目前為表格呈現）、scope 理論界線
+  UI 設定。
+- **管線備忘**：新版 plspm 會使 generate_reference.py 的 W1/W3/W4 交叉驗證
+  區塊失敗（W5 正常）；重生基準後務必 diff reference.json 確認既有鍵零改動
+  （詳 validation-report「plspm 版本敏感性」）。
 ### 6.5 Gaussian copula 內生性檢查
 - Park & Gupta (2012)；Hult et al. (2018) 流程：copula 項 = Φ⁻¹(ECDF(x))，
   加入迴歸檢定顯著性；前提：解釋變數非常態（先做 KS 檢定把關）。
@@ -150,7 +158,7 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
 
 1. 抽驗回饋消化 session：Kevin 本機數字回來後對表、修正慣例差異
    （現含 W6/NCA 的 R `NCA` 抽驗 7 項）
-2. W6 依價值序：~~NCA~~（✓ 核心已交付 2026-07-09；cIPMA 順延）→ CTA-PLS →
+2. W6 依價值序：~~NCA＋cIPMA~~（✓ 全數交付 2026-07-09/10）→ CTA-PLS →
    Gaussian copula → FIMIX → PLS-POS → WPLS＋pairwise（合併）
 3. 品質 session：§6.8 清單＋docx 報表輸出
 4. CB-SEM spike session
@@ -159,3 +167,4 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
 
 - v1（2026-07-06）：初版。W5 交付當日撰寫，Fable 5 → Opus 4.8 交接。
 - v1.1（2026-07-09）：W6.1 NCA 核心交付後更新 §1／§6.4／§9（Opus 4.8）。
+- v1.2（2026-07-10）：cIPMA 交付，§6.4 收尾；補 plspm 版本敏感性備忘（Fable 5）。

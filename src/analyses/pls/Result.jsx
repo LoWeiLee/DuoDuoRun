@@ -1180,6 +1180,83 @@ function IpmaBlock({ ipma, r }) {
   )
 }
 
+/** cIPMA（Hauff et al. 2024）：IPMA × NCA 必要性 ── 條件表＋bottleneck 表 */
+function CipmaBlock({ cipma, r }) {
+  const conds = cipma.conditions
+  if (!conds || conds.length === 0) return null
+  const levels = conds[0].bottleneck.map((b) => b.level)
+  return (
+    <div className="mt-4">
+      <Heading>{r.cipmaTitle}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{r.cols.lv}</Th>
+            <Th>{r.ipmaColImportance}</Th>
+            <Th>{r.ipmaColPerformance}</Th>
+            <Th>{r.cipmaColDCe}</Th>
+            <Th>{r.cipmaColDCr}</Th>
+            <Th>{r.cipmaColP}</Th>
+            <Th align="left">{r.cipmaColNecessary}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {conds.map((q) => (
+            <tr key={q.lv}>
+              <Td align="left" mono={false} bold>{q.lv}</Td>
+              <Td>{fmtNum(q.importance, 3)}</Td>
+              <Td>{fmtNum(q.performance, 1)}</Td>
+              <Td>{fmtNum(q.effectSizeCE, 3)}</Td>
+              <Td>{fmtNum(q.effectSizeCR, 3)}</Td>
+              <Td>{fmtP(q.p)}</Td>
+              <Td align="left" mono={false}>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={[
+                    'inline-block w-2 h-2 rounded-full shrink-0',
+                    q.necessary ? 'bg-duo-sig-ok shadow-led-ok' : 'bg-duo-cocoa-200',
+                  ].join(' ')} />
+                  <span className={q.necessary ? 'text-duo-sig-ok' : 'text-duo-cocoa-400'}>
+                    {q.necessary ? r.cipmaNecessaryYes : r.cipmaNecessaryNo}
+                  </span>
+                </span>
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </TableBox>
+      <div className="mt-3">
+        <Heading>{r.cipmaBottleneckTitle}</Heading>
+        <TableBox>
+          <thead className="bg-duo-cream-50">
+            <tr>
+              <Th align="left">{r.cipmaColLevel}</Th>
+              {conds.map((q) => <Th key={q.lv}>{q.lv}</Th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {levels.map((lv, i) => (
+              <tr key={lv}>
+                <Td align="left" bold>{lv}%</Td>
+                {conds.map((q) => {
+                  const b = q.bottleneck[i]
+                  return (
+                    <Td key={q.lv}>
+                      {b.nn
+                        ? <span className="text-duo-cocoa-400">NN</span>
+                        : <>{fmtNum(b.xValue, 1)} <span className="text-duo-cocoa-400">({fmtNum(b.pctBelow, 0)}%)</span></>}
+                    </Td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </TableBox>
+      </div>
+      <Note>{r.cipmaNote}</Note>
+    </div>
+  )
+}
+
 /** W5 功能的錯誤/結果包裝 */
 function W5Section({ data, feature, r, children }) {
   if (!data) return null
@@ -1357,6 +1434,7 @@ function Result() {
       </W5Section>
       <W5Section data={ipma} feature="IPMA" r={r}>
         <IpmaBlock ipma={ipma} r={r} />
+        {ipma && ipma.cipma && <CipmaBlock cipma={ipma.cipma} r={r} />}
       </W5Section>
     </div>
   )

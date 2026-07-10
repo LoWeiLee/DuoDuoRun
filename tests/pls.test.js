@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   validatePLSModel, runPLS, bootstrapPLS, blindfoldPLS, bcaInterval, PLS_SCHEMA_VERSION,
-  mgaPLS, micomPLS, plspredictPLS, ipmaPLS, henselerMgaP,
+  mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, henselerMgaP,
 } from '../src/lib/stats/pls.js'
 import { handleMessage } from '../src/lib/plsWorker.js'
 
@@ -837,5 +837,61 @@ describe('W5：IT 準則與 IPMA', () => {
     expect(sumInd).toBeCloseTo(f1.importance, 10) // Σ w̃ = 1
     expect(ipmaPLS(main, M4, { target: 'F1' }).error).toBe('ipma-bad-target')
     expect(ipmaPLS(main, MOD_MODEL(), { target: 'Y' }).error).toBe('w4-model-not-supported')
+  })
+})
+
+describe('W6：cIPMA（IPMA × NCA 組合）', () => {
+  const PERMS3 = [
+    Array.from({ length: 60 }, (_, i) => (i + 7) % 60),
+    Array.from({ length: 60 }, (_, i) => (i + 23) % 60),
+    Array.from({ length: 60 }, (_, i) => 59 - i),
+  ]
+  const r = cipmaPLS(main, M4, { target: 'C', ncaPermutations: PERMS3 })
+
+  it('回傳 ipmaPLS 完整結果＋cipma.conditions（只含目標的直接前置構念）', () => {
+    expect(r.error).toBeUndefined()
+    expect(r.target).toBe('C')
+    expect(r.constructs.length).toBeGreaterThan(0)
+    // M4 中 C 的直接前置 = F1、F2（F1 經 F2 的間接不進 cIPMA 的 NCA）
+    expect(r.cipma.conditions.map((c) => c.lv).sort()).toEqual(['F1', 'F2'])
+  })
+  it('每個 condition 帶 IPMA 座標＋NCA 統計量＋必要性判準', () => {
+    for (const c of r.cipma.conditions) {
+      expect(Number.isFinite(c.importance)).toBe(true)
+      expect(Number.isFinite(c.performance)).toBe(true)
+      expect(c.effectSizeCE).toBeGreaterThanOrEqual(0)
+      expect(c.effectSizeCE).toBeLessThanOrEqual(1)
+      expect(c.p).toBeGreaterThanOrEqual(0)
+      expect(c.p).toBeLessThanOrEqual(1)
+      expect(c.necessary).toBe(c.p < 0.05 && c.effectSizeCE >= 0.1)
+    }
+  })
+  it('bottleneck 帶 pctBelow（0–100、隨水準單調非遞減、NN 時為 0）', () => {
+    for (const c of r.cipma.conditions) {
+      let prev = -1
+      for (const b of c.bottleneck) {
+        expect(b.pctBelow).toBeGreaterThanOrEqual(0)
+        expect(b.pctBelow).toBeLessThanOrEqual(100)
+        if (b.nn) expect(b.pctBelow).toBe(0)
+        expect(b.pctBelow).toBeGreaterThanOrEqual(prev)
+        prev = b.pctBelow
+      }
+    }
+  })
+  it('scores100 已隨 ipmaPLS 回傳且範圍為 0–100', () => {
+    for (const lv of ['F1', 'F2', 'C', 'Y']) {
+      const s = r.scores100[lv]
+      expect(s.length).toBe(60)
+      expect(Math.min(...s)).toBeGreaterThanOrEqual(0)
+      expect(Math.max(...s)).toBeLessThanOrEqual(100)
+    }
+  })
+  it('注入同一批 permutations → p 決定性一致', () => {
+    const r2 = cipmaPLS(main, M4, { target: 'C', ncaPermutations: PERMS3 })
+    expect(r2.cipma.conditions[0].p).toBe(r.cipma.conditions[0].p)
+  })
+  it('錯誤傳遞：壞 target 與 W4 模型沿 ipmaPLS 慣例', () => {
+    expect(cipmaPLS(main, M4, { target: 'F1' }).error).toBe('ipma-bad-target')
+    expect(cipmaPLS(main, MOD_MODEL(), { target: 'Y' }).error).toBe('w4-model-not-supported')
   })
 })

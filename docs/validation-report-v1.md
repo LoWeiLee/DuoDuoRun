@@ -188,6 +188,34 @@ W6 首項交付 NCA（Dul 2016）。新增 3 組基準（`generate_reference.py`
 引擎（`src/lib/stats/nca.js`）JS 對 numpy 逐欄位相對差為 0（bit-for-bit），
 全項以預設 1e-6 容差通過（非迭代、皆封閉式）。
 
+### W6 增補 II（2026-07-10）：cIPMA（IPMA × NCA 組合）
+
+Hauff, Richter, Sarstedt & Ringle (2024, J. Retailing & Consumer Services) 的
+combined importance-performance map analysis。新增 1 組基準
+（`pls_cipma`，64 → 65 個方法；`datasets.json` 加 `cipma` 固定排列），
+測試由 579 增至 595（589 過、6 跳過；compare 10 欄位＋pls.test.js 6 項行為）。
+
+| 基準 | 來源 | 驗證方式 |
+|---|---|---|
+| `pls_cipma`（F1/F2→C 的 d_ce/d_cr/p＋bottleneck@80% 值與未達案例 %） | numpy 手算：重用 `pls_ipma` 的 0–100 分數（_s100）＋ NCA 區塊助手；199 組固定 permutation | 引擎 `cipmaPLS`（`ipmaPLS`＋`runNCA` 組合）注入同批排列，PLS 迭代容差 1e-4 全過 |
+
+**cIPMA 慣例（依 Hauff et al. 2024）**：NCA 跑在 IPMA 的 0–100 重標定 LV 分數上
+（作者證明與 standardized/unstandardized 分數等值，前提為同構念指標同量尺）；
+只測目標的**直接前置構念**（IPMA importance 為總效果，兩者口徑不同屬設計）；
+必要性判準 d ≥ .1 且 permutation p < .05（＋理論支持）；實證 scope（較保守）；
+bottleneck 以 0–100 實際值＋未達所需水準之案例 %（論文 Table 5 雙格式）。
+
+**待抽驗（SmartPLS 4 內建 cIPMA）**：同模型（M4 對應之設定）開 NCA/cIPMA，
+比對 d 與 bottleneck 值。注意兩個已知口徑差：(a) 本工具 0–100 重標定用觀察
+min/max、SmartPLS 用量表理論界線（同 IPMA 的既有差異，UI 已註記）；
+(b) permutation 為近似檢定，p 相近但非逐位相同。
+
+**plspm 版本敏感性（管線備忘）**：本輪在沙盒重跑 `run_pls_ref_only.py` 時，
+新裝的 plspm 版本使 W1/W3/W4 區塊的交叉驗證程式碼失敗（`zip()` 嚴格模式），
+W5/ipma 區塊正常且既有基準值零漂移（最大相對差 3.58e-16）。既有 61 鍵已從
+git HEAD 原樣還原、只疊加新鍵。**日後重生基準時：跑完務必 diff reference.json
+確認既有鍵未被改動**；W1/W3/W4 區塊的 plspm 相容性修復列入 backlog。
+
 ### W6/NCA 慣例決策與待抽驗清單（Kevin 本機 R `NCA` 套件）
 
 沙盒無 R `NCA` 套件 → 本輪基準以「Dul (2016) 封閉式定義」由 numpy 手算，

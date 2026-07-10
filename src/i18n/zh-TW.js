@@ -2870,6 +2870,8 @@ export default {
       w5KTitle: 'k（folds）',
       w5IpmaLabel: 'IPMA 重要性－績效地圖',
       w5IpmaHint: '非標準化總效果（importance）×0–100 重標定分數平均（performance）；選擇目標構念。',
+      w5CipmaLabel: 'cIPMA（結合 NCA 必要性）',
+      w5CipmaHint: '對目標的直接前置構念，以 0–100 分數跑必要條件分析（NCA）；必要性判準 d ≥ .1 且 permutation p < .05（Hauff et al., 2024）。',
       w5Target: '目標構念',
       w5NeedGroups: 'MGA／MICOM 需要選擇分組欄位與兩個不同的群組值',
       w5NeedTarget: 'IPMA 需要選擇目標構念（必須是內生構念）',
@@ -2990,6 +2992,16 @@ export default {
       ipmaTitle: '重要性－績效地圖 — IPMA（目標：{target}）',
       ipmaNote: 'Importance = 對目標構念的非標準化總效果、performance = 0–100 重標定分數平均（Ringle & Sarstedt, 2016）。右下象限（重要但績效低）為優先改善區。重標定用觀察到的 min/max（SmartPLS 用量表理論界線，兩者在極端值未出現時會有差異）；目標績效 = {targetPerf}。',
       ipmaColImportance: 'Importance（總效果）',
+      cipmaTitle: 'cIPMA — 必要條件分析（NCA on 0–100 分數）',
+      cipmaColDCe: 'd（CE-FDH）',
+      cipmaColDCr: 'd（CR-FDH）',
+      cipmaColP: 'p（permutation）',
+      cipmaColNecessary: '必要性',
+      cipmaNecessaryYes: '必要條件',
+      cipmaNecessaryNo: '證據不足',
+      cipmaBottleneckTitle: 'Bottleneck（目標各水準所需的條件分數）',
+      cipmaColLevel: '目標水準',
+      cipmaNote: '只測目標構念的直接前置構念（Hauff et al., 2024）；表格為達到各目標水準（% of range）所需的條件分數（0–100），括號為未達所需水準的案例比例；NN = 該水準無必要門檻。必要性判準：d ≥ .1 且 p < .05，並須有理論支持。permutation 檢定為固定種子的近似檢定（10,000 次）。',
       ipmaColPerformance: 'Performance（0–100）',
       ipmaIndicatorTitle: '指標層 IPMA',
       w5ErrorPrefix: '{feature} 無法計算：{message}',
@@ -3038,6 +3050,7 @@ export default {
         'PLSpredict：k-fold 樣本外預測；Q²predict > 0 是底線，與 LM（指標對指標的線性基準）比 RMSE 分四級判讀；CVPAT 給整體檢定\n' +
         'IT 準則（AIC/AICc/BIC/HQ）：比較「同一內生構念的不同前置組合」哪個更簡約有效，越小越好；跨資料集不可比\n' +
         'IPMA：importance（非標準化總效果）× performance（0–100 平均）辨識「重要但表現差」的優先改善構念/指標\n' +
+        'cIPMA：IPMA × NCA 的組合（Hauff et al., 2024）——對目標的直接前置構念以 0–100 分數跑必要條件分析；「重要且必要但表現差」是最高優先，bottleneck 表給出各目標水準的最低條件分數\n' +
         '限制：MICOM/PLSpredict/IPMA 不支援含調節/高階構念的模型；MGA 支援（各組獨立跑完整管線）',
       w4Title: '調節、高階構念與中介（W4）',
       w4:

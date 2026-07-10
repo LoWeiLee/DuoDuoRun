@@ -820,6 +820,14 @@ function Config() {
                 ))}
               </select>
             )}
+            {w5.ipma && (
+              <Toggle
+                checked={w5.cipma === true}
+                onChange={(v) => setW5({ cipma: v })}
+                label={c.w5CipmaLabel}
+                hint={c.w5CipmaHint}
+              />
+            )}
           </div>
           {(w5.micom || w5.predict || w5.ipma) && (ints.length > 0 || hocs.length > 0) && (
             <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">

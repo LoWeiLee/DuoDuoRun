@@ -98,11 +98,17 @@ nca_y = np.round(np.clip((0.45 * nca_x + 20) * nca_u + _ncarng.normal(0, 7, _nca
 # 固定 permutation draws（注入引擎做交叉驗證，見 pls_mga_perm 慣例）
 nca_perms = [_ncarng.permutation(_nca_n).tolist() for _ in range(199)]
 
+# cIPMA（Hauff et al. 2024）用的固定 permutation draws：對 main（n=60）的
+# IPMA 0–100 LV 分數跑 NCA，需與 JS 引擎注入同一批排列
+_ciprng = np.random.default_rng(23)
+cipma_perms = [_ciprng.permutation(N).tolist() for _ in range(199)]
+
 datasets = {
     "main": main.to_dict(orient="records"),
     "small": small.to_dict(orient="records"),
     "ties": ties.to_dict(orient="records"),
     "nca": {"x": nca_x.tolist(), "y": nca_y.tolist(), "perms": nca_perms},
+    "cipma": {"perms": cipma_perms},
 }
 with open(os.path.join(FIX, "datasets.json"), "w") as f:
     json.dump(datasets, f, default=str)
@@ -1454,6 +1460,50 @@ put("nca_bottleneck",
     "待 Kevin 本機 R NCA::bottleneck 抽驗",
     x_required=_bx, p_ce=_p_ce)
 # --- NCA 基準區塊 迄 ---------------------------------------------------------
+
+# --- cIPMA 基準區塊 起 --------------------------------------------------------
+# Hauff, Richter, Sarstedt & Ringle (2024, J. Retailing & Consumer Services)：
+# combined importance-performance map analysis。NCA 跑在 IPMA 的 0–100 重標定
+# LV 分數上（實證 scope、CE-FDH 為主），只測目標構念的「直接前置構念」；
+# 必要性判準：d ≥ .1 且 permutation p < .05（＋理論支持）。
+# bottleneck 以 0–100 實際值＋「未達所需水準之案例 %」雙格式（論文 Table 5 慣例）。
+# 依賴：pls_ipma 區塊的 _s100（M4、target C）＋ NCA 區塊的 numpy 助手。
+try:
+    _cipX = {"F1": _s100[:, 0], "F2": _s100[:, 1]}  # C 的直接前置構念
+    _cipY = _s100[:, 2]
+    _cip_perms = [np.asarray(pp) for pp in datasets["cipma"]["perms"]]
+    _cip_vals = {}
+    for _nm, _cx in _cipX.items():
+        _C_, _S_, _d_, _rx_, _ry_ = _nca_zone_ce(_cx, _cipY)
+        _xmin_, _xmax_ = _cx.min(), _cx.max()
+        _ymin_, _ymax_ = _cipY.min(), _cipY.max()
+        # CR-FDH（過 CE peers 的 OLS＋scope 夾擠）
+        _mx_, _my_ = _rx_.mean(), _ry_.mean()
+        _b_ = ((_rx_ - _mx_) * (_ry_ - _my_)).sum() / ((_rx_ - _mx_) ** 2).sum()
+        _a_ = _my_ - _b_ * _mx_
+        _dcr_ = _nca_area_clamped(_a_, _b_, _xmin_, _xmax_, _ymin_, _ymax_) / _S_
+        # permutation p（統計量 = CE-FDH d）
+        _cnt_ = sum(1 for _pp in _cip_perms if _nca_zone_ce(_cx, _cipY[_pp])[2] >= _d_)
+        # bottleneck @ Y=80%：所需 X 實際值＋未達案例 %
+        _ystar_ = _ymin_ + 0.8 * (_ymax_ - _ymin_)
+        _idx_ = int(np.searchsorted(_ry_, _ystar_, side="left"))
+        _xr_ = _xmax_ if _idx_ >= len(_ry_) else _rx_[_idx_]
+        _nn_ = _xr_ <= _xmin_ + 1e-9
+        _pb_ = 0.0 if _nn_ else float((_cx < _xr_).mean() * 100.0)
+        _cip_vals[f"d_ce_{_nm}"] = _d_
+        _cip_vals[f"d_cr_{_nm}"] = _dcr_
+        _cip_vals[f"p_{_nm}"] = _cnt_ / len(_cip_perms)
+        _cip_vals[f"xreq80_{_nm}"] = float(_xr_)
+        _cip_vals[f"pctBelow80_{_nm}"] = _pb_
+    put("pls_cipma",
+        "cIPMA（Hauff et al. 2024）：NCA on IPMA 0–100 LV 分數（M4、target C、"
+        "直接前置構念 F1/F2）；CE-FDH＋CR-FDH、實證 scope、199 組固定 permutation、"
+        "bottleneck@80% 附未達案例 %。numpy 手算（重用 pls_ipma 的 _s100 與 NCA 助手）。"
+        "待 Kevin 本機 SmartPLS 4 cIPMA 抽驗",
+        **_cip_vals)
+except Exception as e:
+    put("pls_cipma", f"cIPMA baseline FAILED: {e}")
+# --- cIPMA 基準區塊 迄 --------------------------------------------------------
 
 with open(os.path.join(FIX, "reference.json"), "w") as f:
     json.dump(REF, f, indent=1)

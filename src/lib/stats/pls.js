@@ -83,6 +83,7 @@
 import { inverse, matmul } from './matrix.js'
 import { pT, qnorm, normalCdf } from './pvalue.js'
 import { isMissing } from '../variableTypes.js'
+import { runNCA } from './nca.js'
 
 export const PLS_SCHEMA_VERSION = 1
 
@@ -2850,5 +2851,71 @@ export function ipmaPLS(rows, model, options = {}) {
     indicators,
     unstandardizedPaths: upaths,
     warnings,
+    // 0–100 重標定 LV 分數（cIPMA 的 NCA 輸入；Hauff et al. 2024）
+    scores100: Object.fromEntries(spec.lvNames.map((nm, j) => [nm, Array.from(s100[j])])),
   }
+}
+
+/**
+ * cIPMA — combined importance-performance map analysis
+ * （Hauff, Richter, Sarstedt & Ringle, 2024, J. Retailing & Consumer Services）
+ *
+ * 程序：IPMA（0–100 重標定分數）→ 對目標構念的**直接前置構念**逐一跑 NCA
+ * （CE-FDH 為主判準、CR-FDH 並列；實證 scope）→ 必要性判準 d ≥ .1 且
+ * permutation p < .05（理論支持由研究者判斷）。bottleneck 以 0–100 實際值＋
+ * 「未達所需水準之案例 %」雙格式（論文 Table 5 慣例）。
+ *
+ * options 同 ipmaPLS，另加：
+ *   ncaPermutations — 整數 P（以 ncaSeed 生成）或 number[][]（注入固定排列）
+ *   ncaSeed         — 預設 42
+ *   bottleneckLevels — 預設 [0,10,…,100]（% of Y range）
+ *
+ * 回傳：ipmaPLS 完整結果 ＋ cipma: { conditions: [{ lv, importance, performance,
+ *   effectSizeCE, effectSizeCR, p, necessary, bottleneck: [{ level, yValue,
+ *   xValue, nn, pctBelow }] }] }
+ */
+export function cipmaPLS(rows, model, options = {}) {
+  const ipma = ipmaPLS(rows, model, options)
+  if (ipma.error) return ipma
+  const target = options.target
+  // 直接前置構念（cIPMA 只測 direct antecedents；IPMA importance 為總效果）
+  const direct = [...new Set((model.paths || [])
+    .filter((p) => p.to === target)
+    .map((p) => p.from))]
+  const yScores = ipma.scores100[target]
+  const impBy = new Map(ipma.constructs.map((c) => [c.lv, c]))
+  const conditions = []
+  for (const lv of direct) {
+    const xScores = ipma.scores100[lv]
+    if (!xScores) continue
+    const nca = runNCA(xScores, yScores, {
+      permutations: options.ncaPermutations ?? 10000,
+      seed: options.ncaSeed ?? 42,
+      bottleneckLevels: options.bottleneckLevels,
+    })
+    if (nca.error) {
+      return { error: 'cipma-nca-failed', message: `cIPMA：構念「${lv}」的 NCA 失敗（${nca.error}）` }
+    }
+    const ce = nca.ceilings.ce_fdh
+    const p = nca.test ? nca.test.p_ce : NaN
+    const n = xScores.length
+    const bottleneck = ce.bottleneck.map((b) => ({
+      ...b,
+      // 未達所需水準之案例 %（Hauff et al. 2024 percentile 格式；NN → 0）
+      pctBelow: b.nn ? 0 : (xScores.filter((v) => v < b.xValue).length / n) * 100,
+    }))
+    const base = impBy.get(lv) || { importance: NaN, performance: NaN }
+    conditions.push({
+      lv,
+      importance: base.importance,
+      performance: base.performance,
+      effectSizeCE: ce.effectSize,
+      effectSizeCR: nca.ceilings.cr_fdh.effectSize,
+      effectLabel: ce.effectLabel,
+      p,
+      necessary: Number.isFinite(p) && p < 0.05 && ce.effectSize >= 0.1,
+      bottleneck,
+    })
+  }
+  return { ...ipma, cipma: { conditions } }
 }

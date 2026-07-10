@@ -26,6 +26,9 @@ D = json.load(open(os.path.join(FIX, "datasets.json")))
 main = pd.DataFrame(D["main"])
 mainc = main.copy()
 N = len(main)
+# W6 起 exec 範圍含 NCA / cIPMA 區塊，它們以 datasets["nca"] / datasets["cipma"]
+# 取固定資料與排列 → 以 datasets.json 內容作別名（單一事實來源不變）
+datasets = D
 
 REF = json.load(open(os.path.join(FIX, "reference.json")))
 

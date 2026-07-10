@@ -28,7 +28,7 @@
  * 環境 import 時不會註冊任何 listener（isWorkerScope 判斷），可直接測 handleMessage。
  */
 import {
-  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS,
+  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS,
 } from './stats/pls.js'
 
 /**
@@ -90,7 +90,7 @@ export function handleMessage(msg, post) {
       ? plspredictPLS(rows, model, { ...estimateOptions, ...predictOpt })
       : null
     const ipma = ipmaOpt
-      ? ipmaPLS(rows, model, { ...estimateOptions, ...ipmaOpt })
+      ? (ipmaOpt.cipma ? cipmaPLS : ipmaPLS)(rows, model, { ...estimateOptions, ...ipmaOpt })
       : null
 
     post({ type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma })

@@ -32,7 +32,7 @@ import { exploratoryFactorAnalysis } from '../src/lib/stats/efa.js'
 import { oneProp, twoProp } from '../src/lib/stats/zProp.js'
 import { cfa } from '../src/lib/stats/cfa.js'
 import {
-  runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS,
+  runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS,
   mgaParametricTest, henselerMgaP,
 } from '../src/lib/stats/pls.js'
 import { runNCA } from '../src/lib/stats/nca.js'
@@ -579,6 +579,24 @@ export const ADAPTERS = {
       upath_F1_F2: up('F1', 'F2'), upath_F1_C: up('F1', 'C'), upath_F2_C: up('F2', 'C'),
       importance_F1: c.F1.importance, importance_F2: c.F2.importance,
       indImp_i1: i1.importance, indPerf_i1: i1.performance,
+    }
+  },
+
+  // ── cIPMA（Hauff et al. 2024）：M4、target C、注入固定 permutations ──
+  pls_cipma() {
+    const r = cipmaPLS(main, PLS_M4, {
+      ...PLS_W3_OPT, target: 'C',
+      ncaPermutations: D.cipma.perms,
+      bottleneckLevels: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+    })
+    if (r.error) throw new Error(`cipmaPLS failed: ${r.error} — ${r.message}`)
+    const by = Object.fromEntries(r.cipma.conditions.map((c) => [c.lv, c]))
+    const at80 = (lv) => by[lv].bottleneck.find((b) => b.level === 80)
+    return {
+      d_ce_F1: by.F1.effectSizeCE, d_cr_F1: by.F1.effectSizeCR, p_F1: by.F1.p,
+      xreq80_F1: at80('F1').nn ? 0 : at80('F1').xValue, pctBelow80_F1: at80('F1').pctBelow,
+      d_ce_F2: by.F2.effectSizeCE, d_cr_F2: by.F2.effectSizeCR, p_F2: by.F2.p,
+      xreq80_F2: at80('F2').nn ? 0 : at80('F2').xValue, pctBelow80_F2: at80('F2').pctBelow,
     }
   },
 

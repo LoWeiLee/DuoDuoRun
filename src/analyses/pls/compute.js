@@ -22,7 +22,7 @@
  * useMemo 改為 useEffect + worker.postMessage，以 progress 訊息驅動進度條。
  */
 import {
-  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS,
+  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS,
 } from '../../lib/stats/pls.js'
 
 /** committed.options.w5 → 各 W5 API 的 options（worker 與同步路徑共用） */
@@ -35,7 +35,9 @@ export function buildW5Options(committed) {
     mga: w5.mga && grp ? { ...grp, bootstrapN: committed.bootstrapN ?? 1000 } : null,
     micom: w5.micom && grp ? grp : null,
     predict: w5.predict ? { k: w5.k ?? 10, seed: 42 } : null,
-    ipma: w5.ipma && w5.target ? { target: w5.target } : null,
+    ipma: w5.ipma && w5.target
+      ? { target: w5.target, ...(w5.cipma === true ? { cipma: true } : {}) }
+      : null,
   }
 }
 
@@ -92,7 +94,9 @@ export function runPLSAnalysis(rows, committed) {
       mga: w5.mga ? mgaPLS(rows, committed.model, { ...estimateOptions, ...w5.mga }) : null,
       micom: w5.micom ? micomPLS(rows, committed.model, { ...estimateOptions, ...w5.micom }) : null,
       predict: w5.predict ? plspredictPLS(rows, committed.model, { ...estimateOptions, ...w5.predict }) : null,
-      ipma: w5.ipma ? ipmaPLS(rows, committed.model, { ...estimateOptions, ...w5.ipma }) : null,
+      ipma: w5.ipma
+        ? (w5.ipma.cipma ? cipmaPLS : ipmaPLS)(rows, committed.model, { ...estimateOptions, ...w5.ipma })
+        : null,
     }
   }
   lastRows = rows

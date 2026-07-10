@@ -2815,6 +2815,8 @@ export default {
       w5KTitle: 'k (folds)',
       w5IpmaLabel: 'IPMA importance–performance map',
       w5IpmaHint: 'Unstandardized total effects (importance) × mean of 0–100 rescaled scores (performance); pick the target construct.',
+      w5CipmaLabel: 'cIPMA (combine with NCA necessity)',
+      w5CipmaHint: 'Runs Necessary Condition Analysis on the 0–100 scores of the target\u2019s direct antecedents; necessity requires d \u2265 .1 and permutation p < .05 (Hauff et al., 2024).',
       w5Target: 'Target construct',
       w5NeedGroups: 'MGA / MICOM need a grouping column and two distinct group values',
       w5NeedTarget: 'IPMA needs a target construct (must be endogenous)',
@@ -2935,6 +2937,16 @@ export default {
       ipmaTitle: 'Importance–performance map — IPMA (target: {target})',
       ipmaNote: 'Importance = unstandardized total effect on the target; performance = mean of 0–100 rescaled scores (Ringle & Sarstedt, 2016). The lower-right quadrant (important, low performance) is the priority area. Rescaling uses observed min/max (SmartPLS uses theoretical scale bounds — they differ when extremes are unobserved); target performance = {targetPerf}.',
       ipmaColImportance: 'Importance (total effect)',
+      cipmaTitle: 'cIPMA — necessity analysis (NCA on 0\u2013100 scores)',
+      cipmaColDCe: 'd (CE-FDH)',
+      cipmaColDCr: 'd (CR-FDH)',
+      cipmaColP: 'p (permutation)',
+      cipmaColNecessary: 'Necessity',
+      cipmaNecessaryYes: 'necessary',
+      cipmaNecessaryNo: 'insufficient evidence',
+      cipmaBottleneckTitle: 'Bottleneck (condition score required per target level)',
+      cipmaColLevel: 'Target level',
+      cipmaNote: 'Only the target\u2019s direct antecedents are tested (Hauff et al., 2024). Cells show the condition score (0\u2013100) required to reach each target level (% of range); parentheses give the share of cases below the required level; NN = no necessary threshold at that level. Necessity: d \u2265 .1 and p < .05, with theoretical support. The permutation test is a seed-fixed approximation (10,000 draws).',
       ipmaColPerformance: 'Performance (0–100)',
       ipmaIndicatorTitle: 'Indicator-level IPMA',
       w5ErrorPrefix: '{feature} unavailable: {message}',
@@ -2983,6 +2995,7 @@ export default {
         'PLSpredict: k-fold out-of-sample prediction; Q²predict > 0 is the baseline; compare RMSE against the LM benchmark for a four-level verdict; CVPAT gives an overall test\n' +
         'IT criteria (AIC/AICc/BIC/HQ): compare alternative predictor sets for the same endogenous construct — smaller is better; never compare across datasets\n' +
         'IPMA: importance (unstandardized total effects) × performance (0–100 means) locates constructs/indicators that matter but underperform\n' +
+        'cIPMA: IPMA × NCA combined (Hauff et al., 2024) — Necessary Condition Analysis on the 0–100 scores of the target\u2019s direct antecedents; "important AND necessary but underperforming" is the top priority, and the bottleneck table gives the minimum condition score per target level\n' +
         'Limits: MICOM/PLSpredict/IPMA do not support interaction/HOC models; MGA does (each group runs the full pipeline)',
       w4Title: 'Moderation, higher-order constructs & mediation (W4)',
       w4:
