@@ -23,7 +23,7 @@ npm install
 npm run dev
 ```
 
-預設於 http://localhost:5173 啟動，因為設定了 `base: '/duoduorun/'`，本地開發網址會是 http://localhost:5173/duoduorun/
+預設於 http://localhost:5173 啟動，因為設定了 `base: '/DuoDuoRun/'`，本地開發網址會是 http://localhost:5173/DuoDuoRun/
 
 ## 部署流程
 
@@ -33,7 +33,7 @@ npm run dev
 2. 執行 `vite build`（產出至 `dist/`）
 3. 上傳 artifact 至 GitHub Pages
 
-部署網址：https://qqamp.github.io/duoduorun/
+部署網址：https://loweilee.github.io/DuoDuoRun/
 
 ## 專案結構
 

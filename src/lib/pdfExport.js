@@ -28,7 +28,7 @@ const SAFARI_MAX_CANVAS = 4096
 const CHROME_MAX_CANVAS = 16384
 
 // 多多官方網址（PDF footer / metadata 用）
-const SITE_URL = 'https://qqamp.github.io/duoduorun/'
+const SITE_URL = 'https://loweilee.github.io/DuoDuoRun/'
 
 function isSafari() {
   if (typeof navigator === 'undefined') return false

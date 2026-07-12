@@ -19,7 +19,7 @@ export default {
   home: {
     heroTagline: '不會跑統計，就請多多幫你跑，雖然他會給你一個白眼，但你也會得到正確答案。',
     byAuthor: 'by 李洛維',
-    authorUrl: 'https://qqamp.github.io/homepage/',
+    authorUrl: 'https://loweilee.github.io/homepage/',
     cards: {
       purpose: {
         title: '用途',
@@ -49,14 +49,14 @@ export default {
         bibtexLabel: 'BibTeX',
         apa:
           '李洛維（2026）。多多快跑：純前端統計分析工具（版本 1.0）[電腦軟體]。' +
-          'https://qqamp.github.io/duoduorun/',
+          'https://loweilee.github.io/DuoDuoRun/',
         bibtex:
           '@software{lee2026duoduorun,\n' +
           '  author  = {Lee, Lo-Wei},\n' +
           '  title   = {{DuoDuoRun}: A pure-frontend statistical analysis tool},\n' +
           '  year    = {2026},\n' +
           '  version = {1.0},\n' +
-          '  url     = {https://qqamp.github.io/duoduorun/}\n' +
+          '  url     = {https://loweilee.github.io/DuoDuoRun/}\n' +
           '}',
         copy: '複製',
         copied: '已複製',

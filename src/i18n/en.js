@@ -12,7 +12,7 @@ export default {
   home: {
     heroTagline: "Can't run stats? Ask Duoduo to run them for you — she'll roll her eyes, but she'll get you the right answer.",
     byAuthor: 'by Lo-Wei Lee',
-    authorUrl: 'https://qqamp.github.io/homepage/',
+    authorUrl: 'https://loweilee.github.io/homepage/',
     cards: {
       purpose: {
         title: 'Purpose',
@@ -43,14 +43,14 @@ export default {
         bibtexLabel: 'BibTeX',
         apa:
           'Lee, L.-W. (2026). DuoDuoRun: A pure-frontend statistical analysis tool ' +
-          '(Version 1.0) [Computer software]. https://qqamp.github.io/duoduorun/',
+          '(Version 1.0) [Computer software]. https://loweilee.github.io/DuoDuoRun/',
         bibtex:
           '@software{lee2026duoduorun,\n' +
           '  author  = {Lee, Lo-Wei},\n' +
           '  title   = {{DuoDuoRun}: A pure-frontend statistical analysis tool},\n' +
           '  year    = {2026},\n' +
           '  version = {1.0},\n' +
-          '  url     = {https://qqamp.github.io/duoduorun/}\n' +
+          '  url     = {https://loweilee.github.io/DuoDuoRun/}\n' +
           '}',
         copy: 'Copy',
         copied: 'Copied',

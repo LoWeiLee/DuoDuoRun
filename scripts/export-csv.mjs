@@ -2,7 +2,7 @@
  * 匯出 4 個示範資料集為 CSV，輸出到 public/<dataset>.csv
  *
  * 用途：
- *   - 提供給使用者下載原始資料（部署後可從 https://qqamp.github.io/duoduorun/<id>.csv 取得）
+ *   - 提供給使用者下載原始資料（部署後可從 https://loweilee.github.io/DuoDuoRun/<id>.csv 取得）
  *   - 用 JASP / SPSS / R 驗證計算結果一致性
  *
  * 執行：
