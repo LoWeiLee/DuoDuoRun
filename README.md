@@ -6,6 +6,39 @@
 >
 > 目標：讓學生不需購買 SPSS 即可完成常見統計分析，並確保計算結果與商用統計軟體（SPSS、R）一致。
 
+### 直接開始使用：**<https://loweilee.github.io/DuoDuoRun/>**
+
+打開網頁就能用。不需註冊、不需下載、不需付費。上傳你的 CSV 或 Excel 檔（或直接載入內建的示範資料集試玩），選一個分析方法，就會跑出結果與 APA 格式的中英文敘述。
+
+---
+
+## 支援的分析方法
+
+目前提供 **28 種分析**，涵蓋社會科學論文常用的絕大多數方法：
+
+| 類別 | 分析方法 |
+| --- | --- |
+| **敘述統計** | 基本敘述統計、常態性檢定、資料視覺化 |
+| **推論統計** | t 檢定、單因子 ANOVA、雙因子 ANOVA、ANCOVA 共變數分析、重複量數 ANOVA、Mixed ANOVA（被試間×被試內）、卡方檢定、無母數檢定、z 檢定（比例）、Fisher 精確檢定 |
+| **相關與迴歸** | 相關分析、簡單迴歸、多元迴歸、階層迴歸、邏輯斯迴歸 |
+| **量表分析** | Cronbach's α、探索性因素分析（EFA）、驗證性因素分析（CFA）、Cohen's Kappa、ICC 組內相關係數 |
+| **多變量分析** | MANOVA 多變量變異數分析、判別分析（LDA）、集群分析 |
+| **結構方程模型** | PLS-SEM、NCA 必要條件分析 |
+
+分析結果除了統計量之外，會視方法一併附上 **假設前提檢核**（如常態性、變異數同質性，違反時明確警示）、**效果量**，以及可直接貼進論文的 **APA 格式敘述**（中英文皆有）。結果支援一鍵複製與 PDF 匯出。
+
+### 結果正確性
+
+統計核心為純 JavaScript 自行實作，並與黃金標準（SPSS／R 同底層演算法的 scipy、statsmodels、pingouin、semopy 等）逐欄位比對，比對已固化為常設回歸測試（`npm test`）。完整比對結果、已知的慣例差異（例如 Levene 檢定的 center 預設、Mann-Whitney 的 U 值慣例）與其影響評估，公開於 **[`docs/validation-report-v1.md`](docs/validation-report-v1.md)**。
+
+正確性是這個工具存在的前提，因此驗證過程與已知限制一律公開，不做選擇性呈現。使用前請一併閱讀下方的[免責聲明](#免責聲明)。
+
+### 即將開放
+
+規劃中、尚未實作（介面上會以灰色項目顯示）：CB-SEM、HLM 多層次模型、McNemar 檢定、Friedman 檢定、多項／順序邏輯斯迴歸、Probit 迴歸、Poisson 迴歸、多項式迴歸、Cox 比例風險（生存分析）、典型相關分析、Bayesian t 檢定／ANOVA／相關、項目反應理論（IRT）、統合分析（Meta-analysis）、ARIMA 時間序列。
+
+---
+
 ## 技術堆疊
 
 - **框架**：React 19 + Vite 8
@@ -34,24 +67,32 @@ npm run dev
 
 部署網址：https://loweilee.github.io/DuoDuoRun/
 
-## 專案結構
+## 專案結構（給想貢獻的人）
 
 ```
 duoduorun/
-├── .github/workflows/deploy.yml   # GitHub Actions 自動部署
-├── public/                        # 靜態資源（favicon 等）
-├── reference/                     # 既有原型 statlite.jsx，計算層之後會抽出至 src/lib/stats/
+├── .github/workflows/deploy.yml   # GitHub Actions 自動部署至 Pages
+├── docs/                          # 驗證報告、PLS 模型 schema、設計稿
+├── public/                        # 靜態資源與 4 個示範資料集（CSV）
+├── tests/                         # Vitest：與 Python 黃金標準的數值比對
+│   ├── generate_reference.py      #   產生基準值
+│   └── compare.test.js            #   逐欄位斷言
 ├── src/
-│   ├── App.jsx                    # 主元件
-│   ├── main.jsx
-│   ├── index.css                  # Tailwind directives
-│   └── components/
-│       └── DuoMascot.jsx          # 多多吉祥物占位元件（idle/running/thinking/celebrating 四種 state）
-├── index.html
-├── tailwind.config.js             # 內含 duo 命名空間調色盤
-├── postcss.config.js
-└── vite.config.js
+│   ├── analyses/                  # 每個分析一個資料夾（28 個）
+│   │   ├── ttest/                 #   六件套：index / compute / Config / Result / Narrative / Notes
+│   │   └── registry.js            #   分析 id → 模組的註冊表
+│   ├── lib/
+│   │   ├── stats/                 #   統計核心（純 JS，不依賴外部統計函式庫）
+│   │   ├── assumptionChecker.js   #   假設前提檢核
+│   │   ├── fileParser.js          #   CSV / XLSX 解析
+│   │   └── pdfExport.js
+│   ├── config/analyses.js         # 側欄選單結構與「即將開放」清單
+│   ├── i18n/{zh-TW,en}.js         # 中英文字串
+│   └── components/                # UI 元件（含 DuoMascot 吉祥物）
+└── tailwind.config.js             # duo 命名空間調色盤
 ```
+
+**新增一個分析方法**：在 `src/analyses/<id>/` 建立六件套 → 於 `registry.js` 註冊 → 於 `config/analyses.js` 加進側欄 → 於 `i18n/` 補中英字串。統計核心有任何改動，請務必跑 `npm test`。
 
 ## 視覺識別
 
@@ -80,15 +121,6 @@ import DuoMascot from './components/DuoMascot'
 ```
 
 目前是純 SVG 幾何圖形的占位實作。將來換成插畫師的真插畫時，只要替換 `DuoMascot.jsx` 內部的 SVG 路徑，所有用到此元件的地方都不必改。
-
-## 開發里程碑
-
-- [x] **Step 1**：scaffold + GitHub Pages 部署流程
-- [x] **Step 1.5**：rebrand 為多多快跑、調色盤落地、吉祥物占位元件
-- [ ] **Step 2**：完整 UI 架構（左側導覽列、三欄主內容區、教學/報告模式切換、語言切換、示範資料集載入）
-- [ ] **Step 3**：第一優先統計功能（敘述統計、t 檢定、Pearson 相關、單因子 ANOVA、簡單迴歸、Cronbach's α），以及對應的 APA 中英文敘述模板與假設前提檢核
-- [ ] **Step 4**：實用功能（一鍵複製、PDF 匯出、資料預覽、分析歷史）
-- [ ] **Step 5**：第一優先版本上線；之後進入第二優先（多元迴歸、卡方、無母數、視覺化）與第三優先（雙因子 ANOVA、邏輯斯迴歸、EFA）
 
 ## 隱私
 
