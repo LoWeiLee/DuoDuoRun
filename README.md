@@ -11,9 +11,8 @@
 - **框架**：React 19 + Vite 8
 - **樣式**：Tailwind CSS v3，配色取自多多照片的暖色系（`duo-cream` / `duo-amber` / `duo-cocoa` / `duo-denim`，定義在 `tailwind.config.js`）
 - **統計計算**：純 JavaScript 自行實作（不依賴外部統計函式庫，p-value 使用 regularized incomplete beta function，方法參照 *Numerical Recipes*）
-- **檔案解析**：Papa Parse（CSV）、SheetJS（XLSX）— *待第三步接入*
-- **圖表**：Recharts — *待第三步接入*
-- **PDF 匯出**：jsPDF + html2canvas — *待第四步接入*
+- **檔案解析**：Papa Parse（CSV）、SheetJS（XLSX）
+- **PDF 匯出**：jsPDF + html2canvas
 - **托管**：GitHub Pages（透過 GitHub Actions 自動部署）
 
 ## 本地開發
@@ -95,6 +94,19 @@ import DuoMascot from './components/DuoMascot'
 
 所有資料解析、統計運算、結果產出，全部在瀏覽器本地執行。**沒有任何資料會上傳到外部伺服器**。本工具不呼叫任何 API、不收集任何使用者資訊。
 
+由於本專案原始碼完全公開，上述宣稱可以被任何人檢視驗證——這正是本工具開源的主要理由。
+
+## 免責聲明
+
+**使用本工具前請詳閱。**
+
+- **統計結果請自行驗證。** 本工具的計算核心已與 SPSS、R 進行數值比對（見 [`docs/validation-report-v1.md`](docs/validation-report-v1.md) 與 `tests/`），但比對涵蓋的是既定的測試情境，**不保證在所有資料型態、極端值、遺漏值樣態或邊界條件下都與商用軟體完全一致**。用於學位論文、期刊投稿或任何正式研究產出前，請以另一套軟體交叉驗證關鍵數值。
+- **方法選用與結果解讀的責任在使用者。** 本工具會提示假設前提檢核，但無法代替使用者判斷「這個分析方法是否適合我的研究設計」。工具跑得出數字，不代表那個數字有意義。本工具不構成統計諮詢或學術指導。
+- **無任何形式的擔保。** 依 MIT 授權條款，本軟體以「現狀」（AS IS）提供，不附帶任何明示或默示之擔保。作者不對使用本工具所導致的任何損失、錯誤結論或後果負責。
+- **發現錯誤請回報。** 若你發現計算結果與 SPSS／R 有出入，歡迎至 [Issues](https://github.com/LoWeiLee/DuoDuoRun/issues) 提出，請盡量附上可重現的資料與步驟。這是本工具改善正確性最重要的途徑。
+
 ## 授權
 
-待定（建議 MIT 或 GPL）。
+本專案採 [MIT 授權](LICENSE)。
+
+你可以自由使用、修改、散布本軟體，包含商業用途，唯需在副本中保留原始的著作權聲明與授權條款。軟體以「現狀」提供，不附帶任何擔保（詳見上方免責聲明）。
