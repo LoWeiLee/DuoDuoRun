@@ -1726,7 +1726,7 @@
   }
  },
  "pls_mga_formulas": {
-  "source": "MGA \u516c\u5f0f\u5c64\u57fa\u6e96\uff08\u56fa\u5b9a\u8f38\u5165\uff09\uff1apooled t\uff08Keil, Tan, Wei, Saarinen, Tuunainen & Wassenaar 2000\uff09\u3001Welch-Satterthwaite\uff08Sarstedt, Henseler & Ringle 2011\uff09\u3001Henseler MGA p\uff08Henseler et al. 2009\uff1a\u504f\u8aa4\u6821\u6b63 2\u03b8\u0302\u2212\u03b8* \u6210\u5c0d\u6bd4\u8f03\uff0c\u56de\u5831 one-tailed P(\u03b81\u2264\u03b82)\uff09\u3002draws/se \u56fa\u5b9a\u5165 fixture \u4f9b JS \u516c\u5f0f\u51fd\u5f0f\u9010\u503c\u6bd4\u5c0d",
+  "source": "MGA \u516c\u5f0f\u5c64\u57fa\u6e96\uff08\u56fa\u5b9a\u8f38\u5165\uff09\uff1apooled t\uff08Keil, Tan, Wei, Saarinen, Tuunainen & Wassenaar 2000\uff09\u3001Welch-Satterthwaite\uff08Sarstedt, Henseler & Ringle 2011\uff09\u3001Henseler MGA p\uff08Henseler et al. 2009\uff1a\u504f\u8aa4\u6821\u6b63 2\u03b8\u0304*\u2212\u03b8* \u6210\u5c0d\u6bd4\u8f03\uff0c\u03b8\u0304* \u70ba bootstrap \u5e73\u5747\u2014\u2014\u8207 seminr \u7684 estimate_pls_mga \u4e00\u81f4\uff1bcSEM 0.6.1 \u5728\u6b64\u4e0d\u505a\u504f\u8aa4\u6821\u6b63\uff0c\u898b validation-report\uff09\u3002\u56de\u5831 one-tailed P(\u03b81\u2264\u03b82)\u3002draws/se \u56fa\u5b9a\u5165 fixture \u4f9b JS \u516c\u5f0f\u51fd\u5f0f\u9010\u503c\u6bd4\u5c0d",
   "values": {
    "th1": 0.577693760954048,
    "th2": 0.24543901685745886,
@@ -1740,7 +1740,7 @@
    "tWelch": 2.4046641944846554,
    "dfWelch": 52.23252192970179,
    "pWelch": 0.0197667909640225,
-   "henselerP": 0.011750000000000038,
+   "henselerP": 0.014674999999999994,
    "draws1": [
     0.5910916334232649,
     0.5472058329372141,

@@ -2558,17 +2558,27 @@ export function mgaParametricTest(th1, se1, n1, th2, se2, n2) {
 }
 
 /**
- * Henseler's MGA 單尾 p（Henseler, Ringle & Sinkovics 2009）：
- * 偏誤校正 draws（2θ̂ − θ*）成對比較，回傳 P(θ1 ≤ θ2) 的估計——
- * p 小 → 群組 1 顯著大於群組 2（SmartPLS 報表同義）。
+ * Henseler's MGA 單尾 p（Henseler, Ringle & Sinkovics 2009）。
+ *
+ * 偏誤校正的成對比較：c_k = 2·θ̄*_k − θ*_k，其中 **θ̄*_k 是該組 bootstrap 估計的平均**
+ * （不是點估計 θ̂）。回傳 P(c1 ≤ c2) 的估計——p 小 → 群組 1 顯著大於群組 2。
+ *
+ * 2026-07-13 修正：原實作以點估計 θ̂ 作為鏡射錨點。Henseler et al. (2009) 的原式與
+ * seminr 的參考實作（`estimate_pls_mga.R`：`2*group1_beta_mean - draw1 - 2*group2_beta_mean + draw2`）
+ * 都用 bootstrap 平均。θ̂ 與 θ̄* 相差一個 bootstrap 偏誤，故兩者結果接近但不相同。
+ *
+ * 註：cSEM 0.6.1 的 Henseler p 與本式差異較大（其值與「不做偏誤校正、直接比較原始 draws」
+ * 一致），詳見 validation-report。
  */
-export function henselerMgaP(draws1, draws2, th1, th2) {
+export function henselerMgaP(draws1, draws2) {
   const B1 = draws1.length
   const B2 = draws2.length
   if (B1 === 0 || B2 === 0) return null
+  const m1 = draws1.reduce((a, v) => a + v, 0) / B1  // θ̄*₁
+  const m2 = draws2.reduce((a, v) => a + v, 0) / B2  // θ̄*₂
   // 排序後雙指針：count(c1 > c2) 的 O(B log B) 版
-  const c1 = draws1.map((v) => 2 * th1 - v).sort((a, b) => a - b)
-  const c2 = draws2.map((v) => 2 * th2 - v).sort((a, b) => a - b)
+  const c1 = draws1.map((v) => 2 * m1 - v).sort((a, b) => a - b)
+  const c2 = draws2.map((v) => 2 * m2 - v).sort((a, b) => a - b)
   let count = 0
   let j = 0
   for (let i = 0; i < B1; i++) {
@@ -2656,7 +2666,7 @@ export function mgaPLS(rows, model, options = {}) {
     const se1 = b1.paths[i].se
     const se2 = b2.paths[i].se
     const par = mgaParametricTest(th1, se1, g1.length, th2, se2, g2.length)
-    const hp = henselerMgaP(b1.draws.paths[i], b2.draws.paths[i], th1, th2)
+    const hp = henselerMgaP(b1.draws.paths[i], b2.draws.paths[i])
     const diffs = permDiffsByPath[i]
     const pPerm = diffs.length > 0
       ? (diffs.filter((d) => Math.abs(d) >= Math.abs(par.diff)).length + 1) / (diffs.length + 1)

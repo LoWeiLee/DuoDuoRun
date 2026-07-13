@@ -770,8 +770,8 @@ describe('W5：PLS-MGA', () => {
   it('henselerMgaP：完全分離的 draws → p ≈ 0；同分布 → p ≈ .5', () => {
     const d1 = Array.from({ length: 50 }, (_, i) => 0.8 + i * 1e-4)
     const d2 = Array.from({ length: 50 }, (_, i) => 0.1 + i * 1e-4)
-    expect(henselerMgaP(d1, d2, 0.8, 0.1)).toBeLessThan(0.01)
-    expect(henselerMgaP(d1, d1, 0.8, 0.8)).toBeGreaterThan(0.4)
+    expect(henselerMgaP(d1, d2)).toBeLessThan(0.01)
+    expect(henselerMgaP(d1, d1)).toBeGreaterThan(0.4)
   })
   it('壞群組設定報錯', () => {
     expect(mgaPLS(main, MODEL2, { groupColumn: 'group2', groups: ['M'] }).error).toBe('mga-bad-groups')

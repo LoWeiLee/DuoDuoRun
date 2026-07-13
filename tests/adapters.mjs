@@ -627,7 +627,7 @@ export const ADAPTERS = {
       th1, th2, n1: ref.n1, n2: ref.n2, se1: ref.se1, se2: ref.se2,
       tPooled: par.pooled.t, dfPooled: par.pooled.df, pPooled: par.pooled.p,
       tWelch: par.welch.t, dfWelch: par.welch.df, pWelch: par.welch.p,
-      henselerP: henselerMgaP(ref.draws1, ref.draws2, ref.th1, ref.th2),
+      henselerP: henselerMgaP(ref.draws1, ref.draws2),
       draws1: ref.draws1, draws2: ref.draws2,
     }
   },

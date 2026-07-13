@@ -19,7 +19,14 @@
 - **Session A 抽驗回饋消化已完成（2026-07-13）**：R 側（seminr 2.5.0／cSEM 0.6.1／NCA 5.0.2）
   16 項逐值銷帳；發現並修復 2 個實作錯誤（MGA 的 Welch t 漏 (n−1)/n 加權、MICOM step 3
   變異數應為 log 比）；1 項定性為慣例差異（調節交互項尺度）；查出 cSEM 0.6.1 自身 2 個缺陷。
-  詳見 validation-report「R 抽驗銷帳（Session A）」節。**剩 SmartPLS 4 專屬 2 項待抽驗。**
+  詳見 validation-report「R 抽驗銷帳（Session A）」節。
+- **抽驗全數結案（2026-07-13）**：原「待 SmartPLS 4」的兩項改由開源實作裁決——
+  **SmartPLS 4 授權已過期**（License expired，功能全鎖），無法作為證人。
+  (a) Henseler MGA p：seminr `estimate_pls_mga.R`（明引 Henseler et al. 2009）證實偏誤校正
+      的錨點是 **bootstrap 平均 θ̄***，本工具原用點估計 θ̂ → **已修**（0.1129 → 對齊 seminr 的 0.1131；
+      cSEM 的 0.032 是離群值）。
+  (b) d_G 對數底數：cSEM `calculateDG` 原始碼用 `base = 10`，**且自己註記不確定該用哪個底數**。
+      測地距離的幾何定義為 ½·Σ(ln λ)² → **維持自然對數**，UI Notes 標註 5.3019 倍差異。可逆。
 - 關鍵文件：`docs/pls-sem-roadmap-v1.md`（波次規畫與進度）、
   `docs/pls-model-schema.md`（模型 JSON v3.1 與引擎 API）、
   `docs/validation-report-v1.md`（逐波驗證記錄與 Kevin 本機抽驗清單）、
@@ -232,3 +239,5 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
 - v1.7（2026-07-13）：PLS-POS 交付，§6.2 收尾；§1／§9 更新（Opus 4.8）。
 - v1.8（2026-07-13）：pairwise deletion ＋ WPLS 交付（核心改為相關矩陣驅動，零回歸），
   §6.6／§6.7 收尾；§1／§9 更新。**W6 的 Session A–F 全數完成**（Opus 4.8）。
+- v1.9（2026-07-13）：SmartPLS 4 授權過期 → 原待抽驗兩項改由開源實作（seminr／cSEM 原始碼）
+  裁決並結案；Henseler MGA 的偏誤校正錨點修正為 bootstrap 平均。**抽驗全數銷帳**（Opus 4.8）。

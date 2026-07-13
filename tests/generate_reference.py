@@ -1229,14 +1229,19 @@ try:
     _p_w = 2 * sps.t.sf(abs(_t_w), _df_w)
     _dr1 = (_thM + _rng5.normal(0, 0.09, 200)).tolist()
     _dr2 = (_thF + _rng5.normal(0, 0.12, 200)).tolist()
-    _c1 = 2 * _thM - np.array(_dr1)
-    _c2 = 2 * _thF - np.array(_dr2)
+    # Henseler et al. (2009) 的偏誤校正錨點是 **bootstrap 平均 θ̄***，不是點估計 θ̂。
+    # seminr 的參考實作（estimate_pls_mga.R）即為
+    #   2*group1_beta_mean - draw1 - 2*group2_beta_mean + draw2 > 0
+    # 2026-07-13 修正：原以 _thM／_thF（點估計）鏡射，與原式差一個 bootstrap 偏誤。
+    _c1 = 2 * np.mean(_dr1) - np.array(_dr1)
+    _c2 = 2 * np.mean(_dr2) - np.array(_dr2)
     _hp = 1.0 - float(np.mean(_c1[:, None] > _c2[None, :]))  # P(θ1 ≤ θ2) 之估計
     put("pls_mga_formulas",
         "MGA 公式層基準（固定輸入）：pooled t（Keil, Tan, Wei, Saarinen, Tuunainen & "
         "Wassenaar 2000）、Welch-Satterthwaite（Sarstedt, Henseler & Ringle 2011）、"
-        "Henseler MGA p（Henseler et al. 2009：偏誤校正 2θ̂−θ* 成對比較，"
-        "回報 one-tailed P(θ1≤θ2)）。draws/se 固定入 fixture 供 JS 公式函式逐值比對",
+        "Henseler MGA p（Henseler et al. 2009：偏誤校正 2θ̄*−θ* 成對比較，θ̄* 為 bootstrap "
+        "平均——與 seminr 的 estimate_pls_mga 一致；cSEM 0.6.1 在此不做偏誤校正，見 "
+        "validation-report）。回報 one-tailed P(θ1≤θ2)。draws/se 固定入 fixture 供 JS 公式函式逐值比對",
         th1=_thM, th2=_thF, n1=_n1, n2=_n2, se1=_se1, se2=_se2,
         tPooled=_t_pool, dfPooled=_df_pool, pPooled=_p_pool,
         tWelch=_t_w, dfWelch=_df_w, pWelch=_p_w,
