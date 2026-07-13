@@ -1256,6 +1256,318 @@ function CipmaBlock({ cipma, r }) {
  * CTA-PLS（Gudergan et al. 2008）：confirmatory tetrad analysis
  * 每個 ≥4 指標的構念一張 tetrad 表；任一 CI 不含 0 → 判形成型。
  */
+function PosBlock({ pos, r }) {
+  if (!pos.segments || pos.segments.length === 0) return null
+  return (
+    <div className="mt-4">
+      <Heading>{r.posTitle}</Heading>
+
+      {/* 分段前 vs 分段後的對比 */}
+      <p className="mt-2 text-[11px] text-duo-sig-ok leading-snug">
+        {fillTemplate(r.posGain, {
+          g: fmtNum(pos.global.sse, 2), s: fmtNum(pos.objective, 2),
+          gr: fmtNum(pos.global.r2, 3), sr: fmtNum(pos.r2Overall, 3),
+        })}
+      </p>
+
+      <div className="mt-3 overflow-x-auto">
+        <div className="text-xs font-semibold text-duo-cocoa-800 mb-1.5">{r.posGlobalTitle}</div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <Th align="left">{r.posColPath}</Th>
+              <Th>{r.posColCoef}</Th>
+              <Th>{r.posColSse}</Th>
+              <Th>{r.posColR2}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {pos.global.equations.flatMap((eq) => eq.coefficients.map((cf, i) => (
+              <tr key={`g-${eq.endogenous}-${cf.from}`}>
+                <Td align="left" mono={false}>{cf.from} → {eq.endogenous}</Td>
+                <Td>{fmtNum(cf.coef, 3)}</Td>
+                <Td>{i === 0 ? fmtNum(eq.sse, 2) : ''}</Td>
+                <Td>{i === 0 ? fmtNum(pos.global.r2, 3) : ''}</Td>
+              </tr>
+            )))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <div className="text-xs font-semibold text-duo-cocoa-800 mb-1.5">
+          {fillTemplate(r.posSegTitle, { k: pos.segments.length })}
+        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <Th align="left">{r.posColSeg}</Th>
+              <Th>{r.posColSize}</Th>
+              <Th>{r.posColShare}</Th>
+              <Th align="left">{r.posColPath}</Th>
+              <Th>{r.posColCoef}</Th>
+              <Th>{r.posColSse}</Th>
+              <Th>{r.posColR2}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {pos.segments.flatMap((sg) => {
+              const rowsOf = sg.equations.flatMap((eq) => eq.coefficients.map((cf) => ({ eq, cf })))
+              return rowsOf.map((row, i) => (
+                <tr key={`${sg.index}-${row.eq.endogenous}-${row.cf.from}`}>
+                  <Td align="left" mono={false} bold={i === 0}>{i === 0 ? `${r.posSeg} ${sg.index}` : ''}</Td>
+                  <Td>{i === 0 ? fmtInt(sg.size) : ''}</Td>
+                  <Td>{i === 0 ? fmtNum(sg.share, 3) : ''}</Td>
+                  <Td align="left" mono={false}>{row.cf.from} → {row.eq.endogenous}</Td>
+                  <Td>{fmtNum(row.cf.coef, 3)}</Td>
+                  <Td>{fmtNum(row.eq.sse, 2)}</Td>
+                  <Td>{fmtNum(row.eq.r2, 3)}</Td>
+                </tr>
+              ))
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {pos.warnings && pos.warnings.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {pos.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}
+        </div>
+      )}
+
+      <p className="mt-2 text-[11px] text-duo-cocoa-700 leading-snug">
+        {fillTemplate(r.posMeta, {
+          n: pos.n, p: pos.passes, m: pos.moves, st: pos.starts, ms: pos.minSize,
+        })}
+      </p>
+      <p className="mt-1 text-[11px] text-duo-cocoa-700 leading-snug">{r.posNote}</p>
+    </div>
+  )
+}
+
+function FimixBlock({ fimix, r }) {
+  if (!fimix.segments || fimix.segments.length === 0) return null
+  const enOk = fimix.criteria.en === null || fimix.criteria.en >= 0.5
+  return (
+    <div className="mt-4">
+      <Heading>{r.fimixTitle}</Heading>
+
+      {/* 段數選擇表 */}
+      {fimix.selection && fimix.selection.length > 0 && (
+        <div className="mt-2 overflow-x-auto">
+          <div className="text-xs font-semibold text-duo-cocoa-800 mb-1.5">{r.fimixSelTitle}</div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr>
+                <Th align="left">{r.fimixColK}</Th>
+                <Th>{r.fimixColLnL}</Th>
+                <Th>AIC</Th>
+                <Th>AIC3</Th>
+                <Th>AIC4</Th>
+                <Th>BIC</Th>
+                <Th>CAIC</Th>
+                <Th>HQ</Th>
+                <Th>MDL5</Th>
+                <Th>EN</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {fimix.selection.map((s) => (
+                <tr key={s.k} className={s.k === fimix.segments.length ? 'bg-duo-cream-50' : undefined}>
+                  <Td align="left" bold={s.k === fimix.segments.length}>{s.k}</Td>
+                  <Td>{fmtNum(s.lnL, 2)}</Td>
+                  <Td>{fmtNum(s.aic, 1)}</Td>
+                  <Td>{fmtNum(s.aic3, 1)}</Td>
+                  <Td>{fmtNum(s.aic4, 1)}</Td>
+                  <Td>{fmtNum(s.bic, 1)}</Td>
+                  <Td>{fmtNum(s.caic, 1)}</Td>
+                  <Td>{fmtNum(s.hq, 1)}</Td>
+                  <Td>{fmtNum(s.mdl5, 1)}</Td>
+                  <Td>
+                    {s.en === null
+                      ? '—'
+                      : <span className={s.en >= 0.5 ? TONE_TEXT.ok : TONE_TEXT.warn}>{fmtNum(s.en, 3)}</span>}
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-1 text-[11px] text-duo-cocoa-700 leading-snug">{r.fimixSelNote}</p>
+        </div>
+      )}
+
+      {/* 段別解 */}
+      <div className="mt-4 overflow-x-auto">
+        <div className="text-xs font-semibold text-duo-cocoa-800 mb-1.5">
+          {fillTemplate(r.fimixSegTitle, { k: fimix.segments.length })}
+        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <Th align="left">{r.fimixColSeg}</Th>
+              <Th>{r.fimixColShare}</Th>
+              <Th>{r.fimixColSize}</Th>
+              <Th align="left">{r.fimixColPath}</Th>
+              <Th>{r.fimixColCoef}</Th>
+              <Th>{r.fimixColSigma}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {fimix.segments.flatMap((sg) => {
+              const rowsOf = sg.equations.flatMap((eq) => eq.coefficients.map((cf) => ({ eq, cf })))
+              return rowsOf.map((row, i) => (
+                <tr key={`${sg.index}-${row.eq.endogenous}-${row.cf.from}`}>
+                  <Td align="left" mono={false} bold={i === 0}>{i === 0 ? `${r.fimixSeg} ${sg.index}` : ''}</Td>
+                  <Td>{i === 0 ? fmtNum(sg.share, 3) : ''}</Td>
+                  <Td>{i === 0 ? fmtInt(sg.assignedSize) : ''}</Td>
+                  <Td align="left" mono={false}>{row.cf.from} → {row.eq.endogenous}</Td>
+                  <Td>{fmtNum(row.cf.coef, 3)}</Td>
+                  <Td>{fmtNum(row.eq.sigma2, 3)}</Td>
+                </tr>
+              ))
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EN 判準燈號 */}
+      {fimix.criteria.en !== null && (
+        <p className="mt-2 text-[11px] leading-snug">
+          <span className={enOk ? TONE_TEXT.ok : TONE_TEXT.warn}>
+            {fillTemplate(enOk ? r.fimixEnOk : r.fimixEnBad, { en: fmtNum(fimix.criteria.en, 3) })}
+          </span>
+        </p>
+      )}
+
+      {fimix.warnings && fimix.warnings.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {fimix.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}
+        </div>
+      )}
+
+      <p className="mt-2 text-[11px] text-duo-cocoa-700 leading-snug">
+        {fillTemplate(r.fimixMeta, {
+          n: fimix.n, it: fimix.iterations, rs: fimix.restarts, lnl: fmtNum(fimix.lnL, 2),
+        })}
+      </p>
+      <p className="mt-1 text-[11px] text-duo-cocoa-700 leading-snug">{r.fimixNote}</p>
+    </div>
+  )
+}
+
+function CopulaBlock({ copula, r }) {
+  if (!copula.equations || copula.equations.length === 0) return null
+  return (
+    <div className="mt-4">
+      <Heading>{r.copulaTitle}</Heading>
+
+      {/* 前置：非常態把關 */}
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <Th align="left">{r.copulaColConstruct}</Th>
+              <Th>{r.copulaColKsD}</Th>
+              <Th>{r.copulaColKsP}</Th>
+              <Th align="left">{r.copulaColGate}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {copula.normality.map((q) => (
+              <tr key={q.lv}>
+                <Td align="left" mono={false} bold>{q.lv}</Td>
+                <Td>{fmtNum(q.D, 4)}</Td>
+                <Td><span className={q.nonNormal ? TONE_TEXT.ok : TONE_TEXT.warn}>{fmtP(q.p)}</span></Td>
+                <Td align="left" mono={false}>
+                  <span className={q.nonNormal ? TONE_TEXT.ok : TONE_TEXT.warn}>
+                    {q.nonNormal ? r.copulaGateOk : r.copulaGateNormal}
+                  </span>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 各結構方程的擴充迴歸 */}
+      {copula.equations.map((eq) => (
+        <div key={eq.endogenous} className="mt-4">
+          <div className="text-xs font-semibold text-duo-cocoa-800 mb-1.5">
+            {fillTemplate(r.copulaEqTitle, {
+              endo: eq.endogenous,
+              preds: eq.predictors.join(' + '),
+            })}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr>
+                  <Th align="left">{r.copulaColModel}</Th>
+                  <Th align="left">{r.copulaColTerm}</Th>
+                  <Th>{r.copulaColCoef}</Th>
+                  <Th>{r.se}</Th>
+                  <Th>{r.copulaColCi}</Th>
+                  <Th>{r.copulaColP}</Th>
+                  <Th>{r.copulaColR2}</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {eq.models.map((m) => {
+                  const label = m.copulas.map((cc) => `c(${cc})`).join(' + ')
+                  if (m.singular) {
+                    return (
+                      <tr key={label}>
+                        <Td align="left" mono={false} bold>{label}</Td>
+                        <Td align="left" mono={false} colSpan={6}>{r.copulaSingular}</Td>
+                      </tr>
+                    )
+                  }
+                  return m.coefficients.map((cf, i) => (
+                    <tr key={`${label}-${cf.name}`} className={cf.isCopula ? 'bg-duo-cream-50' : undefined}>
+                      <Td align="left" mono={false} bold={i === 0}>
+                        {i === 0 ? label : ''}
+                      </Td>
+                      <Td align="left" mono={false} bold={cf.isCopula}>{cf.name}</Td>
+                      <Td>{fmtNum(cf.coef, 3)}</Td>
+                      <Td>{fmtNum(cf.se, 3)}</Td>
+                      <Td>[{fmtNum(cf.ciLower, 3)}, {fmtNum(cf.ciUpper, 3)}]</Td>
+                      <Td>
+                        {cf.isCopula
+                          ? <span className={TONE_TEXT[toneForP(cf.p)]}>{fmtP(cf.p)}</span>
+                          : fmtP(cf.p)}
+                      </Td>
+                      <Td>{i === 0 ? fmtNum(m.r2, 3) : ''}</Td>
+                    </tr>
+                  ))
+                })}
+              </tbody>
+            </table>
+          </div>
+          {eq.models.some((m) => m.endogeneitySignal) && (
+            <p className="mt-1.5 text-[11px] text-duo-sig-alert leading-snug">
+              {fillTemplate(r.copulaSignal, {
+                models: eq.models.filter((m) => m.endogeneitySignal)
+                  .map((m) => m.copulas.map((cc) => `c(${cc})`).join('+')).join('、'),
+              })}
+            </p>
+          )}
+        </div>
+      ))}
+
+      {copula.warnings && copula.warnings.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {copula.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}
+        </div>
+      )}
+
+      <p className="mt-2 text-[11px] text-duo-cocoa-700 leading-snug">
+        {fillTemplate(r.copulaMeta, { b: copula.nBootstrap, n: copula.n })}
+      </p>
+      <p className="mt-1 text-[11px] text-duo-cocoa-700 leading-snug">{r.copulaNote}</p>
+    </div>
+  )
+}
+
 function CtaBlock({ cta, r }) {
   if (!cta.blocks || cta.blocks.length === 0) return null
   return (
@@ -1388,7 +1700,7 @@ function Result() {
     )
   }
 
-  const { estimate, bootstrap: boot, q2: q2res, mga, micom, predict, ipma, cta } = res
+  const { estimate, bootstrap: boot, q2: q2res, mga, micom, predict, ipma, cta, copula, fimix, pos } = res
   const bootOk = Boolean(boot && !boot.error)
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   // 多階段模型（two-stage 調節／HOC）：量測統計量取第一階段（原始指標），結構取最終階段
@@ -1517,6 +1829,15 @@ function Result() {
       </W5Section>
       <W5Section data={cta} feature="CTA-PLS" r={r}>
         <CtaBlock cta={cta} r={r} />
+      </W5Section>
+      <W5Section data={copula} feature="Gaussian copula" r={r}>
+        <CopulaBlock copula={copula} r={r} />
+      </W5Section>
+      <W5Section data={fimix} feature="FIMIX-PLS" r={r}>
+        <FimixBlock fimix={fimix} r={r} />
+      </W5Section>
+      <W5Section data={pos} feature="PLS-POS" r={r}>
+        <PosBlock pos={pos} r={r} />
       </W5Section>
     </div>
   )

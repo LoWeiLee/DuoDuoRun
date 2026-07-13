@@ -45,7 +45,11 @@ def put(method, source, **values):
 # 抽出 generate_reference.py 的 PLS 區塊原始碼（單一事實來源）
 src = open(os.path.join(HERE, "generate_reference.py"), encoding="utf-8").read()
 start = src.index("# --- PLS-SEM")  # W1 區塊起點
-end = src.index('with open(os.path.join(FIX, "reference.json")')
+# 2026-07-13：切片終點原為 json dump，會連帶執行 PLS 之後新增的
+# 集群/LDA/EFA/CFA 區塊——它們依賴 PLS 區塊外的變數與 semopy、
+# 且 CFA 段包在 try/except 內，缺套件時會把既有基準覆寫成 FAILED。
+# 改為在集群區塊前收斂，回歸「只重跑 PLS 系列」的原始用途。
+end = src.index("# --- 集群分析")
 code = src[start:end]
 
 exec(compile(code, "generate_reference.py[PLS-blocks]", "exec"))

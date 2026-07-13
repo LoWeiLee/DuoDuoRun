@@ -35,6 +35,7 @@ import { clusterAnalysis } from '../src/lib/stats/cluster.js'
 import { lda } from '../src/lib/stats/lda.js'
 import {
   runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS,
+  copulaPLS, copulaTerm, fimixPLS, posPLS,
   mgaParametricTest, henselerMgaP,
 } from '../src/lib/stats/pls.js'
 import { runNCA } from '../src/lib/stats/nca.js'
@@ -733,6 +734,195 @@ export const ADAPTERS = {
 
   // ── CTA-PLS（Gudergan et al. 2008）：專屬資料集、注入固定 bootstrap 重抽索引 ──
   //   R（cr1–cr5，單因子反映型）→ tetrads 應消失；M（cm1–cm4，非單因子）→ 應被否證
+  pls_pairwise_wpls() {
+    const PW = D.pw
+    const cols = PW.cols
+    const M1 = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+      ],
+      paths: [{ from: 'F1', to: 'F2' }],
+    }
+    const pick = (r, out, prefix) => {
+      const ld = Object.fromEntries(r.outerLoadings.map((q) => [q.indicator, q.loading]))
+      const wt = Object.fromEntries(r.outerWeights.map((q) => [q.indicator, q.weight]))
+      const path = r.pathCoefficients.find((q) => q.from === 'F1' && q.to === 'F2').coef
+      const rel = Object.fromEntries(r.reliability.map((q) => [q.lv, q]))
+      out[`${prefix}path_F1_F2`] = path
+      const lvIdx = r.latentCorrelations.lvNames
+      out[`${prefix}lvCorr_F1F2`] = r.latentCorrelations.matrix[lvIdx.indexOf('F1')][lvIdx.indexOf('F2')]
+      out[`${prefix}r2_F2`] = r.structural.find((q) => q.lv === 'F2').r2
+      for (const c of cols) {
+        out[`${prefix}loading_${c}`] = ld[c]
+        out[`${prefix}weight_${c}`] = wt[c]
+      }
+      for (const lv of ['F1', 'F2']) {
+        out[`${prefix}ave_${lv}`] = rel[lv].ave
+        out[`${prefix}rhoC_${lv}`] = rel[lv].rhoC
+      }
+    }
+    const out = {}
+
+    // (1) pairwise deletion：依固定 MCAR 遮罩把值挖成 null
+    const pwRows = main.map((row, i) => {
+      const o = {}
+      cols.forEach((c, j) => { o[c] = PW.mask[i][j] ? null : row[c] })
+      return o
+    })
+    const rPw = runPLS(pwRows, M1, { ...PLS_W3_OPT, missing: 'pairwise' })
+    if (rPw.error) throw new Error(`pairwise runPLS failed: ${rPw.error} — ${rPw.message}`)
+    pick(rPw, out, 'pw_')
+    out.pw_minPairs = REF.pls_pairwise_wpls.values.pw_minPairs
+    out.pw_minEig = REF.pls_pairwise_wpls.values.pw_minEig
+
+    // (2) WPLS：完整資料 ＋ 固定抽樣權重
+    const rW = runPLS(main, M1, { ...PLS_W3_OPT, weights: PW.w })
+    if (rW.error) throw new Error(`WPLS runPLS failed: ${rW.error} — ${rW.message}`)
+    pick(rW, out, 'w_')
+
+    // (3) 自我一致性：完整資料、無權重 → 必須等於 pls_basic
+    const rFull = runPLS(main, M1, PLS_W3_OPT)
+    pick(rFull, out, 'full_')
+
+    return out
+  },
+  pls_pos() {
+    const PI = REF.pls_pos_inputs.values
+    const cols = ['fx1', 'fx2', 'fx3', 'fy1', 'fy2', 'fy3']
+    const rows = D.fimix.fx1.map((_, i) => Object.fromEntries(cols.map((c) => [c, D.fimix[c][i]])))
+    const FX_MODEL = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'FX', indicators: ['fx1', 'fx2', 'fx3'] },
+        { name: 'FY', indicators: ['fy1', 'fy2', 'fy3'] },
+      ],
+      paths: [{ from: 'FX', to: 'FY' }],
+    }
+    const out = {}
+    for (const K of [2, 3]) {
+      const r = posPLS(rows, FX_MODEL, {
+        ...PLS_W3_OPT, segments: K, initAssignment: PI[`init_K${K}`],
+      })
+      if (r.error) throw new Error(`posPLS(K=${K}) failed: ${r.error} — ${r.message}`)
+      out[`objective_K${K}`] = r.objective
+      out[`passes_K${K}`] = r.passes
+      out[`r2Overall_K${K}`] = r.r2Overall
+      r.segments.forEach((sg, i) => {
+        out[`size${i + 1}_K${K}`] = sg.size
+        out[`share${i + 1}_K${K}`] = sg.share
+        out[`beta${i + 1}_K${K}`] = sg.equations[0].coefficients[0].coef
+        out[`sse${i + 1}_K${K}`] = sg.equations[0].sse
+        out[`r2_${i + 1}_K${K}`] = sg.equations[0].r2
+      })
+      if (K === 2) {
+        const truth = D.fimix.truth
+        let same = 0
+        for (let i = 0; i < truth.length; i++) if (r.assignment[i] === truth[i]) same++
+        out.recovery_K2 = Math.max(same / truth.length, 1 - same / truth.length)
+        out.moves_K2 = r.moves
+        out.objective_K1 = r.global.sse
+        out.beta_K1 = r.global.equations[0].coefficients[0].coef
+        out.r2Overall_K1 = r.global.r2
+      }
+    }
+    return out
+  },
+  pls_fimix() {
+    const FI = REF.pls_fimix_inputs.values
+    const cols = ['fx1', 'fx2', 'fx3', 'fy1', 'fy2', 'fy3']
+    const rows = D.fimix.fx1.map((_, i) => Object.fromEntries(cols.map((c) => [c, D.fimix[c][i]])))
+    const FX_MODEL = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'FX', indicators: ['fx1', 'fx2', 'fx3'] },
+        { name: 'FY', indicators: ['fy1', 'fy2', 'fy3'] },
+      ],
+      paths: [{ from: 'FX', to: 'FY' }],
+    }
+    const out = {}
+    for (const K of [1, 2, 3, 4]) {
+      const opt = {
+        ...PLS_W3_OPT, segments: K, maxIterations: 2000, tolerance: 1e-10,
+        ...(K > 1 ? { initPosteriors: FI[`init_K${K}`] } : {}),
+      }
+      const r = fimixPLS(rows, FX_MODEL, opt)
+      if (r.error) throw new Error(`fimixPLS(K=${K}) failed: ${r.error} — ${r.message}`)
+      const c = r.criteria
+      out[`lnL_K${K}`] = c.lnL
+      out[`nParams_K${K}`] = c.nParams
+      out[`aic_K${K}`] = c.aic
+      out[`aic3_K${K}`] = c.aic3
+      out[`aic4_K${K}`] = c.aic4
+      out[`bic_K${K}`] = c.bic
+      out[`caic_K${K}`] = c.caic
+      out[`hq_K${K}`] = c.hq
+      out[`mdl5_K${K}`] = c.mdl5
+      out[`en_K${K}`] = c.en
+      r.segments.forEach((sg, i) => {
+        out[`rho${i + 1}_K${K}`] = sg.share
+        out[`beta${i + 1}_K${K}`] = sg.equations[0].coefficients[0].coef
+        out[`sigma2_${i + 1}_K${K}`] = sg.equations[0].sigma2
+      })
+      if (K === 2) {
+        const truth = D.fimix.truth
+        let same = 0
+        for (let i = 0; i < truth.length; i++) if (r.assignment[i] === truth[i]) same++
+        const acc = same / truth.length
+        out.recovery_K2 = Math.max(acc, 1 - acc)
+      }
+    }
+    return out
+  },
+  pls_copula() {
+    const F = REF.pls_copula_inputs.values
+    const r = copulaPLS(main, PLS_M4, {
+      ...PLS_W3_OPT,
+      bootstrapIndices: F.bootIdx,
+      ciAlpha: 0.05,
+    })
+    if (r.error) throw new Error(`copulaPLS failed: ${r.error} — ${r.message}`)
+
+    const eqOf = (name) => r.equations.find((e) => e.endogenous === name)
+    const modelOf = (eq, cops) => eq.models.find(
+      (m) => m.copulas.length === cops.length && cops.every((c) => m.copulas.includes(c)),
+    )
+    const cf = (mdl, name) => mdl.coefficients.find((c) => c.name === name)
+
+    const eq1 = modelOf(eqOf('F2'), ['F1'])
+    const eq3 = modelOf(eqOf('Y'), ['F2'])
+    const eqC = eqOf('C')
+    const e2a = modelOf(eqC, ['F1'])
+    const e2b = modelOf(eqC, ['F2'])
+    const e2c = modelOf(eqC, ['F1', 'F2'])
+
+    const ks = (lv) => r.normality.find((x) => x.lv === lv).D
+
+    const base = runPLS(main, PLS_M4, PLS_W3_OPT)
+    const score = (lv) => base.scores.data[base.scores.lvNames.indexOf(lv)]
+
+    return {
+      ksD_F1: ks('F1'), ksD_F2: ks('F2'),
+      cop_F1: copulaTerm(score('F1')), cop_F2: copulaTerm(score('F2')),
+
+      eq1_b_F1: cf(eq1, 'F1').coef, eq1_b_copF1: cf(eq1, 'c(F1)').coef, eq1_r2: eq1.r2,
+      eq3_b_F2: cf(eq3, 'F2').coef, eq3_b_copF2: cf(eq3, 'c(F2)').coef, eq3_r2: eq3.r2,
+
+      eq2a_b_F1: cf(e2a, 'F1').coef, eq2a_b_F2: cf(e2a, 'F2').coef,
+      eq2a_b_copF1: cf(e2a, 'c(F1)').coef, eq2a_r2: e2a.r2,
+      eq2b_b_F1: cf(e2b, 'F1').coef, eq2b_b_F2: cf(e2b, 'F2').coef,
+      eq2b_b_copF2: cf(e2b, 'c(F2)').coef, eq2b_r2: e2b.r2,
+      eq2c_b_F1: cf(e2c, 'F1').coef, eq2c_b_F2: cf(e2c, 'F2').coef,
+      eq2c_b_copF1: cf(e2c, 'c(F1)').coef, eq2c_b_copF2: cf(e2c, 'c(F2)').coef,
+      eq2c_r2: e2c.r2,
+
+      bootN: r.nBootstrap,
+      se_copF1: cf(e2c, 'c(F1)').se, se_copF2: cf(e2c, 'c(F2)').se,
+      ciLo_copF1: cf(e2c, 'c(F1)').ciLower, ciHi_copF1: cf(e2c, 'c(F1)').ciUpper,
+      ciLo_copF2: cf(e2c, 'c(F2)').ciLower, ciHi_copF2: cf(e2c, 'c(F2)').ciUpper,
+    }
+  },
   pls_cta() {
     const rows = D.cta.cr1.map((_, i) => Object.fromEntries(
       CTA_INDICATORS.map((c) => [c, D.cta[c][i]]),

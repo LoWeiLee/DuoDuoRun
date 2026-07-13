@@ -30,6 +30,9 @@ function Notes() {
       <Section title={n.w4Title}>{n.w4}</Section>
       <Section title={n.w5Title}>{n.w5}</Section>
       <Section title={n.ctaTitle}>{n.cta}</Section>
+      <Section title={n.fimixTitle}>{n.fimix}</Section>
+      <Section title={n.posTitle}>{n.pos}</Section>
+      <Section title={n.copulaTitle}>{n.copula}</Section>
       <Section title={n.readingTitle}>{n.reading}</Section>
     </div>
   )

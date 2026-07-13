@@ -2799,6 +2799,14 @@ export default {
       bootstrapTitle: 'Bootstrap resamples',
       bootstrapHint: 'Journal convention is 5000; use 500 / 1000 for quick previews on large data (default 1000)',
       advancedTitle: 'Advanced options',
+      missingTitle: 'Missing data',
+      missingNames: { casewise: 'Casewise', mean: 'Mean impute', pairwise: 'Pairwise' },
+      missingHint: 'Casewise: drop the whole row if any indicator is missing — most conservative, but wasteful. Mean imputation: fill with the column mean, which understates variance. Pairwise: each correlation uses only the rows where that pair is jointly observed, using the most information.',
+      missingPairwiseNote: 'Three costs of pairwise you should know: (1) each cell of the correlation matrix comes from a different subsample, so the cells may be mutually incompatible (non-positive-semidefinite) and reliability / model-fit indices can fall outside their sensible ranges — the tool warns you; (2) LV scores switch to mean-imputed standardized values and are only used downstream (IPMA / prediction / segmentation), while all statistics go through the correlation matrix; (3) blindfolding (Q²) cannot be combined with pairwise. With a high share of missing data, multiple imputation is usually more robust than pairwise.',
+      missingQ2Conflict: 'Blindfolding (Q²) cannot be combined with pairwise deletion — turn off Q², or switch to casewise / mean imputation',
+      wplsTitle: 'Sampling weights (WPLS)',
+      wplsNone: 'Unweighted (standard PLS)',
+      wplsHint: 'Pick a numeric column as sampling weights; the correlation matrix is then computed with those weights (aligned with SmartPLS 4 Weighted PLS). Use it for post-stratification weights or unequal-probability samples that need to reflect the population structure. Multiplying all weights by a constant changes nothing. Note: inference (bootstrap) still resamples unweighted — weighted resampling is not documented by SmartPLS and this tool will not invent it.',
       schemeTitle: 'Weighting scheme',
       schemeNames: { path: 'Path', factorial: 'Factorial', centroid: 'Centroid' },
       schemeHint: 'Path is the SmartPLS 4 default; centroid / factorial are provided for methodological comparison and older literature.',
@@ -2829,7 +2837,7 @@ export default {
       intFactor3: 'Construct C (three-way, optional)',
       intMethodTitle: 'Interaction generation (shared by all interactions)',
       intMethodNames: { 'two-stage': 'Two-stage', 'product-indicator': 'Product indicator', orthogonal: 'Orthogonal' },
-      intMethodHint: 'Two-stage is the only method in SmartPLS 4 and the one this tool aligns with (interaction term unstandardized); product indicator / orthogonalizing align with seminr for methodological comparison and support only two distinct reflective constructs.',
+      intMethodHint: 'Two-stage is the only method in SmartPLS 4 and the one this tool aligns with (interaction term unstandardized); product indicator / orthogonalizing align with seminr for methodological comparison and support only two distinct reflective constructs. Convention note: for product indicator and orthogonalizing this tool reports the standardized interaction coefficient (same scale as every other path); seminr reports it unstandardized (its interaction construct scores do not have SD = 1), so the two differ by that constant SD while R² and all other paths are identical.',
       intIncomplete: 'Interaction {i} still needs both constructs',
       hocTitle: 'Higher-order constructs (HOC)',
       hocHint: 'Combine several lower-order constructs into one higher-order construct. Lower-order constructs are absorbed: use the HOC name in structural paths and interactions.',
@@ -2867,7 +2875,18 @@ export default {
       w5Target: 'Target construct',
       w5NeedGroups: 'MGA / MICOM need a grouping column and two distinct group values',
       w5NeedTarget: 'IPMA needs a target construct (must be endogenous)',
-      w5W4Note: 'Note: MICOM / PLSpredict / IPMA do not yet support models with interactions or higher-order constructs.',
+      w5CopulaLabel: 'Gaussian copula endogeneity check',
+      w5CopulaHint: 'Tests whether an explanatory construct is correlated with the structural error (endogeneity). Adds c = Φ⁻¹(ECDF(score)) to that endogenous construct\'s structural regression; a significant coefficient on c signals endogeneity (Park & Gupta, 2012; procedure per Hult et al., 2018). Precondition: the explanatory construct must be non-normal — a KS test gates this and warns.',
+      w5CopulaNoPath: 'The Gaussian copula endogeneity check needs at least one structural path',
+      w5FimixLabel: 'FIMIX-PLS latent heterogeneity segmentation',
+      w5FimixHint: 'A global path coefficient is an average — if the sample is really made up of subgroups with different structural relationships, that average may represent nobody. FIMIX uses EM on a finite mixture of regressions over the inner model to uncover those unobserved segments (Hahn et al., 2002). It is exploratory: a segment is only actionable if you can characterise it afterwards with observable variables.',
+      w5FimixKTitle: 'Segments K',
+      w5FimixKHint: 'A selection table for K = 1–4 (AIC / AIC3 / AIC4 / BIC / CAIC / HQ / MDL5 / EN) is produced alongside. There is no single right answer: AIC tends to overestimate and BIC / CAIC to underestimate, so read them together and let theory decide.',
+      w5FimixNoPath: 'FIMIX-PLS segments the inner model and needs at least one structural path',
+      w5PosLabel: 'PLS-POS prediction-oriented segmentation',
+      w5PosHint: 'Complementary to FIMIX: it looks for the same unobserved segments but minimises **prediction error** instead of maximising a likelihood, uses hard assignment plus hill-climbing, and assumes no distribution (Becker et al., 2013). When both methods agree, the segmentation is more credible.',
+      w5PosKNote: 'PLS-POS shares the segment count K above with FIMIX. Note: the POS objective necessarily falls as K grows (it has no penalty term), so POS cannot be used to choose K — read the FIMIX information criteria and your theory for that.',
+      w5W4Note: 'Note: MICOM / PLSpredict / IPMA / Gaussian copula / FIMIX do not yet support models with interactions or higher-order constructs.',
     },
     canvas: {
       hint: 'Drag a construct to move it; drag from a construct’s bottom handle to another to add a path; click a path to delete it; click a construct to open its indicator panel (with reflective / formative toggle); double-click to rename.',
@@ -2959,7 +2978,7 @@ export default {
       downloadDerived: 'Download CSV',
       mgaTitle: 'Multigroup analysis — PLS-MGA (three tests)',
       mgaMeta: 'Groups: {g1} (n = {n1}) vs {g2} (n = {n2}) | bootstrap {b} per group | {np} valid permutations',
-      mgaNote: 'Interpret primarily via the permutation test (Chin & Dibbern, 2010; distribution-free). Henseler MGA p is the one-tailed P(β₁ ≤ β₂) — values near 0 or 1 both signal a group difference; parametric tests (pooled / Welch) are shown for reference. Establish compositional invariance (MICOM) before MGA, otherwise differences may reflect measurement rather than structure.',
+      mgaNote: 'Interpret primarily via the permutation test (Chin & Dibbern, 2010; distribution-free). Henseler MGA p is the one-tailed P(β₁ ≤ β₂) — values near 0 or 1 both signal a group difference; parametric tests (pooled / Welch) are shown for reference — the Welch test follows Sarstedt, Henseler & Ringle (2011) and weights the group variances by (n−1)/n, so it coincides with the pooled t when the groups are of equal size. Establish compositional invariance (MICOM) before MGA, otherwise differences may reflect measurement rather than structure.',
       mgaColG1: 'β ({g})',
       mgaColG2: 'β ({g})',
       mgaColDiff: 'Δβ',
@@ -2967,12 +2986,61 @@ export default {
       mgaColPerm: 'p (permutation)',
       mgaColParam: 'p (pooled t)',
       mgaColWelch: 'p (Welch)',
+      posTitle: 'Prediction-oriented segmentation — PLS-POS',
+      posGlobalTitle: 'Before segmentation (single global model)',
+      posSegTitle: 'After segmentation (K = {k}; ordered by decreasing size)',
+      posColSeg: 'Segment',
+      posSeg: 'Segment',
+      posColSize: 'n',
+      posColShare: 'Share',
+      posColPath: 'Path',
+      posColCoef: 'Coef.',
+      posColSse: 'Prediction error SSE',
+      posColR2: 'R²',
+      posGain: 'Segmentation cut the prediction error from {g} to {s} (overall R² from {gr} to {sr}).',
+      posMeta: 'n = {n} | {p} hill-climbing passes, {m} moves | {st} random starts (lowest objective kept) | minimum segment size {ms}',
+      posNote: 'Algorithm: the objective is the residual sum of squares of the endogenous constructs (prediction error) across segments. Each case is tentatively moved to every other segment and only improving moves are accepted, until a full pass makes no move (Becker, Rai, Ringle & Völckner, 2013). Hill-climbing only guarantees a local optimum, so several random starts are run and the best kept; segments are ordered by decreasing size to remove label switching. How it differs from FIMIX: POS uses hard assignment, a prediction-error objective, and no distributional assumption; FIMIX uses soft assignment (posterior probabilities), a mixture likelihood, and assumes normality. When the two methods find similar segments, the segmentation is more credible. ★ The key boundary: the POS objective necessarily falls as the number of segments grows — it has no penalty term, so it **cannot be used to choose K**. Use the FIMIX information criteria, theory, or the interpretability of the segments for that.',
+      fimixTitle: 'Latent heterogeneity — FIMIX-PLS',
+      fimixSelTitle: 'Segment-number selection (lower information criteria are better; EN ≥ .50 for good separation)',
+      fimixColK: 'K',
+      fimixColLnL: 'lnL',
+      fimixSelNote: 'The criteria will disagree — that is normal. Rule of thumb: when AIC3 and CAIC point to the same K, that K is more credible (Sarstedt et al., 2011); MDL5 penalises hardest and favours fewer segments. In the end, ask whether the segments tell a story.',
+      fimixSegTitle: 'Segment solution (K = {k}; ordered by decreasing share)',
+      fimixColSeg: 'Segment',
+      fimixSeg: 'Segment',
+      fimixColShare: 'Share ρ',
+      fimixColSize: 'Assigned n',
+      fimixColPath: 'Path',
+      fimixColCoef: 'Coef.',
+      fimixColSigma: 'Residual var. σ²',
+      fimixEnOk: 'EN = {en} ≥ .50 — segments are well separated and posterior memberships are clear (Ramaswamy et al., 1993).',
+      fimixEnBad: 'EN = {en} < .50 — segments are poorly separated and most cases have ambiguous membership; this solution should not be acted on.',
+      fimixMeta: 'n = {n} | EM iterations {it} | {rs} random starts (best lnL kept) | lnL = {lnl}',
+      fimixNote: 'Algorithm: the standardized LV scores from the global PLS run feed an EM algorithm for a finite mixture of regressions on the inner model (Hahn, Johnson, Herrmann & Huber, 2002; the original formulation has no intercept). The E step computes posterior segment memberships, the M step runs weighted OLS. EM only guarantees a local optimum, so multiple random starts (fixed seed) are run and the highest log-likelihood is kept; segments are ordered by decreasing share to remove label switching. σ² is the residual variance of that equation in that segment. Three boundaries: (1) FIMIX is exploratory — a segment must be characterisable afterwards with observable variables (demographics, behaviour, context) or it cannot be acted on; (2) there is no single criterion for choosing K, theory must take part; (3) segmentation shrinks each subsample, so within-segment coefficients carry more uncertainty — do not read them as being as reliable as the global ones.',
+      copulaTitle: 'Endogeneity check — Gaussian copula',
+      copulaColConstruct: 'Construct',
+      copulaColKsD: 'KS D',
+      copulaColKsP: 'KS p',
+      copulaColGate: 'Identification condition',
+      copulaGateOk: 'Non-normal (usable)',
+      copulaGateNormal: 'Normality not rejected (unreliable)',
+      copulaEqTitle: 'Structural equation: {endo} ← {preds}',
+      copulaColModel: 'Copulas included',
+      copulaColTerm: 'Term',
+      copulaColCoef: 'Coef.',
+      copulaColCi: '95% CI',
+      copulaColP: 'p',
+      copulaColR2: 'R²',
+      copulaSingular: 'The design matrix for this combination is singular (the copula term is nearly collinear with the explanatory construct) — usually a sign that the construct is too close to normal, making the copula term almost a linear transform of it. This model is not identified.',
+      copulaSignal: 'Endogeneity signal: in model(s) {models} the copula term\'s 95% CI excludes 0, so that explanatory construct may be correlated with the structural error. Consider omitted variables, simultaneity or measurement error; an instrumental-variable approach may be needed.',
+      copulaMeta: 'bootstrap {b} runs (weights and copula terms re-estimated each run) | n = {n}',
+      copulaNote: 'The copula term is c = Φ⁻¹(H(score)), H = empirical CDF (ties take the maximum rank; H = 1 is clipped to 1−1e−7, the Hult et al. 2018 convention). A non-significant coefficient on c means no evidence of endogeneity (not proof of exogeneity). Identification condition (Park & Gupta, 2012): the explanatory construct must be non-normal — where the KS test above does not reject normality, the copula result cannot be used to judge endogeneity. The copula term is rank-based and therefore invariant to monotone transformations, so standardization of the LV scores is irrelevant. SEs and CIs come from the bootstrap (the copula term\'s asymptotic SE is non-standard; Hult et al. 2018).',
       micomTitle: 'Measurement invariance — MICOM',
-      micomNote: 'Step 1 (configural): identical model, indicators and treatment across groups — satisfied by construction here. Step 2 (compositional invariance): pass when c ≥ the 5% permutation quantile (green). Step 3: mean/variance differences inside the permutation 95% CI = full invariance; step 2 only = partial invariance (MGA is fine; comparing latent means is not).',
+      micomNote: 'Step 1 (configural): identical model, indicators and treatment across groups — satisfied by construction here. Step 2 (compositional invariance): pass when c ≥ the 5% permutation quantile (green). Step 3: the mean difference and the log variance ratio log(var₁)−log(var₂) (the original form in Henseler, Ringle & Sarstedt, 2016 — not a raw variance difference) inside the permutation 95% CI = full invariance; step 2 only = partial invariance (MGA is fine; comparing latent means is not). Note: c in step 2 is computed from composite scores on standardized indicators; cSEM 0.6.1 uses unstandardized data here, so its value differs slightly.',
       micomColC: 'c (step 2)',
       micomColQ5: '5% quantile',
       micomColMean: 'Mean diff [95% CI]',
-      micomColVar: 'Variance diff [95% CI]',
+      micomColVar: 'log variance ratio [95% CI]',
       predictTitle: 'Out-of-sample prediction — PLSpredict (k = {k})',
       predictNote: 'Interpretation (Shmueli et al., 2019): require Q²predict > 0 first; then compare PLS vs LM RMSE — all lower = high predictive power, majority lower = medium, minority = low, none = lacking. CVPAT (Liengaard et al., 2021): d̄ > 0 with p < .05 means the PLS average loss is significantly below the benchmark.',
       predictColQ2p: 'Q²predict',
@@ -3076,6 +3144,49 @@ Three boundaries:
 \u00b7 Not rejected \u2260 confirmed. CTA is a falsification logic; green only means no counter-evidence was found.
 \u00b7 Rejecting a reflective specification does not endorse any particular formative indicator set. If you switch to formative, the indicator selection still needs theoretical justification, and assessment moves to VIF and outer-weight significance.
 \u00b7 CTA is sensitive to sample size and non-normality. With small samples the tetrad SEs are large and power is low (biasing toward \u201cnot rejected\u201d); there, theory outweighs the test result.`,
+      posTitle: 'Prediction-oriented segmentation (PLS-POS, W6)',
+      pos: `FIMIX and PLS-POS chase the same thing — unobserved heterogeneity — by completely different routes.
+
+FIMIX assumes the data come from a normal mixture and uses EM to maximise a likelihood, giving each case a probability of belonging to each segment. PLS-POS (Becker, Rai, Ringle & Völckner, 2013) assumes no distribution at all and simply minimises prediction error: each case is hard-assigned to one segment, cases are tentatively moved between segments, and any move that lowers the total residual sum of squares is accepted — until a full pass produces no move.
+
+Why run both: their assumptions do not overlap. FIMIX's normality assumption fails on skewed data; POS has no probability model and therefore no information criteria. **When the two methods find similar segments, the segmentation is more credible**; when they disagree sharply, suspect that the segment structure is not robust.
+
+How to read it:
+1. Start with the before/after comparison of prediction error. If segmenting does not clearly reduce the error, the heterogeneity probably is not there — do not force it.
+2. Then read the segment path coefficients. Only opposite signs or substantially different magnitudes constitute meaningful heterogeneity.
+3. Compare against the FIMIX solution — segment sizes and coefficients should be similar.
+
+★ The key boundary: **POS cannot be used to choose the number of segments.** Its objective (prediction error) necessarily falls as K grows — more segments always fit better, because POS has no penalty term. Using POS to pick K yields the absurd conclusion that more is always better. Choose K from the FIMIX information criteria, from theory, or from how interpretable the segments are.
+
+Two further boundaries: hill-climbing only guarantees a local optimum (multiple random starts mitigate this but cannot guarantee the global one); and segmentation shrinks each subsample, so within-segment coefficients carry more uncertainty.`,
+      fimixTitle: 'Latent heterogeneity (FIMIX-PLS, W6)',
+      fimix: `A global path coefficient is an average. If the sample is really made up of subgroups with different structural relationships, that average may represent nobody — in the extreme, a strongly positive segment and a strongly negative one cancel out, the global model shows "no relationship", and you draw a conclusion that is simply wrong.
+
+FIMIX-PLS (Hahn, Johnson, Herrmann & Huber, 2002) targets exactly this **unobserved** heterogeneity — the grouping variable is one you do not have (if you had it, you would just run MGA). It feeds the LV scores from the global PLS run into an EM algorithm for a finite mixture of regressions on the inner model: the E step computes each case's posterior probability of belonging to each segment, the M step re-estimates the segment path coefficients using those probabilities as weights.
+
+How to read it:
+1. Start with the segment-number selection table. Lower information criteria are better, but the criteria disagree (AIC tends to overestimate, BIC / CAIC to underestimate). Sarstedt et al. (2011) offer a rule of thumb: when AIC3 and CAIC agree on a K, that K is more credible.
+2. Then read EN (normed entropy). EN < .50 means most cases have ambiguous membership — the segments simply are not separated, and no criterion's verdict on K can rescue that.
+3. Finally read the segment solution. Heterogeneity is only meaningful if the segment coefficients differ in sign or substantially in magnitude; small differences mean segmentation buys you nothing.
+
+Three boundaries:
+· FIMIX is **exploratory**. It tells you how many segments there are and what they look like — not who they are. After finding them you must characterise them with observable variables (demographics, behaviour, context), or you cannot do anything for anyone. Without that step, segmentation is merely statistically pretty.
+· There is no single criterion for choosing K. Theory has to take part; do not hand K over to the information criteria.
+· Segmentation shrinks each subsample. Within-segment coefficients carry more uncertainty — do not treat them as being as reliable as the global ones, especially for small segments.`,
+      copulaTitle: 'Endogeneity check (Gaussian copula, W6)',
+      copula: `For a PLS-SEM path coefficient to carry a causal reading, the explanatory construct must be uncorrelated with the structural error (exogenous). Omitted variables, simultaneity or measurement error break that assumption — the coefficient becomes biased, and model fit indices will not reveal it.
+
+The Gaussian copula (Park & Gupta, 2012; PLS-SEM procedure per Hult et al., 2018) tests it neatly: transform the score of the explanatory construct P into c = Φ⁻¹(H(P)) (H = empirical CDF) and add c to the structural regression of the endogenous construct. If P really is correlated with the error, the coefficient on c will be significant; if not, there is no evidence of endogeneity.
+
+How to read it:
+1. Start with the identification-condition table. Park & Gupta's method is identified through the non-normality of P — if P is normal, c is nearly collinear with P and the test is meaningless. Constructs where the KS test does not reject normality are flagged; their copula results cannot be used.
+2. Then read each structural equation. The tool runs every copula combination for that equation (k candidates → 2^k − 1 models; Hult et al. recommend inspecting all of them). A copula term whose 95% CI excludes 0 is an endogeneity signal.
+3. The copula term has no standard asymptotic SE, so the tool bootstraps it (weights and copula terms are re-estimated in every resample).
+
+Three boundaries:
+· Non-significant ≠ exogenous. This is "no evidence of endogeneity", not proof of exogeneity; power depends on sample size and on how non-normal P is.
+· A normal explanatory construct is simply outside the method's scope. There you need design (instruments, experiments, panels), not a post-hoc test.
+· Finding a signal does not fix the estimate. The copula is a diagnostic; the remedy is at the design level — add the omitted variable, find an instrument, or use a method that handles simultaneity.`,
       w4Title: 'Moderation, higher-order constructs & mediation (W4)',
       w4:
         'Moderation (two-stage): stage one estimates the main-effects model to obtain LV scores; stage two uses the product of scores as the interaction term. Two SmartPLS 4 behaviors are replicated — main-effect paths are added automatically, and the interaction term is NOT standardized (coefficient = standardized coefficient ÷ SD of the product). For the interaction f², prefer Kenny (2018) thresholds: .005 / .01 / .025\n' +

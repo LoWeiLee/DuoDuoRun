@@ -272,7 +272,30 @@ WPLS 以加權相關矩陣手算對齊。
   另補 `pvalue.js` 的 `qT()`（t 分布雙尾臨界值，對齊 scipy 至 1e-10 級）。
 
 `npm test`：589 → **651 過、6 記錄性跳過**；基準方法 65 → **66 組**。
-剩餘：Gaussian copula → FIMIX-PLS → PLS-POS → WPLS＋pairwise（合併）→ 品質小任務。
+- **Gaussian copula 內生性檢查**（2026-07-13）：`copulaPLS`（Park & Gupta 2012；
+  流程依 Hult et al. 2018）。copula 項 c = Φ⁻¹(ecdf(P)(P))；KS 非常態前置把關（警告不擋）；
+  每個內生構念的方程跑 2^k − 1 個 copula 組合；bootstrap 完整巢套（重估權重＋重算 copula）。
+  新增 2 組基準（`pls_copula` 30 值、`pls_copula_inputs`），測試 879 → **923 過、6 跳過**。
+
+- **FIMIX-PLS**（2026-07-13）：`fimixPLS`（Hahn et al. 2002；準則依 Sarstedt et al. 2011）。
+  有限混合迴歸 EM（無截距）；AIC/AIC3/AIC4/BIC/CAIC/HQ/MDL5/EN 八個準則；多起點取最佳；
+  段別依佔比排序消除 label switching。新增專屬模擬資料集 `datasets.json:fimix`
+  （兩段 β = ±0.80，還原率 0.853）與 2 組基準，測試 923 → **1009 過、6 跳過**。
+
+- **PLS-POS**（2026-07-13）：`posPLS`（Becker et al. 2013）。預測誤差為目標的硬指派爬山法，
+  與 FIMIX 互補（不假設分布）；充分統計量增量更新；多起始分割；段別依大小排序。
+  與 FIMIX 共用模擬資料：全域 R² = 0.101 → 分段後 0.787，還原率 0.837。
+  UI 強制警告「POS 不能用來選段數」（目標函數必然隨 K 下降）。新增 2 組基準，
+  測試 1009 → **1056 過、6 跳過**。
+
+- **pairwise deletion ＋ WPLS**（2026-07-13）：核心迭代重構為 `estimateCoreFromCorr(R, spec)`——
+  **單一實作、三個入口**（完整資料／pairwise-complete 相關／加權相關）。重構後既有 733 個
+  基準欄位逐值全過，**零回歸**。pairwise：不剔除任何列、R 非半正定時警告、配對 < 3 筆報錯、
+  與 blindfolding 互斥。WPLS：`options.weights`（欄位名或陣列），權重同乘常數不變、
+  0 權重列不參與估計；推論仍未加權重抽（SmartPLS 未文件化，不擅自實作）。
+  新增 1 組基準（含 `full_*` 自我一致性欄位），測試 1056 → **1126 過、6 跳過**。
+
+**W6 的 Session A–F 全數交付。** 剩餘：品質小任務（handoff §6.8，可塞縫隙）。
 執行層規畫見 `docs/pls-sem-w6-workplan-v1.md`。
 **交付判準**：排入項逐項對齊其註記基準；未排入項不留死入口；`npm test` 綠燈。
 

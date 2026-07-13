@@ -38,3 +38,8 @@ tests/__pycache__/
 
 # 本機維運腳本（雙擊執行用），不進公開 repo
 *.bat
+
+# R 抽驗腳本的產出（僅保留 out/ 資料夾骨架，內容不入 repo）
+scripts/validation/out/*
+!scripts/validation/out/.gitkeep
+scripts/validation/Rplots*.pdf

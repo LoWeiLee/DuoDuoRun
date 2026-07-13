@@ -17,7 +17,7 @@
  *        options.bootstrap = { n, seed, ciAlpha, signCorrection, ciType } → bootstrap 專屬設定
  *        options.q2 = true | { omissionDistance } → 附帶 blindfolding Q²（W3）
  *   out: { type: 'progress', done, total }  — bootstrap 期間定期回報（約每 1%）
- *        { type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma, cta }（關閉的項目為 null）
+ *        { type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma, cta, copula, fimix, pos }（關閉的項目為 null）
  *        { type: 'error', error, message }
  *
  * 取消：bootstrap 是同步迴圈（Worker 執行中不會處理 inbound 訊息），
@@ -29,6 +29,7 @@
  */
 import {
   runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS,
+  copulaPLS, fimixPLS, posPLS,
 } from './stats/pls.js'
 
 /**
@@ -45,6 +46,7 @@ export function handleMessage(msg, post) {
     const {
       bootstrap: bootOpt, q2: q2Opt,
       mga: mgaOpt, micom: micomOpt, predict: predictOpt, ipma: ipmaOpt, cta: ctaOpt,
+      copula: copulaOpt, fimix: fimixOpt, pos: posOpt,
       ...estimateOptions
     } = options
 
@@ -92,11 +94,20 @@ export function handleMessage(msg, post) {
     const ipma = ipmaOpt
       ? (ipmaOpt.cipma ? cipmaPLS : ipmaPLS)(rows, model, { ...estimateOptions, ...ipmaOpt })
       : null
+    const copula = copulaOpt
+      ? copulaPLS(rows, model, { ...estimateOptions, ...copulaOpt })
+      : null
+    const fimix = fimixOpt
+      ? fimixPLS(rows, model, { ...estimateOptions, ...fimixOpt })
+      : null
+    const pos = posOpt
+      ? posPLS(rows, model, { ...estimateOptions, ...posOpt })
+      : null
     const cta = ctaOpt
       ? ctaPLS(rows, model, { ...estimateOptions, ...ctaOpt })
       : null
 
-    post({ type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma, cta })
+    post({ type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma, cta, copula, fimix, pos })
   } catch (err) {
     post({ type: 'error', error: 'unexpected', message: String(err?.message ?? err) })
   }

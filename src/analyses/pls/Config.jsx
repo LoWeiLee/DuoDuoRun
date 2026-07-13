@@ -149,12 +149,15 @@ function Config() {
   const bootstrapN = state.bootstrapN ?? 1000
   const scheme = state.scheme ?? 'path'
   const consistent = state.consistent === true
+  const missing = state.missing ?? 'casewise'
+  const weightsCol = state.weightsCol ?? ''
   const ciType = state.ciType === 'bca' ? 'bca' : 'percentile'
   const q2 = state.q2 === true
   const w5Draft = state.w5 || {}
   const options = {
     scheme, consistent, ciType, q2,
     ...(w5Draft.mga || w5Draft.micom || w5Draft.predict || w5Draft.ipma || w5Draft.cta
+      || w5Draft.copula || w5Draft.fimix || w5Draft.pos
       ? { w5: w5Draft } : {}),
   }
   const ints = state.ints || []
@@ -292,7 +295,11 @@ function Config() {
       errors.push(c.w5NeedGroups)
     }
     if (w5.ipma && !w5.target) errors.push(c.w5NeedTarget)
+    if (state.q2 === true && missing === 'pairwise') errors.push(c.missingQ2Conflict)
     if (w5.cta && ctaEligible.length === 0) errors.push(c.w5CtaNoBlock)
+    if (w5.copula && curPaths.length === 0) errors.push(c.w5CopulaNoPath)
+    if (w5.fimix && curPaths.length === 0) errors.push(c.w5FimixNoPath)
+    if (w5.pos && curPaths.length === 0) errors.push(c.w5FimixNoPath)
     const model = buildModel(curLvs, curPaths, ints, intMethod, hocs, hocMethod)
     const v = validatePLSModel(model)
     if (!v.ok) errors.push(...v.errors)
@@ -707,6 +714,35 @@ function Config() {
               />
               <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.schemeHint}</p>
             </div>
+            <div>
+              <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.missingTitle}</div>
+              <Segmented
+                items={['casewise', 'mean', 'pairwise'].map((k) => ({ key: k, label: c.missingNames[k] }))}
+                value={missing}
+                onChange={(key) => update({ missing: key })}
+              />
+              <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.missingHint}</p>
+              {missing === 'pairwise' && (
+                <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2 mt-1.5">
+                  {c.missingPairwiseNote}
+                </p>
+              )}
+            </div>
+            <div>
+              <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.wplsTitle}</div>
+              <select
+                aria-label={c.wplsTitle}
+                value={weightsCol}
+                onChange={(e) => update({ weightsCol: e.target.value })}
+                className="w-full h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+              >
+                <option value="">{c.wplsNone}</option>
+                {numericCols.map((col) => (
+                  <option key={col} value={col}>{labelMap[col] || col}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.wplsHint}</p>
+            </div>
             <Toggle
               checked={consistent}
               onChange={(v) => update({ consistent: v })}
@@ -865,7 +901,56 @@ function Config() {
               </p>
             )}
           </div>
-          {(w5.micom || w5.predict || w5.ipma) && (ints.length > 0 || hocs.length > 0) && (
+          <div className="space-y-2">
+            <Toggle
+              checked={w5.copula === true}
+              onChange={(v) => setW5({ copula: v })}
+              label={c.w5CopulaLabel}
+              hint={c.w5CopulaHint}
+            />
+            {w5.copula && curPaths.length === 0 && (
+              <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-sig-red/10 border border-duo-sig-red/40 rounded-md px-3 py-2">
+                {c.w5CopulaNoPath}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Toggle
+              checked={w5.fimix === true}
+              onChange={(v) => setW5({ fimix: v })}
+              label={c.w5FimixLabel}
+              hint={c.w5FimixHint}
+            />
+            {(w5.fimix || w5.pos) && (
+              <div>
+                <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5FimixKTitle}</div>
+                <Segmented
+                  items={[2, 3, 4, 5].map((k) => ({ key: k, label: String(k) }))}
+                  value={w5.fimixK ?? 2}
+                  onChange={(key) => setW5({ fimixK: key })}
+                  mono
+                />
+                <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.w5FimixKHint}</p>
+              </div>
+            )}
+            {w5.fimix && curPaths.length === 0 && (
+              <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-sig-red/10 border border-duo-sig-red/40 rounded-md px-3 py-2">
+                {c.w5FimixNoPath}
+              </p>
+            )}
+            <Toggle
+              checked={w5.pos === true}
+              onChange={(v) => setW5({ pos: v })}
+              label={c.w5PosLabel}
+              hint={c.w5PosHint}
+            />
+            {w5.pos && (
+              <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">
+                {c.w5PosKNote}
+              </p>
+            )}
+          </div>
+          {(w5.micom || w5.predict || w5.ipma || w5.copula || w5.fimix || w5.pos) && (ints.length > 0 || hocs.length > 0) && (
             <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">
               {c.w5W4Note}
             </p>

@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest'
 import {
   validatePLSModel, runPLS, bootstrapPLS, blindfoldPLS, bcaInterval, PLS_SCHEMA_VERSION,
   mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS, henselerMgaP,
+  copulaPLS, copulaTerm, fimixPLS, posPLS,
 } from '../src/lib/stats/pls.js'
 import { handleMessage } from '../src/lib/plsWorker.js'
 
@@ -1038,5 +1039,520 @@ describe('CTA-PLS', () => {
     const out = ctaPLS(main, MOD_MODEL(), {})
     expect(out.error).toBe('w4-model-not-supported')
     expect(out.message).toContain('CTA-PLS')
+  })
+})
+
+describe('Gaussian copula 內生性檢查', () => {
+  const OPT = { tolerance: 1e-12, maxIterations: 2000 }
+  const FAST = { ...OPT, bootstrapN: 30, seed: 7 }
+
+  it('copulaTerm：Φ⁻¹(ecdf)，長度不變、有限值、嚴格保序', () => {
+    const v = [3, 1, 4, 1, 5, 9, 2, 6]
+    const c = copulaTerm(v)
+    expect(c).toHaveLength(v.length)
+    expect(c.every(Number.isFinite)).toBe(true)
+    // 保序：原值較大者，copula 值不得較小（並列取最大秩 → 並列值相等）
+    const idx = v.map((_, i) => i).sort((a, b) => v[a] - v[b])
+    for (let i = 1; i < idx.length; i++) {
+      expect(c[idx[i]]).toBeGreaterThanOrEqual(c[idx[i - 1]] - 1e-12)
+    }
+  })
+
+  it('copulaTerm：最大值不產生 Infinity（H=1 夾為 1−1e−7）', () => {
+    const c = copulaTerm([1, 2, 3, 4, 100])
+    expect(Number.isFinite(c[4])).toBe(true)
+    expect(c[4]).toBeGreaterThan(3) // qnorm(1−1e−7) ≈ 5.2
+  })
+
+  it('copulaTerm：對單調遞增變換不變（秩基底）', () => {
+    const v = main.map((r) => Number(r.i1))
+    const a = copulaTerm(v)
+    const b = copulaTerm(v.map((x) => 3 * x + 7))
+    for (let i = 0; i < a.length; i++) expect(Math.abs(a[i] - b[i])).toBeLessThan(1e-12)
+  })
+
+  it('主流程：每個內生構念一組方程，k 個候選 → 2^k − 1 個模型', () => {
+    const r = copulaPLS(main, M4, FAST)
+    expect(r.error).toBeUndefined()
+    expect(r.equations.map((e) => e.endogenous)).toEqual(['F2', 'C', 'Y'])
+    const eqC = r.equations.find((e) => e.endogenous === 'C')
+    expect(eqC.candidates).toEqual(['F1', 'F2'])
+    expect(eqC.models).toHaveLength(3) // [F1] [F2] [F1,F2]
+    expect(eqC.models.map((m) => m.copulas.join('+'))).toEqual(['F1', 'F2', 'F1+F2'])
+    // 每個模型的係數：預測構念 + copula 項
+    const full = eqC.models[2]
+    expect(full.coefficients.map((c) => c.name)).toEqual(['F1', 'F2', 'c(F1)', 'c(F2)'])
+    expect(full.coefficients.filter((c) => c.isCopula)).toHaveLength(2)
+  })
+
+  it('每個 copula 係數都有 se / t / p / CI，且 CI 含 coef 附近', () => {
+    const r = copulaPLS(main, M4, FAST)
+    const cop = r.equations.flatMap((e) => e.models).flatMap((m) => m.coefficients).filter((c) => c.isCopula)
+    expect(cop.length).toBeGreaterThan(0)
+    for (const c of cop) {
+      expect(Number.isFinite(c.se)).toBe(true)
+      expect(Number.isFinite(c.t)).toBe(true)
+      expect(c.p).toBeGreaterThanOrEqual(0)
+      expect(c.p).toBeLessThanOrEqual(1)
+      expect(c.ciLower).toBeLessThanOrEqual(c.ciUpper)
+    }
+  })
+
+  it('常態前置把關：LV 分數未拒絕常態時給出警告，但仍照算（不靜默擋掉）', () => {
+    const r = copulaPLS(main, M4, FAST)
+    // main 為常態模擬資料 → 至少一個構念會被判為常態
+    const normalOnes = r.normality.filter((x) => !x.nonNormal)
+    expect(normalOnes.length).toBeGreaterThan(0)
+    expect(r.warnings.some((w) => w.includes('非常態'))).toBe(true)
+    // 仍然有結果
+    expect(r.equations.length).toBeGreaterThan(0)
+  })
+
+  it('bootstrapIndices 注入 → 結果決定性（同索引兩次跑相同）', () => {
+    const idx = REF.pls_copula_inputs.values.bootIdx.slice(0, 40)
+    const a = copulaPLS(main, M4, { ...OPT, bootstrapIndices: idx })
+    const b = copulaPLS(main, M4, { ...OPT, bootstrapIndices: idx })
+    const pick = (r) => r.equations[1].models[2].coefficients.map((c) => [c.coef, c.se, c.ciLower, c.ciUpper])
+    expect(pick(a)).toEqual(pick(b))
+    expect(a.nBootstrap).toBe(40)
+  })
+
+  it('constructs 可限定只檢定部分構念', () => {
+    const r = copulaPLS(main, M4, { ...FAST, constructs: ['F2'] })
+    expect(r.normality.map((x) => x.lv)).toEqual(['F2'])
+    const eqC = r.equations.find((e) => e.endogenous === 'C')
+    expect(eqC.candidates).toEqual(['F2'])
+    expect(eqC.models).toHaveLength(1)
+    // F2 ~ F1 這條方程沒有候選（F1 未選）→ 不出現
+    expect(r.equations.map((e) => e.endogenous)).not.toContain('F2')
+  })
+
+  it('拒絕 W4 模型（調節／高階構念）', () => {
+    const out = copulaPLS(main, MOD_MODEL(), FAST)
+    expect(out.error).toBe('w4-model-not-supported')
+    expect(out.message).toContain('Gaussian copula')
+  })
+
+  it('沒有結構路徑 → 明確報錯', () => {
+    const noPath = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+      ],
+      paths: [],
+    }
+    const out = copulaPLS(main, noPath, FAST)
+    expect(out.error).toBeDefined()
+  })
+
+  it('指定不存在的構念 → 明確中文報錯', () => {
+    const out = copulaPLS(main, M4, { ...FAST, constructs: ['NOPE'] })
+    expect(out.error).toBe('copula-unknown-construct')
+    expect(out.message).toContain('NOPE')
+  })
+
+  it('指定的構念不是任何路徑的起點（純內生）→ 明確報錯', () => {
+    const out = copulaPLS(main, M4, { ...FAST, constructs: ['Y'] })
+    expect(out.error).toBe('copula-no-candidate')
+  })
+
+  it('ciAlpha 超出範圍 → 明確報錯', () => {
+    const out = copulaPLS(main, M4, { ...FAST, ciAlpha: 1.5 })
+    expect(out.error).toBe('copula-bad-alpha')
+  })
+
+  it('樣本過少 → 明確報錯', () => {
+    const out = copulaPLS(main.slice(0, 8), M4, FAST)
+    expect(out.error).toBeDefined()
+  })
+})
+
+describe('FIMIX-PLS（潛在異質性分段）', () => {
+  const FX_COLS = ['fx1', 'fx2', 'fx3', 'fy1', 'fy2', 'fy3']
+  const fxRows = D.fimix.fx1.map((_, i) => Object.fromEntries(
+    FX_COLS.map((c) => [c, D.fimix[c][i]]),
+  ))
+  const FX_MODEL = () => ({
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'FX', indicators: ['fx1', 'fx2', 'fx3'], mode: 'reflective' },
+      { name: 'FY', indicators: ['fy1', 'fy2', 'fy3'], mode: 'reflective' },
+    ],
+    paths: [{ from: 'FX', to: 'FY' }],
+  })
+  const OPT = { tolerance: 1e-10, maxIterations: 2000 }
+  const INIT2 = REF.pls_fimix_inputs.values.init_K2
+
+  it('★ 還原已知的兩段結構：資料由 β=+0.80 與 β=−0.80 兩段組成', () => {
+    const r = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initPosteriors: INIT2 })
+    expect(r.error).toBeUndefined()
+    const b1 = r.segments[0].equations[0].coefficients[0].coef
+    const b2 = r.segments[1].equations[0].coefficients[0].coef
+    // 一正一負、量級接近 0.8（LV 分數含測量衰減）
+    expect(b1).toBeGreaterThan(0.6)
+    expect(b2).toBeLessThan(-0.6)
+    // 段別大小接近真實的 180 / 120
+    expect(r.segments[0].share).toBeGreaterThan(0.55)
+    expect(r.segments[0].share).toBeLessThan(0.75)
+    // 段別還原率（對照 datasets.fimix.truth；label switching 取較大者）
+    const truth = D.fimix.truth
+    let same = 0
+    for (let i = 0; i < truth.length; i++) if (r.assignment[i] === truth[i]) same++
+    const acc = Math.max(same / truth.length, 1 - same / truth.length)
+    expect(acc).toBeGreaterThan(0.80)
+  })
+
+  it('★ 全域單一模型會掩蓋這個結構（FIMIX 存在的理由）', () => {
+    const g = runPLS(fxRows, FX_MODEL(), OPT)
+    const globalBeta = g.structural[0].predictors[0].coef
+    // 全域路徑遠小於任一段的絕對值（兩段方向相反、正負相消）
+    expect(Math.abs(globalBeta)).toBeLessThan(0.4)
+    const r = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initPosteriors: INIT2 })
+    const segBetas = r.segments.map((s) => Math.abs(s.equations[0].coefficients[0].coef))
+    for (const b of segBetas) expect(b).toBeGreaterThan(Math.abs(globalBeta))
+  })
+
+  it('★ EM 的對數概似單調不減（數學保證，違反即為實作錯誤）', () => {
+    // monotone 由引擎內部逐步檢查；任何下降都會寫進 warnings
+    for (const K of [2, 3]) {
+      const init = REF.pls_fimix_inputs.values[`init_K${K}`]
+      const r = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: K, initPosteriors: init })
+      expect(r.error).toBeUndefined()
+      expect(r.warnings.some((w) => w.includes('對數概似出現下降'))).toBe(false)
+    }
+  })
+
+  it('段數選擇：K=2 在 AIC/BIC/CAIC 上皆優於 K=1、K=3、K=4', () => {
+    const sel = {}
+    for (const K of [1, 2, 3, 4]) {
+      const init = K > 1 ? REF.pls_fimix_inputs.values[`init_K${K}`] : undefined
+      const r = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: K, ...(init ? { initPosteriors: init } : {}) })
+      sel[K] = r.criteria
+    }
+    for (const crit of ['aic', 'bic', 'caic']) {
+      for (const K of [1, 3, 4]) {
+        expect(sel[2][crit], `${crit}: K=2 應優於 K=${K}`).toBeLessThan(sel[K][crit])
+      }
+    }
+  })
+
+  it('EN（normed entropy）：K=1 為 null、K=2 超過 .50 判準', () => {
+    const r1 = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 1 })
+    expect(r1.criteria.en).toBeNull()
+    const r2 = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initPosteriors: INIT2 })
+    expect(r2.criteria.en).toBeGreaterThan(0.5)
+    expect(r2.warnings.some((w) => w.includes('分離不佳'))).toBe(false)
+  })
+
+  it('EN < .50 時給出「分離不佳」警告（main 資料沒有真實段結構）', () => {
+    const r = fimixPLS(main, M4, { tolerance: 1e-10, segments: 3, restarts: 3, seed: 5 })
+    expect(r.error).toBeUndefined()
+    if (r.criteria.en < 0.5) {
+      expect(r.warnings.some((w) => w.includes('分離不佳'))).toBe(true)
+    }
+  })
+
+  it('參數個數 N_k = (K−1) + K·R + K·M', () => {
+    for (const K of [1, 2, 3, 4]) {
+      const init = K > 1 ? REF.pls_fimix_inputs.values[`init_K${K}`] : undefined
+      const r = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: K, ...(init ? { initPosteriors: init } : {}) })
+      expect(r.criteria.nParams).toBe((K - 1) + K * 1 + K * 1) // R=1 路徑、M=1 內生構念
+    }
+  })
+
+  it('後驗機率逐列和為 1；assignment = argmax', () => {
+    const r = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initPosteriors: INIT2 })
+    for (let i = 0; i < r.posteriors.length; i++) {
+      const s = r.posteriors[i].reduce((a, v) => a + v, 0)
+      expect(Math.abs(s - 1)).toBeLessThan(1e-9)
+      const mx = Math.max(...r.posteriors[i])
+      expect(r.posteriors[i][r.assignment[i]]).toBe(mx)
+    }
+  })
+
+  it('label switching：段別依佔比遞減排序 → 輸出決定性', () => {
+    const a = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, restarts: 6, seed: 11 })
+    const b = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, restarts: 6, seed: 11 })
+    expect(a.segments.map((s) => s.share)).toEqual(b.segments.map((s) => s.share))
+    for (let i = 1; i < a.segments.length; i++) {
+      expect(a.segments[i - 1].share).toBeGreaterThanOrEqual(a.segments[i].share)
+    }
+  })
+
+  it('kMax → 產生段數選擇表', () => {
+    const r = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, kMax: 4, restarts: 3, seed: 3 })
+    expect(r.selection).toHaveLength(4)
+    expect(r.selection.map((s) => s.k)).toEqual([1, 2, 3, 4])
+    for (const s of r.selection) {
+      expect(Number.isFinite(s.aic)).toBe(true)
+      expect(Number.isFinite(s.bic)).toBe(true)
+    }
+  })
+
+  it('拒絕 W4 模型（調節／高階構念）', () => {
+    const out = fimixPLS(main, MOD_MODEL(), { segments: 2 })
+    expect(out.error).toBe('w4-model-not-supported')
+    expect(out.message).toContain('FIMIX-PLS')
+  })
+
+  it('沒有結構路徑 → 明確報錯', () => {
+    const noPath = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+      ],
+      paths: [],
+    }
+    // schema 驗證器更早擋下（無路徑的模型本身就不合法）；
+    // 引擎內的 fimix-no-structural-path 是防禦性守衛，正常路徑到不了
+    const out = fimixPLS(main, noPath, { segments: 2 })
+    expect(out.error).toBe('invalid-model')
+  })
+
+  it('段數不合法 → 明確報錯', () => {
+    expect(fimixPLS(fxRows, FX_MODEL(), { segments: 0 }).error).toBe('fimix-bad-segments')
+    expect(fimixPLS(fxRows, FX_MODEL(), { segments: 2.5 }).error).toBe('fimix-bad-segments')
+  })
+
+  it('樣本不足以支撐段數 → 明確報錯（每段 10 筆下限）', () => {
+    const out = fimixPLS(fxRows.slice(0, 15), FX_MODEL(), { segments: 2 })
+    expect(out.error).toBe('too-few-cases')
+    expect(out.message).toContain('20')
+  })
+
+  it('initPosteriors 形狀錯誤 → 明確報錯', () => {
+    const out = fimixPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initPosteriors: [[0.5, 0.5]] })
+    expect(out.error).toBe('fimix-bad-init')
+  })
+})
+
+describe('PLS-POS（prediction-oriented segmentation）', () => {
+  const FX_COLS = ['fx1', 'fx2', 'fx3', 'fy1', 'fy2', 'fy3']
+  const fxRows = D.fimix.fx1.map((_, i) => Object.fromEntries(
+    FX_COLS.map((c) => [c, D.fimix[c][i]]),
+  ))
+  const FX_MODEL = () => ({
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'FX', indicators: ['fx1', 'fx2', 'fx3'], mode: 'reflective' },
+      { name: 'FY', indicators: ['fy1', 'fy2', 'fy3'], mode: 'reflective' },
+    ],
+    paths: [{ from: 'FX', to: 'FY' }],
+  })
+  const OPT = { tolerance: 1e-12, maxIterations: 2000 }
+  const INIT2 = REF.pls_pos_inputs.values.init_K2
+
+  it('★ 還原已知的兩段結構（與 FIMIX 同一份模擬資料）', () => {
+    const r = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: INIT2 })
+    expect(r.error).toBeUndefined()
+    const b1 = r.segments[0].equations[0].coefficients[0].coef
+    const b2 = r.segments[1].equations[0].coefficients[0].coef
+    expect(b1).toBeGreaterThan(0.6)
+    expect(b2).toBeLessThan(-0.6)
+    const truth = D.fimix.truth
+    let same = 0
+    for (let i = 0; i < truth.length; i++) if (r.assignment[i] === truth[i]) same++
+    expect(Math.max(same / truth.length, 1 - same / truth.length)).toBeGreaterThan(0.80)
+  })
+
+  it('★ 分段大幅降低預測誤差（POS 的目標函數就是預測誤差）', () => {
+    const r = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: INIT2 })
+    expect(r.objective).toBeLessThan(r.global.sse)
+    expect(r.r2Overall).toBeGreaterThan(r.global.r2)
+    // 全域 R² 很低（正負相消），分段後大幅提升
+    expect(r.global.r2).toBeLessThan(0.2)
+    expect(r.r2Overall).toBeGreaterThan(0.6)
+  })
+
+  it('★ 爬山法的目標函數單調遞減（違反即為實作錯誤）', () => {
+    for (const K of [2, 3]) {
+      const r = posPLS(fxRows, FX_MODEL(), {
+        ...OPT, segments: K, initAssignment: REF.pls_pos_inputs.values[`init_K${K}`],
+      })
+      expect(r.warnings.some((w) => w.includes('目標函數出現上升'))).toBe(false)
+    }
+  })
+
+  it('★ 目標函數必然隨段數下降 → 明確警告不可用 POS 選段數', () => {
+    const r2 = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: INIT2 })
+    const r3 = posPLS(fxRows, FX_MODEL(), {
+      ...OPT, segments: 3, initAssignment: REF.pls_pos_inputs.values.init_K3,
+    })
+    // K=3 的 SSE 必然更小——這正是不能用 POS 選段數的原因
+    expect(r3.objective).toBeLessThan(r2.objective)
+    expect(r2.warnings.some((w) => w.includes('不能用來選段數'))).toBe(true)
+  })
+
+  it('段別大小下限為硬約束', () => {
+    const r = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 3, starts: 3, seed: 9, minSize: 40 })
+    expect(r.error).toBeUndefined()
+    for (const s of r.segments) expect(s.size).toBeGreaterThanOrEqual(40)
+  })
+
+  it('label switching：段別依大小遞減排序 → 輸出決定性', () => {
+    const a = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, starts: 5, seed: 21 })
+    const b = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, starts: 5, seed: 21 })
+    expect(a.segments.map((s) => s.size)).toEqual(b.segments.map((s) => s.size))
+    expect(a.objective).toBe(b.objective)
+    for (let i = 1; i < a.segments.length; i++) {
+      expect(a.segments[i - 1].size).toBeGreaterThanOrEqual(a.segments[i].size)
+    }
+  })
+
+  it('assignment 值域正確、段別大小與 assignment 一致', () => {
+    const r = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: INIT2 })
+    const counts = [0, 0]
+    for (const a of r.assignment) {
+      expect(a).toBeGreaterThanOrEqual(0)
+      expect(a).toBeLessThan(2)
+      counts[a]++
+    }
+    expect(counts).toEqual(r.segments.map((s) => s.size))
+  })
+
+  it('拒絕 W4 模型（調節／高階構念）', () => {
+    const out = posPLS(main, MOD_MODEL(), { segments: 2 })
+    expect(out.error).toBe('w4-model-not-supported')
+    expect(out.message).toContain('PLS-POS')
+  })
+
+  it('K < 2 → 明確報錯（K=1 就是全域模型）', () => {
+    expect(posPLS(fxRows, FX_MODEL(), { segments: 1 }).error).toBe('pos-bad-segments')
+    expect(posPLS(fxRows, FX_MODEL(), { segments: 2.5 }).error).toBe('pos-bad-segments')
+  })
+
+  it('樣本不足以支撐段數 → 明確報錯', () => {
+    const out = posPLS(fxRows.slice(0, 10), FX_MODEL(), { segments: 3, minSize: 10 })
+    expect(out.error).toBe('too-few-cases')
+  })
+
+  it('initAssignment 不合法 → 明確報錯', () => {
+    expect(posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: [0, 1] }).error)
+      .toBe('pos-bad-init')
+    const allZero = new Array(fxRows.length).fill(0)
+    expect(posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: allZero }).error)
+      .toBe('pos-bad-init')
+  })
+})
+
+describe('pairwise deletion ＋ WPLS（相關矩陣驅動）', () => {
+  const OPT = { tolerance: 1e-12, maxIterations: 2000 }
+  const M1 = () => ({
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'F1', indicators: ['i1', 'i2', 'i3'], mode: 'reflective' },
+      { name: 'F2', indicators: ['i4', 'i5', 'i6'], mode: 'reflective' },
+    ],
+    paths: [{ from: 'F1', to: 'F2' }],
+  })
+  const PW = D.pw
+  const pwRows = main.map((row, i) => {
+    const o = {}
+    PW.cols.forEach((c, j) => { o[c] = PW.mask[i][j] ? null : row[c] })
+    return o
+  })
+
+  it('★ 相關矩陣驅動的重構：完整資料、無權重 → 與既有基準逐值相同（零回歸的根本保證）', () => {
+    const r = runPLS(main, M1(), OPT)
+    const ld = Object.fromEntries(r.outerLoadings.map((q) => [q.indicator, q.loading]))
+    const ref = REF.pls_basic.values
+    for (const c of ['i1', 'i2', 'i3', 'i4', 'i5', 'i6']) {
+      expect(Math.abs(ld[c] - ref[`loading_${c}`])).toBeLessThan(1e-6)
+    }
+    const path = r.pathCoefficients.find((q) => q.from === 'F1' && q.to === 'F2').coef
+    expect(Math.abs(path - ref.path_F1_F2)).toBeLessThan(1e-6)
+  })
+
+  it('★ pairwise：不剔除任何列（n 維持 60），casewise 則會剔除', () => {
+    const rPw = runPLS(pwRows, M1(), { ...OPT, missing: 'pairwise' })
+    expect(rPw.error).toBeUndefined()
+    expect(rPw.meta.n).toBe(60)
+    expect(rPw.meta.nDropped).toBe(0)
+
+    const rCw = runPLS(pwRows, M1(), { ...OPT, missing: 'casewise' })
+    expect(rCw.meta.n).toBeLessThan(60)
+    expect(rCw.meta.nDropped).toBeGreaterThan(0)
+    // pairwise 用到更多資訊 → 兩者的估計會不同（這正是 pairwise 的用意）
+    const pPw = rPw.pathCoefficients.find((q) => q.from === 'F1').coef
+    const pCw = rCw.pathCoefficients.find((q) => q.from === 'F1').coef
+    expect(pPw).not.toBe(pCw)
+  })
+
+  it('pairwise：報表明確告知「最少配對數」與分數的來源', () => {
+    const r = runPLS(pwRows, M1(), { ...OPT, missing: 'pairwise' })
+    expect(r.meta.warnings.some((w) => w.includes('pairwise deletion'))).toBe(true)
+    expect(r.meta.warnings.some((w) => w.includes('均值補值'))).toBe(true)
+  })
+
+  it('★ blindfolding（Q²）與 pairwise 互斥 → 明確報錯', () => {
+    const out = blindfoldPLS(pwRows, M1(), { ...OPT, missing: 'pairwise' })
+    expect(out.error).toBe('blindfold-pairwise-conflict')
+    expect(out.message).toContain('blindfolding')
+  })
+
+  it('★ WPLS：全 1 權重 = 未加權（加權相關的自我一致性）', () => {
+    const ones = new Array(main.length).fill(1)
+    const rW = runPLS(main, M1(), { ...OPT, weights: ones })
+    const r0 = runPLS(main, M1(), OPT)
+    const pW = rW.pathCoefficients.find((q) => q.from === 'F1').coef
+    const p0 = r0.pathCoefficients.find((q) => q.from === 'F1').coef
+    expect(Math.abs(pW - p0)).toBeLessThan(1e-8)
+  })
+
+  it('★ WPLS：權重同乘常數不改變結果（相關為尺度不變量）', () => {
+    const a = runPLS(main, M1(), { ...OPT, weights: PW.w })
+    const b = runPLS(main, M1(), { ...OPT, weights: PW.w.map((v) => v * 7.3) })
+    const pa = a.pathCoefficients.find((q) => q.from === 'F1').coef
+    const pb = b.pathCoefficients.find((q) => q.from === 'F1').coef
+    expect(Math.abs(pa - pb)).toBeLessThan(1e-10)
+  })
+
+  it('WPLS：權重可用欄位名指定', () => {
+    const rows = main.map((r, i) => ({ ...r, sw: PW.w[i] }))
+    const byName = runPLS(rows, M1(), { ...OPT, weights: 'sw' })
+    const byArr = runPLS(main, M1(), { ...OPT, weights: PW.w })
+    const pa = byName.pathCoefficients.find((q) => q.from === 'F1').coef
+    const pb = byArr.pathCoefficients.find((q) => q.from === 'F1').coef
+    expect(Math.abs(pa - pb)).toBeLessThan(1e-12)
+  })
+
+  it('WPLS：權重為 0 的列實質不參與估計（報表明說）', () => {
+    const w = main.map((_, i) => (i < 10 ? 0 : 1))
+    const rW = runPLS(main, M1(), { ...OPT, weights: w })
+    const rSub = runPLS(main.slice(10), M1(), OPT)
+    const pW = rW.pathCoefficients.find((q) => q.from === 'F1').coef
+    const pS = rSub.pathCoefficients.find((q) => q.from === 'F1').coef
+    expect(Math.abs(pW - pS)).toBeLessThan(1e-6)
+    expect(rW.meta.warnings.some((x) => x.includes('WPLS'))).toBe(true)
+  })
+
+  it('WPLS：非法權重 → 明確中文報錯', () => {
+    expect(runPLS(main, M1(), { weights: [1, 2] }).error).toBe('wpls-bad-weights')
+    expect(runPLS(main, M1(), { weights: main.map(() => -1) }).error).toBe('wpls-bad-weights')
+    expect(runPLS(main, M1(), { weights: main.map(() => 0) }).error).toBe('wpls-bad-weights')
+    expect(runPLS(main, M1(), { weights: 'nosuchcolumn' }).error).toBe('wpls-bad-weights')
+    expect(runPLS(main, M1(), { weights: 42 }).error).toBe('wpls-bad-weights')
+  })
+
+  it('pairwise：配對過少 → 明確報錯（不給不可靠的相關）', () => {
+    // 把 i1 與 i4 弄成幾乎不同時出現
+    const rows = main.map((row, i) => ({
+      ...row,
+      i1: i % 2 === 0 ? row.i1 : null,
+      i4: i % 2 === 0 ? null : row.i4,
+    }))
+    const out = runPLS(rows, M1(), { ...OPT, missing: 'pairwise' })
+    expect(out.error).toBe('pairwise-too-sparse')
+    expect(out.message).toContain('i1')
+  })
+
+  it('pairwise 與 WPLS 可併用（同一條相關矩陣入口）', () => {
+    const r = runPLS(pwRows.map((row, i) => ({ ...row, sw: PW.w[i] })), M1(), {
+      ...OPT, missing: 'pairwise', weights: 'sw',
+    })
+    expect(r.error).toBeUndefined()
+    expect(r.meta.n).toBe(60)
   })
 })

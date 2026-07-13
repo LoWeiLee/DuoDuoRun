@@ -84,6 +84,7 @@ import { inverse, matmul } from './matrix.js'
 import { pT, qT, qnorm, normalCdf } from './pvalue.js'
 import { isMissing } from '../variableTypes.js'
 import { runNCA } from './nca.js'
+import { kolmogorovSmirnov } from './normality.js'
 
 export const PLS_SCHEMA_VERSION = 1
 
@@ -501,6 +502,7 @@ function extractMatrix(rows, indicators, missing) {
   }
   let X
   let nDropped = 0
+  let kept
   if (missing === 'mean') {
     const means = new Array(p)
     for (let j = 0; j < p; j++) {
@@ -509,11 +511,98 @@ function extractMatrix(rows, indicators, missing) {
       means[j] = s / c
     }
     X = raw.map((vec) => vec.map((v, j) => (Number.isNaN(v) ? means[j] : v)))
+    kept = raw.map((_, i) => i)
+  } else if (missing === 'pairwise') {
+    // pairwise deletion：不剔除任何列、不補值——NaN 原樣留著。
+    // 相關矩陣以 pairwise-complete 計算；LV 分數用 zero-imputed 標準化值
+    // （＝原尺度的均值補值）加權，僅供 IPMA／預測／分段等下游使用。見 handoff §6.7。
+    X = raw
+    kept = raw.map((_, i) => i)
   } else { // casewise（預設）
-    X = raw.filter((vec) => vec.every((v) => !Number.isNaN(v)))
+    X = []
+    kept = []
+    for (let i = 0; i < raw.length; i++) {
+      if (raw[i].every((v) => !Number.isNaN(v))) { X.push(raw[i]); kept.push(i) }
+    }
     nDropped = raw.length - X.length
   }
-  return { X, n: X.length, nDropped }
+  return { X, n: X.length, nDropped, kept }
+}
+
+/**
+ * pairwise-complete 相關矩陣：R[a][b] 只用「a、b 兩欄同時可觀察」的列計算。
+ * 對角線為 1。可用配對數 < 3 或任一欄在該配對上零變異 → 該格回傳 NaN（呼叫端負責報錯）。
+ * 回傳 { R, minPairs }。
+ */
+function pairwiseCorrMatrix(cols) {
+  const p = cols.length
+  const n = cols[0].length
+  const R = []
+  for (let a = 0; a < p; a++) R.push(new Array(p).fill(1))
+  let minPairs = n
+  for (let a = 0; a < p; a++) {
+    for (let b = a + 1; b < p; b++) {
+      let cnt = 0, sa = 0, sb = 0
+      for (let i = 0; i < n; i++) {
+        const va = cols[a][i], vb = cols[b][i]
+        if (Number.isNaN(va) || Number.isNaN(vb)) continue
+        cnt++; sa += va; sb += vb
+      }
+      if (cnt < minPairs) minPairs = cnt
+      if (cnt < 3) { R[a][b] = NaN; R[b][a] = NaN; continue }
+      const ma = sa / cnt, mb = sb / cnt
+      let saa = 0, sbb = 0, sab = 0
+      for (let i = 0; i < n; i++) {
+        const va = cols[a][i], vb = cols[b][i]
+        if (Number.isNaN(va) || Number.isNaN(vb)) continue
+        const da = va - ma, db = vb - mb
+        saa += da * da; sbb += db * db; sab += da * db
+      }
+      const den = Math.sqrt(saa * sbb)
+      const v = den > 0 ? sab / den : NaN
+      R[a][b] = v
+      R[b][a] = v
+    }
+  }
+  return { R, minPairs }
+}
+
+/**
+ * 加權相關矩陣（WPLS）：以抽樣權重 w_i 計算加權平均、加權共變異與加權相關。
+ *   μ_j = Σw·x / Σw；cov_ab = Σw(x_a−μ_a)(x_b−μ_b) / Σw；R_ab = cov_ab / √(cov_aa·cov_bb)
+ * 權重同乘一個常數不影響結果（相關為尺度不變量）。
+ * 零變異欄回傳 { zeroVarIndex }。
+ */
+function weightedCorrMatrix(cols, w) {
+  const p = cols.length
+  const n = cols[0].length
+  let sw = 0
+  for (let i = 0; i < n; i++) sw += w[i]
+  const mu = new Array(p)
+  for (let j = 0; j < p; j++) {
+    let s = 0
+    for (let i = 0; i < n; i++) s += w[i] * cols[j][i]
+    mu[j] = s / sw
+  }
+  const cov = []
+  for (let a = 0; a < p; a++) cov.push(new Array(p).fill(0))
+  for (let a = 0; a < p; a++) {
+    for (let b = a; b < p; b++) {
+      let s = 0
+      for (let i = 0; i < n; i++) s += w[i] * (cols[a][i] - mu[a]) * (cols[b][i] - mu[b])
+      cov[a][b] = s / sw
+      cov[b][a] = cov[a][b]
+    }
+  }
+  for (let j = 0; j < p; j++) if (!(cov[j][j] > 0)) return { zeroVarIndex: j }
+  const R = []
+  for (let a = 0; a < p; a++) {
+    R.push(new Array(p))
+    for (let b = 0; b < p; b++) {
+      R[a][b] = a === b ? 1 : cov[a][b] / Math.sqrt(cov[a][a] * cov[b][b])
+    }
+  }
+  return { R, mu, sd: cov.map((row, j) => Math.sqrt(row[j])) }
 }
 
 /** 逐欄 z-score（ddof=1），回傳各欄 mean/sd（blindfolding 用）。零變異回傳該欄 index。 */
@@ -542,20 +631,37 @@ function standardizeColumns(X) {
 /* ─────────────────────────  核心迭代估計  ───────────────────────── */
 
 /**
- * 對「已標準化欄位」執行 PLS 迭代（Mode A/B × path/factorial/centroid）。
+ * ★ PLS 核心迭代（Lohmöller 1989）——**完全由指標相關矩陣 R 驅動**。
+ *
+ * 這是引擎的單一迭代實作。三個入口共用它：
+ *   1. 完整資料：R = 標準化欄位的相關矩陣（`estimateCore` 的薄包裝）
+ *   2. pairwise deletion：R = pairwise-complete 相關矩陣
+ *   3. WPLS（抽樣權重）：R = 加權相關矩陣
+ *
+ * 為什麼可以純由 R 驅動（設計見 handoff-roadmap §6.7）：
+ *   · 分數 y_j = Σ_h w_jh·z_h  →  Var(y_j) = w_j'R_jj w_j、corr(y_j,y_k) = w_j'R_jk w_k
+ *   · 內部估計 Z_j = Σ_k e_jk·y_k  →  cov(z_h, Z_j) = Σ_k e_jk·(Σ_g w_kg·R[h][g])
+ *   · Mode A 外部權重 ∝ corr(z_h, Z_j)；Mode B 為 S_bb⁻¹·r —— 兩者都只吃上式
+ *   · 三種 scheme 的內部權重皆由 LV 相關矩陣導出
+ *   · loadings、lvCorr、信效度、HTMT、model fit 本來就只吃 R
+ *
+ * 一個關鍵簡化：原實作用 corr(z_h, Z_j)（除以 sd(Z_j)），本實作用 cov(z_h, Z_j)。
+ * 因為 sd(Z_j) 對整個區塊是同一個純量，權重隨後又被縮放成 Var(y_j)=1 → 該因子完全相消，
+ * 兩者的正規化結果**逐位相同**。少一次開根號，也少一個數值誤差來源。
+ *
  * spec：{ blocks, modes, pred, succ, scheme, tolerance, maxIterations }
- * @returns { weights: Float64Array[], scores: Float64Array[], iterations, converged } | null（數值失敗）
+ * @returns { weights: Float64Array[], iterations, converged } | null（數值失敗）
  */
-function estimateCore(cols, n, spec) {
+function estimateCoreFromCorr(R, spec) {
   const { blocks, modes, pred, succ, scheme, tolerance, maxIterations } = spec
   const L = blocks.length
 
-  // Mode B 區塊：指標相關子矩陣反矩陣在迭代間不變，預先計算
+  // Mode B 區塊：指標相關子矩陣的反矩陣在迭代間不變，預先計算
   let SbInv = null
   if (modes.some((m) => m === 'B')) {
     SbInv = blocks.map((b, j) => {
       if (modes[j] !== 'B' || b.length < 2) return null
-      const Sb = b.map((a) => b.map((c) => (a === c ? 1 : corrOf(cols[a], cols[c]))))
+      const Sb = b.map((a) => b.map((c) => R[a][c]))
       return inverse(Sb)
     })
     for (let j = 0; j < L; j++) {
@@ -563,45 +669,60 @@ function estimateCore(cols, n, spec) {
     }
   }
 
-  // 權重初始化為 1，並縮放為單位變異分數
-  let W = blocks.map((b) => Float64Array.from({ length: b.length }, () => 1))
-  const Y = blocks.map(() => new Float64Array(n))
-
-  const computeScores = () => {
-    for (let j = 0; j < L; j++) {
-      const b = blocks[j]
-      const y = Y[j]
-      y.fill(0)
-      for (let h = 0; h < b.length; h++) {
-        const z = cols[b[h]]
-        const w = W[j][h]
-        for (let i = 0; i < n; i++) y[i] += w * z[i]
-      }
-      const s = sdOf(y)
-      if (!(s > 0) || !Number.isFinite(s)) return false
-      for (let i = 0; i < n; i++) y[i] /= s
-      for (let h = 0; h < b.length; h++) W[j][h] /= s
+  /** Var(y_j) = w_j'·R_jj·w_j */
+  const varOf = (j, w) => {
+    const b = blocks[j]
+    let v = 0
+    for (let a = 0; a < b.length; a++) {
+      for (let c = 0; c < b.length; c++) v += w[a] * w[c] * R[b[a]][b[c]]
     }
+    return v
+  }
+  /** corr(y_j, y_k) = w_j'·R_jk·w_k（兩者皆為單位變異） */
+  const lvCorrOf = (W, j, k) => {
+    const bj = blocks[j]
+    const bk = blocks[k]
+    let v = 0
+    for (let a = 0; a < bj.length; a++) {
+      for (let c = 0; c < bk.length; c++) v += W[j][a] * W[k][c] * R[bj[a]][bk[c]]
+    }
+    return v
+  }
+  /** corr(z_h, y_k) = Σ_g w_kg·R[h][g] */
+  const indLvCorr = (W, h, k) => {
+    const bk = blocks[k]
+    let v = 0
+    for (let g = 0; g < bk.length; g++) v += W[k][g] * R[h][bk[g]]
+    return v
+  }
+  /** 權重縮放為單位變異；失敗回傳 false */
+  const normalize = (j, w) => {
+    const v = varOf(j, w)
+    if (!(v > 0) || !Number.isFinite(v)) return false
+    const s = Math.sqrt(v)
+    for (let h = 0; h < w.length; h++) w[h] /= s
     return true
   }
-  if (!computeScores()) return null
+
+  // 權重初始化為 1，縮放為單位變異分數
+  let W = blocks.map((b) => Float64Array.from({ length: b.length }, () => 1))
+  for (let j = 0; j < L; j++) if (!normalize(j, W[j])) return null
 
   let iterations = 0
   let converged = false
-  const Zin = blocks.map(() => new Float64Array(n))
 
   while (iterations < maxIterations) {
     iterations++
-    // 內部權重
+
+    // 內部權重 e_jk（僅需係數，不需實際的 Z 向量）
+    const E = blocks.map(() => new Map())
     for (let j = 0; j < L; j++) {
-      const zj = Zin[j]
-      zj.fill(0)
       if (scheme === 'path') {
         // 前置 LV：OLS 迴歸係數
         const P = pred[j]
         if (P.length > 0) {
-          const Rpp = P.map((a) => P.map((b) => corrOf(Y[a], Y[b])))
-          const rpy = P.map((a) => corrOf(Y[a], Y[j]))
+          const Rpp = P.map((a) => P.map((b) => (a === b ? 1 : lvCorrOf(W, a, b))))
+          const rpy = P.map((a) => lvCorrOf(W, a, j))
           let bcoef
           if (P.length === 1) {
             bcoef = [rpy[0]]
@@ -610,58 +731,49 @@ function estimateCore(cols, n, spec) {
             if (!Rinv) return null
             bcoef = Rinv.map((row) => row.reduce((s, v, k) => s + v * rpy[k], 0))
           }
-          for (let k = 0; k < P.length; k++) {
-            const yk = Y[P[k]]
-            const e = bcoef[k]
-            for (let i = 0; i < n; i++) zj[i] += e * yk[i]
-          }
+          for (let k = 0; k < P.length; k++) E[j].set(P[k], (E[j].get(P[k]) ?? 0) + bcoef[k])
         }
         // 後繼 LV：相關係數
         for (const sIdx of succ[j]) {
-          const e = corrOf(Y[j], Y[sIdx])
-          const ys = Y[sIdx]
-          for (let i = 0; i < n; i++) zj[i] += e * ys[i]
+          E[j].set(sIdx, (E[j].get(sIdx) ?? 0) + lvCorrOf(W, j, sIdx))
         }
       } else {
         // factorial / centroid：所有相鄰 LV
         const nb = new Set([...pred[j], ...succ[j]])
         for (const k of nb) {
-          let e = corrOf(Y[j], Y[k])
+          let e = lvCorrOf(W, j, k)
           if (scheme === 'centroid') e = e >= 0 ? 1 : -1
-          const yk = Y[k]
-          for (let i = 0; i < n; i++) zj[i] += e * yk[i]
+          E[j].set(k, (E[j].get(k) ?? 0) + e)
         }
       }
     }
-    // 外部權重（Mode A：相關；Mode B：迴歸），再縮放為單位變異
+
+    // 外部權重（Mode A：cov(z_h, Z_j)；Mode B：S_bb⁻¹·r），再縮放為單位變異
     const Wnew = []
     for (let j = 0; j < L; j++) {
       const b = blocks[j]
+      // c_h = cov(z_h, Z_j) = Σ_k e_jk · corr(z_h, y_k)
+      const c = new Float64Array(b.length)
+      for (let h = 0; h < b.length; h++) {
+        let v = 0
+        for (const [k, e] of E[j]) v += e * indLvCorr(W, b[h], k)
+        c[h] = v
+      }
       const w = new Float64Array(b.length)
       if (modes[j] === 'B' && b.length >= 2) {
-        const r = b.map((h) => corrOf(cols[h], Zin[j]))
         const Sinv = SbInv[j]
         for (let h = 0; h < b.length; h++) {
           let s = 0
-          for (let k = 0; k < b.length; k++) s += Sinv[h][k] * r[k]
+          for (let k = 0; k < b.length; k++) s += Sinv[h][k] * c[k]
           w[h] = s
         }
       } else {
-        for (let h = 0; h < b.length; h++) w[h] = corrOf(cols[b[h]], Zin[j])
+        for (let h = 0; h < b.length; h++) w[h] = c[h]
       }
-      // 縮放：Var(Σ w z) = 1
-      const y = Y[j]
-      y.fill(0)
-      for (let h = 0; h < b.length; h++) {
-        const z = cols[b[h]]
-        for (let i = 0; i < n; i++) y[i] += w[h] * z[i]
-      }
-      const s = sdOf(y)
-      if (!(s > 0) || !Number.isFinite(s)) return null
-      for (let h = 0; h < b.length; h++) w[h] /= s
-      for (let i = 0; i < n; i++) y[i] /= s
+      if (!normalize(j, w)) return null
       Wnew.push(w)
     }
+
     // 收斂：外部權重最大絕對變化
     let maxDiff = 0
     for (let j = 0; j < L; j++) {
@@ -674,17 +786,53 @@ function estimateCore(cols, n, spec) {
     if (maxDiff < tolerance) { converged = true; break }
   }
 
-  // 符號定向：每個 LV 與所屬指標相關總和為正
+  // 符號定向：每個 LV 與所屬指標的相關總和為正（dominant orientation）
   for (let j = 0; j < L; j++) {
     let s = 0
-    for (const h of blocks[j]) s += corrOf(cols[h], Y[j])
-    if (s < 0) {
-      for (let i = 0; i < n; i++) Y[j][i] = -Y[j][i]
-      for (let h = 0; h < W[j].length; h++) W[j][h] = -W[j][h]
-    }
+    for (const h of blocks[j]) s += indLvCorr(W, h, j)
+    if (s < 0) for (let h = 0; h < W[j].length; h++) W[j][h] = -W[j][h]
   }
 
-  return { weights: W, scores: Y, iterations, converged }
+  return { weights: W, iterations, converged }
+}
+
+/**
+ * 對「已標準化欄位」執行 PLS 迭代（Mode A/B × path/factorial/centroid）。
+ *
+ * 薄包裝：R ← 欄位相關矩陣 → `estimateCoreFromCorr` → 由欄位算出 LV 分數。
+ * 迭代邏輯的單一事實來源在 `estimateCoreFromCorr`。
+ *
+ * @returns { weights: Float64Array[], scores: Float64Array[], iterations, converged } | null
+ */
+function estimateCore(cols, n, spec) {
+  const core = estimateCoreFromCorr(spec.corrMatrix ?? corrMatrixOf(cols), spec)
+  if (!core) return null
+  const scores = scoresFromWeights(cols, n, spec.blocks, core.weights)
+  if (!scores) return null
+  return { weights: core.weights, scores, iterations: core.iterations, converged: core.converged }
+}
+
+/**
+ * 由權重與（標準化）欄位算出 LV 分數。
+ * 權重已縮放為「在 R 的度量下」單位變異；分數這裡不再重新標準化，
+ * 完整資料時 sd(y) = 1（浮點誤差內）。pairwise / WPLS 時 R 與樣本共變異不一致，
+ * 分數的 sd 未必恰為 1 —— 這是刻意的：分數只供 IPMA / 預測 / 分段等下游使用，
+ * 統計量（loadings、lvCorr、信效度、fit）一律走 R，不受影響（文件見 handoff §6.7）。
+ */
+function scoresFromWeights(cols, n, blocks, W) {
+  const Y = []
+  for (let j = 0; j < blocks.length; j++) {
+    const b = blocks[j]
+    const y = new Float64Array(n)
+    for (let h = 0; h < b.length; h++) {
+      const z = cols[b[h]]
+      const w = W[j][h]
+      for (let i = 0; i < n; i++) y[i] += w * z[i]
+    }
+    if (!Number.isFinite(y[0])) return null
+    Y.push(y)
+  }
+  return Y
 }
 
 /* ─────────────────────────  統計量  ───────────────────────── */
@@ -1030,11 +1178,33 @@ function coreEstimates(cols, n, spec) {
   const est = estimateCore(cols, n, spec)
   if (!est || !est.converged) return est ? { notConverged: true, est } : null
   const L = spec.blocks.length
-  const rawLoadingsByLV = spec.blocks.map((b, j) => b.map((h) => corrOf(cols[h], est.scores[j])))
+  // pairwise / WPLS：分數是 zero-imputed（或加權標準化）值的加權和，其樣本相關
+  // 不等於 pairwise／加權相關矩陣的對應量。統計量一律回到 R 算（handoff §6.7 的設計）。
+  const R = spec.corrMatrix
+  const rawLoadingsByLV = R
+    ? spec.blocks.map((b, j) => b.map((h) => {
+      let v = 0
+      for (let g = 0; g < b.length; g++) v += est.weights[j][g] * R[h][b[g]]
+      return v
+    }))
+    : spec.blocks.map((b, j) => b.map((h) => corrOf(cols[h], est.scores[j])))
   const lvCorr = []
   for (let a = 0; a < L; a++) {
     lvCorr.push(new Array(L))
-    for (let b = 0; b < L; b++) lvCorr[a][b] = a === b ? 1 : corrOf(est.scores[a], est.scores[b])
+    for (let b = 0; b < L; b++) {
+      if (a === b) { lvCorr[a][b] = 1; continue }
+      if (R) {
+        const ba = spec.blocks[a]
+        const bb = spec.blocks[b]
+        let v = 0
+        for (let g = 0; g < ba.length; g++) {
+          for (let h = 0; h < bb.length; h++) v += est.weights[a][g] * est.weights[b][h] * R[ba[g]][bb[h]]
+        }
+        lvCorr[a][b] = v
+      } else {
+        lvCorr[a][b] = corrOf(est.scores[a], est.scores[b])
+      }
+    }
   }
   let effLoadingsByLV = rawLoadingsByLV
   let effLvCorr = lvCorr
@@ -1063,12 +1233,47 @@ function toColumnPool(X, names) {
   return pool
 }
 
-/** 欄位陣列逐欄 z-score（ddof=1；不改動原欄）。零變異回傳該欄 index。 */
-function standardizeColArrays(raws) {
+/**
+ * 欄位陣列逐欄 z-score（ddof=1；不改動原欄）。零變異回傳該欄 index。
+ *
+ * @param {object} [opt] {
+ *   pairwise: true    → 平均／標準差只用該欄的可觀察值；NaN 標準化後填 0
+ *                      （＝原尺度的均值補值）。只影響「分數」，統計量走 pairwise 相關矩陣。
+ *   rowWeights        → 加權平均／加權標準差（WPLS）
+ * }
+ */
+function standardizeColArrays(raws, opt = {}) {
+  const { pairwise, rowWeights } = opt
   const cols = []
   for (let j = 0; j < raws.length; j++) {
     const srcCol = raws[j]
     const n = srcCol.length
+    if (pairwise || rowWeights) {
+      let sw = 0, sx = 0
+      for (let i = 0; i < n; i++) {
+        const v = srcCol[i]
+        if (Number.isNaN(v)) continue
+        const w = rowWeights ? rowWeights[i] : 1
+        sw += w; sx += w * v
+      }
+      if (!(sw > 0)) return { zeroVarIndex: j }
+      const m = sx / sw
+      let ss = 0
+      for (let i = 0; i < n; i++) {
+        const v = srcCol[i]
+        if (Number.isNaN(v)) continue
+        const w = rowWeights ? rowWeights[i] : 1
+        ss += w * (v - m) * (v - m)
+      }
+      const sd = Math.sqrt(ss / sw)
+      if (!(sd > 0)) return { zeroVarIndex: j }
+      const col = new Float64Array(n)
+      for (let i = 0; i < n; i++) {
+        col[i] = Number.isNaN(srcCol[i]) ? 0 : (srcCol[i] - m) / sd
+      }
+      cols.push(col)
+      continue
+    }
     const m = meanOf(srcCol)
     let ss = 0
     for (let i = 0; i < n; i++) { const d = srcCol[i] - m; ss += d * d }
@@ -1192,10 +1397,43 @@ function estimateStage(pool, n, modelS, plan, allowShared) {
     if (!col) return { error: 'missing-column', message: `管線內部錯誤：找不到欄位「${name}」` }
     raws.push(col)
   }
-  const std = standardizeColArrays(raws)
+  const pairwise = plan.missing === 'pairwise'
+  const rowWeights = plan.rowWeights ?? null
+  const std = standardizeColArrays(raws, { pairwise, rowWeights })
   if (std.zeroVarIndex !== undefined) {
     return { error: 'zero-variance', message: `指標「${spec.indicators[std.zeroVarIndex]}」變異數為零，無法標準化` }
   }
+
+  // pairwise / WPLS：相關矩陣不從（zero-imputed／加權標準化）欄位重算，另行建構後掛進 spec。
+  // 迭代、loadings、lvCorr、信效度、HTMT、model fit 全部走它（handoff §6.7 的相關矩陣驅動設計）。
+  spec.stageWarnings = []
+  if (pairwise) {
+    const pw = pairwiseCorrMatrix(raws)
+    for (let a = 0; a < spec.indicators.length; a++) {
+      for (let b = 0; b < spec.indicators.length; b++) {
+        if (Number.isNaN(pw.R[a][b])) {
+          return {
+            error: 'pairwise-too-sparse',
+            message: `指標「${spec.indicators[a]}」與「${spec.indicators[b]}」同時可觀察的資料列少於 3 筆（或其一在該配對上零變異），pairwise 相關無法計算`,
+          }
+        }
+      }
+    }
+    spec.corrMatrix = pw.R
+    const eig = jacobiEigen(pw.R.map((row) => [...row]))
+    const minEig = Math.min(...eig.values)
+    if (minEig < -1e-8) {
+      spec.stageWarnings.push(`pairwise 相關矩陣非半正定（最小特徵值 ${minEig.toFixed(4)}）——不同的相關係數來自不同的子樣本，彼此可能不相容。信效度與 model fit 指標在此情形下可能落在合理範圍外，請謹慎解讀；缺失比例高時建議改用 casewise 或先做多重插補`)
+    }
+    spec.stageWarnings.push(`pairwise deletion：相關矩陣的每一格只用「該配對同時可觀察」的列計算（最少的一格有 ${pw.minPairs} 筆）；LV 分數則以均值補值後的標準化值加權，僅供 IPMA／預測／分段等下游使用`)
+  } else if (rowWeights) {
+    const wc = weightedCorrMatrix(raws, rowWeights)
+    if (wc.zeroVarIndex !== undefined) {
+      return { error: 'zero-variance', message: `指標「${spec.indicators[wc.zeroVarIndex]}」在加權後變異數為零` }
+    }
+    spec.corrMatrix = wc.R
+  }
+
   const ce = coreEstimates(std.cols, n, spec)
   if (!ce) {
     return { error: 'estimation-failed', message: 'PLS 迭代過程出現數值退化（零變異 LV 分數或奇異矩陣），請檢查指標間是否極度共線' }
@@ -1474,10 +1712,16 @@ function reportFromStage(stage, ctx) {
   const p = spec.indicators.length
 
   // 指標相關矩陣（供信效度、HTMT、外部 VIF、model fit）
-  const indCorr = []
-  for (let a = 0; a < p; a++) {
-    indCorr.push(new Array(p))
-    for (let b = 0; b < p; b++) indCorr[a][b] = a === b ? 1 : corrOf(cols[a], cols[b])
+  // pairwise / WPLS 時直接用 spec.corrMatrix——不是從（zero-imputed／加權標準化）欄位重算
+  let indCorr
+  if (spec.corrMatrix) {
+    indCorr = spec.corrMatrix
+  } else {
+    indCorr = []
+    for (let a = 0; a < p; a++) {
+      indCorr.push(new Array(p))
+      for (let b = 0; b < p; b++) indCorr[a][b] = a === b ? 1 : corrOf(cols[a], cols[b])
+    }
   }
 
   // 外部 VIF（形成型多指標區塊）：區塊相關矩陣反矩陣對角線
@@ -1757,14 +2001,54 @@ function buildMediationReport(pathCoefficients, plan) {
  * @param {object} options { scheme:'path'|'factorial'|'centroid', consistent:boolean,
  *                           tolerance, maxIterations, missing:'casewise'|'mean' }
  */
+
+/**
+ * 抽樣權重（WPLS）：options.weights 可為欄位名（字串）或與 rows 等長的數值陣列。
+ * 回傳 { weights: number[]（依 kept 過濾後）, nPositive } | { error, message } | null（未指定）。
+ */
+function resolveRowWeights(rows, options, kept) {
+  const wspec = options.weights
+  if (wspec === undefined || wspec === null) return null
+  let raw
+  if (typeof wspec === 'string') {
+    raw = rows.map((r) => Number(r?.[wspec]))
+    if (raw.every((v) => !Number.isFinite(v))) {
+      return { error: 'wpls-bad-weights', message: `資料中找不到可用的權重欄位「${wspec}」` }
+    }
+  } else if (Array.isArray(wspec)) {
+    if (wspec.length !== rows.length) {
+      return { error: 'wpls-bad-weights', message: `weights 陣列長度（${wspec.length}）與資料列數（${rows.length}）不符` }
+    }
+    raw = wspec.map(Number)
+  } else {
+    return { error: 'wpls-bad-weights', message: 'weights 必須是欄位名（字串）或與資料等長的數值陣列' }
+  }
+  const w = kept.map((i) => raw[i])
+  for (let i = 0; i < w.length; i++) {
+    if (!Number.isFinite(w[i]) || w[i] < 0) {
+      return { error: 'wpls-bad-weights', message: `第 ${kept[i] + 1} 列的抽樣權重不是有效的非負數值（收到 ${raw[kept[i]]}）` }
+    }
+  }
+  const sum = w.reduce((a, v) => a + v, 0)
+  if (!(sum > 0)) return { error: 'wpls-bad-weights', message: '抽樣權重總和為 0' }
+  return { weights: w, nPositive: w.filter((v) => v > 0).length }
+}
+
 export function runPLS(rows, model, options = {}) {
   const plan = buildPlan(model, options)
   if (plan.error) return plan
 
   const ext = extractMatrix(rows, plan.baseIndicators, plan.missing)
   if (ext.error) return ext
-  const { X, n, nDropped } = ext
+  const { X, n, nDropped, kept } = ext
   if (n < 5) return { error: 'too-few-cases', message: `缺失值處理後樣本數只剩 ${n} 筆（至少需要 5 筆）` }
+
+  const rw = resolveRowWeights(rows, options, kept)
+  if (rw && rw.error) return rw
+  if (rw) {
+    plan.rowWeights = rw.weights
+    plan.nPositiveWeights = rw.nPositive
+  }
 
   const pool = toColumnPool(X, plan.baseIndicators)
   const exec = executePlan(pool, n, plan, null)
@@ -1773,6 +2057,10 @@ export function runPLS(rows, model, options = {}) {
   const baseWarnings = []
   if (n < 30) baseWarnings.push(`樣本數偏低（n = ${n}），PLS 估計與 bootstrap 推論的穩定性有限`)
   if (nDropped > 0) baseWarnings.push(`casewise deletion 剔除 ${nDropped} 筆含缺失值的資料列`)
+  if (plan.rowWeights) {
+    baseWarnings.push(`WPLS（加權 PLS）：相關矩陣以抽樣權重加權計算；${n - plan.nPositiveWeights} 筆權重為 0 的資料列實質不參與估計。推論（bootstrap）仍以未加權方式重抽——加權重抽的設計未在 SmartPLS 文件化，本工具不擅自實作`)
+  }
+  if (exec.final?.spec?.stageWarnings?.length) baseWarnings.push(...exec.final.spec.stageWarnings)
 
   const report = reportFromStage(exec.final, {
     nRows: rows.length,
@@ -1811,6 +2099,14 @@ export function runPLS(rows, model, options = {}) {
  * @returns {{ omissionDistance, constructs:[{lv, q2, sse, sso}], warnings }} | { error, message }
  */
 export function blindfoldPLS(rows, model, options = {}) {
+  // blindfolding 以「刻意挖洞再預測」為機制，本身就要控制缺失樣式；
+  // 與 pairwise deletion 併用時「哪些格子是被挖掉的、哪些是原本就缺的」無法區分 → 互斥（handoff §6.7）。
+  if ((options.missing ?? 'casewise') === 'pairwise') {
+    return {
+      error: 'blindfold-pairwise-conflict',
+      message: 'blindfolding（Q²）不能與 pairwise deletion 併用：blindfolding 需要刻意挖洞再預測，若資料本身已有缺失，無法區分「被挖掉的格子」與「原本就缺的格子」。請改用 casewise 或均值補值',
+    }
+  }
   if ((Array.isArray(model?.interactions) && model.interactions.length > 0)
       || (Array.isArray(model?.higherOrder) && model.higherOrder.length > 0)) {
     return {
@@ -2246,10 +2542,14 @@ export function mgaParametricTest(th1, se1, n1, th2, se2, n2) {
   ) * Math.sqrt(1 / n1 + 1 / n2)
   const tPooled = sp > 0 ? diff / sp : null
   const dfPooled = n1 + n2 - 2
-  const sw = Math.sqrt(se1 * se1 + se2 * se2)
+  // Welch–Satterthwaite（Sarstedt, Henseler & Ringle 2011）：兩組變異數須以 (n−1)/n 加權。
+  // n1 = n2 時本式與 Keil 的 pooled t 數學上恆等——cSEM 0.6.1 兩者同值（2026-07-13 抽驗確認）。
+  const vw1 = ((n1 - 1) / n1) * se1 * se1
+  const vw2 = ((n2 - 1) / n2) * se2 * se2
+  const sw = Math.sqrt(vw1 + vw2)
   const tWelch = sw > 0 ? diff / sw : null
-  const dfWelch = (se1 * se1 + se2 * se2) ** 2
-    / ((se1 ** 4) / (n1 - 1) + (se2 ** 4) / (n2 - 1))
+  const dfWelch = (vw1 + vw2) ** 2
+    / ((vw1 * vw1) / (n1 - 1) + (vw2 * vw2) / (n2 - 1))
   return {
     diff,
     pooled: { t: tPooled, df: dfPooled, p: tPooled === null ? null : pT(Math.abs(tPooled), dfPooled) },
@@ -2472,7 +2772,9 @@ export function micomPLS(rows, model, options = {}) {
     const m2 = p2.reduce((a, i) => a + s[i], 0) / p2.length
     const v1 = p1.reduce((a, i) => a + (s[i] - m1) ** 2, 0) / (p1.length - 1)
     const v2 = p2.reduce((a, i) => a + (s[i] - m2) ** 2, 0) / (p2.length - 1)
-    return [m1 - m2, v1 - v2]
+    // Henseler, Ringle & Sarstedt (2016)：step 3 的變異數比較為 log 變異數比
+    // log(var1) − log(var2)，非變異數差（cSEM 原始碼同：log(y[[1]]) − log(y[[2]])）。
+    return [m1 - m2, Math.log(v1) - Math.log(v2)]
   })
   const mvObs = mvOf(pos1, pos2)
 
@@ -3137,4 +3439,944 @@ export function ctaPLS(rows, model, options = {}) {
   }
 
   return { blocks, skipped, n, nDropped, nBootstrap: B, ciAlpha, warnings }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Gaussian copula 內生性檢查（W6，§6.5）
+ *
+ * Park & Gupta (2012), Marketing Science 31(4)；PLS-SEM 應用流程依
+ * Hult, Hair, Proksch, Sarstedt, Pinkwart & Ringle (2018), JIM 26(3)。
+ *
+ * 原理：若解釋變數 P 與結構誤差相關（內生），則把
+ *     c_P = Φ⁻¹(H(P))，H = P 的經驗 CDF
+ * 加入該內生構念的結構迴歸後，c_P 的係數會顯著。c_P 係數不顯著 → 無內生性證據。
+ *
+ * 識別條件（Park & Gupta 2012）：P 必須「非常態」。P 為常態時 copula 法無從識別，
+ * 本實作以 KS（Lilliefors）把關並在報表明確警告，但仍照算（不靜默擋掉）。
+ *
+ * 慣例：H 以 ecdf(P)(P) 計算（並列取最大秩 ÷ n），H = 1 夾為 1 − 1e−7
+ * （Hult et al. 2018 公開程式碼的作法）。copula 項為秩基底 → 對單調變換不變，
+ * 故 LV 分數標準化與否不影響 c_P。
+ *
+ * 顯著性：copula 項的漸近 SE 非標準，Hult et al. (2018) 建議 bootstrap。
+ * 本實作每次重抽都「重估 PLS 權重 → 重算 copula 項 → 重跑擴充迴歸」（完整巢套）。
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** c = Φ⁻¹(ecdf(v)(v))；並列取最大秩；H = 1 夾為 1 − 1e−7（Hult et al. 2018）。 */
+export function copulaTerm(v) {
+  const n = v.length
+  if (n === 0) return []
+  const sorted = [...v].sort((a, b) => a - b)
+  return v.map((x) => {
+    // 「≤ x 的個數」＝ 右插入點（並列取最大秩）
+    let lo = 0
+    let hi = n
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (sorted[mid] <= x) lo = mid + 1
+      else hi = mid
+    }
+    let h = lo / n
+    if (h >= 1) h = 1 - 1e-7
+    return qnorm(h)
+  })
+}
+
+/** 含截距的 OLS；回傳 { coefs（不含截距）, r2 } 或 null（奇異）。 */
+function olsWithIntercept(cols, y) {
+  const n = y.length
+  const k = cols.length + 1
+  const X = []
+  for (let i = 0; i < n; i++) {
+    const row = new Array(k)
+    row[0] = 1
+    for (let j = 0; j < cols.length; j++) row[j + 1] = cols[j][i]
+    X.push(row)
+  }
+  // 正規方程 XᵀX b = Xᵀy（k 很小，用高斯消去）
+  const A = Array.from({ length: k }, () => new Array(k + 1).fill(0))
+  for (let a = 0; a < k; a++) {
+    for (let b = 0; b < k; b++) {
+      let s = 0
+      for (let i = 0; i < n; i++) s += X[i][a] * X[i][b]
+      A[a][b] = s
+    }
+    let s = 0
+    for (let i = 0; i < n; i++) s += X[i][a] * y[i]
+    A[a][k] = s
+  }
+  for (let c = 0; c < k; c++) {
+    let piv = c
+    for (let r = c + 1; r < k; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r
+    if (Math.abs(A[piv][c]) < 1e-12) return null
+    if (piv !== c) { const t = A[piv]; A[piv] = A[c]; A[c] = t }
+    for (let r = 0; r < k; r++) {
+      if (r === c) continue
+      const f = A[r][c] / A[c][c]
+      for (let cc = c; cc <= k; cc++) A[r][cc] -= f * A[c][cc]
+    }
+  }
+  const b = new Array(k)
+  for (let c = 0; c < k; c++) b[c] = A[c][k] / A[c][c]
+  let ssRes = 0
+  let ssTot = 0
+  const ym = y.reduce((a, v) => a + v, 0) / n
+  for (let i = 0; i < n; i++) {
+    let pred = 0
+    for (let c = 0; c < k; c++) pred += b[c] * X[i][c]
+    ssRes += (y[i] - pred) ** 2
+    ssTot += (y[i] - ym) ** 2
+  }
+  return { coefs: b.slice(1), r2: ssTot > 0 ? 1 - ssRes / ssTot : 0 }
+}
+
+/** 非空子集列舉（k ≤ 5 時全組合；k > 5 只給「各自單獨」與「全部」以免爆炸）。 */
+function copulaSubsets(k) {
+  if (k <= 0) return []
+  if (k <= 5) {
+    const out = []
+    for (let m = 1; m < (1 << k); m++) {
+      const s = []
+      for (let i = 0; i < k; i++) if (m & (1 << i)) s.push(i)
+      out.push(s)
+    }
+    return out
+  }
+  const out = []
+  for (let i = 0; i < k; i++) out.push([i])
+  out.push(Array.from({ length: k }, (_, i) => i))
+  return out
+}
+
+/**
+ * Gaussian copula 內生性檢查。
+ *
+ * @param {object[]} rows 原始資料列
+ * @param {object} model PLS 模型 JSON
+ * @param {object} [options] {
+ *   constructs?: string[]      要檢定的（可能內生的）解釋構念；預設＝所有出現在結構路徑左側者
+ *   bootstrapN=1000            bootstrap 次數
+ *   seed=42                    重抽種子
+ *   bootstrapIndices?          注入固定重抽索引（number[][]；給了就忽略 bootstrapN/seed）
+ *   ciAlpha=0.05               percentile CI 的 α
+ *   normalityAlpha=0.05        KS 把關的 α（p ≥ α ⇒ 判為常態 ⇒ 警告）
+ *   missing='casewise'
+ *   ...runPLS 的其餘 options
+ * }
+ * @returns {{ normality, equations, nBootstrap, ciAlpha, n, nDropped, warnings }}
+ *          | { error, message }
+ */
+export function copulaPLS(rows, model, options = {}) {
+  const bad = rejectW4(model, 'Gaussian copula 內生性檢查')
+  if (bad) return bad
+
+  const valid = validatePLSModel(model)
+  if (!valid.ok) {
+    return { error: 'invalid-model', message: `模型不合法：${valid.errors.join('；')}` }
+  }
+  const m = valid.model
+  const lvNames = m.latentVariables.map((lv) => lv.name)
+
+  if (!Array.isArray(m.paths) || m.paths.length === 0) {
+    return {
+      error: 'copula-no-structural-path',
+      message: 'Gaussian copula 內生性檢查需要結構路徑；目前模型沒有任何路徑',
+    }
+  }
+
+  const ciAlpha = options.ciAlpha ?? 0.05
+  if (!(ciAlpha > 0 && ciAlpha < 1)) {
+    return { error: 'copula-bad-alpha', message: `ciAlpha 必須介於 0 與 1 之間（收到 ${options.ciAlpha}）` }
+  }
+  const normalityAlpha = options.normalityAlpha ?? 0.05
+
+  // 結構方程：每個內生構念 → 其解釋構念清單（維持模型宣告順序）
+  const eqs = []
+  for (const lv of lvNames) {
+    const preds = m.paths.filter((pp) => pp.to === lv).map((pp) => pp.from)
+    if (preds.length > 0) eqs.push({ endogenous: lv, predictors: preds })
+  }
+
+  // 候選構念：使用者指定，或所有出現在路徑左側者
+  const allPredictors = [...new Set(m.paths.map((pp) => pp.from))]
+  let candidates = options.constructs ?? allPredictors
+  const unknown = candidates.filter((c) => !lvNames.includes(c))
+  if (unknown.length > 0) {
+    return {
+      error: 'copula-unknown-construct',
+      message: `constructs 指定了模型中不存在的構念：${unknown.join('、')}（可用：${lvNames.join('、')}）`,
+    }
+  }
+  candidates = candidates.filter((c) => allPredictors.includes(c))
+  if (candidates.length === 0) {
+    return {
+      error: 'copula-no-candidate',
+      message: 'Gaussian copula 只能檢定「作為解釋變數」的構念；指定的構念都不是任何結構路徑的起點',
+    }
+  }
+
+  const baseOpts = { ...options }
+  for (const k of ['constructs', 'bootstrapN', 'seed', 'bootstrapIndices',
+    'ciAlpha', 'normalityAlpha', 'onProgress']) delete baseOpts[k]
+
+  const base = runPLS(rows, m, baseOpts)
+  if (base.error) return base
+
+  const scoreOf = (res, lv) => res.scores.data[res.scores.lvNames.indexOf(lv)]
+  const n = base.scores.data[0].length
+
+  if (n < 10) {
+    return { error: 'too-few-cases', message: `缺失值處理後樣本數只剩 ${n} 筆（copula 檢查至少需要 10 筆）` }
+  }
+
+  const warnings = []
+
+  // 前置：非常態把關（Park & Gupta 的識別條件）
+  const normality = candidates.map((lv) => {
+    const ks = kolmogorovSmirnov(scoreOf(base, lv))
+    const nonNormal = !(ks.p >= normalityAlpha)
+    if (!nonNormal) {
+      warnings.push(`構念「${lv}」的分數在 KS（Lilliefors）檢定下未拒絕常態（D = ${ks.D.toFixed(4)}、p = ${ks.p.toFixed(3)}）；Gaussian copula 的識別條件要求解釋變數非常態（Park & Gupta, 2012），此構念的 copula 結果不可靠，請勿據以判定內生性`)
+    }
+    return { lv, D: ks.D, p: ks.p, nonNormal }
+  })
+
+  // 每個方程要跑的 copula 子集
+  const plan = eqs.map((eq) => {
+    const cand = eq.predictors.filter((p) => candidates.includes(p))
+    return { ...eq, candidates: cand, subsets: copulaSubsets(cand.length) }
+  }).filter((eq) => eq.candidates.length > 0)
+
+  if (plan.length === 0) {
+    return {
+      error: 'copula-no-candidate',
+      message: '指定的構念都沒有出現在任何結構方程的解釋變數中，無從檢定',
+    }
+  }
+  for (const eq of plan) {
+    if (eq.candidates.length > 5) {
+      warnings.push(`構念「${eq.endogenous}」的方程有 ${eq.candidates.length} 個候選 copula，全組合會有 ${2 ** eq.candidates.length - 1} 個模型；本次只跑「各自單獨」與「全部同時」（Hult et al. 2018 建議在候選較少時檢視全組合）`)
+    }
+  }
+
+  /** 對一次 PLS 結果，算出每個方程每個子集的係數向量（順序：預測構念…, copula…）。 */
+  const fitAll = (res) => plan.map((eq) => {
+    const y = scoreOf(res, eq.endogenous)
+    const predCols = eq.predictors.map((p) => scoreOf(res, p))
+    const copCols = new Map()
+    for (const c of eq.candidates) copCols.set(c, copulaTerm(scoreOf(res, c)))
+    return eq.subsets.map((sub) => {
+      const cols = [...predCols, ...sub.map((i) => copCols.get(eq.candidates[i]))]
+      return olsWithIntercept(cols, y)
+    })
+  })
+
+  const obs = fitAll(base)
+
+  // bootstrap：完整巢套（重抽 → 重估權重 → 重算 copula → 重跑迴歸）
+  const B = options.bootstrapIndices ? options.bootstrapIndices.length : (options.bootstrapN ?? 1000)
+  const rand = mulberry32(options.seed ?? 42)
+  const drawIdx = (i) => {
+    if (options.bootstrapIndices) return options.bootstrapIndices[i]
+    const idx = new Array(rows.length)
+    for (let j = 0; j < rows.length; j++) idx[j] = Math.floor(rand() * rows.length)
+    return idx
+  }
+
+  // draws[eqIdx][subIdx][coefIdx] = number[]
+  const draws = obs.map((eqFits) => eqFits.map((f) => (f ? f.coefs.map(() => []) : null)))
+  let nValid = 0
+  for (let b = 0; b < B; b++) {
+    const idx = drawIdx(b)
+    const sample = idx.map((i) => rows[i])
+    const res = runPLS(sample, m, baseOpts)
+    if (res.error) continue
+    const fits = fitAll(res)
+    let ok = true
+    for (let e = 0; e < fits.length && ok; e++) {
+      for (let s = 0; s < fits[e].length; s++) if (!fits[e][s]) { ok = false; break }
+    }
+    if (!ok) continue
+    for (let e = 0; e < fits.length; e++) {
+      for (let s = 0; s < fits[e].length; s++) {
+        if (!draws[e][s]) continue
+        for (let c = 0; c < fits[e][s].coefs.length; c++) draws[e][s][c].push(fits[e][s].coefs[c])
+      }
+    }
+    nValid++
+  }
+  if (nValid < 2) {
+    return { error: 'copula-bootstrap-failed', message: `bootstrap 有效重抽只有 ${nValid} 次（模型在重抽樣本上無法收斂）` }
+  }
+
+  const equations = plan.map((eq, e) => ({
+    endogenous: eq.endogenous,
+    predictors: eq.predictors,
+    candidates: eq.candidates,
+    models: eq.subsets.map((sub, s) => {
+      const fit = obs[e][s]
+      if (!fit) {
+        // 共線／奇異：以狀態旗標表示，不用 error 欄位（error 欄位保留給引擎層級的錯誤碼）
+        return { copulas: sub.map((i) => eq.candidates[i]), singular: true, coefficients: [], r2: null }
+      }
+      const names = [...eq.predictors, ...sub.map((i) => `c(${eq.candidates[i]})`)]
+      const coefficients = names.map((name, c) => {
+        const d = draws[e][s][c]
+        const se = sdOf(d)
+        const sorted = [...d].sort((x, y) => x - y)
+        const t = se > 0 ? fit.coefs[c] / se : null
+        return {
+          name,
+          isCopula: c >= eq.predictors.length,
+          coef: fit.coefs[c],
+          se,
+          t,
+          p: t === null ? null : pT(Math.abs(t), nValid - 1), // pT 已為雙尾
+          ciLower: quantile(sorted, ciAlpha / 2),
+          ciUpper: quantile(sorted, 1 - ciAlpha / 2),
+        }
+      })
+      // 判讀：任一 copula 項的 CI 不含 0 → 該模型有內生性訊號
+      const endogenous = coefficients
+        .filter((c) => c.isCopula)
+        .some((c) => !(c.ciLower <= 0 && c.ciUpper >= 0))
+      return {
+        copulas: sub.map((i) => eq.candidates[i]),
+        coefficients,
+        r2: fit.r2,
+        endogeneitySignal: endogenous,
+      }
+    }),
+  }))
+
+  return {
+    normality,
+    equations,
+    n,
+    nDropped: base.meta?.nDropped ?? 0,
+    nBootstrap: nValid,
+    ciAlpha,
+    warnings,
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * FIMIX-PLS：潛在（未觀察）異質性分段（W6，§6.1）
+ *
+ * Hahn, Johnson, Herrmann & Huber (2002), Schmalenbach Business Review 54(3)。
+ * 段數選擇準則依 Sarstedt, Becker, Ringle & Schwaiger (2011), Schmalenbach BR 63(1)。
+ *
+ * 原理：全域 PLS 的路徑係數是「平均」——若樣本其實由結構關係不同的次群體組成，
+ * 這個平均可能誰都不代表（極端情形：一個強正段與一個強負段相消，全域看起來沒關係）。
+ * FIMIX 以全域 PLS 的標準化 LV 分數為輸入，對**內模型**做有限混合迴歸的 EM：
+ *
+ *   段 k、內生構念 j：η_ij ~ N(x_ij'β_kj, σ²_kj)   （Hahn et al. 原式不含截距）
+ *   E 步：p_ik ∝ ρ_k · Π_j N(η_ij; x_ij'β_kj, σ²_kj)
+ *   M 步：ρ_k = mean_i p_ik；β_kj = 以 p_ik 為權重的 OLS；σ²_kj = Σp_ik·resid² / Σp_ik
+ *
+ * 局部最優：EM 對起始值敏感 → 多起點（固定種子集）取 lnL 最高者。
+ * label switching：段別以佔比 ρ 遞減排序，確保輸出決定性。
+ *
+ * 判讀邊界（UI Notes 另有完整說明）：
+ *   · FIMIX 是**探索性**工具。找到的段必須能用可觀察變數事後刻畫，否則無法據以行動。
+ *   · EN（normed entropy）< .50 表示段別分離不佳，分段結果不可信。
+ *   · 段數選擇沒有單一準則；AIC 傾向高估、BIC/CAIC 傾向低估，應合看並以理論收斂。
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** 加權 OLS（無截距）：解 (XᵀWX)β = XᵀWy。回傳 β 或 null（奇異）。 */
+function weightedOls(cols, y, w) {
+  const k = cols.length
+  const n = y.length
+  const A = Array.from({ length: k }, () => new Array(k + 1).fill(0))
+  for (let a = 0; a < k; a++) {
+    for (let b = 0; b < k; b++) {
+      let s = 0
+      for (let i = 0; i < n; i++) s += w[i] * cols[a][i] * cols[b][i]
+      A[a][b] = s
+    }
+    let s = 0
+    for (let i = 0; i < n; i++) s += w[i] * cols[a][i] * y[i]
+    A[a][k] = s
+  }
+  for (let c = 0; c < k; c++) {
+    let piv = c
+    for (let r = c + 1; r < k; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r
+    if (Math.abs(A[piv][c]) < 1e-12) return null
+    if (piv !== c) { const t = A[piv]; A[piv] = A[c]; A[c] = t }
+    for (let r = 0; r < k; r++) {
+      if (r === c) continue
+      const f = A[r][c] / A[c][c]
+      for (let cc = c; cc <= k; cc++) A[r][cc] -= f * A[c][cc]
+    }
+  }
+  return A.map((row, c) => row[k] / A[c][c])
+}
+
+/**
+ * 單次 EM（給定初始後驗機率）。
+ * @returns {{ rho, beta, sigma2, post, lnL, iterations, converged, monotone }}
+ */
+function fimixEM(eqs, P0, K, n, maxIter, tol) {
+  let P = P0.map((row) => {
+    const s = row.reduce((a, v) => a + v, 0)
+    return row.map((v) => v / s)
+  })
+  let lnLPrev = -Infinity
+  let monotone = true
+  let lnL = -Infinity
+  let rho = new Array(K).fill(1 / K)
+  let beta = null
+  let sigma2 = null
+  let it
+  let converged = false
+
+  for (it = 1; it <= maxIter; it++) {
+    // ── M 步 ──
+    rho = new Array(K).fill(0)
+    for (let k = 0; k < K; k++) {
+      let s = 0
+      for (let i = 0; i < n; i++) s += P[i][k]
+      rho[k] = s / n
+    }
+    beta = []   // beta[k][j] = number[]（該方程的係數）
+    sigma2 = [] // sigma2[k][j]
+    for (let k = 0; k < K; k++) {
+      const w = P.map((row) => row[k])
+      const sw = w.reduce((a, v) => a + v, 0)
+      const bK = []
+      const sK = []
+      for (const eq of eqs) {
+        if (sw < 1e-10) { bK.push(new Array(eq.X.length).fill(0)); sK.push(1e-8); continue }
+        const b = weightedOls(eq.X, eq.y, w) || new Array(eq.X.length).fill(0)
+        let ss = 0
+        for (let i = 0; i < n; i++) {
+          let pred = 0
+          for (let c = 0; c < eq.X.length; c++) pred += b[c] * eq.X[c][i]
+          ss += w[i] * (eq.y[i] - pred) ** 2
+        }
+        bK.push(b)
+        sK.push(Math.max(ss / sw, 1e-8))
+      }
+      beta.push(bK)
+      sigma2.push(sK)
+    }
+
+    // ── E 步（對數空間；同時得到 lnL）──
+    const logf = []
+    for (let i = 0; i < n; i++) {
+      const row = new Array(K)
+      for (let k = 0; k < K; k++) {
+        let lp = Math.log(Math.max(rho[k], 1e-300))
+        for (let j = 0; j < eqs.length; j++) {
+          const eq = eqs[j]
+          let pred = 0
+          for (let c = 0; c < eq.X.length; c++) pred += beta[k][j][c] * eq.X[c][i]
+          const r = eq.y[i] - pred
+          const s2 = sigma2[k][j]
+          lp += -0.5 * Math.log(2 * Math.PI * s2) - (r * r) / (2 * s2)
+        }
+        row[k] = lp
+      }
+      logf.push(row)
+    }
+    lnL = 0
+    const Pnew = []
+    for (let i = 0; i < n; i++) {
+      const row = logf[i]
+      const mx = Math.max(...row)
+      let se = 0
+      for (let k = 0; k < K; k++) se += Math.exp(row[k] - mx)
+      const lse = mx + Math.log(se)
+      lnL += lse
+      Pnew.push(row.map((v) => Math.exp(v - lse)))
+    }
+    if (lnL < lnLPrev - 1e-6) monotone = false
+    P = Pnew
+    if (Math.abs(lnL - lnLPrev) < tol) { converged = true; break }
+    lnLPrev = lnL
+  }
+  return { rho, beta, sigma2, post: P, lnL, iterations: Math.min(it, maxIter), converged, monotone }
+}
+
+/** 段數選擇準則（Sarstedt et al. 2011）。 */
+function fimixCriteria(K, lnL, post, n, nPaths, nEndo) {
+  const nk = (K - 1) + K * nPaths + K * nEndo
+  const out = {
+    lnL,
+    nParams: nk,
+    aic: -2 * lnL + 2 * nk,
+    aic3: -2 * lnL + 3 * nk,
+    aic4: -2 * lnL + 4 * nk,
+    bic: -2 * lnL + Math.log(n) * nk,
+    caic: -2 * lnL + (Math.log(n) + 1) * nk,
+    hq: -2 * lnL + 2 * Math.log(Math.log(n)) * nk,
+    mdl5: -2 * lnL + 5 * Math.log(n) * nk,
+    en: null,
+  }
+  if (K >= 2) {
+    let ent = 0
+    for (let i = 0; i < n; i++) {
+      for (let k = 0; k < K; k++) {
+        const p = post[i][k]
+        if (p > 1e-300) ent -= p * Math.log(p)
+      }
+    }
+    out.en = 1 - ent / (n * Math.log(K)) // normed entropy（Ramaswamy et al. 1993）
+  }
+  return out
+}
+
+/**
+ * FIMIX-PLS。
+ *
+ * @param {object[]} rows
+ * @param {object} model PLS 模型 JSON
+ * @param {object} [options] {
+ *   segments=2            要輸出詳細解的段數 K
+ *   kMax?                 給了就額外算 K = 1..kMax 的段數選擇表
+ *   restarts=10           多起點次數（EM 對起始值敏感；取 lnL 最高者）
+ *   seed=42               起始值種子
+ *   initPosteriors?       注入固定初始後驗（n×K；給了就只跑這一個起點——基準交叉驗證用）
+ *   maxIterations=2000, tolerance=1e-10
+ *   missing='casewise'
+ *   ...runPLS 的其餘 options
+ * }
+ */
+export function fimixPLS(rows, model, options = {}) {
+  const bad = rejectW4(model, 'FIMIX-PLS')
+  if (bad) return bad
+
+  const valid = validatePLSModel(model)
+  if (!valid.ok) {
+    return { error: 'invalid-model', message: `模型不合法：${valid.errors.join('；')}` }
+  }
+  const m = valid.model
+  const lvNames = m.latentVariables.map((lv) => lv.name)
+
+  if (!Array.isArray(m.paths) || m.paths.length === 0) {
+    return {
+      error: 'fimix-no-structural-path',
+      message: 'FIMIX-PLS 是對「內模型」分段；目前模型沒有任何結構路徑，無從分段',
+    }
+  }
+
+  const K = options.segments ?? 2
+  if (!Number.isInteger(K) || K < 1) {
+    return { error: 'fimix-bad-segments', message: `段數必須是 ≥ 1 的整數（收到 ${options.segments}）` }
+  }
+
+  const baseOpts = { ...options }
+  for (const k of ['segments', 'kMax', 'restarts', 'seed', 'initPosteriors',
+    'maxIterations', 'tolerance', 'onProgress']) delete baseOpts[k]
+
+  const base = runPLS(rows, m, baseOpts)
+  if (base.error) return base
+
+  const scoreOf = (lv) => base.scores.data[base.scores.lvNames.indexOf(lv)]
+  const n = base.scores.data[0].length
+
+  // 內模型的方程組
+  const eqs = []
+  for (const lv of lvNames) {
+    const preds = m.paths.filter((pp) => pp.to === lv).map((pp) => pp.from)
+    if (preds.length === 0) continue
+    eqs.push({ endogenous: lv, predictors: preds, y: scoreOf(lv), X: preds.map(scoreOf) })
+  }
+  const nPaths = eqs.reduce((a, e) => a + e.predictors.length, 0)
+  const nEndo = eqs.length
+
+  // 樣本數把關：Hahn et al. 建議每段至少要有足夠自由度
+  const minN = 10 * K
+  if (n < minN) {
+    return {
+      error: 'too-few-cases',
+      message: `FIMIX 分 ${K} 段至少需要 ${minN} 筆資料（每段 10 筆為極保守下限），目前只有 ${n} 筆；段數過多會得到無意義的解`,
+    }
+  }
+
+  const maxIter = options.maxIterations ?? 2000
+  const tol = options.tolerance ?? 1e-10
+  const warnings = []
+
+  const runK = (kk) => {
+    if (kk === 1) {
+      const P0 = Array.from({ length: n }, () => [1])
+      return { ...fimixEM(eqs, P0, 1, n, maxIter, tol), restarts: 1 }
+    }
+    if (options.initPosteriors) {
+      const P0 = options.initPosteriors
+      if (P0.length !== n || P0[0].length !== kk) {
+        return { error: 'fimix-bad-init', message: `initPosteriors 的形狀應為 ${n}×${kk}，收到 ${P0.length}×${P0[0]?.length}` }
+      }
+      return { ...fimixEM(eqs, P0, kk, n, maxIter, tol), restarts: 1 }
+    }
+    const R = options.restarts ?? 10
+    const rand = mulberry32((options.seed ?? 42) + kk * 1000)
+    let best = null
+    for (let r = 0; r < R; r++) {
+      const P0 = Array.from({ length: n }, () => Array.from({ length: kk }, () => rand() + 0.1))
+      const sol = fimixEM(eqs, P0, kk, n, maxIter, tol)
+      if (!best || sol.lnL > best.lnL) best = sol
+    }
+    return { ...best, restarts: R }
+  }
+
+  const solve = (kk) => {
+    const sol = runK(kk)
+    if (sol.error) return sol
+    // label switching：依段別佔比 ρ 遞減排序
+    const ord = sol.rho.map((_, i) => i).sort((a, b) => sol.rho[b] - sol.rho[a])
+    return {
+      ...sol,
+      rho: ord.map((k) => sol.rho[k]),
+      beta: ord.map((k) => sol.beta[k]),
+      sigma2: ord.map((k) => sol.sigma2[k]),
+      post: sol.post.map((row) => ord.map((k) => row[k])),
+    }
+  }
+
+  const main = solve(K)
+  if (main.error) return main
+  if (!main.converged) {
+    warnings.push(`EM 在 ${maxIter} 次迭代內未達收斂容差（${tol}）；結果可能不穩定，建議提高迭代上限或減少段數`)
+  }
+  if (!main.monotone) {
+    warnings.push('EM 的對數概似出現下降——這在數學上不應發生，請回報此案例')
+  }
+
+  const criteria = fimixCriteria(K, main.lnL, main.post, n, nPaths, nEndo)
+  if (criteria.en !== null && criteria.en < 0.5) {
+    warnings.push(`normed entropy EN = ${criteria.en.toFixed(3)} < .50，段別分離不佳（Ramaswamy et al., 1993 判準）；此分段結果不宜據以行動`)
+  }
+
+  const assignment = main.post.map((row) => row.indexOf(Math.max(...row)))
+  const counts = new Array(K).fill(0)
+  for (const a of assignment) counts[a]++
+  const tiny = counts.filter((c) => c < 0.05 * n).length
+  if (tiny > 0) {
+    warnings.push(`有 ${tiny} 個段的成員數不足全樣本的 5%——段數可能過多（Hair et al. 建議每段至少要能支撐該段的模型估計）`)
+  }
+
+  const segments = main.rho.map((share, k) => ({
+    index: k + 1,
+    share,
+    expectedSize: share * n,
+    assignedSize: counts[k],
+    equations: eqs.map((eq, j) => ({
+      endogenous: eq.endogenous,
+      sigma2: main.sigma2[k][j],
+      coefficients: eq.predictors.map((from, c) => ({ from, coef: main.beta[k][j][c] })),
+    })),
+  }))
+
+  let selection = null
+  if (options.kMax) {
+    const kMax = options.kMax
+    if (!Number.isInteger(kMax) || kMax < 1) {
+      return { error: 'fimix-bad-segments', message: `kMax 必須是 ≥ 1 的整數（收到 ${options.kMax}）` }
+    }
+    selection = []
+    for (let kk = 1; kk <= kMax; kk++) {
+      if (n < 10 * kk) break
+      const sol = kk === K ? main : solve(kk)
+      if (sol.error) continue
+      selection.push({ k: kk, ...fimixCriteria(kk, sol.lnL, sol.post, n, nPaths, nEndo) })
+    }
+  }
+
+  return {
+    segments,
+    posteriors: main.post,
+    assignment,
+    criteria,
+    selection,
+    n,
+    nDropped: base.meta?.nDropped ?? 0,
+    lnL: main.lnL,
+    iterations: main.iterations,
+    converged: main.converged,
+    restarts: main.restarts,
+    warnings,
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * PLS-POS：prediction-oriented segmentation（W6，§6.2）
+ *
+ * Becker, Rai, Ringle & Völckner (2013), MIS Quarterly 37(3)。
+ * 與 FIMIX 互補——同樣處理未觀察異質性，但目標函數完全不同：
+ *
+ *            FIMIX                          PLS-POS
+ *   指派      軟（後驗機率）                  硬（每個個案屬於一段）
+ *   目標      混合模型的對數概似               內生構念的**預測誤差**（殘差平方和）
+ *   演算法    EM                             逐案重新指派的爬山法
+ *   分布假設  常態                           無
+ *
+ * 目標函數：Obj = Σ_段 Σ_內生構念 SSE_段,構念，愈小愈好。
+ *
+ * 爬山法（確定性）：以充分統計量（A = Σxx'、b = Σxy、yy = Σy²、n）做增量更新——
+ * 搬移一個個案只需 O(k²)，不必重跑整段的 OLS。逐案（索引序）試著搬到其他段（段索引序），
+ * 取「改善最大且 > 1e-12」者；同分取段索引較小者。一輪掃完沒有搬移即停止。
+ *
+ * ★ 本法的關鍵弱點（UI 明確警告）：目標函數**必然**隨段數增加而下降——
+ * 段數愈多、配適愈好，POS 自己沒有懲罰項。所以 **POS 不能用來選段數**。
+ * 段數要靠 FIMIX 的資訊準則、理論、或段別的可解釋性來決定。
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** 單段單方程的充分統計量 → { sse, beta }。A: k×k、b: k、yy: 純量。 */
+function posSolve(A, b, yy, k) {
+  // 解 Aβ = b（高斯消去；k 很小）
+  const M = A.map((row, i) => [...row, b[i]])
+  for (let c = 0; c < k; c++) {
+    let piv = c
+    for (let r = c + 1; r < k; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r
+    if (Math.abs(M[piv][c]) < 1e-12) return { sse: yy, beta: new Array(k).fill(0) }
+    if (piv !== c) { const t = M[piv]; M[piv] = M[c]; M[c] = t }
+    for (let r = 0; r < k; r++) {
+      if (r === c) continue
+      const f = M[r][c] / M[c][c]
+      for (let cc = c; cc <= k; cc++) M[r][cc] -= f * M[c][cc]
+    }
+  }
+  const beta = M.map((row, c) => row[k] / M[c][c])
+  let bb = 0
+  for (let i = 0; i < k; i++) bb += beta[i] * b[i]
+  return { sse: Math.max(yy - bb, 0), beta }
+}
+
+/**
+ * PLS-POS。
+ *
+ * @param {object[]} rows
+ * @param {object} model
+ * @param {object} [options] {
+ *   segments=2          段數 K（POS 不能用來選段數——見上方註解）
+ *   starts=10           多起始分割（爬山法只保證局部最優；取目標函數最小者）
+ *   seed=42
+ *   initAssignment?     注入固定起始分割（number[]；給了就只跑這一個起點——基準交叉驗證用）
+ *   minSize?            段別大小下限（預設 max(3, 5% 樣本)；硬約束）
+ *   maxPasses=100
+ *   missing='casewise'
+ *   ...runPLS 的其餘 options
+ * }
+ */
+export function posPLS(rows, model, options = {}) {
+  const bad = rejectW4(model, 'PLS-POS')
+  if (bad) return bad
+
+  const valid = validatePLSModel(model)
+  if (!valid.ok) {
+    return { error: 'invalid-model', message: `模型不合法：${valid.errors.join('；')}` }
+  }
+  const m = valid.model
+  const lvNames = m.latentVariables.map((lv) => lv.name)
+
+  if (!Array.isArray(m.paths) || m.paths.length === 0) {
+    return {
+      error: 'pos-no-structural-path',
+      message: 'PLS-POS 是對「內模型」分段；目前模型沒有任何結構路徑，無從分段',
+    }
+  }
+
+  const K = options.segments ?? 2
+  if (!Number.isInteger(K) || K < 2) {
+    return { error: 'pos-bad-segments', message: `段數必須是 ≥ 2 的整數（收到 ${options.segments}）；K = 1 就是全域模型` }
+  }
+
+  const baseOpts = { ...options }
+  for (const k of ['segments', 'starts', 'seed', 'initAssignment', 'minSize',
+    'maxPasses', 'onProgress']) delete baseOpts[k]
+
+  const base = runPLS(rows, m, baseOpts)
+  if (base.error) return base
+
+  const scoreOf = (lv) => base.scores.data[base.scores.lvNames.indexOf(lv)]
+  const n = base.scores.data[0].length
+
+  const eqs = []
+  for (const lv of lvNames) {
+    const preds = m.paths.filter((pp) => pp.to === lv).map((pp) => pp.from)
+    if (preds.length === 0) continue
+    eqs.push({ endogenous: lv, predictors: preds, y: scoreOf(lv), X: preds.map(scoreOf) })
+  }
+
+  const minSize = options.minSize ?? Math.max(3, Math.floor(0.05 * n))
+  if (n < minSize * K) {
+    return {
+      error: 'too-few-cases',
+      message: `PLS-POS 分 ${K} 段、每段下限 ${minSize} 筆，至少需要 ${minSize * K} 筆資料，目前只有 ${n} 筆`,
+    }
+  }
+
+  /** 一組段別的充分統計量。 */
+  const makeStats = () => eqs.map((eq) => {
+    const k = eq.X.length
+    return {
+      A: Array.from({ length: k }, () => new Array(k).fill(0)),
+      b: new Array(k).fill(0),
+      yy: 0,
+    }
+  })
+  const addCase = (st, i, sign) => {
+    for (let j = 0; j < eqs.length; j++) {
+      const eq = eqs[j]
+      const k = eq.X.length
+      for (let a = 0; a < k; a++) {
+        for (let bb = 0; bb < k; bb++) st[j].A[a][bb] += sign * eq.X[a][i] * eq.X[bb][i]
+        st[j].b[a] += sign * eq.X[a][i] * eq.y[i]
+      }
+      st[j].yy += sign * eq.y[i] * eq.y[i]
+    }
+  }
+  const sseOf = (st) => st.reduce((acc, s, j) => acc + posSolve(s.A, s.b, s.yy, eqs[j].X.length).sse, 0)
+
+  const maxPasses = options.maxPasses ?? 100
+  let monotone = true
+
+  const climb = (assign0) => {
+    const assign = [...assign0]
+    const stats = Array.from({ length: K }, makeStats)
+    const counts = new Array(K).fill(0)
+    for (let i = 0; i < n; i++) { addCase(stats[assign[i]], i, +1); counts[assign[i]]++ }
+
+    let obj = stats.reduce((a, st) => a + sseOf(st), 0)
+    let moves = 0
+    let passes = 0
+    for (let p = 1; p <= maxPasses; p++) {
+      passes = p
+      let moved = false
+      for (let i = 0; i < n; i++) {
+        const s = assign[i]
+        if (counts[s] - 1 < minSize) continue
+        const sseSin = sseOf(stats[s])
+        addCase(stats[s], i, -1)
+        const sseSout = sseOf(stats[s])
+        let bestT = -1
+        let bestGain = 1e-12
+        for (let t = 0; t < K; t++) {
+          if (t === s) continue
+          const sseTin = sseOf(stats[t])
+          addCase(stats[t], i, +1)
+          const sseTout = sseOf(stats[t])
+          addCase(stats[t], i, -1)
+          const gain = (sseSin + sseTin) - (sseSout + sseTout)
+          if (gain > bestGain) { bestGain = gain; bestT = t } // 嚴格 > → 同分取段索引較小者
+        }
+        if (bestT >= 0) {
+          addCase(stats[bestT], i, +1)
+          counts[s]--; counts[bestT]++
+          assign[i] = bestT
+          moved = true; moves++
+        } else {
+          addCase(stats[s], i, +1) // 還原
+        }
+      }
+      const newObj = stats.reduce((a, st) => a + sseOf(st), 0)
+      if (newObj > obj + 1e-6) monotone = false
+      obj = newObj
+      if (!moved) break
+    }
+    return { assign, stats, counts, obj, passes, moves }
+  }
+
+  let best = null
+  let starts = 1
+  if (options.initAssignment) {
+    const a0 = options.initAssignment
+    if (a0.length !== n || a0.some((v) => !Number.isInteger(v) || v < 0 || v >= K)) {
+      return { error: 'pos-bad-init', message: `initAssignment 應為長度 ${n}、值域 0..${K - 1} 的整數陣列` }
+    }
+    const cnt = new Array(K).fill(0)
+    for (const v of a0) cnt[v]++
+    if (cnt.some((c) => c < minSize)) {
+      return { error: 'pos-bad-init', message: `initAssignment 的某些段小於下限 ${minSize} 筆` }
+    }
+    best = climb(a0)
+  } else {
+    starts = options.starts ?? 10
+    const rand = mulberry32((options.seed ?? 42) + K * 7919)
+    for (let r = 0; r < starts; r++) {
+      const a0 = Array.from({ length: n }, () => Math.floor(rand() * K))
+      // 修補：確保每段達下限
+      const cnt = new Array(K).fill(0)
+      for (const v of a0) cnt[v]++
+      for (let k = 0; k < K; k++) {
+        let guard = 0
+        while (cnt[k] < minSize && guard++ < n) {
+          const donor = cnt.indexOf(Math.max(...cnt))
+          const i = a0.indexOf(donor)
+          if (i < 0 || cnt[donor] - 1 < minSize) break
+          a0[i] = k; cnt[donor]--; cnt[k]++
+        }
+      }
+      const sol = climb(a0)
+      if (!best || sol.obj < best.obj) best = sol
+    }
+  }
+
+  // 全域（單段）對照：分段前的預測誤差
+  const globalStats = makeStats()
+  for (let i = 0; i < n; i++) addCase(globalStats, i, +1)
+  const globalSse = sseOf(globalStats)
+  const totalYY = globalStats.reduce((a, s) => a + s.yy, 0)
+
+  // label switching：段別依大小遞減排序
+  const ord = best.counts.map((_, i) => i).sort((a, b) => best.counts[b] - best.counts[a])
+  const remap = new Array(K)
+  ord.forEach((old, neu) => { remap[old] = neu })
+
+  const segments = ord.map((k, i) => {
+    const st = best.stats[k]
+    const equations = eqs.map((eq, j) => {
+      const { sse, beta } = posSolve(st[j].A, st[j].b, st[j].yy, eq.X.length)
+      return {
+        endogenous: eq.endogenous,
+        sse,
+        r2: st[j].yy > 1e-12 ? 1 - sse / st[j].yy : 0,
+        coefficients: eq.predictors.map((from, c) => ({ from, coef: beta[c] })),
+      }
+    })
+    return {
+      index: i + 1,
+      size: best.counts[k],
+      share: best.counts[k] / n,
+      sse: equations.reduce((a, e) => a + e.sse, 0),
+      equations,
+    }
+  })
+
+  const warnings = []
+  if (!monotone) {
+    warnings.push('爬山法的目標函數出現上升——這在數學上不應發生，請回報此案例')
+  }
+  if (best.passes >= maxPasses) {
+    warnings.push(`爬山法在 ${maxPasses} 輪內未停止；結果可能不是局部最優`)
+  }
+  warnings.push('PLS-POS 的目標函數（預測誤差）必然隨段數增加而下降——本法自身沒有懲罰項，因此**不能用來選段數**。段數請依 FIMIX 的資訊準則、理論、或段別的可解釋性決定。')
+
+  return {
+    segments,
+    assignment: best.assign.map((k) => remap[k]),
+    objective: best.obj,
+    r2Overall: totalYY > 1e-12 ? 1 - best.obj / totalYY : 0,
+    global: {
+      sse: globalSse,
+      r2: totalYY > 1e-12 ? 1 - globalSse / totalYY : 0,
+      equations: eqs.map((eq, j) => {
+        const { sse, beta } = posSolve(globalStats[j].A, globalStats[j].b, globalStats[j].yy, eq.X.length)
+        return {
+          endogenous: eq.endogenous,
+          sse,
+          coefficients: eq.predictors.map((from, c) => ({ from, coef: beta[c] })),
+        }
+      }),
+    },
+    n,
+    nDropped: base.meta?.nDropped ?? 0,
+    minSize,
+    passes: best.passes,
+    moves: best.moves,
+    starts,
+    warnings,
+  }
 }

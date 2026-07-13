@@ -23,6 +23,7 @@
  */
 import {
   runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS,
+  copulaPLS, fimixPLS, posPLS,
 } from '../../lib/stats/pls.js'
 
 /** committed.options.w5 → 各 W5 API 的 options（worker 與同步路徑共用） */
@@ -40,6 +41,18 @@ export function buildW5Options(committed) {
       : null,
     // W6.3 CTA-PLS：bootstrap 次數沿用主設定（Gudergan et al. 2008 建議 ≥ 5000）
     cta: w5.cta === true ? { n: committed.bootstrapN ?? 1000, seed: 42, ciAlpha: 0.05 } : null,
+    // W6.5 Gaussian copula：bootstrap 次數沿用主設定（Hult et al. 2018 建議 bootstrap 求 SE）
+    copula: w5.copula === true
+      ? { bootstrapN: committed.bootstrapN ?? 1000, seed: 42, ciAlpha: 0.05 }
+      : null,
+    // W6.1 FIMIX-PLS：多起點固定種子（EM 對起始值敏感）；kMax 產生段數選擇表
+    fimix: w5.fimix === true
+      ? { segments: w5.fimixK ?? 2, kMax: w5.fimixKMax ?? 4, restarts: 10, seed: 42 }
+      : null,
+    // W6.2 PLS-POS：多起始分割（爬山法只保證局部最優）；段數沿用 FIMIX 的設定
+    pos: w5.pos === true
+      ? { segments: w5.fimixK ?? 2, starts: 10, seed: 42 }
+      : null,
   }
 }
 
@@ -49,6 +62,8 @@ export function buildWorkerOptions(committed) {
   return {
     scheme: opts.scheme ?? 'path',
     consistent: opts.consistent === true,
+    missing: opts.missing ?? 'casewise',
+    ...(opts.weightsCol ? { weights: opts.weightsCol } : {}),
     bootstrap: {
       n: committed.bootstrapN ?? 1000,
       seed: 42,
@@ -73,6 +88,8 @@ export function runPLSAnalysis(rows, committed) {
   const estimateOptions = {
     scheme: opts.scheme ?? 'path',
     consistent: opts.consistent === true,
+    missing: opts.missing ?? 'casewise',
+    ...(opts.weightsCol ? { weights: opts.weightsCol } : {}),
   }
 
   const estimate = runPLS(rows, committed.model, estimateOptions)
@@ -100,6 +117,15 @@ export function runPLSAnalysis(rows, committed) {
         ? (w5.ipma.cipma ? cipmaPLS : ipmaPLS)(rows, committed.model, { ...estimateOptions, ...w5.ipma })
         : null,
       cta: w5.cta ? ctaPLS(rows, committed.model, { ...estimateOptions, ...w5.cta }) : null,
+      copula: w5.copula
+        ? copulaPLS(rows, committed.model, { ...estimateOptions, ...w5.copula })
+        : null,
+      fimix: w5.fimix
+        ? fimixPLS(rows, committed.model, { ...estimateOptions, ...w5.fimix })
+        : null,
+      pos: w5.pos
+        ? posPLS(rows, committed.model, { ...estimateOptions, ...w5.pos })
+        : null,
     }
   }
   lastRows = rows

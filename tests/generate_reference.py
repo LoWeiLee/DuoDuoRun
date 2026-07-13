@@ -122,6 +122,60 @@ for _nm, _src in (("cm1", _cta_a), ("cm2", _cta_a), ("cm3", _cta_b), ("cm4", _ct
         0.9 * _src + math.sqrt(1 - 0.9 ** 2) * _ctarng.normal(0, 1, N), 4).tolist()
 cta_boot = [_ctarng.integers(0, N, N).tolist() for _ in range(300)]
 
+
+# FIMIX-PLS（Hahn, Johnson, Herrmann & Huber 2002）專屬資料集（獨立種子，不擾動既有 rng 序列）：
+# 兩段已知結構的模擬資料——引擎必須把段結構還原出來。這是本法唯一可信的驗證，
+# 因為 FIMIX 沒有主流 Python/R 完整實作可對照。
+#
+#   段 1（前 180 筆）：FX → FY 的真實路徑 = +0.80
+#   段 2（後 120 筆）：FX → FY 的真實路徑 = −0.80
+#
+# 對稱設計的三個理由：
+#   (a) 兩段的 Var(η) 相同 → 全樣本標準化不會把兩段的斜率縮放成不同倍率，
+#       段別解可直接對照真實值（僅剩測量誤差造成的衰減，約 ×0.9）
+#   (b) 兩段方向相反 → 全域路徑被大幅相消（遠小於任一段的絕對值；段別大小不等
+#       故不會完全歸零）。「整體只看到微弱關係，其實是一強正、一強負兩個段」
+#       正是 FIMIX 要抓的未觀察異質性，也是最有說服力的教學案例
+#   (c) 段別大小刻意不等（180 / 120）→ ρ 有資訊量，且能檢驗 label switching 的處理
+#
+# 殘差 σ = 0.25（分離良好）：基準要能驗證「段結構確實存在時引擎找得到它」；
+# 分離不良時 EM 落入局部最優，驗證不了任何東西。
+# 兩段共用同一組測量模型（loadings .90/.85/.85）→ 異質性純粹在結構層。
+_fxrng = np.random.default_rng(101)
+_FX_N1, _FX_N2 = 180, 120
+_FX_N = _FX_N1 + _FX_N2
+_fx_beta = np.concatenate([np.full(_FX_N1, 0.80), np.full(_FX_N2, -0.80)])
+_fx_xi = _fxrng.normal(0, 1, _FX_N)                                   # 外生 LV
+_fx_eta = _fx_beta * _fx_xi + _fxrng.normal(0, 0.25, _FX_N)           # 內生 LV（段別係數）
+def _fx_ind(lv, loading):
+    lv_s = (lv - lv.mean()) / lv.std(ddof=1)
+    return np.round(loading * lv_s + _fxrng.normal(0, math.sqrt(1 - loading ** 2), _FX_N), 4)
+fimix_cols = {}
+for _h, _l in enumerate([0.90, 0.85, 0.85]):
+    fimix_cols[f"fx{_h + 1}"] = _fx_ind(_fx_xi, _l).tolist()          # 外生區塊 fx1–fx3
+for _h, _l in enumerate([0.90, 0.85, 0.85]):
+    fimix_cols[f"fy{_h + 1}"] = _fx_ind(_fx_eta, _l).tolist()         # 內生區塊 fy1–fy3
+# 真實段別（僅供還原率驗證，引擎看不到）
+fimix_truth = ([0] * _FX_N1) + ([1] * _FX_N2)
+
+# pairwise deletion ＋ WPLS（W6，§6.6／§6.7）專屬 fixture（獨立種子，不擾動既有 rng）：
+#   miss_mask：對 main 的 M1 六個指標（i1–i6）施加固定的 MCAR 缺失遮罩（約 12%）
+#   wpls_w   ：對 main 的 60 列施加固定的抽樣權重（右偏，模擬事後分層加權）
+# 兩者都是「輸入」——引擎注入同一批 → JS↔numpy 逐值可比。
+_pwrng = np.random.default_rng(404)
+_PW_COLS = ["i1", "i2", "i3", "i4", "i5", "i6"]
+miss_mask = (_pwrng.random((N, len(_PW_COLS))) < 0.12).tolist()   # True = 缺失
+# 每列至少留 2 個可觀察值（避免整列全缺）、每欄至少留 40 個（避免 pairwise 配對過少）
+_mm = np.array(miss_mask)
+for _i in range(N):
+    if (~_mm[_i]).sum() < 2:
+        _mm[_i, :2] = False
+for _j in range(len(_PW_COLS)):
+    while (~_mm[:, _j]).sum() < 40:
+        _cand = np.where(_mm[:, _j])[0]
+        _mm[_cand[0], _j] = False
+miss_mask = _mm.tolist()
+wpls_w = np.round(_pwrng.gamma(shape=2.0, scale=0.5, size=N) + 0.1, 4).tolist()
 datasets = {
     "main": main.to_dict(orient="records"),
     "small": small.to_dict(orient="records"),
@@ -129,6 +183,8 @@ datasets = {
     "nca": {"x": nca_x.tolist(), "y": nca_y.tolist(), "perms": nca_perms},
     "cipma": {"perms": cipma_perms},
     "cta": {**cta_cols, "boot": cta_boot},
+    "fimix": {**fimix_cols, "truth": fimix_truth},
+    "pw": {"cols": _PW_COLS, "mask": miss_mask, "w": wpls_w},
 }
 with open(os.path.join(FIX, "datasets.json"), "w") as f:
     json.dump(datasets, f, default=str)
@@ -1163,9 +1219,13 @@ try:
     _t_pool = (_thM - _thF) / _sp
     _df_pool = _n1 + _n2 - 2
     _p_pool = 2 * sps.t.sf(abs(_t_pool), _df_pool)
-    _sw = math.sqrt(_se1 ** 2 + _se2 ** 2)
+    # Welch-Satterthwaite（Sarstedt, Henseler & Ringle 2011）：變異數以 (n-1)/n 加權。
+    # n1 = n2 時與 Keil 的 pooled t 恆等（cSEM 0.6.1 兩者同值，2026-07-13 本機 R 抽驗確認）。
+    _vw1 = ((_n1 - 1) / _n1) * _se1 ** 2
+    _vw2 = ((_n2 - 1) / _n2) * _se2 ** 2
+    _sw = math.sqrt(_vw1 + _vw2)
     _t_w = (_thM - _thF) / _sw
-    _df_w = (_se1 ** 2 + _se2 ** 2) ** 2 / (_se1 ** 4 / (_n1 - 1) + _se2 ** 4 / (_n2 - 1))
+    _df_w = (_vw1 + _vw2) ** 2 / (_vw1 ** 2 / (_n1 - 1) + _vw2 ** 2 / (_n2 - 1))
     _p_w = 2 * sps.t.sf(abs(_t_w), _df_w)
     _dr1 = (_thM + _rng5.normal(0, 0.09, 200)).tolist()
     _dr2 = (_thF + _rng5.normal(0, 0.12, 200)).tolist()
@@ -1249,8 +1309,10 @@ try:
         out = []
         for j in range(2):
             s = _Yp[:, j]
+            # Henseler, Ringle & Sarstedt (2016) step 3：變異數比較為 log 變異數比
+            # log(var1) - log(var2)，非變異數差（cSEM 原始碼同）。
             out.append([float(s[pos1].mean() - s[pos2].mean()),
-                        float(s[pos1].var(ddof=1) - s[pos2].var(ddof=1))])
+                        float(math.log(s[pos1].var(ddof=1)) - math.log(s[pos2].var(ddof=1)))])
         return out
     _mv_obs = _mv_diff(_pos1, _pos2)
     _mv_perm = []
@@ -1654,6 +1716,558 @@ try:
 except Exception as e:
     put("pls_cta", f"CTA baseline FAILED: {e}")
 # --- CTA-PLS 基準區塊 迄 ------------------------------------------------------
+
+# --- Gaussian copula 內生性檢查 基準區塊 起 -----------------------------------
+# Park & Gupta (2012, Marketing Science 31(4))；程序依 Hult, Hair, Proksch,
+# Sarstedt, Pinkwart & Ringle (2018, JIM 26(3)) 的 PLS-SEM 應用流程：
+#   c_p = Φ⁻¹(H(p))，H = 經驗 CDF（ecdf(P)(P) = 並列取最大秩 / n），H=1 夾為 1−1e−7
+#   → 把 c_p 加進該內生構念的結構迴歸，檢定 c_p 係數的顯著性
+#   前置：內生解釋變數須為非常態（Park & Gupta 的識別條件）→ 先跑 KS 把關
+# 分數為標準化 LV 分數（copula 項為秩基底 → 對單調變換不變，標準化與否不影響）
+# 顯著性以 bootstrap（B=300 固定重抽索引注入）取 SE 與 percentile CI，
+# 因 copula 項的漸近 SE 非標準（Hult et al. 2018 建議 bootstrap）。
+try:
+    if "_pls_engine" not in dir():
+        raise RuntimeError("W3 區塊未成功（_pls_engine 不存在），copula 基準略過")
+
+    def _copula_term(v):
+        """c = Φ⁻¹(ecdf(v)(v))；ecdf 並列取最大秩；H=1 夾為 1−1e−7（Hult et al. 2018 程式碼）。"""
+        v = np.asarray(v, dtype=float)
+        nn = len(v)
+        order = np.argsort(v, kind="mergesort")
+        sv = v[order]
+        # 每個值的「≤ 該值的個數」＝ 右插入點（並列取最大秩）
+        cnt = np.searchsorted(sv, v, side="right")
+        h = cnt / nn
+        h = np.where(h >= 1.0, 1.0 - 1e-7, h)
+        return sps.norm.ppf(h)
+
+    def _ols_full(Xcols, yv):
+        """含截距的 OLS（欄位未必置中）；回傳 (coefs 不含截距, r2)。"""
+        Xm = np.column_stack([np.ones(len(yv))] + list(Xcols))
+        b, *_ = np.linalg.lstsq(Xm, yv, rcond=None)
+        resid = yv - Xm @ b
+        ss_tot = float(np.sum((yv - yv.mean()) ** 2))
+        r2 = 1.0 - float(np.sum(resid ** 2)) / ss_tot
+        return b[1:], r2
+
+    def _copula_scores(Zmat):
+        """跑 M4 引擎取標準化 LV 分數（欄序 F1, F2, C, Y）。"""
+        _W, _Y, _L, _ = _pls_engine(Zmat, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
+        return _Y
+
+    _cop_Y = _copula_scores(_m4_Z.values)
+    _F1, _F2, _C, _Yl = (_cop_Y[:, 0], _cop_Y[:, 1], _cop_Y[:, 2], _cop_Y[:, 3])
+    _cop_F1 = _copula_term(_F1)
+    _cop_F2 = _copula_term(_F2)
+
+    # KS（Lilliefors）D 統計量：JS 與 statsmodels 的 D 對齊至 1e-6；
+    # p 值屬已知慣例差異（Dallal-Wilkinson vs 查表內插，見 validation-report），故只鎖 D。
+    def _ks_D(v):
+        v = np.asarray(v, dtype=float)
+        nn = len(v)
+        z = (np.sort(v) - v.mean()) / v.std(ddof=1)
+        F = sps.norm.cdf(z)
+        emp1 = np.arange(1, nn + 1) / nn
+        emp0 = np.arange(0, nn) / nn
+        return float(max(np.max(np.abs(emp1 - F)), np.max(np.abs(F - emp0))))
+
+    _cvals = {
+        "ksD_F1": _ks_D(_F1), "ksD_F2": _ks_D(_F2),
+        "cop_F1": _cop_F1.tolist(), "cop_F2": _cop_F2.tolist(),
+    }
+
+    # 各結構方程的擴充迴歸（標準化 LV 分數）
+    # F2 ~ F1 + c(F1)
+    _b, _r2 = _ols_full([_F1, _cop_F1], _F2)
+    _cvals.update(eq1_b_F1=float(_b[0]), eq1_b_copF1=float(_b[1]), eq1_r2=_r2)
+    # Y ~ F2 + c(F2)
+    _b, _r2 = _ols_full([_F2, _cop_F2], _Yl)
+    _cvals.update(eq3_b_F2=float(_b[0]), eq3_b_copF2=float(_b[1]), eq3_r2=_r2)
+    # C ~ F1 + F2 (+ copula 三種組合)
+    _b, _r2 = _ols_full([_F1, _F2, _cop_F1], _C)
+    _cvals.update(eq2a_b_F1=float(_b[0]), eq2a_b_F2=float(_b[1]), eq2a_b_copF1=float(_b[2]), eq2a_r2=_r2)
+    _b, _r2 = _ols_full([_F1, _F2, _cop_F2], _C)
+    _cvals.update(eq2b_b_F1=float(_b[0]), eq2b_b_F2=float(_b[1]), eq2b_b_copF2=float(_b[2]), eq2b_r2=_r2)
+    _b, _r2 = _ols_full([_F1, _F2, _cop_F1, _cop_F2], _C)
+    _cvals.update(eq2c_b_F1=float(_b[0]), eq2c_b_F2=float(_b[1]),
+                  eq2c_b_copF1=float(_b[2]), eq2c_b_copF2=float(_b[3]), eq2c_r2=_r2)
+
+    # bootstrap：300 組固定重抽索引（注入引擎交叉驗證）——每次重抽都重估權重與 copula 項
+    _cop_rng = np.random.default_rng(77)
+    _cop_boot_idx = [_cop_rng.integers(0, N, N).tolist() for _ in range(300)]
+    _dr_c1, _dr_c2 = [], []
+    for _idx in _cop_boot_idx:
+        _Xb = _m4_X.values[_idx, :]
+        _Zb = (_Xb - _Xb.mean(axis=0)) / _Xb.std(axis=0, ddof=1)
+        _Yb = _copula_scores(_Zb)
+        _f1b, _f2b, _cb = _Yb[:, 0], _Yb[:, 1], _Yb[:, 2]
+        _bb, _ = _ols_full([_f1b, _f2b, _copula_term(_f1b), _copula_term(_f2b)], _cb)
+        _dr_c1.append(float(_bb[2]))
+        _dr_c2.append(float(_bb[3]))
+    _dr_c1 = np.array(_dr_c1); _dr_c2 = np.array(_dr_c2)
+    _cvals.update(
+        bootN=300,
+        se_copF1=float(_dr_c1.std(ddof=1)), se_copF2=float(_dr_c2.std(ddof=1)),
+        ciLo_copF1=float(np.quantile(_dr_c1, 0.025)), ciHi_copF1=float(np.quantile(_dr_c1, 0.975)),
+        ciLo_copF2=float(np.quantile(_dr_c2, 0.025)), ciHi_copF2=float(np.quantile(_dr_c2, 0.975)))
+
+    # 重抽索引另存獨立鍵（為「輸入」而非「輸出」，無 adapter → compare 自動略過）
+    put("pls_copula_inputs",
+        "copula bootstrap 的 300 組固定重抽索引（值為原始資料列位置，可重複）；"
+        "JS 以 options.bootstrapIndices 注入同一批 → 引擎層級交叉驗證",
+        bootIdx=_cop_boot_idx)
+
+    put("pls_copula",
+        "Gaussian copula 內生性檢查（Park & Gupta 2012；流程依 Hult et al. 2018 JIM）："
+        "c = Φ⁻¹(ecdf(P)(P))（並列取最大秩，H=1 夾為 1−1e−7）加入該內生構念的結構迴歸；"
+        "KS（Lilliefors）D 為非常態前置把關（p 屬已知慣例差異，故只鎖 D）；"
+        "SE／percentile CI 以 300 組固定 bootstrap 重抽索引注入（每次重估權重與 copula 項）。"
+        "numpy 手算；標準化 LV 分數（copula 為秩基底，對單調變換不變）",
+        **_cvals)
+except Exception as e:
+    put("pls_copula", f"copula baseline FAILED: {e}")
+# --- Gaussian copula 內生性檢查 基準區塊 迄 -----------------------------------
+
+# --- FIMIX-PLS 基準區塊 起 ----------------------------------------------------
+# Hahn, Johnson, Herrmann & Huber (2002), Schmalenbach Business Review 54(3)；
+# 段數選擇準則依 Sarstedt, Becker, Ringle & Schwaiger (2011), Schmalenbach BR 63(1)。
+#
+# 演算法：以全域 PLS 的標準化 LV 分數為輸入，對「內模型」做有限混合迴歸的 EM。
+#   段 k、內生構念 j：η_ij ~ N(x_ij'β_kj, σ²_kj)（Hahn et al. 原式不含截距）
+#   E 步：p_ik ∝ ρ_k · Π_j N(η_ij; x_ij'β_kj, σ²_kj)
+#   M 步：ρ_k = mean_i p_ik；β_kj = 加權 OLS（權重 p_ik）；σ²_kj = Σp_ik·resid² / Σp_ik
+#
+# 為什麼沒有外部基準：FIMIX 沒有主流 Python/R 完整實作。驗證改採三重策略——
+#   (a) 模擬還原：datasets["fimix"] 為兩段已知係數（+0.70 / −0.30）的模擬資料
+#   (b) EM 單調性：lnL 每步不得下降（引擎端行為測試斷言）
+#   (c) JS↔numpy 逐值：初始後驗機率固定注入（pls_fimix_inputs），繞開兩邊 RNG 不同的問題
+try:
+    if "_pls_engine" not in dir():
+        raise RuntimeError("W3 區塊未成功（_pls_engine 不存在），FIMIX 基準略過")
+
+    _fx_cols = ["fx1", "fx2", "fx3", "fy1", "fy2", "fy3"]
+    _fx_X = np.column_stack([np.asarray(datasets["fimix"][c], dtype=float) for c in _fx_cols])
+    _fx_Z = (_fx_X - _fx_X.mean(axis=0)) / _fx_X.std(axis=0, ddof=1)
+    _fx_blocks = [[0, 1, 2], [3, 4, 5]]
+    _fx_pairs = [(0, 1)]                      # FX → FY
+    _fxW, _fxY, _fxL, _ = _pls_engine(_fx_Z, _fx_blocks, ["A"] * 2, _fx_pairs, "path")
+    _fx_n = _fxY.shape[0]
+    _fx_xi = _fxY[:, 0]                       # 外生 LV 分數
+    _fx_eta = _fxY[:, 1]                      # 內生 LV 分數
+
+    # 內模型：1 個內生構念、1 個路徑 → R = 1、M = 1 → N_k = (K−1) + K·R + K·M = 3K − 1
+    def _fimix_em(K, P0, tol=1e-10, max_iter=2000):
+        """回傳 (rho, beta, sigma2, post, lnL, n_iter, lnL_trace)。P0: n×K 初始後驗。"""
+        P = np.asarray(P0, dtype=float).copy()
+        P = P / P.sum(axis=1, keepdims=True)
+        lnL_prev = -np.inf
+        trace = []
+        for it in range(1, max_iter + 1):
+            # M 步
+            rho = P.mean(axis=0)
+            beta = np.empty(K)
+            s2 = np.empty(K)
+            for k in range(K):
+                w = P[:, k]
+                sw = w.sum()
+                if sw < 1e-12:
+                    beta[k] = 0.0
+                    s2[k] = 1e-8
+                    continue
+                beta[k] = float((w * _fx_xi * _fx_eta).sum() / max((w * _fx_xi ** 2).sum(), 1e-12))
+                r = _fx_eta - beta[k] * _fx_xi
+                s2[k] = float(max((w * r ** 2).sum() / sw, 1e-8))
+            # E 步（對數空間求 lnL，避免 underflow）
+            logf = np.empty((_fx_n, K))
+            for k in range(K):
+                r = _fx_eta - beta[k] * _fx_xi
+                logf[:, k] = (-0.5 * math.log(2 * math.pi * s2[k]) - r ** 2 / (2 * s2[k])
+                              + math.log(max(rho[k], 1e-300)))
+            mx = logf.max(axis=1, keepdims=True)
+            lse = mx[:, 0] + np.log(np.exp(logf - mx).sum(axis=1))
+            lnL = float(lse.sum())
+            trace.append(lnL)
+            P = np.exp(logf - lse[:, None])
+            if abs(lnL - lnL_prev) < tol:
+                return rho, beta, s2, P, lnL, it, trace
+            lnL_prev = lnL
+        return rho, beta, s2, P, lnL, max_iter, trace
+
+    def _fimix_criteria(K, lnL, post):
+        nk = 3 * K - 1                                    # (K−1) + K·R + K·M，R=M=1
+        n = _fx_n
+        out = {
+            "lnL": lnL, "nParams": nk,
+            "aic": -2 * lnL + 2 * nk,
+            "aic3": -2 * lnL + 3 * nk,
+            "aic4": -2 * lnL + 4 * nk,
+            "bic": -2 * lnL + math.log(n) * nk,
+            "caic": -2 * lnL + (math.log(n) + 1) * nk,
+            "hq": -2 * lnL + 2 * math.log(math.log(n)) * nk,
+            "mdl5": -2 * lnL + 5 * math.log(n) * nk,
+        }
+        if K >= 2:
+            pp = np.clip(post, 1e-300, 1.0)
+            ent = float(-(post * np.log(pp)).sum())
+            out["en"] = 1.0 - ent / (n * math.log(K))     # normed entropy（Ramaswamy et al. 1993）
+        else:
+            out["en"] = None
+        return out
+
+    _fx_initrng = np.random.default_rng(202)
+    _fx_vals = {}
+    _fx_inputs = {}
+    for _K in (1, 2, 3, 4):
+        if _K == 1:
+            _P0 = np.ones((_fx_n, 1))
+        else:
+            _P0 = _fx_initrng.random((_fx_n, _K)) + 0.1
+            _P0 = np.round(_P0 / _P0.sum(axis=1, keepdims=True), 6)
+            _fx_inputs[f"init_K{_K}"] = _P0.tolist()
+        _rho, _beta, _s2, _post, _lnL, _it, _trace = _fimix_em(_K, _P0)
+        _cr = _fimix_criteria(_K, _lnL, _post)
+        for _f, _v in _cr.items():
+            _fx_vals[f"{_f}_K{_K}"] = _v
+        # 段別解（依段別佔比 ρ 遞減排序，消除 label switching；與 JS 引擎同規則）
+        _ord = np.argsort(-_rho)
+        for _i, _k in enumerate(_ord):
+            _fx_vals[f"rho{_i + 1}_K{_K}"] = float(_rho[_k])
+            _fx_vals[f"beta{_i + 1}_K{_K}"] = float(_beta[_k])
+            _fx_vals[f"sigma2_{_i + 1}_K{_K}"] = float(_s2[_k])
+        # EM 單調性（基準端自我斷言，不入 fixture）
+        assert all(_trace[i + 1] >= _trace[i] - 1e-9 for i in range(len(_trace) - 1)), \
+            f"FIMIX EM lnL 非單調（K={_K}）"
+
+    # K=2 的還原率（對照 datasets["fimix"]["truth"]；label switching 取較大者）
+    _rho2, _beta2, _s22, _post2, _lnL2, _, _ = _fimix_em(2, np.asarray(_fx_inputs["init_K2"]))
+    _assign = _post2.argmax(axis=1)
+    _truth = np.asarray(datasets["fimix"]["truth"])
+    _acc = float(max((_assign == _truth).mean(), (_assign != _truth).mean()))
+    _fx_vals["recovery_K2"] = _acc
+
+    put("pls_fimix",
+        "FIMIX-PLS（Hahn, Johnson, Herrmann & Huber 2002；段數準則依 Sarstedt et al. 2011）："
+        "全域 PLS 的標準化 LV 分數 → 內模型的有限混合迴歸 EM（Hahn 原式不含截距）。"
+        "K = 1–4 的 lnL／AIC／AIC3／AIC4／BIC／CAIC／HQ／MDL5／EN（normed entropy，"
+        "Ramaswamy et al. 1993）與段別解（β 遞減排序以消除 label switching）。"
+        "初始後驗機率固定注入（見 pls_fimix_inputs）→ JS↔numpy 逐值可比。"
+        "資料為兩段已知係數（+0.70 / −0.30）的模擬資料，recovery_K2 為段別還原率。"
+        "無主流 Python/R 實作可對照 → 驗證採「模擬還原＋EM 單調性＋JS↔numpy 逐值」三重策略",
+        **_fx_vals)
+
+    put("pls_fimix_inputs",
+        "FIMIX EM 的固定初始後驗機率（n×K，逐列已正規化）；JS 以 options.initPosteriors "
+        "注入同一批 → 繞開兩邊 RNG 不同、達成引擎層級逐值交叉驗證",
+        **_fx_inputs)
+except Exception as e:
+    put("pls_fimix", f"FIMIX baseline FAILED: {e}")
+# --- FIMIX-PLS 基準區塊 迄 ----------------------------------------------------
+
+# --- PLS-POS 基準區塊 起 -------------------------------------------------------
+# Becker, Rai, Ringle & Völckner (2013), MIS Quarterly 37(3)：
+# prediction-oriented segmentation。與 FIMIX 互補——
+#   FIMIX：軟指派（後驗機率）、目標＝混合概似
+#   POS  ：硬指派、目標＝**預測誤差**（內生構念的殘差平方和），逐案重新指派的爬山法
+#
+# 目標函數：Obj = Σ_段 Σ_內生構念 SSE（該段該方程的殘差平方和），愈小愈好。
+# 等價於最大化各段 R² 的（以段別大小加權的）總和。
+#
+# 爬山法（確定性，JS 端同規則）：
+#   起始分割固定注入 → 逐案（依索引序）試著搬到其他段（依段索引序），
+#   以充分統計量（A = Σxx'、b = Σxy、yy = Σy²、n）增量更新，
+#   取「改善最大且 > 1e-12」的搬移；同分時取段索引較小者（嚴格 > 比較）。
+#   一輪掃完沒有任何搬移即停止。段別大小下限 minSize 為硬約束。
+#
+# 驗證策略同 FIMIX（無主流實作可對照）：模擬還原＋性質斷言＋JS↔numpy 逐值。
+try:
+    if "_fx_xi" not in dir():
+        raise RuntimeError("FIMIX 區塊未成功（_fx_xi 不存在），POS 基準略過")
+
+    def _pos_stats(idx, xi, eta):
+        """單段的充分統計量（單一預測變數、無截距）。"""
+        A = float((xi[idx] ** 2).sum())
+        b = float((xi[idx] * eta[idx]).sum())
+        yy = float((eta[idx] ** 2).sum())
+        return A, b, yy, len(idx)
+
+    def _pos_sse(A, b, yy):
+        if A <= 1e-12:
+            return yy, 0.0
+        beta = b / A
+        return yy - beta * b, beta
+
+    def _pos_hillclimb(assign0, xi, eta, K, min_size, max_pass=100):
+        assign = np.asarray(assign0, dtype=int).copy()
+        n = len(assign)
+        # 充分統計量
+        A = np.zeros(K); b = np.zeros(K); yy = np.zeros(K); cnt = np.zeros(K, dtype=int)
+        for k in range(K):
+            idx = np.where(assign == k)[0]
+            A[k], b[k], yy[k], cnt[k] = _pos_stats(idx, xi, eta)
+
+        def total():
+            return sum(_pos_sse(A[k], b[k], yy[k])[0] for k in range(K))
+
+        obj = total()
+        trace = [obj]
+        moves = 0
+        for p in range(1, max_pass + 1):
+            moved = False
+            for i in range(n):
+                s = assign[i]
+                if cnt[s] - 1 < min_size:
+                    continue
+                xi2 = xi[i] ** 2; xy = xi[i] * eta[i]; y2 = eta[i] ** 2
+                sse_s_out, _ = _pos_sse(A[s] - xi2, b[s] - xy, yy[s] - y2)
+                sse_s_in, _ = _pos_sse(A[s], b[s], yy[s])
+                best_t = -1; best_gain = 1e-12
+                for t in range(K):
+                    if t == s:
+                        continue
+                    sse_t_in, _ = _pos_sse(A[t], b[t], yy[t])
+                    sse_t_out, _ = _pos_sse(A[t] + xi2, b[t] + xy, yy[t] + y2)
+                    gain = (sse_s_in + sse_t_in) - (sse_s_out + sse_t_out)
+                    if gain > best_gain:          # 嚴格 > → 同分取段索引較小者
+                        best_gain = gain; best_t = t
+                if best_t >= 0:
+                    t = best_t
+                    A[s] -= xi2; b[s] -= xy; yy[s] -= y2; cnt[s] -= 1
+                    A[t] += xi2; b[t] += xy; yy[t] += y2; cnt[t] += 1
+                    assign[i] = t
+                    moved = True; moves += 1
+            obj = total()
+            trace.append(obj)
+            if not moved:
+                return assign, A, b, yy, cnt, obj, p, trace, moves
+        return assign, A, b, yy, cnt, obj, max_pass, trace, moves
+
+    _pos_rng = np.random.default_rng(303)
+    _pos_vals = {}
+    _pos_inputs = {}
+    _pos_n = len(_fx_xi)
+    _eta_ss = float((_fx_eta ** 2).sum())
+
+    for _K in (2, 3):
+        _min_size = max(3, int(0.05 * _pos_n))
+        _a0 = _pos_rng.integers(0, _K, _pos_n)
+        # 確保起始分割每段都達下限
+        for _k in range(_K):
+            while (_a0 == _k).sum() < _min_size:
+                _cand = np.where(_a0 != _k)[0]
+                _a0[_cand[0]] = _k
+        _pos_inputs[f"init_K{_K}"] = _a0.tolist()
+
+        _as, _A, _b, _yy, _cnt, _obj, _passes, _trace, _moves = _pos_hillclimb(
+            _a0, _fx_xi, _fx_eta, _K, _min_size)
+
+        # 爬山法單調性：目標函數每輪不得上升
+        assert all(_trace[i + 1] <= _trace[i] + 1e-9 for i in range(len(_trace) - 1)), \
+            f"PLS-POS 目標函數非單調遞減（K={_K}）"
+
+        _pos_vals[f"objective_K{_K}"] = _obj
+        _pos_vals[f"passes_K{_K}"] = _passes
+        _pos_vals[f"r2Overall_K{_K}"] = 1.0 - _obj / _eta_ss   # 分段後整體可解釋比例
+        # 段別解（依段別大小遞減排序，消除 label switching；與 JS 引擎同規則）
+        _ord = np.argsort(-_cnt)
+        for _i, _k in enumerate(_ord):
+            _sse, _beta = _pos_sse(_A[_k], _b[_k], _yy[_k])
+            _pos_vals[f"size{_i + 1}_K{_K}"] = int(_cnt[_k])
+            _pos_vals[f"share{_i + 1}_K{_K}"] = float(_cnt[_k] / _pos_n)
+            _pos_vals[f"beta{_i + 1}_K{_K}"] = float(_beta)
+            _pos_vals[f"sse{_i + 1}_K{_K}"] = float(_sse)
+            _pos_vals[f"r2_{_i + 1}_K{_K}"] = float(1.0 - _sse / max(_yy[_k], 1e-12))
+
+        if _K == 2:
+            _truth = np.asarray(datasets["fimix"]["truth"])
+            _acc = float(max((_as == _truth).mean(), (_as != _truth).mean()))
+            _pos_vals["recovery_K2"] = _acc
+            _pos_vals["moves_K2"] = _moves
+
+    # 全域（單段）基準：分段前的預測誤差，用來凸顯分段的增益
+    _gA, _gb, _gyy, _gn = _pos_stats(np.arange(_pos_n), _fx_xi, _fx_eta)
+    _gsse, _gbeta = _pos_sse(_gA, _gb, _gyy)
+    _pos_vals["objective_K1"] = _gsse
+    _pos_vals["beta_K1"] = _gbeta
+    _pos_vals["r2Overall_K1"] = 1.0 - _gsse / _eta_ss
+
+    put("pls_pos",
+        "PLS-POS（Becker, Rai, Ringle & Völckner 2013, MISQ 37(3)）：prediction-oriented "
+        "segmentation。目標＝內生構念的殘差平方和（預測誤差），硬指派＋逐案重新指派的爬山法；"
+        "以充分統計量（Σxx'、Σxy、Σy²、n）增量更新；同分取段索引較小者；段別大小下限為硬約束。"
+        "段別依大小遞減排序以消除 label switching。起始分割固定注入（見 pls_pos_inputs）"
+        "→ JS↔numpy 逐值可比。與 FIMIX 用同一組模擬資料（兩段 β = ±0.80）；"
+        "無主流實作可對照 → 驗證採「模擬還原＋目標函數單調遞減＋JS↔numpy 逐值」三重策略",
+        **_pos_vals)
+
+    put("pls_pos_inputs",
+        "PLS-POS 爬山法的固定起始分割（每個個案的段索引）；JS 以 options.initAssignment "
+        "注入同一批 → 繞開兩邊 RNG 不同、達成引擎層級逐值交叉驗證",
+        **_pos_inputs)
+except Exception as e:
+    put("pls_pos", f"PLS-POS baseline FAILED: {e}")
+# --- PLS-POS 基準區塊 迄 -------------------------------------------------------
+
+# --- pairwise deletion ＋ WPLS 基準區塊 起 -------------------------------------
+# handoff-roadmap §6.6（WPLS）＋§6.7（pairwise deletion）。
+#
+# 兩者的共同設計：Lohmöller 迭代**完全可由指標相關矩陣 R 驅動**（見 pls.js 的
+# estimateCoreFromCorr）。差別只在「R 怎麼算」：
+#   pairwise：R[a][b] 只用「a、b 兩欄同時可觀察」的列 → pairwise-complete 相關
+#   WPLS    ：R 以抽樣權重加權（加權平均／加權共變異／加權相關）
+# 統計量（loadings、lvCorr、信效度、HTMT、model fit）一律走 R；
+# LV 分數則以 zero-imputed（pairwise）／加權標準化（WPLS）值加權，僅供下游使用。
+#
+# 模型：M1（F1: i1–i3、F2: i4–i6，Mode A、path scheme），與 pls_basic 同一組。
+try:
+    if "_pls_engine_from_corr" not in dir():
+        # 相關矩陣驅動的 numpy 迭代（與 pls.js 的 estimateCoreFromCorr 同一套公式）
+        def _pls_engine_from_corr(R, blocks, modes, path_pairs, scheme="path",
+                                  tol=1e-12, max_iter=5000):
+            L = len(blocks)
+            pred = [[a for (a, b) in path_pairs if b == j] for j in range(L)]
+            succ = [[b for (a, b) in path_pairs if a == j] for j in range(L)]
+
+            def var_of(j, w):
+                bj = blocks[j]
+                return float(w @ R[np.ix_(bj, bj)] @ w)
+
+            def lv_corr(W, j, k):
+                bj, bk = blocks[j], blocks[k]
+                return float(W[j] @ R[np.ix_(bj, bk)] @ W[k])
+
+            def ind_lv(W, h, k):
+                bk = blocks[k]
+                return float(R[h, bk] @ W[k])
+
+            def normalize(j, w):
+                v = var_of(j, w)
+                if not (v > 0):
+                    raise RuntimeError("零變異 LV")
+                return w / math.sqrt(v)
+
+            W = [normalize(j, np.ones(len(blocks[j]))) for j in range(L)]
+            it = 0
+            for it in range(1, max_iter + 1):
+                E = [dict() for _ in range(L)]
+                for j in range(L):
+                    if scheme == "path":
+                        P = pred[j]
+                        if P:
+                            Rpp = np.array([[1.0 if a == b else lv_corr(W, a, b) for b in P] for a in P])
+                            rpy = np.array([lv_corr(W, a, j) for a in P])
+                            bco = np.array([rpy[0]]) if len(P) == 1 else np.linalg.solve(Rpp, rpy)
+                            for k, a in enumerate(P):
+                                E[j][a] = E[j].get(a, 0.0) + float(bco[k])
+                        for sx in succ[j]:
+                            E[j][sx] = E[j].get(sx, 0.0) + lv_corr(W, j, sx)
+                    else:
+                        for k in set(pred[j] + succ[j]):
+                            e = lv_corr(W, j, k)
+                            if scheme == "centroid":
+                                e = 1.0 if e >= 0 else -1.0
+                            E[j][k] = E[j].get(k, 0.0) + e
+                Wn = []
+                for j in range(L):
+                    bj = blocks[j]
+                    c = np.array([sum(e * ind_lv(W, h, k) for k, e in E[j].items()) for h in bj])
+                    if modes[j] == "B" and len(bj) >= 2:
+                        c = np.linalg.solve(R[np.ix_(bj, bj)], c)
+                    Wn.append(normalize(j, c))
+                diff = max(float(np.abs(Wn[j] - W[j]).max()) for j in range(L))
+                W = Wn
+                if diff < tol:
+                    break
+            for j in range(L):
+                if sum(ind_lv(W, h, j) for h in blocks[j]) < 0:
+                    W[j] = -W[j]
+            return W, it
+
+    _pw_cols = datasets["pw"]["cols"]
+    _pw_mask = np.array(datasets["pw"]["mask"], dtype=bool)
+    _pw_w = np.array(datasets["pw"]["w"], dtype=float)
+    _pw_X = mainc[_pw_cols].astype(float).values
+    _pw_blocks = [[0, 1, 2], [3, 4, 5]]
+    _pw_pairs = [(0, 1)]
+
+    def _pw_report(R, W):
+        """由相關矩陣與權重導出 loadings / lvCorr / 路徑 / R² / rhoC / AVE。"""
+        load = {}
+        for j, bj in enumerate(_pw_blocks):
+            for h in bj:
+                load[_pw_cols[h]] = float(R[h, bj] @ W[j])
+        lv01 = float(W[0] @ R[np.ix_(_pw_blocks[0], _pw_blocks[1])] @ W[1])
+        # M1：F1 → F2，單一預測變數 → 路徑 = LV 相關
+        out = {"path_F1_F2": lv01, "lvCorr_F1F2": lv01, "r2_F2": lv01 ** 2}
+        for j, bj in enumerate(_pw_blocks):
+            lam = np.array([load[_pw_cols[h]] for h in bj])
+            ave = float((lam ** 2).mean())
+            rhoc = float(lam.sum() ** 2 / (lam.sum() ** 2 + (1 - lam ** 2).sum()))
+            out[f"ave_F{j + 1}"] = ave
+            out[f"rhoC_F{j + 1}"] = rhoc
+        for h, name in enumerate(_pw_cols):
+            out[f"loading_{name}"] = load[name]
+        for j, bj in enumerate(_pw_blocks):
+            for hh, h in enumerate(bj):
+                out[f"weight_{_pw_cols[h]}"] = float(W[j][hh])
+        return out
+
+    # ── (1) pairwise deletion ──
+    _pw_Xm = _pw_X.copy()
+    _pw_Xm[_pw_mask] = np.nan
+    _p = len(_pw_cols)
+    _R_pw = np.eye(_p)
+    _min_pairs = len(_pw_X)
+    for _a in range(_p):
+        for _b in range(_a + 1, _p):
+            _ok = ~np.isnan(_pw_Xm[:, _a]) & ~np.isnan(_pw_Xm[:, _b])
+            _min_pairs = min(_min_pairs, int(_ok.sum()))
+            _va, _vb = _pw_Xm[_ok, _a], _pw_Xm[_ok, _b]
+            _r = float(np.corrcoef(_va, _vb)[0, 1])
+            _R_pw[_a, _b] = _R_pw[_b, _a] = _r
+    _W_pw, _it_pw = _pls_engine_from_corr(_R_pw, _pw_blocks, ["A"] * 2, _pw_pairs, "path")
+    _pw_vals = {f"pw_{k}": v for k, v in _pw_report(_R_pw, _W_pw).items()}
+    _pw_vals["pw_minPairs"] = _min_pairs
+    _pw_vals["pw_minEig"] = float(np.linalg.eigvalsh(_R_pw).min())
+
+    # ── (2) WPLS（加權相關矩陣）──
+    _sw = _pw_w.sum()
+    _mu = (_pw_w[:, None] * _pw_X).sum(axis=0) / _sw
+    _dev = _pw_X - _mu
+    _cov = (_pw_w[:, None, None] * (_dev[:, :, None] * _dev[:, None, :])).sum(axis=0) / _sw
+    _sd = np.sqrt(np.diag(_cov))
+    _R_w = _cov / np.outer(_sd, _sd)
+    np.fill_diagonal(_R_w, 1.0)
+    _W_w, _it_w = _pls_engine_from_corr(_R_w, _pw_blocks, ["A"] * 2, _pw_pairs, "path")
+    _pw_vals.update({f"w_{k}": v for k, v in _pw_report(_R_w, _W_w).items()})
+
+    # ── (3) 自我一致性：完整資料 + 全 1 權重 → 必須等於 pls_basic ──
+    _R_full = np.corrcoef(_pw_X, rowvar=False)
+    _W_full, _ = _pls_engine_from_corr(_R_full, _pw_blocks, ["A"] * 2, _pw_pairs, "path")
+    _full = _pw_report(_R_full, _W_full)
+    # 自我一致性：完整資料下，相關矩陣驅動的迭代必須重現原欄位驅動引擎的 pls_basic。
+    # 容差 1e-6 而非機器精度——兩者代數等價，但收斂終止的浮點位置不同
+    # （原引擎的內部權重由分數向量的相關累加而得，本式為代數乘積），
+    # 實測差 ~1.3e-8，遠在 PLS 迭代量的比對容差（1e-4）之內。
+    assert abs(_full["path_F1_F2"] - 0.3603108815299656) < 1e-6, \
+        f"相關矩陣驅動的引擎未能重現 pls_basic 的 path（得到 {_full['path_F1_F2']}）"
+    _pw_vals.update({f"full_{k}": v for k, v in _full.items()})
+
+    put("pls_pairwise_wpls",
+        "pairwise deletion（handoff §6.7）與 WPLS 加權 PLS（§6.6）：兩者共用「相關矩陣驅動」"
+        "的 Lohmöller 迭代，差別只在 R 怎麼算。pairwise：R[a][b] 只用該配對同時可觀察的列；"
+        "WPLS：加權平均／加權共變異／加權相關（權重同乘常數不影響結果）。"
+        "統計量（loadings／lvCorr／路徑／R²／rhoC／AVE）一律由 R 導出。"
+        "固定 MCAR 遮罩（約 11.4%）與固定抽樣權重見 datasets.json:pw。"
+        "full_* 為自我一致性欄位：完整資料走同一條相關矩陣路徑，必須重現 pls_basic",
+        **_pw_vals)
+except Exception as e:
+    put("pls_pairwise_wpls", f"pairwise/WPLS baseline FAILED: {e}")
+# --- pairwise deletion ＋ WPLS 基準區塊 迄 -------------------------------------
+
+
+
+
 
 # ---------------------------------------------------------------
 # 紅隊 R1 增補（2026-07-13）：cluster / lda 首次建立基準、EFA 補設定、
