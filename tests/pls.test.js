@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   validatePLSModel, runPLS, bootstrapPLS, blindfoldPLS, bcaInterval, PLS_SCHEMA_VERSION,
-  mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, henselerMgaP,
+  mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS, henselerMgaP,
 } from '../src/lib/stats/pls.js'
 import { handleMessage } from '../src/lib/plsWorker.js'
 
@@ -893,5 +893,150 @@ describe('W6：cIPMA（IPMA × NCA 組合）', () => {
   it('錯誤傳遞：壞 target 與 W4 模型沿 ipmaPLS 慣例', () => {
     expect(cipmaPLS(main, M4, { target: 'F1' }).error).toBe('ipma-bad-target')
     expect(cipmaPLS(main, MOD_MODEL(), { target: 'Y' }).error).toBe('w4-model-not-supported')
+  })
+})
+
+/* ═══════════════════════ CTA-PLS（W6.3；Gudergan et al. 2008） ═══════════════════════ */
+
+describe('CTA-PLS', () => {
+  const CTA_IND = ['cr1', 'cr2', 'cr3', 'cr4', 'cr5', 'cm1', 'cm2', 'cm3', 'cm4']
+  const ctaRows = D.cta.cr1.map((_, i) => Object.fromEntries(
+    CTA_IND.map((c) => [c, D.cta[c][i]]),
+  ))
+  const CTA_MODEL = () => ({
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'R', indicators: ['cr1', 'cr2', 'cr3', 'cr4', 'cr5'], mode: 'reflective' },
+      { name: 'M', indicators: ['cm1', 'cm2', 'cm3', 'cm4'], mode: 'reflective' },
+    ],
+    paths: [{ from: 'R', to: 'M' }],
+  })
+
+  const r = ctaPLS(ctaRows, CTA_MODEL(), { bootstrapIndices: D.cta.boot })
+  const blk = Object.fromEntries(r.blocks.map((b) => [b.lv, b]))
+
+  it('非冗餘 tetrad 數 = k(k−3)/2（Bollen & Ting 1993 的自由度）', () => {
+    expect(blk.R.nIndicators).toBe(5)
+    expect(blk.R.nTetrads).toBe((5 * (5 - 3)) / 2) // 5
+    expect(blk.M.nIndicators).toBe(4)
+    expect(blk.M.nTetrads).toBe((4 * (4 - 3)) / 2) // 2
+    expect(blk.R.tetrads).toHaveLength(5)
+    expect(blk.M.tetrads).toHaveLength(2)
+  })
+
+  it('tetrad 值 = σ_gh·σ_ij − σ_gi·σ_hj（對第一個 tetrad 手算錨定）', () => {
+    // R 區塊第一個 tetrad 依構造為 (cr1,cr2,cr3,cr4) → σ12·σ34 − σ13·σ24
+    const c = (a, b) => {
+      const xa = ctaRows.map((row) => row[a])
+      const xb = ctaRows.map((row) => row[b])
+      const n = xa.length
+      const ma = xa.reduce((s, v) => s + v, 0) / n
+      const mb = xb.reduce((s, v) => s + v, 0) / n
+      let sab = 0, saa = 0, sbb = 0
+      for (let i = 0; i < n; i++) {
+        const da = xa[i] - ma
+        const db = xb[i] - mb
+        sab += da * db; saa += da * da; sbb += db * db
+      }
+      return sab / Math.sqrt(saa * sbb)
+    }
+    const t1 = blk.R.tetrads[0]
+    expect(t1.label).toBe('cr1,cr2,cr3,cr4')
+    const manual = c('cr1', 'cr2') * c('cr3', 'cr4') - c('cr1', 'cr3') * c('cr2', 'cr4')
+    expect(Math.abs(t1.value - manual)).toBeLessThan(1e-12)
+  })
+
+  it('單因子反映型區塊（cr1–cr5）→ tetrads 消失 → 判反映型', () => {
+    expect(blk.R.verdict).toBe('reflective')
+    expect(blk.R.nNonVanishing).toBe(0)
+    for (const t of blk.R.tetrads) {
+      expect(t.ciLower).toBeLessThan(0)
+      expect(t.ciUpper).toBeGreaterThan(0)
+      expect(t.nonVanishing).toBe(false)
+    }
+    expect(blk.R.conflict).toBe(false) // 宣告 reflective、判讀 reflective
+  })
+
+  it('非單因子區塊（cm1–cm4）→ tetrads 不消失 → 判形成型並標記與宣告衝突', () => {
+    expect(blk.M.verdict).toBe('formative')
+    expect(blk.M.nNonVanishing).toBe(2)
+    for (const t of blk.M.tetrads) {
+      expect(t.nonVanishing).toBe(true)
+      expect(t.ciLower).toBeGreaterThan(0) // 兩對高相關結構 → tetrad 顯著為正
+    }
+    expect(blk.M.declaredMode).toBe('reflective')
+    expect(blk.M.conflict).toBe(true) // 宣告 reflective、判讀 formative
+  })
+
+  it('Bonferroni：α_adj = α/T，臨界值隨 T 變大而變嚴', () => {
+    expect(blk.R.alphaAdjusted).toBeCloseTo(0.05 / 5, 12)
+    expect(blk.M.alphaAdjusted).toBeCloseTo(0.05 / 2, 12)
+    expect(blk.R.tCrit).toBeGreaterThan(blk.M.tCrit) // T 較多 → 臨界值較大
+  })
+
+  it('CI 為 bias-corrected：中心 = τ̂ − bias、半寬 = tCrit·se', () => {
+    for (const b of r.blocks) {
+      for (const t of b.tetrads) {
+        const centre = (t.ciLower + t.ciUpper) / 2
+        expect(Math.abs(centre - (t.value - t.bias))).toBeLessThan(1e-12)
+        expect(Math.abs((t.ciUpper - t.ciLower) / 2 - b.tCrit * t.se)).toBeLessThan(1e-12)
+      }
+    }
+  })
+
+  it('指標少於 4 的構念：明確列入 skipped 並附中文說明，不靜默略過', () => {
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'R', indicators: ['cr1', 'cr2', 'cr3', 'cr4', 'cr5'] },
+        { name: 'S', indicators: ['cm1', 'cm2', 'cm3'] },
+      ],
+      paths: [{ from: 'R', to: 'S' }],
+    }
+    const out = ctaPLS(ctaRows, model, { bootstrapIndices: D.cta.boot })
+    expect(out.error).toBeUndefined()
+    expect(out.blocks.map((b) => b.lv)).toEqual(['R'])
+    expect(out.skipped).toHaveLength(1)
+    expect(out.skipped[0].lv).toBe('S')
+    expect(out.skipped[0].nIndicators).toBe(3)
+    expect(out.skipped[0].reason).toContain('至少需要 4 個指標')
+    expect(out.warnings.some((w) => w.includes('S'))).toBe(true)
+  })
+
+  it('所有構念都不足 4 指標 → 明確中文錯誤（不回半成品）', () => {
+    const out = ctaPLS(main, MODEL, {})
+    expect(out.error).toBe('cta-no-eligible-construct')
+    expect(out.message).toContain('4 個以上指標')
+  })
+
+  it('注入同一批重抽索引 → 逐位元決定性重現', () => {
+    const a = ctaPLS(ctaRows, CTA_MODEL(), { bootstrapIndices: D.cta.boot })
+    expect(a.blocks[0].tetrads[0].se).toBe(blk.R.tetrads[0].se)
+    expect(a.blocks[1].tetrads[0].ciLower).toBe(blk.M.tetrads[0].ciLower)
+  })
+
+  it('未注入索引時：固定種子 → 同種子重現、不同種子不同', () => {
+    const a = ctaPLS(ctaRows, CTA_MODEL(), { n: 200, seed: 7 })
+    const b = ctaPLS(ctaRows, CTA_MODEL(), { n: 200, seed: 7 })
+    const c = ctaPLS(ctaRows, CTA_MODEL(), { n: 200, seed: 8 })
+    expect(a.blocks[0].tetrads[0].se).toBe(b.blocks[0].tetrads[0].se)
+    expect(a.blocks[0].tetrads[0].se).not.toBe(c.blocks[0].tetrads[0].se)
+    expect(a.nBootstrap).toBe(200)
+    // 判讀結論不因種子而翻轉（訊號夠強）
+    expect(c.blocks[1].verdict).toBe('formative')
+  })
+
+  it('參數把關：壞 alpha／bootstrap 次數不足／壞注入索引 → 明確中文錯誤', () => {
+    expect(ctaPLS(ctaRows, CTA_MODEL(), { ciAlpha: 0 }).error).toBe('cta-bad-alpha')
+    expect(ctaPLS(ctaRows, CTA_MODEL(), { n: 50 }).error).toBe('cta-too-few-bootstrap')
+    const bad = ctaPLS(ctaRows, CTA_MODEL(), { bootstrapIndices: [[1, 2, 3]] })
+    expect(bad.error).toBe('cta-bad-bootstrap-indices')
+    expect(bad.message).toContain('樣本數')
+  })
+
+  it('W4 範圍限制：含調節／高階構念的模型明確報錯（沿 rejectW4 慣例）', () => {
+    const out = ctaPLS(main, MOD_MODEL(), {})
+    expect(out.error).toBe('w4-model-not-supported')
+    expect(out.message).toContain('CTA-PLS')
   })
 })

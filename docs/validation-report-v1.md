@@ -241,10 +241,68 @@ JS 引擎與其 bit-for-bit 一致；**慣例對齊仍待本機 R 抽驗**。抽
 7. **cIPMA（後續）**：§6.4 的 cIPMA（與既有 `ipmaPLS` 組合）本輪未做，
    列為 NCA 的下一步（handoff-roadmap §6.4）。
 
+### W6 增補 III（2026-07-13）：CTA-PLS（驗證性 tetrad 分析）
+
+Gudergan, Ringle, Wende & Will (2008), JBR 61(12) 的 confirmatory tetrad analysis；
+tetrad 定義依 Bollen & Ting (1993)。新增 1 組基準（`pls_cta`，65 → **66 個方法**），
+並加專屬固定種子資料集 `datasets.json:cta`（獨立 rng seed=31，n=60）。
+測試由 595 增至 657（**651 過、6 跳過**；compare 50 欄位＋pls.test.js 12 項行為）。
+
+| 基準 | 來源 | 驗證方式 |
+|---|---|---|
+| `pls_cta`（R 區塊 5 個 tetrad、M 區塊 2 個；各附 value/bias/se/CI＋區塊判讀） | numpy 封閉式手算（指標相關矩陣上的 tetrad）＋300 組固定 bootstrap 重抽索引 | 引擎 `ctaPLS` 注入同一批索引 → JS↔numpy 全 50 欄位逐值對齊 |
+
+**專屬資料集的設計**：main 的四個區塊都只有 3 個指標，tetrad 在 k < 4 時**數學上不存在**，
+無法檢定 → 另建 `cta` 資料集：
+- `cr1–cr5`：單因子反映型（loadings .85/.80/.75/.70/.65）→ tetrads 應消失（判反映型）
+- `cm1–cm4`：兩對高相關、跨對僅 .3 相關的非單因子結構 → tetrads 不消失（判形成型）
+
+基準生成端以 assert 鎖死這兩個設計預期（`R_verdict == reflective`、`M_verdict == formative`），
+資料設計若失效會直接讓基準生成失敗，不會靜默產出無鑑別力的基準。
+
+**CTA-PLS 慣例決策（三項，皆待抽驗）**
+
+1. **非冗餘 tetrad 的選取**：k 個指標的區塊有 3·C(k,4) 個 tetrad，其中恰 **k(k−3)/2** 個
+   非冗餘（= k(k−1)/2 個共變異數 − k 個 loading 的自由度差）。本實作用「逐一加入指標」
+   的確定性構造：加入第 m 個指標時取 {0,1,2,m} 上 2 個獨立 tetrad ＋ 對 c=3..m−1 各 1 個
+   {0,1,c,m}。生成端以 **Jacobian 秩 assert** 驗證所選集合為極大獨立。
+   ※ 任一極大獨立子集張成**相同的約束空間** → 區塊層級的 omnibus 判讀等價；
+   但**個別 tetrad 的 CI 會隨選取而異**。SmartPLS 的選取細節未文件化 → 高優先抽驗項。
+2. **CI 形式**：bias-corrected ＋ **區塊內** Bonferroni：
+   CI = (τ̂ − bias) ± t_{1−α/(2T), B−1} · SE，bias = mean(τ*) − τ̂、T = 該區塊 tetrad 數。
+   兩個未定點：(a) Bonferroni 的族系範圍是「單一構念」還是「全模型所有 tetrad」；
+   (b) t 的自由度用 B−1 還是 n−1（B 大時兩者近乎相同）。SmartPLS 皆未文件化 → 中優先抽驗項。
+3. **運算矩陣**：在**標準化資料的指標相關矩陣**上算 tetrad（PLS 慣例；SmartPLS 亦標準化）。
+   tetrad 在尺度變換下按 c_g·c_h·c_i·c_j 縮放，消失與否不受影響 → 判讀不受此選擇影響。
+
+**範圍限制（引擎與 UI 雙處把關）**：
+- 指標 < 4 的構念一律列入 `skipped` 並附中文說明（`不靜默略過`，架構不變量 4）；
+  全部構念都 < 4 → 明確錯誤 `cta-no-eligible-construct`。
+- 含調節／高階構念的模型不支援（沿 `rejectW4` 慣例，錯誤碼 `w4-model-not-supported`）。
+
+**新增共用工具**：`src/lib/stats/pvalue.js` 的 `qT(alpha, df)`（t 分布雙尾臨界值，
+以 pT 二分搜尋；對齊 scipy `t.ppf` 至 1e-10 級，實測 4 組）。
+
+### CTA-PLS 待抽驗清單（Kevin 本機 SmartPLS 4）
+
+沙盒無 SmartPLS，R 亦無主流 CTA-PLS 套件（cSEM/seminr 皆不提供）→ 本輪基準為
+Gudergan et al. (2008) 公式的忠實手算，**慣例對齊待本機抽驗**。
+
+1. **tetrad 選取集**（高優先）：同資料在 SmartPLS 4 跑 CTA，比對「回報幾個 tetrad」
+   與「各 tetrad 的指標組合」。數量若非 k(k−3)/2 → 選取邏輯不同，需雙處標註。
+2. **Bonferroni 族系範圍**（中優先）：看 SmartPLS 的 adjusted CI 是按單一構念的 tetrad 數
+   還是全模型 tetrad 總數調整——多構念模型上兩者的 CI 寬度會明顯不同。
+3. **CI 變體**（中優先）：確認是 bias-corrected（本實作）還是 percentile／BCa。
+4. **判讀門檻**：確認 SmartPLS 是否同樣採「任一 adjusted CI 不含 0 → 形成型」。
+
+抽驗資料：`scripts/validation/data/cta.csv`（n=60，cr1–cr5 ＋ cm1–cm4 九欄），
+操作步驟見 `scripts/validation/README.md` §2.7。
+
 ## 如何重跑
 
 ```bash
 python3 tests/run_nca_ref_only.py       # 只重生 NCA 基準（沙盒可跑，不需 R/semopy）
+python3 tests/run_cta_ref_only.py       # 只重生 CTA-PLS 基準（沙盒可跑；會校驗 datasets.json 既有鍵零漂移）
 npm test                                # 回歸比對（不需 Python）
 python3 tests/generate_reference.py     # 重生基準值（改測試資料時才需要）
 node tests/probe.mjs                    # 除錯：逐欄位列出實際 vs 基準與相對差

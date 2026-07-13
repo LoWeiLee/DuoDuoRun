@@ -81,7 +81,7 @@
  *   - 不收斂或退化（零變異）的重抽樣本剔除並計數（nSkipped）
  */
 import { inverse, matmul } from './matrix.js'
-import { pT, qnorm, normalCdf } from './pvalue.js'
+import { pT, qT, qnorm, normalCdf } from './pvalue.js'
 import { isMissing } from '../variableTypes.js'
 import { runNCA } from './nca.js'
 
@@ -2918,4 +2918,223 @@ export function cipmaPLS(rows, model, options = {}) {
     })
   }
   return { ...ipma, cipma: { conditions } }
+}
+
+/* ─────────────────────────  CTA-PLS（W6.3）  ───────────────────────── */
+
+/**
+ * 非冗餘 tetrad 的索引選取（區塊內 0-based），數量 = k(k−3)/2。
+ *
+ * 依「逐一加入指標」的自由度分解構造：加入第 m 個指標時新增 (m−1) 個共變異數、
+ * 1 個新 loading → (m−2) 個約束。取法為 {0,1,2,m} 上 2 個獨立 tetrad
+ * ＋ 對 c = 3..m−1 各 1 個 {0,1,c,m}。Σ_{m=3}^{k−1}(m−1) = k(k−3)/2，
+ * 與「k(k−1)/2 個共變異數 − k 個 loading」的自由度一致（見 generate_reference.py
+ * 的 Jacobian 秩 assert）。
+ *
+ * ※ 任一極大獨立子集張成相同的約束空間（omnibus 判讀等價），但個別 tetrad 的
+ *   CI 會隨選取而異；SmartPLS 的選取細節未文件化 → 待抽驗（validation-report）。
+ */
+function ctaNonredundantTetrads(k) {
+  if (k < 4) return []
+  const out = []
+  for (let m = 3; m < k; m++) {
+    out.push([0, 1, 2, m])
+    out.push([0, 1, m, 2])
+    for (let c = 3; c < m; c++) out.push([0, 1, c, m])
+  }
+  return out
+}
+
+/** τ_ghij = σ_gh·σ_ij − σ_gi·σ_hj（Bollen & Ting 1993） */
+function tetradValue(R, t) {
+  const [g, h, i, j] = t
+  return R[g][h] * R[i][j] - R[g][i] * R[h][j]
+}
+
+/** 由列資料（每列一筆、每欄一指標）算相關矩陣 */
+function corrMatrixOf(cols) {
+  const p = cols.length
+  const R = []
+  for (let a = 0; a < p; a++) {
+    R.push(new Array(p).fill(1))
+  }
+  for (let a = 0; a < p; a++) {
+    for (let b = a + 1; b < p; b++) {
+      const r = corrOf(cols[a], cols[b])
+      R[a][b] = r
+      R[b][a] = r
+    }
+  }
+  return R
+}
+
+/**
+ * CTA-PLS：confirmatory tetrad analysis（Gudergan, Ringle, Wende & Will 2008, JBR 61(12)）。
+ *
+ * 檢定「反映型（共同因子）測量模型隱含的 model-implied tetrads 是否消失」。
+ * tetrad 顯著不為 0 → 反映型設定被否證 → 該構念應改採形成型。
+ *
+ * 程序：
+ *   1. 每個 ≥4 指標的構念，在其指標相關矩陣上算 k(k−3)/2 個非冗餘 tetrad
+ *   2. bootstrap（重抽個案、每次重算相關矩陣）→ tetrad 的 bias 與 SE
+ *   3. bias-corrected ＋ 區塊內 Bonferroni 的 CI：
+ *        CI = (τ̂ − bias) ± t_{1−α/(2T), B−1} · SE          （T = 該區塊 tetrad 數）
+ *   4. 任一 CI 不含 0 → 判為形成型（拒絕反映型）
+ *
+ * 指標少於 4 個的構念**無法**做 tetrad 檢定（數學上不存在 tetrad），
+ * 一律明確列入 skipped 並附中文說明——不靜默略過（架構不變量 4）。
+ *
+ * @param {object[]} rows 資料列
+ * @param {object} model PLS 模型 JSON
+ * @param {object} options {
+ *   n=5000              bootstrap 重抽次數
+ *   seed=42             PRNG 種子
+ *   ciAlpha=0.05        族系錯誤率（Bonferroni 前）
+ *   bootstrapIndices    注入固定重抽索引（number[][]，測試／基準交叉驗證用；給了就忽略 n/seed）
+ *   missing='casewise'  缺失值處理
+ * }
+ * @returns {{ blocks, skipped, nBootstrap, ciAlpha, warnings }} | { error, message }
+ */
+export function ctaPLS(rows, model, options = {}) {
+  const bad = rejectW4(model, 'CTA-PLS')
+  if (bad) return bad
+
+  const valid = validatePLSModel(model)
+  if (!valid.ok) {
+    return { error: 'invalid-model', message: `模型不合法：${valid.errors.join('；')}` }
+  }
+  const lvs = valid.model.latentVariables
+
+  const ciAlpha = options.ciAlpha ?? 0.05
+  if (!(ciAlpha > 0 && ciAlpha < 1)) {
+    return { error: 'cta-bad-alpha', message: `ciAlpha 必須介於 0 與 1 之間（收到 ${options.ciAlpha}）` }
+  }
+
+  const eligible = lvs.filter((lv) => lv.indicators.length >= 4)
+  const skipped = lvs
+    .filter((lv) => lv.indicators.length < 4)
+    .map((lv) => ({
+      lv: lv.name,
+      nIndicators: lv.indicators.length,
+      reason: `構念「${lv.name}」只有 ${lv.indicators.length} 個指標；tetrad 檢定至少需要 4 個指標（Gudergan et al. 2008），本構念無法判讀測量模式`,
+    }))
+
+  if (eligible.length === 0) {
+    return {
+      error: 'cta-no-eligible-construct',
+      message: `CTA-PLS 需要至少一個含 4 個以上指標的構念，但模型中每個構念的指標都少於 4 個（${skipped.map((s) => `${s.lv}: ${s.nIndicators}`).join('、')}）`,
+    }
+  }
+
+  const allInd = eligible.flatMap((lv) => lv.indicators)
+  const ext = extractMatrix(rows, allInd, options.missing ?? 'casewise')
+  if (ext.error) return ext
+  const { X, n, nDropped } = ext
+  if (n < 10) {
+    return { error: 'too-few-cases', message: `缺失值處理後樣本數只剩 ${n} 筆（CTA-PLS 至少需要 10 筆）` }
+  }
+
+  // bootstrap 重抽索引：注入優先（基準交叉驗證），否則以固定種子 PRNG 生成
+  let bootIdx = options.bootstrapIndices
+  if (bootIdx) {
+    if (!Array.isArray(bootIdx) || bootIdx.length === 0
+        || !bootIdx.every((d) => Array.isArray(d) && d.length === n)) {
+      return {
+        error: 'cta-bad-bootstrap-indices',
+        message: `注入的 bootstrapIndices 必須是非空的二維陣列，且每組長度等於樣本數（n = ${n}）`,
+      }
+    }
+  } else {
+    const B = options.n ?? 5000
+    if (!Number.isInteger(B) || B < 100) {
+      return { error: 'cta-too-few-bootstrap', message: `bootstrap 次數至少 100（收到 ${options.n}）` }
+    }
+    const rnd = mulberry32(options.seed ?? 42)
+    bootIdx = []
+    for (let b = 0; b < B; b++) {
+      const idx = new Array(n)
+      for (let i = 0; i < n; i++) idx[i] = Math.floor(rnd() * n)
+      bootIdx.push(idx)
+    }
+  }
+  const B = bootIdx.length
+
+  const colOf = (name) => {
+    const j = allInd.indexOf(name)
+    const c = new Float64Array(n)
+    for (let i = 0; i < n; i++) c[i] = X[i][j]
+    return c
+  }
+
+  const blocks = []
+  for (const lv of eligible) {
+    const k = lv.indicators.length
+    const tets = ctaNonredundantTetrads(k)
+    const T = tets.length
+    const cols = lv.indicators.map(colOf)
+    const R0 = corrMatrixOf(cols)
+    const obs = tets.map((t) => tetradValue(R0, t))
+
+    // bootstrap：每次重抽個案 → 重算相關矩陣 → 重算 tetrads
+    const draws = tets.map(() => new Float64Array(B))
+    const resampled = cols.map(() => new Float64Array(n))
+    for (let b = 0; b < B; b++) {
+      const idx = bootIdx[b]
+      for (let a = 0; a < k; a++) {
+        const src = cols[a]
+        const dst = resampled[a]
+        for (let i = 0; i < n; i++) dst[i] = src[idx[i]]
+      }
+      const Rb = corrMatrixOf(resampled)
+      for (let q = 0; q < T; q++) draws[q][b] = tetradValue(Rb, tets[q])
+    }
+
+    const tCrit = qT(ciAlpha / T, B - 1)
+    const tetrads = []
+    let nNonVanishing = 0
+    for (let q = 0; q < T; q++) {
+      const d = draws[q]
+      const bias = meanOf(d) - obs[q]
+      const se = sdOf(d)
+      const centre = obs[q] - bias
+      const ciLower = centre - tCrit * se
+      const ciUpper = centre + tCrit * se
+      const nonVanishing = ciLower > 0 || ciUpper < 0
+      if (nonVanishing) nNonVanishing++
+      tetrads.push({
+        label: [tets[q][0], tets[q][1], tets[q][2], tets[q][3]]
+          .map((z) => lv.indicators[z]).join(','),
+        value: obs[q],
+        bias,
+        se,
+        t: se > 0 ? obs[q] / se : null,
+        p: se > 0 ? pT(Math.abs(obs[q] / se), B - 1) : null,
+        ciLower,
+        ciUpper,
+        nonVanishing,
+      })
+    }
+    blocks.push({
+      lv: lv.name,
+      declaredMode: lv.mode,
+      nIndicators: k,
+      nTetrads: T,
+      tCrit,
+      alphaAdjusted: ciAlpha / T,
+      tetrads,
+      nNonVanishing,
+      verdict: nNonVanishing > 0 ? 'formative' : 'reflective',
+      // 宣告與判讀不一致 → UI 需提示重新檢視測量模式
+      conflict: (nNonVanishing > 0 ? 'formative' : 'reflective') !== lv.mode,
+    })
+  }
+
+  const warnings = []
+  if (n < 30) warnings.push(`樣本數偏低（n = ${n}），tetrad 的 bootstrap 推論穩定性有限`)
+  if (nDropped > 0) warnings.push(`casewise deletion 剔除 ${nDropped} 筆含缺失值的資料列`)
+  if (skipped.length > 0) {
+    warnings.push(`${skipped.length} 個構念因指標少於 4 個而無法檢定：${skipped.map((s) => s.lv).join('、')}`)
+  }
+
+  return { blocks, skipped, n, nDropped, nBootstrap: B, ciAlpha, warnings }
 }

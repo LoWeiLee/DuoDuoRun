@@ -17,7 +17,7 @@
  *        options.bootstrap = { n, seed, ciAlpha, signCorrection, ciType } → bootstrap 專屬設定
  *        options.q2 = true | { omissionDistance } → 附帶 blindfolding Q²（W3）
  *   out: { type: 'progress', done, total }  — bootstrap 期間定期回報（約每 1%）
- *        { type: 'result', estimate, bootstrap, q2 }（關閉的項目為 null）
+ *        { type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma, cta }（關閉的項目為 null）
  *        { type: 'error', error, message }
  *
  * 取消：bootstrap 是同步迴圈（Worker 執行中不會處理 inbound 訊息），
@@ -28,7 +28,7 @@
  * 環境 import 時不會註冊任何 listener（isWorkerScope 判斷），可直接測 handleMessage。
  */
 import {
-  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS,
+  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS,
 } from './stats/pls.js'
 
 /**
@@ -44,7 +44,7 @@ export function handleMessage(msg, post) {
     const { rows, model, options = {} } = msg
     const {
       bootstrap: bootOpt, q2: q2Opt,
-      mga: mgaOpt, micom: micomOpt, predict: predictOpt, ipma: ipmaOpt,
+      mga: mgaOpt, micom: micomOpt, predict: predictOpt, ipma: ipmaOpt, cta: ctaOpt,
       ...estimateOptions
     } = options
 
@@ -92,8 +92,11 @@ export function handleMessage(msg, post) {
     const ipma = ipmaOpt
       ? (ipmaOpt.cipma ? cipmaPLS : ipmaPLS)(rows, model, { ...estimateOptions, ...ipmaOpt })
       : null
+    const cta = ctaOpt
+      ? ctaPLS(rows, model, { ...estimateOptions, ...ctaOpt })
+      : null
 
-    post({ type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma })
+    post({ type: 'result', estimate, bootstrap, q2, mga, micom, predict, ipma, cta })
   } catch (err) {
     post({ type: 'error', error: 'unexpected', message: String(err?.message ?? err) })
   }

@@ -103,12 +103,32 @@ nca_perms = [_ncarng.permutation(_nca_n).tolist() for _ in range(199)]
 _ciprng = np.random.default_rng(23)
 cipma_perms = [_ciprng.permutation(N).tolist() for _ in range(199)]
 
+# CTA-PLS（Gudergan et al. 2008）專屬資料集（獨立種子，不擾動既有 rng 序列）：
+# 需要「≥4 指標」的區塊——main 的四個區塊都只有 3 指標，無法做 tetrad 檢定。
+#   R5（cr1–cr5）：單因子反映型（loadings .85/.80/.75/.70/.65）→ tetrads 應消失
+#   M4（cm1–cm4）：兩對高相關、跨對低相關的非單因子結構（模擬形成型／多維）
+#                  → tetrads 不應消失
+# bootstrap 用固定重抽索引注入（同 pls_bca_reference 的注入慣例），B=300
+_ctarng = np.random.default_rng(31)
+_cta_f = _ctarng.normal(0, 1, N)
+def _cta_ref_ind(loading):
+    return np.round(loading * _cta_f + _ctarng.normal(0, math.sqrt(1 - loading ** 2), N), 4)
+cta_cols = {f"cr{h + 1}": _cta_ref_ind(l).tolist()
+            for h, l in enumerate([0.85, 0.80, 0.75, 0.70, 0.65])}
+_cta_a = _ctarng.normal(0, 1, N)                                       # 第一對的共同成分
+_cta_b = 0.3 * _cta_a + math.sqrt(1 - 0.3 ** 2) * _ctarng.normal(0, 1, N)  # 第二對（與第一對僅 .3 相關）
+for _nm, _src in (("cm1", _cta_a), ("cm2", _cta_a), ("cm3", _cta_b), ("cm4", _cta_b)):
+    cta_cols[_nm] = np.round(
+        0.9 * _src + math.sqrt(1 - 0.9 ** 2) * _ctarng.normal(0, 1, N), 4).tolist()
+cta_boot = [_ctarng.integers(0, N, N).tolist() for _ in range(300)]
+
 datasets = {
     "main": main.to_dict(orient="records"),
     "small": small.to_dict(orient="records"),
     "ties": ties.to_dict(orient="records"),
     "nca": {"x": nca_x.tolist(), "y": nca_y.tolist(), "perms": nca_perms},
     "cipma": {"perms": cipma_perms},
+    "cta": {**cta_cols, "boot": cta_boot},
 }
 with open(os.path.join(FIX, "datasets.json"), "w") as f:
     json.dump(datasets, f, default=str)
@@ -1504,6 +1524,131 @@ try:
 except Exception as e:
     put("pls_cipma", f"cIPMA baseline FAILED: {e}")
 # --- cIPMA 基準區塊 迄 --------------------------------------------------------
+
+# --- CTA-PLS 基準區塊 起 ------------------------------------------------------
+# Gudergan, Ringle, Wende & Will (2008), JBR 61(12) 的 confirmatory tetrad analysis。
+#
+# 【tetrad】Bollen & Ting (1993)：τ_ghij = σ_gh·σ_ij − σ_gi·σ_hj。
+#   反映型（共同因子）測量模型隱含「所有 model-implied tetrads 消失」；
+#   顯著不為 0 → 反映型設定被否證 → 該構念應改採形成型。
+#   在標準化資料上運算（σ = 指標相關；PLS 慣例），tetrad 的消失與否不受尺度影響。
+#
+# 【非冗餘 tetrad 的選取】k 個指標的區塊 → 恰 k(k−3)/2 個非冗餘 tetrad
+#   （= k(k−1)/2 個共變異數 − k 個 loading 的自由度差）。本實作用「逐一加入指標」
+#   的確定性構造：加入第 m 個指標時新增 (m−1) 個共變異數、1 個新 loading
+#   → (m−2) 個約束，取法為
+#     · {0,1,2,m} 上的 2 個獨立 tetrad：(0,1,2,m) 與 (0,1,m,2)
+#     · 對 c = 3..m−1 各取 1 個：(0,1,c,m)
+#   Σ_{m=3}^{k−1}(m−1) = k(k−3)/2，數量與自由度一致（下方以 Jacobian 秩 assert 驗證）。
+#   ※ 任一極大獨立子集張成相同的約束空間 → omnibus 判讀等價，但「個別 tetrad 的 CI」
+#     會隨選取不同而不同。SmartPLS 的選取細節未文件化 → 列入待抽驗清單。
+#
+# 【信賴區間】Gudergan et al. (2008)：bias-corrected ＋ Bonferroni（區塊內）
+#   bias = mean(τ*) − τ̂ ；SE = sd(τ*, ddof=1)
+#   CI = (τ̂ − bias) ± t_{1−α/(2T), B−1} · SE     （T = 該區塊的非冗餘 tetrad 數）
+#   判讀：任一 CI 不含 0 → 拒絕反映型（判為形成型）。
+#   基準以固定重抽索引注入（同 pls_bca_reference 慣例），B=300、α=.05。
+try:
+    _cta_R_names = ["cr1", "cr2", "cr3", "cr4", "cr5"]
+    _cta_M_names = ["cm1", "cm2", "cm3", "cm4"]
+    _cta_all = _cta_R_names + _cta_M_names
+    _cta_X = np.column_stack([np.asarray(datasets["cta"][c], dtype=float) for c in _cta_all])
+    _cta_boot_idx = [np.asarray(b, dtype=int) for b in datasets["cta"]["boot"]]
+    _CTA_B = len(_cta_boot_idx)
+    _CTA_ALPHA = 0.05
+
+    def _cta_nonredundant(k):
+        """非冗餘 tetrad 的 (g,h,i,j) 索引清單（區塊內 0-based），數量 = k(k−3)/2。"""
+        if k < 4:
+            return []
+        out = []
+        for m in range(3, k):
+            out.append((0, 1, 2, m))        # σ01·σ2m − σ02·σ1m
+            out.append((0, 1, m, 2))        # σ01·σ2m − σ0m·σ12
+            for c in range(3, m):
+                out.append((0, 1, c, m))    # σ01·σcm − σ0c·σ1m
+        return out
+
+    def _cta_tetrad(R, t):
+        g, h, i, j = t
+        return float(R[g, h] * R[i, j] - R[g, i] * R[h, j])
+
+    # 選取集的獨立性驗證：在一般點（隨機正定相關矩陣）上算 tetrad 對各 σ_ab 的
+    # 梯度，Jacobian 的秩必須等於 tetrad 數（= 極大獨立）。
+    def _cta_assert_independent(k, tets):
+        _g = np.random.default_rng(7)
+        A = _g.normal(size=(k, k + 3))
+        S = np.corrcoef(A)
+        pairs = [(a, b) for a in range(k) for b in range(a + 1, k)]
+        J = np.zeros((len(tets), len(pairs)))
+        for ti, t in enumerate(tets):
+            g, h, i, j = t
+            for pi, (a, b) in enumerate(pairs):
+                d = 0.0
+                if {a, b} == {g, h}: d += S[i, j]
+                if {a, b} == {i, j}: d += S[g, h]
+                if {a, b} == {g, i}: d -= S[h, j]
+                if {a, b} == {h, j}: d -= S[g, i]
+                J[ti, pi] = d
+        r = np.linalg.matrix_rank(J, tol=1e-8)
+        assert r == len(tets) == k * (k - 3) // 2, \
+            f"CTA 非冗餘選取有誤：k={k} 選了 {len(tets)} 個、秩 {r}、應為 {k * (k - 3) // 2}"
+
+    def _cta_block(names, label):
+        idx = [_cta_all.index(c) for c in names]
+        k = len(names)
+        tets = _cta_nonredundant(k)
+        _cta_assert_independent(k, tets)
+        T = len(tets)
+        Xb = _cta_X[:, idx]
+        R0 = np.corrcoef(Xb, rowvar=False)
+        obs = np.array([_cta_tetrad(R0, t) for t in tets])
+        draws = np.zeros((_CTA_B, T))
+        for r_ in range(_CTA_B):
+            Rb = np.corrcoef(Xb[_cta_boot_idx[r_], :], rowvar=False)
+            draws[r_] = [_cta_tetrad(Rb, t) for t in tets]
+        bias = draws.mean(axis=0) - obs
+        se = draws.std(axis=0, ddof=1)
+        tcrit = float(sps.t.ppf(1 - _CTA_ALPHA / (2 * T), _CTA_B - 1))
+        centre = obs - bias
+        lo = centre - tcrit * se
+        hi = centre + tcrit * se
+        nonzero = (lo > 0) | (hi < 0)
+        vals = {
+            f"{label}_nTetrads": T,
+            f"{label}_tCrit": tcrit,
+            f"{label}_verdict": "formative" if nonzero.any() else "reflective",
+            f"{label}_nNonVanishing": int(nonzero.sum()),
+        }
+        for q in range(T):
+            g, h, i, j = tets[q]
+            vals[f"{label}_t{q + 1}_label"] = ",".join(names[z] for z in (g, h, i, j))
+            vals[f"{label}_t{q + 1}_value"] = float(obs[q])
+            vals[f"{label}_t{q + 1}_bias"] = float(bias[q])
+            vals[f"{label}_t{q + 1}_se"] = float(se[q])
+            vals[f"{label}_t{q + 1}_ciLower"] = float(lo[q])
+            vals[f"{label}_t{q + 1}_ciUpper"] = float(hi[q])
+        return vals
+
+    _cta_vals = {}
+    _cta_vals.update(_cta_block(_cta_R_names, "R"))
+    _cta_vals.update(_cta_block(_cta_M_names, "M"))
+    # 設計檢核：反映型區塊不該被否證、非單因子區塊該被否證
+    assert _cta_vals["R_verdict"] == "reflective", "CTA 基準資料設計失效：R5 區塊被判形成型"
+    assert _cta_vals["M_verdict"] == "formative", "CTA 基準資料設計失效：M4 區塊未被否證"
+
+    put("pls_cta",
+        "CTA-PLS（Gudergan et al. 2008, JBR 61(12)；tetrad 定義 Bollen & Ting 1993）："
+        "非冗餘 model-implied tetrads 在標準化資料（指標相關矩陣）上手算，"
+        "bias-corrected ＋ 區塊內 Bonferroni 的 bootstrap CI（B=300 固定重抽索引注入、"
+        "α=.05、t 臨界值 df=B−1）。非冗餘選取為『逐一加入指標』的確定性構造（k(k−3)/2 個，"
+        "以 Jacobian 秩 assert 驗證極大獨立）。numpy 手算；"
+        "SmartPLS 的 tetrad 選取與 CI 變體未文件化 → 待抽驗",
+        **_cta_vals)
+except Exception as e:
+    put("pls_cta", f"CTA baseline FAILED: {e}")
+# --- CTA-PLS 基準區塊 迄 ------------------------------------------------------
+
 
 with open(os.path.join(FIX, "reference.json"), "w") as f:
     json.dump(REF, f, indent=1)

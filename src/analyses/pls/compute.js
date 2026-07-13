@@ -22,7 +22,7 @@
  * useMemo 改為 useEffect + worker.postMessage，以 progress 訊息驅動進度條。
  */
 import {
-  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS,
+  runPLS, bootstrapPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS,
 } from '../../lib/stats/pls.js'
 
 /** committed.options.w5 → 各 W5 API 的 options（worker 與同步路徑共用） */
@@ -38,6 +38,8 @@ export function buildW5Options(committed) {
     ipma: w5.ipma && w5.target
       ? { target: w5.target, ...(w5.cipma === true ? { cipma: true } : {}) }
       : null,
+    // W6.3 CTA-PLS：bootstrap 次數沿用主設定（Gudergan et al. 2008 建議 ≥ 5000）
+    cta: w5.cta === true ? { n: committed.bootstrapN ?? 1000, seed: 42, ciAlpha: 0.05 } : null,
   }
 }
 
@@ -97,6 +99,7 @@ export function runPLSAnalysis(rows, committed) {
       ipma: w5.ipma
         ? (w5.ipma.cipma ? cipmaPLS : ipmaPLS)(rows, committed.model, { ...estimateOptions, ...w5.ipma })
         : null,
+      cta: w5.cta ? ctaPLS(rows, committed.model, { ...estimateOptions, ...w5.cta }) : null,
     }
   }
   lastRows = rows

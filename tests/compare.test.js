@@ -71,6 +71,9 @@ describe('統計核心 vs Python 黃金標準', () => {
             for (let i = 0; i < expected.length; i++) {
               expect(relDiff(expected[i], got[i]), `${field}[${i}] exp=${expected[i]} got=${got[i]}`).toBeLessThan(tol)
             }
+          } else if (typeof expected === 'string') {
+            // 字串基準（如 CTA-PLS 的 tetrad 標籤與判讀結論）— 逐字比對
+            expect(got, `${field} exp=${expected} got=${got}`).toBe(expected)
           } else if (expected === null) {
             // 基準值為 null（Inf/NaN）— 略過
           } else {

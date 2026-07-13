@@ -154,7 +154,8 @@ function Config() {
   const w5Draft = state.w5 || {}
   const options = {
     scheme, consistent, ciType, q2,
-    ...(w5Draft.mga || w5Draft.micom || w5Draft.predict || w5Draft.ipma ? { w5: w5Draft } : {}),
+    ...(w5Draft.mga || w5Draft.micom || w5Draft.predict || w5Draft.ipma || w5Draft.cta
+      ? { w5: w5Draft } : {}),
   }
   const ints = state.ints || []
   const intMethod = ['two-stage', 'product-indicator', 'orthogonal'].includes(state.intMethod)
@@ -208,6 +209,14 @@ function Config() {
         .slice(0, 20).map(String)
     : []
   const endoOptions = [...new Set(curPaths.filter((p) => p.to).map((p) => p.to))]
+  // CTA-PLS（W6.3）：tetrad 檢定至少需 4 個指標（Gudergan et al. 2008）
+  const ctaEligible = curLvs
+    .filter((f) => (f.indicators || []).filter(Boolean).length >= 4)
+    .map((f) => (f.name || '').trim())
+  const ctaSkipped = curLvs
+    .filter((f) => (f.indicators || []).filter(Boolean).length < 4)
+    .map((f) => (f.name || '').trim())
+    .filter(Boolean)
 
   /* ── 構念操作 ── */
   const setLvs = (next) => update({ lvs: next })
@@ -283,6 +292,7 @@ function Config() {
       errors.push(c.w5NeedGroups)
     }
     if (w5.ipma && !w5.target) errors.push(c.w5NeedTarget)
+    if (w5.cta && ctaEligible.length === 0) errors.push(c.w5CtaNoBlock)
     const model = buildModel(curLvs, curPaths, ints, intMethod, hocs, hocMethod)
     const v = validatePLSModel(model)
     if (!v.ok) errors.push(...v.errors)
@@ -827,6 +837,24 @@ function Config() {
                 label={c.w5CipmaLabel}
                 hint={c.w5CipmaHint}
               />
+            )}
+          </div>
+          <div className="space-y-2">
+            <Toggle
+              checked={w5.cta === true}
+              onChange={(v) => setW5({ cta: v })}
+              label={c.w5CtaLabel}
+              hint={c.w5CtaHint}
+            />
+            {w5.cta && ctaEligible.length === 0 && (
+              <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-sig-red/10 border border-duo-sig-red/40 rounded-md px-3 py-2">
+                {c.w5CtaNoBlock}
+              </p>
+            )}
+            {w5.cta && ctaEligible.length > 0 && ctaSkipped.length > 0 && (
+              <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">
+                {fillTemplate(c.w5CtaSkipNote, { lvs: ctaSkipped.join('、') })}
+              </p>
             )}
           </div>
           {(w5.micom || w5.predict || w5.ipma) && (ints.length > 0 || hocs.length > 0) && (

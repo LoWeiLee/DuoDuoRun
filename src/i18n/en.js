@@ -2817,6 +2817,10 @@ export default {
       w5IpmaHint: 'Unstandardized total effects (importance) × mean of 0–100 rescaled scores (performance); pick the target construct.',
       w5CipmaLabel: 'cIPMA (combine with NCA necessity)',
       w5CipmaHint: 'Runs Necessary Condition Analysis on the 0–100 scores of the target\u2019s direct antecedents; necessity requires d \u2265 .1 and permutation p < .05 (Hauff et al., 2024).',
+      w5CtaLabel: 'CTA-PLS (confirmatory tetrad analysis)',
+      w5CtaHint: 'Tests whether the tetrads implied by a reflective measurement model vanish; a tetrad significantly different from 0 indicates the construct should be specified as formative (Gudergan et al., 2008). Only constructs with 4 or more indicators can be tested.',
+      w5CtaNoBlock: 'CTA-PLS requires at least one construct with 4 or more indicators; tetrads do not exist mathematically for fewer than 4 indicators.',
+      w5CtaSkipNote: 'These constructs have fewer than 4 indicators and cannot be tetrad-tested, so they are omitted from the CTA report: {lvs}',
       w5Target: 'Target construct',
       w5NeedGroups: 'MGA / MICOM need a grouping column and two distinct group values',
       w5NeedTarget: 'IPMA needs a target construct (must be endogenous)',
@@ -2947,6 +2951,24 @@ export default {
       cipmaBottleneckTitle: 'Bottleneck (condition score required per target level)',
       cipmaColLevel: 'Target level',
       cipmaNote: 'Only the target\u2019s direct antecedents are tested (Hauff et al., 2024). Cells show the condition score (0\u2013100) required to reach each target level (% of range); parentheses give the share of cases below the required level; NN = no necessary threshold at that level. Necessity: d \u2265 .1 and p < .05, with theoretical support. The permutation test is a seed-fixed approximation (10,000 draws).',
+      ctaTitle: 'CTA-PLS — confirmatory tetrad analysis (measurement mode)',
+      ctaColTetrad: 'Tetrad',
+      ctaColValue: 'Value \u03c4',
+      ctaColBias: 'Bias',
+      ctaColSe: 'SE',
+      ctaColCiLower: 'CI lower',
+      ctaColCiUpper: 'CI upper',
+      ctaColVanish: 'Verdict',
+      ctaVanishing: 'Vanishing (contains 0)',
+      ctaNonVanishing: 'Non-vanishing',
+      ctaVerdictReflective: 'Reflective (not rejected)',
+      ctaVerdictFormative: 'Formative (reflective rejected)',
+      ctaModeReflective: 'reflective',
+      ctaModeFormative: 'formative',
+      ctaMeta: 'k={k}, {t} nonredundant tetrads, Bonferroni \u03b1={alpha}',
+      ctaConflict: 'Construct \u201c{lv}\u201d is declared {declared} but the tetrad test indicates {verdict} \u2014 revisit the theoretical basis for the measurement mode.',
+      ctaSkipped: 'These constructs have fewer than 4 indicators and cannot be tetrad-tested: {lvs}',
+      ctaNote: 'Tetrad \u03c4 = \u03c3_gh\u00b7\u03c3_ij \u2212 \u03c3_gi\u00b7\u03c3_hj (Bollen & Ting, 1993), computed on the indicator correlation matrix of standardized data. A reflective (common factor) measurement model implies that all model-implied tetrads vanish; if any confidence interval excludes 0, the reflective specification is rejected and the construct should be specified as formative (Gudergan et al., 2008). The number of nonredundant tetrads is k(k\u22123)/2; CIs are bias-corrected bootstrap ({b} resamples) with a within-block Bonferroni adjustment (family-wise \u03b1 = {alpha}). The verdict is statistical evidence only \u2014 rejecting a reflective specification does not by itself justify any particular formative indicator set.',
       ipmaColPerformance: 'Performance (0–100)',
       ipmaIndicatorTitle: 'Indicator-level IPMA',
       w5ErrorPrefix: '{feature} unavailable: {message}',
@@ -2997,6 +3019,20 @@ export default {
         'IPMA: importance (unstandardized total effects) × performance (0–100 means) locates constructs/indicators that matter but underperform\n' +
         'cIPMA: IPMA × NCA combined (Hauff et al., 2024) — Necessary Condition Analysis on the 0–100 scores of the target\u2019s direct antecedents; "important AND necessary but underperforming" is the top priority, and the bottleneck table gives the minimum condition score per target level\n' +
         'Limits: MICOM/PLSpredict/IPMA do not support interaction/HOC models; MGA does (each group runs the full pipeline)',
+      ctaTitle: 'Measurement mode (CTA-PLS, W6)',
+      cta: `Reflective vs formative is not a stylistic choice but a theoretical claim. Reflective: the construct causes its indicators (indicators are interchangeable and should correlate highly). Formative: the indicators constitute the construct (they need not correlate, and dropping one changes what the construct means). If the specification is wrong, the reliability and validity criteria (\u03b1, rhoC, AVE, HTMT) become meaningless.
+
+CTA-PLS (Gudergan et al., 2008) tests that claim against the data. A one-factor model implies product constraints on the indicator covariances \u2014 the tetrad \u03c4 = \u03c3_gh\u00b7\u03c3_ij \u2212 \u03c3_gi\u00b7\u03c3_hj should equal 0. For each construct the tool computes k(k\u22123)/2 nonredundant tetrads and builds bias-corrected bootstrap confidence intervals with a within-block Bonferroni adjustment. If any interval excludes 0, the reflective specification is rejected.
+
+How to read it:
+1. Check the verdict light for each construct. Green (\u201creflective, not rejected\u201d) means the data do not contradict your specification; red (\u201cformative\u201d) means they do.
+2. When the \u201cdeclared vs. verdict\u201d warning appears, go back to theory: are these indicators manifestations of the construct, or causes of it?
+3. Constructs with fewer than 4 indicators do not appear in the table. Tetrads do not exist mathematically for k < 4 \u2014 this is not the tool skipping them; the test cannot be run. Add indicators if you need a verdict.
+
+Three boundaries:
+\u00b7 Not rejected \u2260 confirmed. CTA is a falsification logic; green only means no counter-evidence was found.
+\u00b7 Rejecting a reflective specification does not endorse any particular formative indicator set. If you switch to formative, the indicator selection still needs theoretical justification, and assessment moves to VIF and outer-weight significance.
+\u00b7 CTA is sensitive to sample size and non-normality. With small samples the tetrad SEs are large and power is low (biasing toward \u201cnot rejected\u201d); there, theory outweighs the test result.`,
       w4Title: 'Moderation, higher-order constructs & mediation (W4)',
       w4:
         'Moderation (two-stage): stage one estimates the main-effects model to obtain LV scores; stage two uses the product of scores as the interaction term. Two SmartPLS 4 behaviors are replicated — main-effect paths are added automatically, and the interaction term is NOT standardized (coefficient = standardized coefficient ÷ SD of the product). For the interaction f², prefer Kenny (2018) thresholds: .005 / .01 / .025\n' +

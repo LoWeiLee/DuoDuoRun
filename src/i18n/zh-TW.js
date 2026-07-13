@@ -2872,6 +2872,10 @@ export default {
       w5IpmaHint: '非標準化總效果（importance）×0–100 重標定分數平均（performance）；選擇目標構念。',
       w5CipmaLabel: 'cIPMA（結合 NCA 必要性）',
       w5CipmaHint: '對目標的直接前置構念，以 0–100 分數跑必要條件分析（NCA）；必要性判準 d ≥ .1 且 permutation p < .05（Hauff et al., 2024）。',
+      w5CtaLabel: 'CTA-PLS（驗證性 tetrad 分析）',
+      w5CtaHint: '檢定「反映型測量模型隱含的 tetrad 是否消失」；顯著不為 0 → 該構念應改採形成型（Gudergan et al., 2008）。只能檢定 4 個指標以上的構念。',
+      w5CtaNoBlock: 'CTA-PLS 需要至少一個含 4 個以上指標的構念；tetrad 在指標少於 4 個時數學上不存在。',
+      w5CtaSkipNote: '以下構念指標少於 4 個，無法做 tetrad 檢定，將不出現在 CTA 報表：{lvs}',
       w5Target: '目標構念',
       w5NeedGroups: 'MGA／MICOM 需要選擇分組欄位與兩個不同的群組值',
       w5NeedTarget: 'IPMA 需要選擇目標構念（必須是內生構念）',
@@ -3002,6 +3006,24 @@ export default {
       cipmaBottleneckTitle: 'Bottleneck（目標各水準所需的條件分數）',
       cipmaColLevel: '目標水準',
       cipmaNote: '只測目標構念的直接前置構念（Hauff et al., 2024）；表格為達到各目標水準（% of range）所需的條件分數（0–100），括號為未達所需水準的案例比例；NN = 該水準無必要門檻。必要性判準：d ≥ .1 且 p < .05，並須有理論支持。permutation 檢定為固定種子的近似檢定（10,000 次）。',
+      ctaTitle: 'CTA-PLS — 驗證性 tetrad 分析（測量模式判讀）',
+      ctaColTetrad: 'Tetrad',
+      ctaColValue: '值 τ',
+      ctaColBias: 'bias',
+      ctaColSe: 'SE',
+      ctaColCiLower: 'CI 下界',
+      ctaColCiUpper: 'CI 上界',
+      ctaColVanish: '判讀',
+      ctaVanishing: '消失（含 0）',
+      ctaNonVanishing: '不消失',
+      ctaVerdictReflective: '反映型（未被否證）',
+      ctaVerdictFormative: '形成型（反映型被否證）',
+      ctaModeReflective: '反映型',
+      ctaModeFormative: '形成型',
+      ctaMeta: 'k={k}、非冗餘 tetrad {t} 個、Bonferroni α={alpha}',
+      ctaConflict: '構念「{lv}」宣告為{declared}，但 tetrad 檢定判為{verdict} — 請重新檢視測量模式的理論依據。',
+      ctaSkipped: '以下構念指標少於 4 個，無法做 tetrad 檢定：{lvs}',
+      ctaNote: 'tetrad τ = σ_gh·σ_ij − σ_gi·σ_hj（Bollen & Ting, 1993），在標準化資料的指標相關矩陣上計算。反映型（共同因子）測量模型隱含所有 model-implied tetrad 消失；任一 tetrad 的信賴區間不含 0 → 拒絕反映型設定，該構念應改採形成型（Gudergan et al., 2008）。非冗餘 tetrad 數 = k(k−3)/2；CI 為 bias-corrected bootstrap（{b} 次重抽）＋區塊內 Bonferroni 調整（族系 α = {alpha}）。判讀為統計證據，最終設定仍須有理論依據——CTA 否證反映型不等於自動支持某一組形成型指標。',
       ipmaColPerformance: 'Performance（0–100）',
       ipmaIndicatorTitle: '指標層 IPMA',
       w5ErrorPrefix: '{feature} 無法計算：{message}',
@@ -3052,6 +3074,20 @@ export default {
         'IPMA：importance（非標準化總效果）× performance（0–100 平均）辨識「重要但表現差」的優先改善構念/指標\n' +
         'cIPMA：IPMA × NCA 的組合（Hauff et al., 2024）——對目標的直接前置構念以 0–100 分數跑必要條件分析；「重要且必要但表現差」是最高優先，bottleneck 表給出各目標水準的最低條件分數\n' +
         '限制：MICOM/PLSpredict/IPMA 不支援含調節/高階構念的模型；MGA 支援（各組獨立跑完整管線）',
+      ctaTitle: '測量模式判讀（CTA-PLS，W6）',
+      cta: `反映型 vs 形成型不是風格選擇，是理論主張：反映型主張構念「造成」指標（指標可互換、應高度相關）；形成型主張指標「構成」構念（指標不必相關、刪一個就改變構念意義）。設定錯了，信效度指標（α、rhoC、AVE、HTMT）全部失去意義。
+
+CTA-PLS（Gudergan et al., 2008）用資料檢驗這個主張。單因子模型隱含指標共變異數的乘積約束——tetrad τ = σ_gh·σ_ij − σ_gi·σ_hj 應等於 0。工具對每個構念算出 k(k−3)/2 個非冗餘 tetrad，用 bootstrap 建 bias-corrected 信賴區間（區塊內 Bonferroni 調整），任一區間不含 0 → 反映型設定被否證。
+
+怎麼讀：
+1. 先看每個構念的判讀燈號。綠燈「反映型（未被否證）」= 資料沒有反對你的設定；紅燈「形成型」= 資料反對反映型設定。
+2. 出現「宣告與判讀不一致」的紅框時，回頭問理論：這些指標真的是構念的表現（effect）嗎？還是構念的成因（cause）？
+3. 指標少於 4 個的構念不會出現在表上——tetrad 在 k < 4 時數學上不存在，這不是工具略過，是檢定本身無法進行。要判讀就得加指標。
+
+三個界線要守住：
+· 未被否證 ≠ 證實。CTA 是否證邏輯，綠燈只代表「沒找到反證」。
+· 否證反映型 ≠ 自動支持某一組形成型指標。改成形成型後，指標的選取仍要理論證成，並改用 VIF 與外部權重顯著性評估。
+· CTA 對樣本數與非常態敏感。小樣本時 tetrad 的 SE 大、檢定力低（容易誤判為「未被否證」）；此時理論的分量高於檢定結果。`,
       w4Title: '調節、高階構念與中介（W4）',
       w4:
         '調節（two-stage）：第一階段估計主效果模型取得 LV 分數，第二階段以「分數乘積」作為交互項。對齊 SmartPLS 4 的兩個行為——自動補主效果路徑、交互項不標準化（係數 = 標準化係數 ÷ 乘積之標準差）。交互項 f² 建議用 Kenny（2018）較小門檻：.005 / .01 / .025\n' +

@@ -13,8 +13,9 @@
     model fit／Q²；W4 調節（two-stage＋PI/ortho）／二次／三向／HOC 三法／
     中介分解；W5 MGA／MICOM／PLSpredict＋CVPAT／IT 準則／IPMA／GoF／
     CCA 指引／Worker 接線
-- 測試：`npm test` **589 過、6 記錄性跳過**；65 組基準方法（reference.json）
-  （W6.1 NCA＋cIPMA 交付後由 541→589；見下 §6.4 與 validation-report「W6 增補」）
+- 測試：`npm test` **651 過、6 記錄性跳過**；**66 組**基準方法（reference.json）
+  （541→589：NCA＋cIPMA；589→651：CTA-PLS。見下 §6.3／§6.4 與 validation-report
+  「W6 增補 I–III」）
 - 關鍵文件：`docs/pls-sem-roadmap-v1.md`（波次規畫與進度）、
   `docs/pls-model-schema.md`（模型 JSON v3.1 與引擎 API）、
   `docs/validation-report-v1.md`（逐波驗證記錄與 Kevin 本機抽驗清單）、
@@ -61,11 +62,16 @@
 
 ## 4. Kevin 本機抽驗清單（優先於任何新開發）
 
-累積三波，見 `validation-report-v1.md` 各節。高優先：
+累積四波，見 `validation-report-v1.md` 各節。高優先：
 SmartPLS 4 的 two-stage 交互係數（不標準化慣例）、HOC 兩階段流程、
-MICOM step 2 的 c、SRMR/fit 家族；R 側：seminr（PI/orthogonal、PLSpredict）、
-cSEM（testMICOM/testMGD）。抽驗腳本可請 AI 依 fixture 模型設定代產（R 腳本
-＋對照表），Kevin 只需執行與回報數字。
+MICOM step 2 的 c、SRMR/fit 家族、CTA-PLS 的 tetrad 選取集；
+R 側：seminr（PI/orthogonal、PLSpredict）、cSEM（testMICOM/testMGD）、NCA 套件。
+
+**抽驗工具包已代產（2026-07-13）**：`scripts/validation/`
+- 雙擊 `跑抽驗腳本.bat` → 自動跑 R 的 seminr / cSEM / NCA 三支腳本，結果寫入 `out/`
+- SmartPLS 4 部分為手動操作，步驟見該夾 `README.md`（含 CTA-PLS §2.7）
+- 數字對照表 `抽驗對照表.md`：左欄已填入多多快跑的值，Kevin 只需填右欄
+- 資料檔 `data/`：main.csv（n=60）、nca.csv（n=48）、cta.csv（n=60），皆與 fixture 同源
 
 ## 5. W6 執行規格（探索與長尾；各項獨立、可單獨出貨，每項 ≈ 1 session）
 
@@ -83,10 +89,20 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
 ### 6.2 PLS-POS（prediction-oriented segmentation）
 - Becker et al. (2013)；與 FIMIX 互補。距離量 = 預測誤差；
   逐案重新指派的爬山法。基準策略同 FIMIX（模擬還原＋性質斷言）。
-### 6.3 CTA-PLS（confirmatory tetrad analysis）
-- Gudergan et al. (2008)：每構念 4 指標以上，算 model-implied nonredundant
-  tetrads τ = σ12σ34 − σ13σ24 等，bootstrap CI（Bonferroni 調整）判反映型/形成型。
-- 基準：tetrad 封閉式 numpy 手算；bootstrap 用固定 draws 模式。
+### 6.3 CTA-PLS（confirmatory tetrad analysis）— **已交付（2026-07-13）**
+- `ctaPLS`（`src/lib/stats/pls.js`）：Gudergan et al. (2008)；非冗餘 tetrad
+  k(k−3)/2 個（「逐一加入指標」的確定性構造，生成端以 Jacobian 秩 assert 驗證極大獨立）；
+  bias-corrected ＋ 區塊內 Bonferroni 的 bootstrap CI。指標 < 4 的構念明確列入
+  `skipped`（不靜默略過）；全部 < 4 → `cta-no-eligible-construct`；含 W4 元素 → `rejectW4`。
+- 基準 `pls_cta`：numpy 封閉式手算＋300 組固定重抽索引注入；專屬資料集
+  `datasets.json:cta`（cr1–cr5 單因子反映型、cm1–cm4 非單因子），
+  沙盒可跑 `tests/run_cta_ref_only.py`（含 datasets.json 既有鍵零漂移校驗）。
+- UI：PLS 模組新報表區（tetrad 表＋判讀燈號＋宣告/判讀衝突提示）、Notes「測量模式判讀」、
+  中英 i18n 22 鍵；Config 開關含「無合格構念」的前置擋關。
+- 共用工具增補：`pvalue.js` 的 `qT(alpha, df)`（t 雙尾臨界值，對齊 scipy 1e-10 級）。
+- **待抽驗**：SmartPLS 4 的 tetrad 選取集、Bonferroni 族系範圍、CI 變體
+  （R 側無 CTA 套件 → 只能靠 SmartPLS；見 validation-report「CTA-PLS 待抽驗清單」
+  與 `scripts/validation/README.md` §2.7）。
 ### 6.4 NCA（必要條件分析）＋ cIPMA
 - **核心 NCA 已交付（2026-07-09）**：`src/lib/stats/nca.js`（CE-FDH/CR-FDH
   ceiling、scope、effect size d、bottleneck 表、permutation p），分析模組六件套
@@ -158,8 +174,8 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
 
 1. 抽驗回饋消化 session：Kevin 本機數字回來後對表、修正慣例差異
    （現含 W6/NCA 的 R `NCA` 抽驗 7 項）
-2. W6 依價值序：~~NCA＋cIPMA~~（✓ 全數交付 2026-07-09/10）→ CTA-PLS →
-   Gaussian copula → FIMIX → PLS-POS → WPLS＋pairwise（合併）
+2. W6 依價值序：~~NCA＋cIPMA~~（✓ 交付 2026-07-09/10）→ ~~CTA-PLS~~（✓ 交付 2026-07-13）
+   → Gaussian copula → FIMIX → PLS-POS → WPLS＋pairwise（合併）
 3. 品質 session：§6.8 清單＋docx 報表輸出
 4. CB-SEM spike session
 
@@ -168,3 +184,4 @@ pls.test.js 行為測試 → Config/Result/i18n → 文件三件套更新。
 - v1（2026-07-06）：初版。W5 交付當日撰寫，Fable 5 → Opus 4.8 交接。
 - v1.1（2026-07-09）：W6.1 NCA 核心交付後更新 §1／§6.4／§9（Opus 4.8）。
 - v1.2（2026-07-10）：cIPMA 交付，§6.4 收尾；補 plspm 版本敏感性備忘（Fable 5）。
+- v1.3（2026-07-13）：CTA-PLS 交付，§6.3 收尾；§1／§9 更新；§4 補抽驗工具包（Opus 4.8）。

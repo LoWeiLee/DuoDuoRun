@@ -32,7 +32,7 @@ import { exploratoryFactorAnalysis } from '../src/lib/stats/efa.js'
 import { oneProp, twoProp } from '../src/lib/stats/zProp.js'
 import { cfa } from '../src/lib/stats/cfa.js'
 import {
-  runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS,
+  runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS,
   mgaParametricTest, henselerMgaP,
 } from '../src/lib/stats/pls.js'
 import { runNCA } from '../src/lib/stats/nca.js'
@@ -600,6 +600,33 @@ export const ADAPTERS = {
     }
   },
 
+  // ── CTA-PLS（Gudergan et al. 2008）：專屬資料集、注入固定 bootstrap 重抽索引 ──
+  //   R（cr1–cr5，單因子反映型）→ tetrads 應消失；M（cm1–cm4，非單因子）→ 應被否證
+  pls_cta() {
+    const rows = D.cta.cr1.map((_, i) => Object.fromEntries(
+      CTA_INDICATORS.map((c) => [c, D.cta[c][i]]),
+    ))
+    const r = ctaPLS(rows, CTA_MODEL, { bootstrapIndices: D.cta.boot, ciAlpha: 0.05 })
+    if (r.error) throw new Error(`ctaPLS failed: ${r.error} — ${r.message}`)
+    const out = {}
+    for (const blk of r.blocks) {
+      const lb = blk.lv
+      out[`${lb}_nTetrads`] = blk.nTetrads
+      out[`${lb}_tCrit`] = blk.tCrit
+      out[`${lb}_verdict`] = blk.verdict
+      out[`${lb}_nNonVanishing`] = blk.nNonVanishing
+      blk.tetrads.forEach((t, q) => {
+        out[`${lb}_t${q + 1}_label`] = t.label
+        out[`${lb}_t${q + 1}_value`] = t.value
+        out[`${lb}_t${q + 1}_bias`] = t.bias
+        out[`${lb}_t${q + 1}_se`] = t.se
+        out[`${lb}_t${q + 1}_ciLower`] = t.ciLower
+        out[`${lb}_t${q + 1}_ciUpper`] = t.ciUpper
+      })
+    }
+    return out
+  },
+
   // ── NCA 必要條件分析（Dul 2016）：注入固定 permutations 做交叉驗證 ──
   nca_ce_fdh() {
     const r = runNCA(D.nca.x, D.nca.y)
@@ -623,6 +650,17 @@ export const ADAPTERS = {
 }
 
 /* ── PLS W3 共用模型與選項 ── */
+/* ── CTA-PLS 專屬模型（W6.3）：cr1–cr5 反映型五指標、cm1–cm4 四指標 ── */
+const CTA_INDICATORS = ['cr1', 'cr2', 'cr3', 'cr4', 'cr5', 'cm1', 'cm2', 'cm3', 'cm4']
+const CTA_MODEL = {
+  schemaVersion: 1,
+  latentVariables: [
+    { name: 'R', indicators: ['cr1', 'cr2', 'cr3', 'cr4', 'cr5'] },
+    { name: 'M', indicators: ['cm1', 'cm2', 'cm3', 'cm4'] },
+  ],
+  paths: [{ from: 'R', to: 'M' }],
+}
+
 const PLS_M4 = {
   schemaVersion: 1,
   latentVariables: [

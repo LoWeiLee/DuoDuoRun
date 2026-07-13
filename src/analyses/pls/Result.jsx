@@ -1258,6 +1258,91 @@ function CipmaBlock({ cipma, r }) {
 }
 
 /** W5 功能的錯誤/結果包裝 */
+/**
+ * CTA-PLS（Gudergan et al. 2008）：confirmatory tetrad analysis
+ * 每個 ≥4 指標的構念一張 tetrad 表；任一 CI 不含 0 → 判形成型。
+ */
+function CtaBlock({ cta, r }) {
+  if (!cta.blocks || cta.blocks.length === 0) return null
+  return (
+    <div className="mt-4">
+      <Heading>{r.ctaTitle}</Heading>
+      {cta.blocks.map((b) => (
+        <div key={b.lv} className="mt-3 first:mt-0">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="text-xs font-semibold text-duo-cocoa-800">{b.lv}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className={[
+                'inline-block w-2 h-2 rounded-full shrink-0',
+                b.verdict === 'formative' ? 'bg-duo-sig-alert shadow-led-alert' : 'bg-duo-sig-ok shadow-led-ok',
+              ].join(' ')} />
+              <span className={b.verdict === 'formative' ? 'text-duo-sig-alert' : 'text-duo-sig-ok'}>
+                {b.verdict === 'formative' ? r.ctaVerdictFormative : r.ctaVerdictReflective}
+              </span>
+            </span>
+            <span className="text-[11px] text-duo-cocoa-400 font-mono">
+              {fillTemplate(r.ctaMeta, {
+                k: b.nIndicators, t: b.nTetrads, alpha: fmtNum(b.alphaAdjusted, 4),
+              })}
+            </span>
+          </div>
+          {b.conflict && (
+            <p className="text-[11px] text-duo-cocoa-800 leading-snug bg-duo-sig-alert/10 border border-duo-sig-alert/40 rounded-md px-3 py-2 mb-1.5">
+              {fillTemplate(r.ctaConflict, {
+                lv: b.lv,
+                declared: b.declaredMode === 'formative' ? r.ctaModeFormative : r.ctaModeReflective,
+                verdict: b.verdict === 'formative' ? r.ctaModeFormative : r.ctaModeReflective,
+              })}
+            </p>
+          )}
+          <TableBox>
+            <thead className="bg-duo-cream-50">
+              <tr>
+                <Th align="left">{r.ctaColTetrad}</Th>
+                <Th>{r.ctaColValue}</Th>
+                <Th>{r.ctaColBias}</Th>
+                <Th>{r.ctaColSe}</Th>
+                <Th>{r.ctaColCiLower}</Th>
+                <Th>{r.ctaColCiUpper}</Th>
+                <Th align="left">{r.ctaColVanish}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {b.tetrads.map((q) => (
+                <tr key={q.label}>
+                  <Td align="left">{q.label}</Td>
+                  <Td>{fmtNum(q.value, 4)}</Td>
+                  <Td>{fmtNum(q.bias, 4)}</Td>
+                  <Td>{fmtNum(q.se, 4)}</Td>
+                  <Td>{fmtNum(q.ciLower, 4)}</Td>
+                  <Td>{fmtNum(q.ciUpper, 4)}</Td>
+                  <Td align="left" mono={false}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={[
+                        'inline-block w-2 h-2 rounded-full shrink-0',
+                        q.nonVanishing ? 'bg-duo-sig-alert shadow-led-alert' : 'bg-duo-sig-ok shadow-led-ok',
+                      ].join(' ')} />
+                      <span className={q.nonVanishing ? 'text-duo-sig-alert' : 'text-duo-cocoa-400'}>
+                        {q.nonVanishing ? r.ctaNonVanishing : r.ctaVanishing}
+                      </span>
+                    </span>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </TableBox>
+        </div>
+      ))}
+      {cta.skipped && cta.skipped.length > 0 && (
+        <p className="mt-2 text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">
+          {fillTemplate(r.ctaSkipped, { lvs: cta.skipped.map((s) => `${s.lv}（${s.nIndicators}）`).join('、') })}
+        </p>
+      )}
+      <Note>{fillTemplate(r.ctaNote, { b: cta.nBootstrap, alpha: fmtNum(cta.ciAlpha, 2) })}</Note>
+    </div>
+  )
+}
+
 function W5Section({ data, feature, r, children }) {
   if (!data) return null
   if (data.error) {
@@ -1309,7 +1394,7 @@ function Result() {
     )
   }
 
-  const { estimate, bootstrap: boot, q2: q2res, mga, micom, predict, ipma } = res
+  const { estimate, bootstrap: boot, q2: q2res, mga, micom, predict, ipma, cta } = res
   const bootOk = Boolean(boot && !boot.error)
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   // 多階段模型（two-stage 調節／HOC）：量測統計量取第一階段（原始指標），結構取最終階段
@@ -1435,6 +1520,9 @@ function Result() {
       <W5Section data={ipma} feature="IPMA" r={r}>
         <IpmaBlock ipma={ipma} r={r} />
         {ipma && ipma.cipma && <CipmaBlock cipma={ipma.cipma} r={r} />}
+      </W5Section>
+      <W5Section data={cta} feature="CTA-PLS" r={r}>
+        <CtaBlock cta={cta} r={r} />
       </W5Section>
     </div>
   )

@@ -82,6 +82,27 @@ export function pT(t, df) {
   return ibeta(df / (df + t * t), df / 2, 0.5)
 }
 
+/**
+ * Student's t 的雙尾臨界值：回傳滿足 pT(t, df) = alpha 的 t > 0
+ * （即 t_{1−alpha/2, df}；alpha 為雙尾機率）。
+ *
+ * 以 pT 為單調遞減函數做二分搜尋（pT 已對齊 scipy 至 1e-13 級）。
+ * 用途：CTA-PLS 的 Bonferroni 調整臨界值（W6.3）。alpha 極小時上界自動擴張。
+ */
+export function qT(alpha, df) {
+  if (!(alpha > 0 && alpha < 1) || !(df > 0)) return NaN
+  let lo = 0
+  let hi = 2
+  while (pT(hi, df) > alpha && hi < 1e12) hi *= 2
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2
+    if (pT(mid, df) > alpha) lo = mid
+    else hi = mid
+    if (hi - lo < 1e-13 * Math.max(1, hi)) break
+  }
+  return (lo + hi) / 2
+}
+
 /** F 分布右尾 p-value */
 export function pF(f, d1, d2) {
   return ibeta(d2 / (d2 + d1 * f), d2 / 2, d1 / 2)

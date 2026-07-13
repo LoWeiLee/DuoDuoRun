@@ -260,6 +260,20 @@ IPMA 重現教科書範例；`npm test` 綠燈。
 NCA 用 R `NCA` 套件（Kevin 本機）；Gaussian copula 依 Park & Gupta 公開 R 程式碼複算；
 WPLS 以加權相關矩陣手算對齊。
 **預估工作階段數**：4–6（依實際排入項目數）。
+
+**進度註記（2026-07-13）**：本波已交付三項 ✅——
+- **NCA**（2026-07-09）：`src/lib/stats/nca.js`；CE-FDH/CR-FDH ceiling、scope、
+  effect size d、bottleneck 表、permutation p；基準 3 組，JS↔numpy bit-for-bit。
+- **cIPMA**（2026-07-10）：`cipmaPLS`（Hauff et al. 2024）；基準 `pls_cipma`。
+- **CTA-PLS**（2026-07-13）：`ctaPLS`（Gudergan et al. 2008）；非冗餘 tetrad
+  k(k−3)/2、bias-corrected ＋ 區塊內 Bonferroni 的 bootstrap CI；基準 `pls_cta`
+  （專屬固定種子資料集 `datasets.json:cta`：cr1–cr5 單因子反映型、cm1–cm4 非單因子；
+  300 組固定重抽索引注入）；PLS 模組新報表區＋Notes 測量模式判讀＋中英 i18n。
+  另補 `pvalue.js` 的 `qT()`（t 分布雙尾臨界值，對齊 scipy 至 1e-10 級）。
+
+`npm test`：589 → **651 過、6 記錄性跳過**；基準方法 65 → **66 組**。
+剩餘：Gaussian copula → FIMIX-PLS → PLS-POS → WPLS＋pairwise（合併）→ 品質小任務。
+執行層規畫見 `docs/pls-sem-w6-workplan-v1.md`。
 **交付判準**：排入項逐項對齊其註記基準；未排入項不留死入口；`npm test` 綠燈。
 
 ---
@@ -293,3 +307,4 @@ WPLS 以加權相關矩陣手算對齊。
 - v1（2026-07-04）：初版。SmartPLS 4 功能清單經官方文件查證；
   修正調節三法（SmartPLS 4 僅 two-stage）；增補 CCA、非線性、simple slope、
   模型比較、PLS-POS、WPLS、GoF、三種估計尺度；排除 GSCA、Regression/PROCESS 家族、PCA。
+- v1.1（2026-07-13）：W6 進度註記——NCA／cIPMA／CTA-PLS 三項交付（Opus 4.8）。
