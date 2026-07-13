@@ -1174,11 +1174,30 @@ try:
     _bCg = np.linalg.solve(_Rg[np.ix_([0, 1], [0, 1])], _Rg[[0, 1], 2])
     _r2s = [_Rg[0, 1] ** 2, float(_bCg @ _Rg[[0, 1], 2]), _Rg[1, 3] ** 2]
     _comm = np.concatenate([_L4g[j] ** 2 for j in range(3)])  # F1/F2/C（Y 單指標排除）
+    _gof = float(np.sqrt(_comm.mean() * np.mean(_r2s)))
+    # 第三方 assert（每次重生都跑）：plspm 0.5.7 的 goodness_of_fit()，同模型同資料。
+    # 2026-07-13 溯源審計實測差 2.6e-9（plspm 迭代容差內），連「單指標區塊排除於
+    # communality」的慣例也一致。
+    _gf_st = pd.DataFrame(0, index=_m4_lv, columns=_m4_lv)
+    _gf_st.loc["F2", "F1"] = 1
+    _gf_st.loc["C", "F1"] = 1
+    _gf_st.loc["C", "F2"] = 1
+    _gf_st.loc["Y", "F2"] = 1
+    _gf_cfg = plsc3.Config(_gf_st, scaled=True)
+    _gf_cfg.add_lv("F1", PlsMode3.A, plsc3.MV("i1"), plsc3.MV("i2"), plsc3.MV("i3"))
+    _gf_cfg.add_lv("F2", PlsMode3.A, plsc3.MV("i4"), plsc3.MV("i5"), plsc3.MV("i6"))
+    _gf_cfg.add_lv("C", PlsMode3.A, plsc3.MV("cond1"), plsc3.MV("cond2"), plsc3.MV("cond3"))
+    _gf_cfg.add_lv("Y", PlsMode3.A, plsc3.MV("y"))
+    _gf_p = Plspm3(_m4_Z, _gf_cfg, PlsScheme3.PATH, iterations=2000, tolerance=1e-12)
+    assert abs(_gof - float(_gf_p.goodness_of_fit())) < 1e-6, \
+        f"GoF 與 plspm goodness_of_fit() 不一致：{_gof} vs {_gf_p.goodness_of_fit()}"
     put("pls_gof",
-        "numpy 手算 GoF（Tenenhaus, Vinzi, Chatelin & Lauro 2005）："
-        "sqrt(mean communality × mean R²)；communality 限反映型多指標區塊、"
-        "R² 取全部內生構念。M4、path scheme。官方文件不建議作為適配指標",
-        gof=float(np.sqrt(_comm.mean() * np.mean(_r2s))),
+        "GoF（Tenenhaus, Vinzi, Chatelin & Lauro 2005, CSDA 48(1)）："
+        "sqrt(mean communality × mean R²)；communality 限反映型多指標區塊"
+        "（單指標排除，與 plspm 慣例一致）、R² 取全部內生構念。M4、path scheme。"
+        "重生時 assert 與 plspm 0.5.7 goodness_of_fit() <1e-6。"
+        "官方文件不建議作為適配指標",
+        gof=_gof,
         meanCommunality=float(_comm.mean()), meanR2=float(np.mean(_r2s)))
 except Exception as e:
     put("pls_gof", f"GoF baseline FAILED: {e}")
@@ -1201,7 +1220,8 @@ except Exception as e:
 #       結構遞迴預測、LM 基準（內生指標 ~ 全部外生指標 OLS）；
 #       CVPAT（Liengaard, Sharma, Hult, Jensen, Sarstedt, Hair & Ringle 2021）：
 #       成對 t 檢定 on 逐案損失差（PLS vs IA、PLS vs LM）
-#   pls_itcriteria — IT 準則（Sharma, Shmueli, Sarstedt, Danks & Ray 2019）：
+#   pls_itcriteria — IT 準則（Sharma, Sarstedt, Shmueli, Kim & Thiele 2019 JAIS；
+#       Sharma, Shmueli, Sarstedt, Danks & Ray 2021 Decision Sciences）：
 #       AIC/AICc/BIC/HQ，由 SSE=(n−1)(1−R²) 封閉式
 #   pls_ipma — IPMA（Ringle & Sarstedt 2016）：0–100 重標定、非標準化權重
 #       正規化 Σw̃=1、非標準化路徑 OLS、importance = 對目標的非標準化總效果
@@ -1431,7 +1451,8 @@ try:
         "之成對 t 檢定（PLS vs IA、PLS vs LM）。JS 注入同 fold 指派交叉驗證",
         foldOf=[int(v) for v in _fold_of], **_pd_vals)
 
-    # ── pls_itcriteria：AIC/AICc/BIC/HQ（Sharma et al. 2019；SSE=(n−1)(1−R²)） ──
+    # ── pls_itcriteria：AIC/AICc/BIC/HQ（Sharma et al. 2019 JAIS／2021 Dec. Sci.；
+    #    SSE=(n−1)(1−R²)；AIC/BIC 與 seminr compute_metrics.R 的 AIC_func/BIC_func 同式） ──
     _W5m, _Y5m, _L5m, _ = _pls_engine(_m4_Z.values, _m4_blocks, ["A"] * 4, _m4_pairs, "path")
     _R5 = np.corrcoef(_Y5m, rowvar=False)
     _bC5 = np.linalg.solve(_R5[np.ix_([0, 1], [0, 1])], _R5[[0, 1], 2])
@@ -1445,11 +1466,24 @@ try:
             2 * (k + 1) * (k + 2) / (N - k - 2)
         _its[f"bic_{lv}"] = N * math.log(sse / N) + (k + 1) * math.log(N)
         _its[f"hq_{lv}"] = N * math.log(sse / N) + 2 * (k + 1) * math.log(math.log(N))
+    # 第三方 assert（每次重生都跑）：statsmodels OLS 的 llf 式 AIC/BIC 與 SSE 式
+    # 恰差高斯常數 n(ln 2π + 1)——鎖住 SSE 定義與 (k+1) 參數計數。
+    # 2026-07-13 溯源審計實測差 ≤2e-14。
+    _it_const = N * (math.log(2 * math.pi) + 1)
+    for _dv_i, _iv_is, _lv_nm in [(1, [0], "F2"), (2, [0, 1], "C"), (3, [1], "Y")]:
+        _ols_it = sm.OLS(_Y5m[:, _dv_i], sm.add_constant(_Y5m[:, _iv_is])).fit()
+        assert abs((_ols_it.aic - _it_const) - _its[f"aic_{_lv_nm}"]) < 1e-8, \
+            f"AIC_{_lv_nm} 與 statsmodels 恆等式不一致"
+        assert abs((_ols_it.bic - _it_const) - _its[f"bic_{_lv_nm}"]) < 1e-8, \
+            f"BIC_{_lv_nm} 與 statsmodels 恆等式不一致"
     put("pls_itcriteria",
-        "IT 模型選擇準則（Sharma, Shmueli, Sarstedt, Danks & Ray 2019）："
-        "SSE=(n−1)(1−R²)（標準化分數），AIC=n·ln(SSE/n)+2(k+1)、"
+        "IT 模型選擇準則（公式：Sharma, Sarstedt, Shmueli, Kim & Thiele 2019, "
+        "JAIS 20(4)；Sharma, Shmueli, Sarstedt, Danks & Ray 2021, Decision "
+        "Sciences 52(3)）：SSE=(n−1)(1−R²)（標準化分數），AIC=n·ln(SSE/n)+2(k+1)、"
         "AICc=AIC+2(k+1)(k+2)/(n−k−2)、BIC=n·ln(SSE/n)+(k+1)·ln(n)、"
-        "HQ=n·ln(SSE/n)+2(k+1)·ln(ln n)。M4、path scheme", **_its)
+        "HQ=n·ln(SSE/n)+2(k+1)·ln(ln n)；k=前置構念數。AIC/BIC 與 seminr "
+        "compute_metrics.R 同式（pk+1 計數）；重生時 assert statsmodels 恆等式。"
+        "M4、path scheme", **_its)
 
     # ── pls_ipma：M4、目標 C（Ringle & Sarstedt 2016 程序） ──
     _raw = mainc[_m4_cols].astype(float).values

@@ -55,7 +55,16 @@ const PROV = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures/provenance.jso
  *
  * 待審計清單與各自的審計路徑見 `docs/formula-provenance.md`。
  */
-const MAX_PENDING = 15
+// 2026-07-13 溯源審計（Session Q1，B1）：pls_gof、pls_itcriteria 銷帳（−2）；
+// lda_group3 經覆核由 tier A 改列待審計（+1，原申報過寬——scipy 只是特徵分解原語，
+// SPSS 慣例縮放從未對過完整第三方 LDA）。15 − 2 + 1 = 14。
+// 同日稍後：pls_q2 以「程序文獻」路線銷帳（SmartPLS 4 已移除 blindfolding、
+// seminr 拒做、matrixpls/semPLS 下架——在世第三方不存在，對照官方程序文件
+// 四要點逐項一致）。14 − 1 = 13。
+// 同日 Kevin 本機 R 抽驗（04_q1_audit.R）：pls_formative（seminr 逐值一致）、
+// pls_ipma（cSEM doIPMA 原始碼逐式＋數值複算等價）銷帳。13 − 2 = 11。
+// lda_group3 待補跑（腳本 [3] 段已修，組重心/structure/Wilks/分類表四項待對）。
+const MAX_PENDING = 11
 
 const TIERS = new Set(['A', 'B', 'I'])
 const STATUSES = new Set(['verified', 'pending', 'exempt'])

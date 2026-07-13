@@ -61,15 +61,20 @@
 
 正確性是地基。這一項排在所有新功能之前。
 
-### Session Q1：批次 1 —— 有第三方實作可對，一查就能升 Tier A（6 組）
+### Session Q1：批次 1（6 組）——【2026-07-13 執行，接近完成】
 
-`pls_formative`、`pls_q2`、`pls_predict`（Q²predict 定義）、`pls_ipma`、`pls_itcriteria`、`pls_gof`
+`pls_formative` ✅、`pls_q2` ✅、`pls_predict` Q²predict 定義 ✅、`pls_ipma` ✅、
+`pls_itcriteria` ✅、`pls_gof` ✅；另盤點覆核新收 `lda_group3` ⬜（僅剩此組，
+04_q1_audit.R 第 [3] 段已修，待重跑 .bat 對組重心／structure／Wilks／分類表）。
 
-做法：擴充 `scripts/validation/` 的 R 腳本（seminr 的 `blindfold()`／`predict_pls()`、
-cSEM 的 Mode B）＋沙盒 plspm 的 `gof`。有差異即修並記入 validation-report；
-慣例差異雙處標註。逐組完成後把 provenance 的 status 改 `verified`、`MAX_PENDING` 減 1。
+**原工單兩處誤判已修正**（詳見 formula-provenance §6）：
+- seminr 沒有 `blindfold()`——blindfolding 在世第三方不存在（SmartPLS 4 已移除），
+  `pls_q2` 走程序文獻路線結案；
+- cSEM 有 `doIPMA`（原工單漏查），`pls_ipma` 以原始碼逐式＋數值複算結案。
 
-**Session Q1 交付判準**：6 組全部 verified、`MAX_PENDING` 降至 9、`npm test` 全綠。
+**交付判準修正**：原「MAX_PENDING 降至 9」算術有誤——`pls_predict` 本就 verified，
+批次 1 只銷 5 筆 pending；加上覆核的 lda_group3 進（+1）出（−1），
+Q1 完成的正確落點是 **10**。目前 **11**（lda 待補跑）。`npm test` 全綠 ✅。
 
 ### Session Q2：批次 2 —— 無主流實作，回到論文方程式編號（6 組）
 
@@ -101,6 +106,8 @@ cSEM 的 Mode B）＋沙盒 plspm 的 `gof`。有差異即修並記入 validatio
 - MGA／PLSpredict／IPMA 的 APA Narrative 敘述句（i18n 已有表格判讀文字，缺敘述句）
 - PLSpredict 多次重複取平均（SmartPLS 預設 10 reps）；MGA 的 PLSc 版
 - IPMA 量表理論界線的 UI 設定（目前用觀察 min/max，已註記差異）
+- IPMA 塊內指標量尺不一時的 UI 警告（官方 cIPMA 教程列為未滿足假設；見 formula-provenance §6）
+- blindfolding Q² 的 UI legacy 註記（SmartPLS 4 已移除、官方改推 PLSpredict/CVPAT——本工具皆已內建）
 - moderated mediation（條件間接效果；W4 機制同源，PROCESS 式輸出）
 - 示範資料集：加一個含調節／HOC／群組欄位的 PLS 示範（`src/config/demos.js`）
 - `code-review-2026-05-13.md` 第四階段殘項：README 里程碑、OG meta、PDF metadata／動態 scale、

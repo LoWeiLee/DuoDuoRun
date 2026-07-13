@@ -67,6 +67,12 @@
 
 **起始值 15。**
 
+**棘輪履歷**：15 →（2026-07-13 溯源審計 Session Q1）→ **11**。
+- −2：`pls_gof`、`pls_itcriteria`（沙盒第三方＋重生 assert）
+- +1：`lda_group3` 覆核由 tier A 改列待審計（scipy 只是特徵分解原語，SPSS 慣例縮放從未對過完整第三方）
+- −1：`pls_q2`（程序文獻路線——在世第三方不存在）
+- −2：`pls_formative`、`pls_ipma`（Kevin 本機 R 抽驗）
+
 ## 4. 待審計清單（15 組）與審計路徑
 
 盤點：29 組手算基準中，10 組已由 2026-07-13 的 R 抽驗逐項核對、4 組為純輸入型 fixture，
@@ -127,7 +133,7 @@
 | `icc` | A | ✅ | pingouin |
 | `kruskal_wallis` | A | ✅ | scipy |
 | `ks_lilliefors` | A | ✅ | statsmodels |
-| `lda_group3` | A | ✅ | scipy |
+| `lda_group3` | B | ⬜ 待審計 | MASS::lda 抽驗中（係數已逐值吻合；組重心／structure／Wilks／分類表待補跑） |
 | `levene_mean_spss_default` | A | ✅ | scipy |
 | `levene_median` | A | ✅ | scipy |
 | `logistic_regression` | A | ✅ | statsmodels |
@@ -136,9 +142,9 @@
 | `mann_whitney_ties` | A | ✅ | scipy |
 | `manova` | A | ✅ | statsmodels |
 | `mixed_anova` | A | ✅ | pingouin |
-| `nca_bottleneck` | A | ✅ | NCA (R) |
+| `nca_bottleneck` | B | ✅ | NCA (R)（覆核改列 B，同上） |
 | `nca_ce_fdh` | B | ✅ | R NCA 5.0.2（Dul 2016） |
-| `nca_cr_fdh` | A | ✅ | NCA (R) |
+| `nca_cr_fdh` | B | ✅ | NCA (R)（覆核改列 B，與 nca_ce_fdh 同批同證據） |
 | `pearson_x1_x2` | A | ✅ | scipy |
 | `pls_basic` | B | ✅ | seminr 2.5.0 |
 | `pls_bca_reference` | B | ⬜ 待審計 | 待審計 |
@@ -149,15 +155,15 @@
 | `pls_fimix` | B | ⬜ 待審計 | 待審計 |
 | `pls_fimix_inputs` | I | — | 不適用（純輸入型 fixture） |
 | `pls_fit` | B | ✅ | cSEM 0.6.1；Henseler et al. (2014) ORM 17(2)；Dijkstra & He… |
-| `pls_formative` | B | ⬜ 待審計 | 待審計 |
-| `pls_gof` | B | ⬜ 待審計 | 待審計 |
-| `pls_hoc_disjoint` | A | ✅ | plspm、seminr (R) |
+| `pls_formative` | B | ✅ | plspm（fixture 來源）＋seminr mode_B（2026-07-13 逐值） |
+| `pls_gof` | A | ✅ | plspm 0.5.7（Tenenhaus et al. 2005）；重生時 assert <1e-6 |
+| `pls_hoc_disjoint` | B | ✅ | seminr (R)（2026-07-13 逐值；覆核改列 B——重生無第三方 assert） |
 | `pls_hoc_embedded` | B | ⬜ 待審計 | 待審計 |
 | `pls_hoc_repeated` | A | ✅ | plspm |
-| `pls_ipma` | B | ⬜ 待審計 | 待審計 |
-| `pls_itcriteria` | B | ⬜ 待審計 | 待審計 |
+| `pls_ipma` | B | ✅ | Ringle & Sarstedt (2016)；cSEM doIPMA 原始碼逐式＋數值複算（灰區見 note） |
+| `pls_itcriteria` | B | ✅ | seminr compute_metrics.R 同式＋本機 R 逐值；statsmodels 恆等式（重生 assert）；Sharma et al. 2019 JAIS／2021 Dec. Sci. |
 | `pls_mediation` | A | ✅ | plspm |
-| `pls_mga_formulas` | A | ✅ | seminr (R)、cSEM (R) |
+| `pls_mga_formulas` | B | ✅ | seminr (R)、cSEM (R)（覆核改列 B——固定輸入 numpy，一次性抽驗） |
 | `pls_mga_perm` | B | ✅ | Chin & Dibbern (2010)；cSEM 0.6.1 的 Chin approach |
 | `pls_mga_perm_inputs` | I | — | 不適用（純輸入型 fixture） |
 | `pls_micom` | B | ✅ | Henseler, Ringle & Sarstedt (2016)；cSEM 0.6.1 原始碼（postest… |
@@ -170,7 +176,7 @@
 | `pls_pos` | B | ⬜ 待審計 | 待審計 |
 | `pls_pos_inputs` | I | — | 不適用（純輸入型 fixture） |
 | `pls_predict` | B | ✅ | seminr 2.5.0；Shmueli et al. (2016, 2019) |
-| `pls_q2` | B | ⬜ 待審計 | 待審計 |
+| `pls_q2` | B | ✅ | Hair et al. (2017) 第 6 章＋SmartPLS Blindfolding 官方文件（程序四要點）；無在世第三方實作 |
 | `pls_quadratic` | B | ⬜ 待審計 | 待審計 |
 | `pls_scheme_centroid` | A | ✅ | plspm |
 | `pls_scheme_factorial` | A | ✅ | plspm |
@@ -195,3 +201,27 @@
 
 - v1（2026-07-13）：初版。起因為 2026-07-13 R 抽驗暴露「手算基準＝自我一致性檢查」的結構缺陷。
   建立 tier/authority 登記、`provenance.test.js` 硬擋與 MAX_PENDING 棘輪（起始 15）。
+## 6. 盤點覆核與 Session Q1 審計摘要（2026-07-13，Fable 5）
+
+**盤點覆核**（81 筆申報 vs generate_reference.py 實碼）：45 組 tier A 乾淨；3 組維持 A 加註
+（`pls_hoc_repeated`／`pls_mediation` 重生時 assert 對 plspm、`cfa_rmsea_ci` 值出自 scipy 機制）；
+4 組 tier A 申報過寬改列 B verified（`pls_hoc_disjoint`、`pls_mga_formulas`、`nca_cr_fdh`、
+`nca_bottleneck`——證據皆為一次性 R 抽驗，fixture 重生為純 numpy）；1 組申報不實改列待審計
+（`lda_group3`）。「一次性抽驗」與「每次重生都由第三方產生／assert」防護力不同：前者不攔截
+之後對手算碼的改動。
+
+**批次 1 的兩處工單誤判**（原：6 組都有第三方可對）：
+- `pls_q2`：seminr **沒有** blindfold()（作者明確拒做，GitHub issue #156）；SmartPLS 4 官方已移除
+  blindfolding；matrixpls／semPLS 已從 CRAN 下架——**在世第三方不存在**，走程序文獻路線結案。
+- `pls_ipma`：cSEM **有** doIPMA（原工單漏查），已用原始碼逐式＋數值複算結案。
+
+**新增的重生時第三方 assert**（結構性防護，非一次性）：`pls_gof` 對 plspm goodness_of_fit()
+<1e-6；`pls_itcriteria` 對 statsmodels llf 式 AIC/BIC 恆等式（差高斯常數）<1e-8。
+
+**引用修正**：`pls_itcriteria` 原誤標「Sharma, Shmueli, Sarstedt, Danks & Ray 2019」——
+該作者組合是 2021 Decision Sciences 52(3)；2019 JAIS 20(4) 是 Sharma, Sarstedt, Shmueli, Kim & Thiele。
+
+**IPMA 灰區（記錄在案）**：塊內指標量尺不一時，「先縮 0–100 再解權重」（cSEM 建議工作流）與
+「先以原始 sd 解權重再套 0–100 資料」（本工具與 cSEM 餵原始資料時的行為，兩者逐式等價）分岔；
+官方 cIPMA 教程（Sarstedt, Richter, Hauff & Ringle 2024, J. Marketing Analytics）明列混合量尺為
+未滿足假設情境。已建議 UI 警告（roadmap P1）。
