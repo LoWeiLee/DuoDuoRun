@@ -15,14 +15,7 @@ import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runIcc } from './compute'
 import { iccInterpretationKey } from '../../lib/stats/icc'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -204,7 +197,7 @@ function Result() {
   const result = useMemo(() => (dataset ? runIcc(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    const msg = t.icc.errors[result.error] || result.error
+    const msg = t.icc.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
 

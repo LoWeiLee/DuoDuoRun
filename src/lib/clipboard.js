@@ -14,7 +14,10 @@
 function cellText(cellEl) {
   // innerText 會處理樣式相關的隱藏（display:none）— 比 textContent 更接近視覺
   let txt = cellEl.innerText ?? cellEl.textContent ?? ''
-  txt = txt.replace(/ /g, ' ') // nbsp → 普通空白
+  // nbsp（U+00A0）→ 普通空格。必須用 \u00A0 跳脫而非字面字元：
+  // 字面 nbsp 會觸發 eslint 的 no-irregular-whitespace，且肉眼與一般空格無異，
+  // 極易在後續編輯中被誤改成普通空格（2026-07-13 紅隊清理時就踩過一次）。
+  txt = txt.replace(/\u00A0/g, ' ')
   txt = txt.replace(/\t/g, ' ').replace(/\r?\n/g, ' ')
   txt = txt.replace(/\s+/g, ' ').trim()
   return txt
@@ -99,8 +102,8 @@ export async function copyToClipboard(text) {
     try {
       await navigator.clipboard.writeText(text)
       return true
-    } catch (e) {
-      // fall through
+    } catch {
+      // navigator.clipboard 在非 HTTPS／權限被拒時會 throw → 落到下方的 fallback
     }
   }
   // 2. fallback：textarea + execCommand

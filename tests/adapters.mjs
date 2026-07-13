@@ -209,7 +209,7 @@ export const ADAPTERS = {
     return { ssA: r.effectA.ss, fA: r.effectA.F, pA: r.effectA.p,
       ssB: r.effectB.ss, fB: r.effectB.F, pB: r.effectB.p,
       ssAB: r.effectAB.ss, fAB: r.effectAB.F, pAB: r.effectAB.p,
-      ssError: r.error.ss }
+      ssError: r.errorTerm.ss }
   },
   ancova() {
     const r = ancova(main, 'y', 'group3', ['x1', 'x2'])

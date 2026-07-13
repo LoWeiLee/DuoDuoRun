@@ -27,7 +27,7 @@ function buildNarrative(result, dataset, lang) {
   const useGG = m.applicable && Number.isFinite(m.p) && m.p < 0.05
 
   // 球形檢定段 / sphericity sentence
-  let sphericitySection = ''
+  let sphericitySection
   if (m.applicable) {
     const tpl = useGG ? t.mixedAnova.apa.sphericityViolated : t.mixedAnova.apa.sphericityOk
     sphericitySection = fillTemplate(tpl, {
@@ -89,7 +89,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runMixedAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    const msg = t.mixedAnova.errors[result.error] || result.error
+    const msg = t.mixedAnova.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const zhText = buildNarrative(result, dataset, 'zh-TW')

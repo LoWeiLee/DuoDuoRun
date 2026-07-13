@@ -7,4 +7,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/DuoDuoRun/',
+  test: {
+    // 統計層測試跑在 node（快）；UI 測試在檔頭用 `// @vitest-environment jsdom` 切換。
+    environment: 'node',
+    setupFiles: ['./tests/setup.js'],
+    css: false,
+  },
 })

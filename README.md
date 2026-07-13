@@ -29,7 +29,17 @@
 
 ### 結果正確性
 
-統計核心為純 JavaScript 自行實作，並與黃金標準（SPSS／R 同底層演算法的 scipy、statsmodels、pingouin、semopy 等）逐欄位比對，比對已固化為常設回歸測試（`npm test`）。完整比對結果、已知的慣例差異（例如 Levene 檢定的 center 預設、Mann-Whitney 的 U 值慣例）與其影響評估，公開於 **[`docs/validation-report-v1.md`](docs/validation-report-v1.md)**。
+統計核心為純 JavaScript 自行實作，並與黃金標準（SPSS／R 同底層演算法的 scipy、statsmodels、pingouin、scikit-learn、factor_analyzer、semopy、plspm 等）逐欄位比對，比對已固化為常設回歸測試。
+
+目前的防線規模：
+
+| | |
+|---|---|
+| 基準方法組數 | **74**（`tests/fixtures/reference.json`，每組附出處與容差理由） |
+| 回歸測試 | **743 過、6 記錄性跳過**（`npm test`；含統計層、i18n 對稱性、UI 行為） |
+| CI 把關 | 每次 push 跑 lint ＋ 全測試 ＋ build，任一失敗即擋下部署 |
+
+完整比對結果、已知的慣例差異（例如 Levene 檢定的 center 預設、Mann-Whitney 的 U 值慣例、CFA 的 χ² 分母慣例）與其影響評估，公開於 **[`docs/validation-report-v1.md`](docs/validation-report-v1.md)**——**包含我們自己找到並修掉的錯誤**（例如 2026-07-13 修正的 LDA 標準化係數定義、CFA 的 RMSEA 信賴區間、k-means 手肘圖的區域最佳解問題）。
 
 正確性是這個工具存在的前提，因此驗證過程與已知限制一律公開，不做選擇性呈現。使用前請一併閱讀下方的[免責聲明](#免責聲明)。
 

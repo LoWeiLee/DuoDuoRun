@@ -16,6 +16,7 @@ import { fillTemplate } from '../lib/format'
 import { useAutoClearTimer } from '../lib/hooks/useTimedFlash'
 import TransformDialog from './TransformDialog'
 import HistoryDialog from './HistoryDialog'
+import { useToast } from '../context/toastContext'
 
 function SegmentedControl({ options, value, onChange }) {
   return (
@@ -77,6 +78,7 @@ function TopToolbar() {
     t,
     toggleSidebar,
   } = useApp()
+  const { showToast } = useToast()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   /** 點 brand → 回首頁：清空資料集與分析（保留上傳資料以避免使用者重傳） */
@@ -180,8 +182,13 @@ function TopToolbar() {
         },
       })
     } catch (err) {
+      // 匯出是非同步流程，ErrorBoundary 攔不到 → 必須在此自行接住並回報
       console.error('Export failed:', err)
-      alert(`匯出失敗 / Export failed: ${err.message || err}`)
+      showToast({
+        tone: 'bad',
+        title: t.errors.exportFailed,
+        message: String(err?.message || err),
+      })
     } finally {
       setExporting(false)
     }
@@ -200,7 +207,7 @@ function TopToolbar() {
           onClick={toggleSidebar}
           className="md:hidden p-2 -ml-2 text-duo-cocoa-700 hover:text-duo-amber-700 transition shrink-0"
           title={lang === 'zh-TW' ? '開啟分析選單' : 'Open analysis menu'}
-          aria-label="menu"
+          aria-label={t.toolbar.menuAria}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <line x1="3" y1="6" x2="21" y2="6" />
@@ -237,7 +244,7 @@ function TopToolbar() {
         onClick={() => setMobileMenuOpen(v => !v)}
         className="md:hidden p-2 -mr-2 text-duo-cocoa-700 hover:text-duo-amber-700 transition shrink-0"
         title={lang === 'zh-TW' ? '工具' : 'Tools'}
-        aria-label="tools"
+        aria-label={t.toolbar.toolsAria}
         aria-expanded={mobileMenuOpen}
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -299,9 +306,10 @@ function TopToolbar() {
             ].join(' ')}
           />
           <select
+            aria-label={t.toolbar.selectDataset}
             value={activeDataset || ''}
             onChange={e => setActiveDataset(e.target.value || null)}
-            className="h-full bg-transparent font-mono text-xs font-semibold text-duo-cocoa-800 focus:outline-none cursor-pointer min-w-0 flex-1 md:flex-none md:max-w-[150px]"
+            className="h-full bg-transparent font-mono text-xs font-semibold text-duo-cocoa-800 focus-ring cursor-pointer min-w-0 flex-1 md:flex-none md:max-w-[150px]"
           >
             <option value="">{t.toolbar.selectDataset}</option>
             {uploadedDataset && (

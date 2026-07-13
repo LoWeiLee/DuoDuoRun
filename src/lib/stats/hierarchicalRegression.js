@@ -88,7 +88,6 @@ export function hierarchicalRegression(rows, yVar, blocks) {
   // 為每一步建立 X 矩陣（cumulative predictors）
   const steps = []
   let prevR2 = 0
-  let prevDf1 = 0
   let cumPredictors = []
   let finalReg = null
 
@@ -143,7 +142,6 @@ export function hierarchicalRegression(rows, yVar, blocks) {
 
     steps.push(step)
     prevR2 = reg.fit.r2
-    prevDf1 = dfNum
     finalReg = reg
   }
 

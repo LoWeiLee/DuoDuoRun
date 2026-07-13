@@ -36,4 +36,30 @@
   .hairline {
     @apply border-duo-cocoa-100;
   }
+
+  /*
+   * 鍵盤可視焦點環（2026-07-13 紅隊 R3）
+   *
+   * 修復前 codebase 有 42 處 `focus:outline-none` 而 `focus-visible` 只有 1 處——
+   * 瀏覽器預設的焦點外框被拔掉，只剩 `focus:border-duo-amber-500` 這種 1px 邊框
+   * 換色當替代。邊框色變化在暖色底上對比不足，鍵盤使用者常常不知道焦點在哪。
+   *
+   * `.focus-ring` 的設計：
+   *   - 滑鼠點擊時不顯示（`:focus-visible` 只在鍵盤導航／輔具操作時觸發），
+   *     所以不會回到「點按鈕後留一圈醜框」的老問題
+   *   - 鍵盤 Tab 時顯示 2px amber 環 + 1px 白色 offset，暖底上對比足夠
+   *   - 原本的 `focus:border-*` 保留，兩者疊加不衝突
+   */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-duo-amber-500
+           focus-visible:ring-offset-1 focus-visible:ring-offset-white;
+  }
+
+  /* 破壞性操作（清空歷史等）的焦點環：改用 duo.sig.bad，與按鈕語意一致 */
+  .focus-ring-bad {
+    @apply focus:outline-none focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-duo-sig-bad
+           focus-visible:ring-offset-1 focus-visible:ring-offset-white;
+  }
 }

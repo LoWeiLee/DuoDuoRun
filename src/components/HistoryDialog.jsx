@@ -13,10 +13,12 @@
  *   - 相對時間
  *   - 還原 / 移除按鈕
  */
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { ANALYSIS_GROUPS } from '../config/analyses'
 import { getStrings } from '../i18n'
+import Modal from './Modal'
+import ConfirmDialog from './ConfirmDialog'
 
 function findAnalysisLabel(analysisId, lang) {
   const t = getStrings(lang)
@@ -45,7 +47,7 @@ function formatSettingsBrief(settings, lang) {
   return entries.join(', ')
 }
 
-function formatTimeAgo(ts, t, lang) {
+function formatTimeAgo(ts, t) {
   const diff = Date.now() - ts
   const sec = Math.floor(diff / 1000)
   if (sec < 60) return t.history.timeAgo.seconds.replace('{n}', sec)
@@ -65,16 +67,8 @@ function HistoryDialog({ open, onClose }) {
     lang, t,
   } = useApp()
 
-  useEffect(() => {
-    if (!open) return
-    const handler = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, onClose])
-
-  if (!open) return null
+  // 清空全部歷史：原本走瀏覽器原生 confirm()，改為可 i18n、可鍵盤操作的 ConfirmDialog
+  const [confirmClear, setConfirmClear] = useState(false)
 
   const canSave = !!activeDataset && !!activeAnalysis
 
@@ -87,36 +81,31 @@ function HistoryDialog({ open, onClose }) {
     if (restoreSnapshot(id)) onClose()
   }
 
-  const handleClear = () => {
-    if (history.length === 0) return
-    if (confirm(t.history.clearConfirm)) clearHistory()
-  }
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-duo-cocoa-900/40"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-2xl bg-white rounded-xl shadow-xl border border-duo-cream-200 overflow-hidden flex flex-col max-h-[85vh]"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        title={t.history.title}
+        titleExtra={
+          <span className="ml-2 text-xs font-normal text-duo-cocoa-400">
+            ({history.length})
+          </span>
+        }
+        labels={{ close: t.common.close }}
+        maxWidth="max-w-2xl"
+        footer={
+          history.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setConfirmClear(true)}
+              className="rounded-md px-2 py-1 text-xs text-duo-tongue hover:underline focus-ring-bad"
+            >
+              {t.history.clearAllBtn}
+            </button>
+          ) : null
+        }
       >
-        <header className="flex items-center justify-between px-5 py-3 border-b border-duo-cream-200">
-          <h2 className="text-base font-semibold text-duo-cocoa-800">
-            {t.history.title}
-            <span className="ml-2 text-xs font-normal text-duo-cocoa-400">
-              ({history.length})
-            </span>
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs text-duo-cocoa-500 hover:text-duo-cocoa-700"
-          >
-            {t.transform.closeBtn} ✕
-          </button>
-        </header>
-
         {/* 釘選目前 */}
         <div className="px-5 py-4 border-b border-duo-cream-200 bg-duo-cream-50">
           <div className="flex items-start justify-between gap-3">
@@ -182,7 +171,7 @@ function HistoryDialog({ open, onClose }) {
                             {brief}
                           </div>
                           <div className="text-[10px] text-duo-cocoa-400 mt-1">
-                            {formatTimeAgo(snap.timestamp, t, lang)}
+                            {formatTimeAgo(snap.timestamp, t)}
                             <span className="text-duo-cocoa-300 mx-1.5">·</span>
                             {t.modes[snap.mode]} · {snap.lang}
                           </div>
@@ -212,20 +201,20 @@ function HistoryDialog({ open, onClose }) {
             </>
           )}
         </div>
+      </Modal>
 
-        {history.length > 0 && (
-          <footer className="px-5 py-3 border-t border-duo-cream-200 flex justify-end">
-            <button
-              type="button"
-              onClick={handleClear}
-              className="text-xs text-duo-tongue hover:underline"
-            >
-              {t.history.clearAllBtn}
-            </button>
-          </footer>
-        )}
-      </div>
-    </div>
+      <ConfirmDialog
+        open={confirmClear}
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={() => { clearHistory(); setConfirmClear(false) }}
+        title={t.history.clearAllBtn}
+        message={t.history.clearConfirm}
+        confirmLabel={t.history.clearAllBtn}
+        cancelLabel={t.common.cancel}
+        closeLabel={t.common.close}
+        destructive
+      />
+    </>
   )
 }
 

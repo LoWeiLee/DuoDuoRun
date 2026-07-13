@@ -21,6 +21,7 @@ import { usePLSResult } from './usePLSResult'
 import Canvas from './Canvas'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtInt, fmtP, fillTemplate, toneForP } from '../../lib/format'
+import Heading from '../../components/ui/Heading'
 
 /** 手機窄幅偵測（md 斷點 = 768px）；畫布在窄幅退回表單結果 */
 function useIsNarrow() {
@@ -40,14 +41,6 @@ const TONE_TEXT = {
   ok: 'text-duo-sig-ok',
   warn: 'text-duo-sig-warn',
   bad: 'text-duo-sig-bad',
-}
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
 }
 
 function Th({ children, align = 'right' }) {
@@ -1105,7 +1098,8 @@ function IpmaBlock({ ipma, r }) {
       <Heading>{fillTemplate(r.ipmaTitle, { target: ipma.target })}</Heading>
       <div className="flex flex-wrap gap-4 items-start">
         <div className="bg-white border border-duo-cream-200 rounded-lg p-2 shrink-0">
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-sm" role="img" aria-label="IPMA">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-sm" role="img"
+               aria-label={fillTemplate(r.ipmaTitle, { target: ipma.target })}>
             <line x1={sx(xMean)} y1={PAD.t} x2={sx(xMean)} y2={H - PAD.b}
                   className="text-duo-cream-200" stroke="currentColor" strokeDasharray="4 3" />
             <line x1={PAD.l} y1={sy(yMean)} x2={W - PAD.r} y2={sy(yMean)}

@@ -14,7 +14,7 @@ function Result() {
   const result = useMemo(() => (dataset ? runViz(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    let msg = t.viz.config[result.error] || t.np.config[result.error] || result.error
+    let msg = t.viz.config[result.error] || t.np.config[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
 

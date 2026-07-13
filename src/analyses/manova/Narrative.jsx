@@ -22,7 +22,7 @@ function buildNarrative(result, dataset, lang) {
   const sig = Number.isFinite(result.wilks.p) && result.wilks.p < 0.05
 
   // Box's M section
-  let boxSection = ''
+  let boxSection
   if (result.boxM?.applicable) {
     const tpl = result.boxM.p <= 0.001 ? t.manova.apa.boxBad : t.manova.apa.boxOk
     boxSection = fillTemplate(tpl, {
@@ -70,7 +70,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runManova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    const msg = t.manova.errors[result.error] || result.error
+    const msg = t.manova.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const zhText = buildNarrative(result, dataset, 'zh-TW')

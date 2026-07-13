@@ -1,5 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // hoverOnlyWhenSupported：把所有 `hover:` 變體編成 `@media (hover: hover)`。
+  //
+  // 2026-07-13 紅隊 R3：codebase 有 175 處 `hover:`。觸控裝置沒有真正的 hover，
+  // 瀏覽器會在 tap 後把 :hover 狀態「黏」在元素上，直到使用者點別處為止——
+  // 手機上按過的按鈕會一直停在 hover 配色，看起來像被選取。
+  // 這個 flag 讓 hover 樣式只在有指標裝置時套用，不必逐處改寫成
+  // `[@media(hover:hover)]:` 變體。
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     './index.html',
     './src/**/*.{js,jsx,ts,tsx}',

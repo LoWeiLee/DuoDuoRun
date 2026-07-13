@@ -7,6 +7,7 @@
  * 若任一變數類別數 > 2，UI 會在 Result 端顯示警告（僅取前兩個或使用者指定的成功類別 + 第一個非成功類別）。
  */
 import { useApp, useAnalysisState } from '../../context/AppContext'
+import VarSelect from '../../components/ui/VarSelect'
 
 function collectLevels(rows, varName) {
   const seen = new Set()
@@ -25,25 +26,6 @@ const DEFAULT = {
   colVar: null,
   successRow: null,
   successCol: null,
-}
-
-function VarSelect({ label, value, onChange, options, placeholder, hint }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-duo-cocoa-700 mb-1">{label}</label>
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-full h-9 px-3 pr-8 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      {hint && <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">{hint}</p>}
-    </div>
-  )
 }
 
 function Config() {

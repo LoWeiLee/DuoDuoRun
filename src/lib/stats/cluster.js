@@ -627,8 +627,11 @@ export function clusterAnalysis(rows, settings) {
 
   const elbow = computeElbow(rows, vars, method, opts)
 
-  // 清掉不外露的內部欄位
-  const { _Xstd, _Xraw, _stats, centroidsStd, ...publicResult } = r
+  // 清掉不外露的內部欄位（_Xstd / _Xraw / _stats / centroidsStd 僅供本檔內部計算）
+  const INTERNAL = new Set(['_Xstd', '_Xraw', '_stats', 'centroidsStd'])
+  const publicResult = Object.fromEntries(
+    Object.entries(r).filter(([k]) => !INTERNAL.has(k))
+  )
   return {
     ...publicResult,
     method,

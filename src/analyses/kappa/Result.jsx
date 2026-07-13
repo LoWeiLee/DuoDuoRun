@@ -13,14 +13,7 @@ import { runKappa } from './compute'
 import { cohenKappa } from '../../lib/stats/kappa.js'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -208,7 +201,7 @@ function Result() {
   const result = useMemo(() => (dataset ? runKappa(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error && result.error !== 'undefinedKappa') {
-    const msg = t.kappa.errors[result.error] || result.error
+    const msg = t.kappa.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
 

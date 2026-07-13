@@ -15,13 +15,20 @@
  *     n, k, levels,                                  // N、組數、各組標籤
  *     factor:    { ss, df, ms, f, p, partialEta2 },
  *     covariates:[{ name, ss, df, ms, f, p, partialEta2 }],
- *     error:     { ss, df, ms },
+ *     errorTerm: { ss, df, ms },   // 誤差／殘差項（不是「錯誤」）
  *     total:     { ss, df },
  *     adjustedMeans: [{ level, mean, se, ciLow, ciHigh }],
  *     rawMeans:      [{ level, mean, n }],
  *     homogeneityTest: { f, dfNum, dfDen, p },       // 斜率同質性檢定
  *     mseFull, mseReduced,
- *     error?: string
+ *
+ * ⚠ 2026-07-13 紅隊 R5：這個欄位原本叫 `error`，與全 app「result.error 代表計算失敗」
+ *   的慣例**直接撞名**。後果是 analyses 包裝層的 `if (out.error) return { error: ... }`
+ *   在計算**成功**時也會成立（誤差項物件恆為 truthy），成功分支永遠到不了；
+ *   Result.jsx 接著把 {ss, df, ms} 物件當成 React child 渲染 → 整個面板炸掉、白畫面。
+ *   ANCOVA 實測從來沒有在 UI 上正常運作過。改名為 errorTerm 以根除這類撞名。
+ *
+ *     error?: string   // 僅在計算失敗時出現，值一律為字串錯誤碼
  *   }
  *
  * 計算流程 / Algorithm:
@@ -44,7 +51,6 @@
  */
 import { isMissing } from '../variableTypes.js'
 import { mean as meanOf } from './descriptive.js'
-import { multipleRegression } from './multipleRegression.js'
 import { transpose, matmul, matvec, inverse } from './matrix.js'
 import { pF } from './pvalue.js'
 
@@ -281,7 +287,7 @@ export function ancova(rows, yVar, factorVar, covariateVars) {
       f: fFactor, p: pFactor, partialEta2: partialEta2Factor,
     },
     covariates,
-    error: { ss: ssError, df: dfError, ms: msError },
+    errorTerm: { ss: ssError, df: dfError, ms: msError },
     total: { ss: ssTotal, df: dfTotal },
     adjustedMeans,
     rawMeans,

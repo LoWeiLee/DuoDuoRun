@@ -19,14 +19,7 @@ import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runManova } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -363,7 +356,7 @@ function Result() {
         k: result.meta?.k ?? 0,
         p: result.meta?.p ?? 0,
       })
-    else msg = t.manova.errors[result.error] || result.error
+    else msg = t.manova.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
 

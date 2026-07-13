@@ -1,23 +1,5 @@
 import { useApp, useAnalysisState } from '../../context/AppContext'
-
-function VarSelect({ label, value, onChange, options, hint, placeholder }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-duo-cocoa-700 mb-1">{label}</label>
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-full h-9 px-3 pr-8 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      {hint && <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">{hint}</p>}
-    </div>
-  )
-}
+import VarSelect from '../../components/ui/VarSelect'
 
 function Config() {
   const { dataset, variables, lang, t } = useApp()

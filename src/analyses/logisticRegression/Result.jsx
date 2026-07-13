@@ -4,14 +4,8 @@ import { runLogisticRegression } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 import { ROCPlot } from './ROCPlot'
+import Heading from '../../components/ui/Heading'
 
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
 function Th({ children, align = 'right' }) {
   return (
     <th className={`px-3 py-2 text-${align} font-medium text-duo-cocoa-700 border-b border-duo-cocoa-100 whitespace-nowrap`}>
@@ -282,7 +276,7 @@ function Result() {
     let msg
     if (result.error === 'yNeedBinary')
       msg = fillTemplate(t.logReg.config.yNeedBinary, { k: result.meta.k })
-    else msg = t.logReg.config[result.error] || result.error
+    else msg = t.logReg.config[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}

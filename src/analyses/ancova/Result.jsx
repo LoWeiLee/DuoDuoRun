@@ -12,14 +12,7 @@ import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runAncova } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -131,9 +124,9 @@ function AncovaTable({ result, t, factorLabel, covLabelMap }) {
             </tr>
             <tr>
               <Td align="left" mono={false} bold>{c.error}</Td>
-              <Td>{fmtNum(result.error.ss, 2)}</Td>
-              <Td>{result.error.df}</Td>
-              <Td>{fmtNum(result.error.ms, 2)}</Td>
+              <Td>{fmtNum(result.errorTerm.ss, 2)}</Td>
+              <Td>{result.errorTerm.df}</Td>
+              <Td>{fmtNum(result.errorTerm.ms, 2)}</Td>
               <Td></Td>
               <Td></Td>
               <Td></Td>
@@ -232,7 +225,7 @@ function Interpretation({ result, t, factorLabel, yLabel, covLabelMap }) {
     yLabel,
     factor: factorLabel,
     df1: result.factor.df,
-    df2: result.error.df,
+    df2: result.errorTerm.df,
     f: fmtNum(result.factor.f, 3),
     pStr: fmtP(result.factor.p),
     sigWord: sigFactor ? t.ancova.interp.sigYes : t.ancova.interp.sigNo,
@@ -252,7 +245,7 @@ function Interpretation({ result, t, factorLabel, yLabel, covLabelMap }) {
             const text = fillTemplate(t.ancova.interp.covLine, {
               name: covLabelMap[cv.name] || cv.name,
               df1: cv.df,
-              df2: result.error.df,
+              df2: result.errorTerm.df,
               f: fmtNum(cv.f, 3),
               pStr: fmtP(cv.p),
               eta2: fmtNum(cv.partialEta2, 3),
@@ -279,7 +272,7 @@ function Result() {
     let msg
     if (result.error === 'factorBadGroups')
       msg = fillTemplate(t.ancova.errors.factorBadGroups, { k: result.meta?.k ?? '?' })
-    else msg = t.ancova.errors[result.error] || result.error
+    else msg = t.ancova.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
 
@@ -299,7 +292,7 @@ function Result() {
           {
             label: t.ancova.result.cols.f,
             value: fmtNum(result.factor.f, 3),
-            sub: `${t.ancova.result.cols.df} = ${result.factor.df}, ${result.error.df}`,
+            sub: `${t.ancova.result.cols.df} = ${result.factor.df}, ${result.errorTerm.df}`,
           },
           {
             label: t.ancova.result.cols.p,

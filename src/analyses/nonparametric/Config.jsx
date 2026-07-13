@@ -2,6 +2,7 @@
  * 無母數檢定 — Config（左欄）
  */
 import { useApp, useAnalysisState } from '../../context/AppContext'
+import VarSelect from '../../components/ui/VarSelect'
 
 const DEFAULT = { type: 'mw', depVar: null, groupVar: null, var1: null, var2: null, dunnPostHoc: false }
 
@@ -35,25 +36,6 @@ function TypeSelector({ value, onChange, t }) {
       <p className="text-[11px] text-duo-cocoa-400 leading-snug">
         {t.np.typeHint[value]}
       </p>
-    </div>
-  )
-}
-
-function VarSelect({ label, value, onChange, options, hint, placeholder }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-duo-cocoa-700 mb-1">{label}</label>
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-full h-9 px-3 pr-8 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      {hint && <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">{hint}</p>}
     </div>
   )
 }

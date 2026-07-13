@@ -4,6 +4,7 @@
  * 型別：one（單樣本對 p0）/ two（雙獨立樣本比較）
  */
 import { useApp, useAnalysisState } from '../../context/AppContext'
+import VarSelect from '../../components/ui/VarSelect'
 
 function collectLevels(rows, varName) {
   const seen = new Set()
@@ -51,25 +52,6 @@ function TypeSelector({ value, onChange, t }) {
         })}
       </div>
       <p className="text-[11px] text-duo-cocoa-400 leading-snug">{t.zProp.typeHint[value]}</p>
-    </div>
-  )
-}
-
-function VarSelect({ label, value, onChange, options, placeholder, hint }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-duo-cocoa-700 mb-1">{label}</label>
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-full h-9 px-3 pr-8 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      {hint && <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">{hint}</p>}
     </div>
   )
 }
@@ -122,7 +104,7 @@ function Config() {
               max="0.99"
               value={state.p0 ?? ''}
               onChange={(e) => update({ p0: e.target.value === '' ? null : Number(e.target.value) })}
-              className="w-full h-9 px-3 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 focus:outline-none focus:border-duo-amber-500 font-mono"
+              className="w-full h-9 px-3 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 focus-ring focus:border-duo-amber-500 font-mono"
             />
             <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">{t.zProp.config.p0Hint}</p>
           </div>

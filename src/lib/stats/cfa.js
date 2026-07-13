@@ -650,10 +650,10 @@ export function cfa(rows, factors) {
 
   // 嘗試從 Hessian 估計 SE（中央差分二階導數）
   // 若 Hessian 非正定 → 留空（se = null）
-  let standardErrors = null
+  let standardErrors
   try {
     standardErrors = computeStandardErrors(opt.theta, evalF, n)
-  } catch (e) {
+  } catch {
     standardErrors = null
   }
   if (standardErrors) {

@@ -28,7 +28,7 @@ function buildNarrative(result, dataset, lang) {
   const sig = Number.isFinite(f1?.p) && f1.p < 0.05
 
   // Box's M section
-  let boxSection = ''
+  let boxSection
   if (result.boxM?.applicable) {
     const tpl = result.boxM.p <= 0.001 ? t.lda.apa.boxBad : t.lda.apa.boxOk
     boxSection = fillTemplate(tpl, {
@@ -70,7 +70,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runLDA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    const msg = t.lda.errors[result.error] || result.error
+    const msg = t.lda.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const zhText = buildNarrative(result, dataset, 'zh-TW')

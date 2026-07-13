@@ -33,7 +33,9 @@ function buildNarrative(results, dataset, lang) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [state] = useAnalysisState()
-  const selectedVars = state.selectedVars || []
+  // `state.selectedVars || []` 每次 render 都會產生**新的空陣列**，讓下方 useMemo
+  // 的 deps 每次都變 → memo 完全失效。用 useMemo 穩定化 fallback（2026-07-13 紅隊 R4）。
+  const selectedVars = useMemo(() => state.selectedVars || [], [state.selectedVars])
 
   const results = useMemo(
     () => (dataset && selectedVars.length > 0 ? runDescriptive(dataset.rows, selectedVars) : null),

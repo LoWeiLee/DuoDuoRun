@@ -30,7 +30,7 @@ function buildNarrative(result, dataset, lang) {
     fillTemplate(t.ancova.apa.covLine, {
       name: labelMap[cv.name] || cv.name,
       df1: cv.df,
-      df2: result.error.df,
+      df2: result.errorTerm.df,
       f: fmtNum(cv.f, 3),
       pStr: fmtP(cv.p),
       eta2: fmtNum(cv.partialEta2, 3),
@@ -61,7 +61,7 @@ function buildNarrative(result, dataset, lang) {
       covList,
       n: result.n,
       df1: result.factor.df,
-      df2: result.error.df,
+      df2: result.errorTerm.df,
       f: fmtNum(result.factor.f, 3),
       pStr: fmtP(result.factor.p),
       eta2: fmtNum(result.factor.partialEta2, 3),
@@ -77,7 +77,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runAncova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    const msg = t.ancova.errors[result.error] || result.error
+    const msg = t.ancova.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const zhText = buildNarrative(result, dataset, 'zh-TW')

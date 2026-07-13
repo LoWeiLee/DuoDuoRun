@@ -17,7 +17,7 @@ function buildNarrative(result, dataset, lang, settings) {
     df1A: result.effectA.df,
     df1B: result.effectB.df,
     df1AB: result.effectAB.df,
-    df2: result.error.df,
+    df2: result.errorTerm.df,
     fA: fmtNum(result.effectA.F, 3),
     fB: fmtNum(result.effectB.F, 3),
     fAB: fmtNum(result.effectAB.F, 3),
@@ -39,7 +39,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runTwoWayAnova(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.anova2.config[result.error] || result.error}</div>
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.anova2.config[result.error] || t.errors.stats[result.error] || result.error}</div>
   }
   const zhText = buildNarrative(result, dataset, 'zh-TW', state)
   const enText = buildNarrative(result, dataset, 'en', state)

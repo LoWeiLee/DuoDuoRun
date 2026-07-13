@@ -12,15 +12,8 @@ import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runTTest } from './compute'
 import StatCards from '../../components/StatCards'
 import { cohenDInterpretation } from '../../lib/stats/ttest'
-import { fmtNum, fmtInt, fmtP, fillTemplate, toneForP } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -55,7 +48,7 @@ function ErrorBox({ msg }) {
   )
 }
 
-function AssumptionChecks({ assumptions, type, t }) {
+function AssumptionChecks({ assumptions, t }) {
   const r = t.ttest.result
   const items = []
 
@@ -123,11 +116,9 @@ function AssumptionChecks({ assumptions, type, t }) {
   )
 }
 
-function GroupStatsTable({ ttest, t, labelMap, dataset }) {
-  const c = t.ttest.result.cols
+function GroupStatsTable({ ttest, t }) {
   const r = t.ttest.result
-  const valueLabels = dataset?.valueLabels?.[ttest.groupVarColName]
-  // 取組別中英 label（如果 dataset 有 valueLabels）— 但 group 名是動態的，保留原值即可
+  // 組別名稱是資料驅動的動態值，直接顯示原值（不查 valueLabels）
   return (
     <div>
       <Heading>{r.groupStatsTitle}</Heading>
@@ -309,7 +300,10 @@ function InterpretationParagraph({ result, t, labelMap }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [rawState] = useAnalysisState()
-  const settings = rawState || {}
+  // rawState 可能為 null；`rawState || {}` 每次 render 都會產生**新的空物件**，
+  // 讓下面 useMemo 的 deps 每次都變 → memo 完全失效，每次 render 都重跑統計。
+  // 用 useMemo 穩定化這個 fallback（2026-07-13 紅隊 R4）。
+  const settings = useMemo(() => rawState || {}, [rawState])
 
   const result = useMemo(() => (dataset ? runTTest(dataset.rows, settings) : null), [dataset, settings])
   if (!dataset) return null
@@ -324,19 +318,23 @@ function Result() {
     return <ErrorBox msg={msg} />
   }
 
-  const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
-
-  // oneSample 需把依變項 label 注入
-  if (result.type === 'oneSample') {
-    labelMap.__depLabel = labelMap[settings.depVar] || settings.depVar
-  }
+  // ⚠ 2026-07-13 紅隊 R4：原本寫成
+  //     const labelMap = dataset.labels?.[...] || {}
+  //     if (result.type === 'oneSample') labelMap.__depLabel = ...
+  //   當 dataset.labels 存在時，labelMap **就是 dataset 的 label 物件本身**——
+  //   那行等於把 `__depLabel` 永久寫進資料集。切換分析或語言後這個鍵不會被清掉，
+  //   等於污染共用狀態（dataset 由 AppContext 的 useMemo 產生，更不該就地修改）。
+  //   改為複製一份再加欄位。
+  const baseLabels = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
+  const labelMap = result.type === 'oneSample'
+    ? { ...baseLabels, __depLabel: baseLabels[settings.depVar] || settings.depVar }
+    : baseLabels
 
   const cols = t.ttest.result.cols
   return (
     <div>
       <AssumptionChecks
         assumptions={result.assumptions}
-        type={result.type}
         t={t}
       />
 
@@ -359,8 +357,6 @@ function Result() {
         <GroupStatsTable
           ttest={result.ttest}
           t={t}
-          labelMap={labelMap}
-          dataset={dataset}
         />
       )}
       {result.type === 'paired' && (

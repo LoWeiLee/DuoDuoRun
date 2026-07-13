@@ -4,14 +4,7 @@ import { runTwoWayAnova } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 import { InteractionPlot } from './InteractionPlot'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -100,7 +93,7 @@ function AnovaTable({ result, t }) {
   const a = result.effectA
   const b = result.effectB
   const ab = result.effectAB
-  const err = result.error
+  const err = result.errorTerm
   const tot = result.total
   return (
     <div>
@@ -206,7 +199,7 @@ function Interpretation({ result, t, labelMap }) {
     df1A: result.effectA.df,
     df1B: result.effectB.df,
     df1AB: result.effectAB.df,
-    df2: result.error.df,
+    df2: result.errorTerm.df,
     fA: fmtNum(result.effectA.F, 3),
     fB: fmtNum(result.effectB.F, 3),
     fAB: fmtNum(result.effectAB.F, 3),
@@ -240,15 +233,20 @@ function Interpretation({ result, t, labelMap }) {
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
-  const result = useMemo(() => (dataset ? runTwoWayAnova(dataset.rows, state) : null), [dataset, state])
+  // ⚠ 2026-07-13 紅隊 R4：原本在 useMemo 之外就地寫入 `result.factorA = state.factorA`
+  //   ——那是直接修改 useMemo 快取住的物件。React 允許重用（甚至丟棄再重算）memo 值，
+  //   對它就地寫入的結果不保證可見、也不保證只發生一次；error 分支還會提前 return，
+  //   導致 result 有時帶這三個欄位、有時沒有。改為在 memo 內部組出**新物件**。
+  const result = useMemo(() => {
+    if (!dataset) return null
+    const r = runTwoWayAnova(dataset.rows, state)
+    if (r.error) return r
+    return { ...r, factorA: state.factorA, factorB: state.factorB, depVar: state.depVar }
+  }, [dataset, state])
   if (!dataset) return null
-  // 把 factorA 與 factorB 注入 result 物件方便 downstream 使用
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.anova2.config[result.error] || result.error}</div>
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.anova2.config[result.error] || t.errors.stats[result.error] || result.error}</div>
   }
-  result.factorA = state.factorA
-  result.factorB = state.factorB
-  result.depVar = state.depVar
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
 
@@ -262,19 +260,19 @@ function Result() {
             label: cols2.effectA,
             value: fmtP(result.effectA.p),
             tone: toneForP(result.effectA.p),
-            sub: `F(${result.effectA.df}, ${result.error.df}) = ${fmtNum(result.effectA.F, 3)}`,
+            sub: `F(${result.effectA.df}, ${result.errorTerm.df}) = ${fmtNum(result.effectA.F, 3)}`,
           },
           {
             label: cols2.effectB,
             value: fmtP(result.effectB.p),
             tone: toneForP(result.effectB.p),
-            sub: `F(${result.effectB.df}, ${result.error.df}) = ${fmtNum(result.effectB.F, 3)}`,
+            sub: `F(${result.effectB.df}, ${result.errorTerm.df}) = ${fmtNum(result.effectB.F, 3)}`,
           },
           {
             label: cols2.effectAB,
             value: fmtP(result.effectAB.p),
             tone: toneForP(result.effectAB.p),
-            sub: `F(${result.effectAB.df}, ${result.error.df}) = ${fmtNum(result.effectAB.F, 3)}`,
+            sub: `F(${result.effectAB.df}, ${result.errorTerm.df}) = ${fmtNum(result.effectAB.F, 3)}`,
           },
         ]}
       />

@@ -24,6 +24,7 @@ import VariableList from './VariableList'
 import DataPreviewTable from './DataPreviewTable'
 import HomePage from './HomePage'
 import AssumptionChecker from './AssumptionChecker'
+import ErrorBoundary from './ErrorBoundary'
 
 function findAnalysisLabel(activeAnalysis, t) {
   if (!activeAnalysis) return null
@@ -151,7 +152,9 @@ function ConfigPanel() {
       <section className={`w-full md:flex-[25] md:min-w-0 p-5 border-b md:border-b-0 md:border-r ${PANEL_BORDER} bg-white md:overflow-y-auto relative`}>
         {collapseBtn}
         <LoadDemoButton analysisId={activeAnalysis} />
-        <analysisModule.Config />
+        <ErrorBoundary t={t} resetKey={activeAnalysis} where={t.panels.configTitle}>
+          <analysisModule.Config />
+        </ErrorBoundary>
       </section>
     )
   }
@@ -258,7 +261,9 @@ function ResultPanel() {
         </div>
         <AssumptionChecker />
         <div ref={contentRef}>
-          <analysisModule.Result />
+          <ErrorBoundary t={t} resetKey={activeAnalysis} where={t.panels.resultTitle}>
+            <analysisModule.Result />
+          </ErrorBoundary>
         </div>
       </section>
     )
@@ -339,7 +344,13 @@ function ExplainPanel() {
       <section className="w-full md:flex-[30] md:min-w-0 p-5 bg-white md:overflow-y-auto relative">
         {collapseBtn}
         <PanelHeading>{t.panels.explainTitle}</PanelHeading>
-        {Component ? <Component /> : <EmptyHint>{t.panels.explainEmpty}</EmptyHint>}
+        {Component ? (
+          <ErrorBoundary t={t} resetKey={`${activeAnalysis}:${mode}`} where={t.panels.explainTitle}>
+            <Component />
+          </ErrorBoundary>
+        ) : (
+          <EmptyHint>{t.panels.explainEmpty}</EmptyHint>
+        )}
       </section>
     )
   }

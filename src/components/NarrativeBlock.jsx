@@ -26,7 +26,8 @@ function CopyButton({ text, label, hint }) {
       ta.value = text
       document.body.appendChild(ta)
       ta.select()
-      try { document.execCommand('copy') } catch {}
+      // 舊版瀏覽器 fallback；execCommand 失敗就無聲略過（文字已選取，使用者可自行複製）
+      try { document.execCommand('copy') } catch { /* 不支援 execCommand */ }
       document.body.removeChild(ta)
     }
     setCopied(true)

@@ -6,14 +6,7 @@ import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runNonparametric } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -44,9 +37,8 @@ function effectKey(r) {
   return 'large'
 }
 
-function MWResult({ result, t, valueLabels, lang }) {
+function MWResult({ result, t }) {
   const c = t.np.result.cols
-  const labelOf = (n) => valueLabels?.[lang === 'zh-TW' ? 'zh' : 'en']?.[n] || n
   const ek = effectKey(result.r)
   return (
     <div>
@@ -367,7 +359,7 @@ function Result() {
       msg = fillTemplate(t.np.config.groupVarBadGroups, { k: result.meta.k })
     else if (result.error === 'factorBadGroups')
       msg = fillTemplate(t.np.config.factorBadGroups, { k: result.meta.k })
-    else msg = t.np.config[result.error] || result.error
+    else msg = t.np.config[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
 

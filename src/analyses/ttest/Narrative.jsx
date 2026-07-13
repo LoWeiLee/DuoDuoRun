@@ -73,7 +73,10 @@ function buildNarrative(result, dataset, lang) {
 function Narrative() {
   const { dataset, t } = useApp()
   const [rawState] = useAnalysisState()
-  const settings = rawState || {}
+  // rawState 可能為 null；`rawState || {}` 每次 render 都會產生**新的空物件**，
+  // 讓下面 useMemo 的 deps 每次都變 → memo 完全失效，每次 render 都重跑統計。
+  // 用 useMemo 穩定化這個 fallback（2026-07-13 紅隊 R4）。
+  const settings = useMemo(() => rawState || {}, [rawState])
 
   const result = useMemo(() => (dataset ? runTTest(dataset.rows, settings) : null), [dataset, settings])
   if (!dataset) return null

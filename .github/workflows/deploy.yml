@@ -30,6 +30,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # 2026-07-13 紅隊 R4：原本 CI 只跑 build，lint 與測試完全沒有把關——
+      # 統計核心改壞、eslint 破表都能一路部署上線。加上這兩關。
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 

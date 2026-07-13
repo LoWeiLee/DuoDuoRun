@@ -363,7 +363,7 @@ function Config() {
                     value={f.name}
                     onChange={(e) => renameLv(fi, e.target.value)}
                     placeholder={`LV${fi + 1}`}
-                    className="flex-1 h-7 px-2 text-sm rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500"
+                    className="flex-1 h-7 px-2 text-sm rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus-ring focus:border-duo-amber-500"
                   />
                   <button
                     type="button"
@@ -465,7 +465,7 @@ function Config() {
                     type="text"
                     value={h.name}
                     onChange={(e) => setHocField(hi, 'name', e.target.value)}
-                    className="flex-1 h-7 px-2 text-sm rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500"
+                    className="flex-1 h-7 px-2 text-sm rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus-ring focus:border-duo-amber-500"
                   />
                   <button
                     type="button"
@@ -551,9 +551,10 @@ function Config() {
             <div key={ii} className="bg-white border border-duo-cocoa-100 rounded-md p-2 space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <select
+                  aria-label={fillTemplate(c.ariaIntA, { n: ii + 1 })}
                   value={q.a}
                   onChange={(e) => setIntField(ii, 'a', e.target.value)}
-                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                 >
                   <option value="">{c.intFactor1}</option>
                   {constructOptions.map((name) => (
@@ -562,9 +563,10 @@ function Config() {
                 </select>
                 <span className="text-duo-cocoa-400 text-xs shrink-0">×</span>
                 <select
+                  aria-label={fillTemplate(c.ariaIntB, { n: ii + 1 })}
                   value={q.b}
                   onChange={(e) => setIntField(ii, 'b', e.target.value)}
-                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                 >
                   <option value="">{c.intFactor2}</option>
                   {constructOptions.map((name) => (
@@ -585,9 +587,10 @@ function Config() {
               </div>
               {intMethod === 'two-stage' && (
                 <select
+                  aria-label={fillTemplate(c.ariaIntTarget, { n: ii + 1 })}
                   value={q.c || ''}
                   onChange={(e) => setIntField(ii, 'c', e.target.value)}
-                  className="w-full h-7 px-2 text-[11px] rounded-md bg-duo-cream-50 border border-duo-cream-200 text-duo-cocoa-600 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                  className="w-full h-7 px-2 text-[11px] rounded-md bg-duo-cream-50 border border-duo-cream-200 text-duo-cocoa-600 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                 >
                   <option value="">{c.intFactor3}</option>
                   {constructOptions.map((name) => (
@@ -618,9 +621,10 @@ function Config() {
           {curPaths.map((p, pi) => (
             <div key={pi} className="flex items-center gap-1.5">
               <select
+                aria-label={fillTemplate(c.ariaPathFrom, { n: pi + 1 })}
                 value={p.from}
                 onChange={(e) => setPathEnd(pi, 'from', e.target.value)}
-                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.pickLv}</option>
                 {pathFromOptions.map((name) => (
@@ -629,9 +633,10 @@ function Config() {
               </select>
               <span className="text-duo-cocoa-400 text-xs shrink-0">→</span>
               <select
+                aria-label={fillTemplate(c.ariaPathTo, { n: pi + 1 })}
                 value={p.to}
                 onChange={(e) => setPathEnd(pi, 'to', e.target.value)}
-                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.pickLv}</option>
                 {constructOptions
@@ -752,9 +757,10 @@ function Config() {
                 <div>
                   <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5GroupColumn}</div>
                   <select
+                    aria-label={c.ariaMgaGroupCol}
                     value={w5.groupColumn || ''}
                     onChange={(e) => setW5({ groupColumn: e.target.value, g1: undefined, g2: undefined })}
-                    className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                    className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                   >
                     <option value="">{c.w5PickColumn}</option>
                     {Object.keys(variables).map((col) => (
@@ -767,9 +773,10 @@ function Config() {
                     {['g1', 'g2'].map((key) => (
                       <select
                         key={key}
+                        aria-label={fillTemplate(c.ariaMgaGroupValue, { n: key === 'g1' ? 1 : 2 })}
                         value={w5[key] ?? ''}
                         onChange={(e) => setW5({ [key]: e.target.value })}
-                        className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                        className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                       >
                         <option value="">{key === 'g1' ? c.w5G1 : c.w5G2}</option>
                         {groupValues.map((v) => (
@@ -820,9 +827,10 @@ function Config() {
             />
             {w5.ipma && (
               <select
+                aria-label={c.ariaIpmaTarget}
                 value={w5.target || ''}
                 onChange={(e) => setW5({ target: e.target.value })}
-                className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+                className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.w5Target}</option>
                 {endoOptions.map((name) => (

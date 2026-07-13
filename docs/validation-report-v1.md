@@ -448,6 +448,143 @@ k ≥ 4 時 JS 的解系統性劣於 sklearn 同等重啟數（k=7 的手肘點 
 
 - **CFA 的 CFI 截斷於 1、TLI 不截斷**（本 fixture TLI = 1.0223），截斷慣例不一致。
 
+## 紅隊 R2–R5 增補（2026-07-13）：可用性、無障礙、結構清理、UI 測試
+
+依 `docs/redteam-audit-workplan-v1.md` Session R2–R5，同日接續 R1 完成。
+
+**驗收數字**：`npm test` **874 過、6 記錄性跳過**（R1 結束時為 743）；
+`eslint .` **0 problems**（原 61）；`vite build` 綠。
+
+### R5 最重要的發現：ANCOVA 在 UI 上從來沒有運作過
+
+新增的全模組 UI 煙霧測試第一次執行就攔到：**ANCOVA 的 Result 面板必定在 render 期
+崩潰**。根因是欄位撞名——
+
+`src/lib/stats/ancova.js` 的回傳物件裡有一個叫 `error` 的**合法統計欄位**
+（變異數分析表的誤差項 `{ ss, df, ms }`），但全 app 的慣例是
+「`result.error` 為真 ＝ 計算失敗」。於是包裝層：
+
+```js
+const out = ancovaCore(rows, yVar, factorVar, covariateVars)
+if (out.error) return { error: out.error, meta: out.meta }   // ← 誤差項物件恆為 truthy
+return { ...out, yVar, factorVar, covariateVars }             // ← 永遠執行不到
+```
+
+計算**成功**時 `out.error` 就是 `{ ss: 3446.09, df: 43, ms: 80.14 }`，
+包裝層照樣走進失敗分支。Result.jsx 接著 `t.ancova.errors[result.error] || result.error`
+→ 查表用物件當 key 得到 undefined → 把物件本身當成 React child 渲染 →
+`Objects are not valid as a React child` → 整個面板卸載 → 白畫面。
+
+**743 條統計測試抓不到它**，因為它們直接測 `lib/stats/ancova.js`，那一層的
+`error` 欄位語意正確、數字也對到 Python 基準。錯的是「統計層的欄位命名」與
+「應用層的錯誤慣例」之間的介面。這正是紅隊審查第 2 號發現（零 UI 測試）的代價。
+
+**`twoWayAnova` 有完全相同的撞名**（`error: { ss, df, ms }`）。它逃過煙霧測試是因為
+**內建的四個資料集裡沒有任何一個同時具備兩個類別因子 ＋ 一個連續依變項**，所以它
+沒有示範設定、不在 `ANALYSIS_DEMOS` 裡。使用者只要上傳自己的兩因子資料就會撞上。
+
+**修法**：統計核心的誤差項欄位改名 `error` → `errorTerm`（ancova.js、twoWayAnova.js
+及其 Result / Narrative / adapters 消費端）。`error` 一律保留給字串錯誤碼。
+**基準值不受影響**（`reference.json` 的 ancova 只驗 factor / covariate 的 F、p、SS）。
+
+回歸防線：`tests/ui.smoke.test.jsx` 新增「所有 lib/stats 模組都不得有 `error: { ... }`
+物件欄位」的結構檢查，以及 twoWayAnova 的合成兩因子資料專屬測試。
+
+### R2：可用性（穩健性）
+
+- **ErrorBoundary**（`src/components/ErrorBoundary.jsx`）：包住 Config / Result /
+  Narrative / Notes 四個面板。修復前任一分析在 render 期炸掉 ＝ 整棵 React 樹卸載
+  ＝ 白畫面 ＋ 已載入的資料與設定全失。現在爆炸半徑限制在該欄，其他欄仍可操作，
+  切換分析自動復原（`resetKey`）。
+  ⚠ 錯誤邊界只攔 render/lifecycle 期例外；事件處理器與非同步流程（PDF 匯出、
+  Worker 回呼）必須自行 try/catch。
+- **共用 `<Modal>`**（`src/components/Modal.jsx`）：修復前全 codebase `aria-modal`
+  出現 **0 次**、無 focus trap——鍵盤使用者按 Tab 會直接跑出對話框、落到被遮住的
+  頁面上。現在具備 `role="dialog"` ＋ `aria-modal` ＋ `aria-labelledby` ＋ focus trap
+  ＋ Esc 關閉 ＋ **focus 還回**開啟前的元素 ＋ 背景捲動鎖定。
+  TransformDialog / HistoryDialog 改接。
+- **`alert()` / `confirm()` 全數移除**：改走 `<Toast>`（role="alert"／"status"，
+  不搶焦點、不阻塞主執行緒）與 `<ConfirmDialog>`（可 i18n、可鍵盤操作）。
+  原生 `alert()` 的致命問題是使用者可勾選「不再顯示此類對話框」——之後所有匯出
+  失敗都會無聲消失。
+
+### R3：無障礙與鍵盤
+
+- **`.focus-ring` utility**（`src/index.css`）：修復前有 **42 處 `focus:outline-none`**
+  而 `focus-visible` 只有 1 處——瀏覽器預設焦點外框被拔掉，只剩 1px 邊框換色當替代，
+  在暖色底上對比不足。41 處統一改用 `.focus-ring`（`:focus-visible` 才顯示，
+  滑鼠點擊不會留醜框）。唯一例外是 Modal 的面板容器（`tabIndex={-1}`，非可操作元素）。
+- **30 個 `<select>` 全數補上 `aria-label`**：修復前 `<label>` 與 `<select>` **沒有
+  `htmlFor`/`id` 關聯**，螢幕報讀只會念「下拉選單」，不會念出它是哪個變數。
+- **coming-soon 項目**：`<div>` → `<button disabled aria-disabled>`，輔具會明確播報
+  停用狀態（原本只念項目名稱，使用者以為可以點）。
+- **`hoverOnlyWhenSupported`**（tailwind.config.js 一行）：175 處 `hover:` 全部編成
+  `@media (hover: hover)`。觸控裝置沒有真 hover，瀏覽器會把 `:hover` 狀態「黏」在
+  tap 過的元素上，看起來像被選取。
+- **手機偵測改用 matchMedia ＋ listener**：原本只在初次 mount 讀一次
+  `window.innerWidth`，旋轉螢幕／縮放視窗都不會重算。同時加上「使用者手動切換過
+  側欄後就不再被斷點覆寫」的意圖尊重。
+- **硬編碼英文 aria-label 歸零**（menu / tools / IPMA 改走 i18n）。
+- 回歸防線：`tests/a11y.guard.test.js`（禁止裸 `focus:outline-none`、`<select>` 必須
+  有 aria-label、禁止 `alert()`/`confirm()`）。
+
+### R4：結構清理
+
+- **eslint 61 → 0**。其中 **4 個 `react-hooks/immutability` 是真缺陷**，不是風格問題：
+  - `ttest/Result.jsx`：`labelMap.__depLabel = ...`——`labelMap` 在 `dataset.labels`
+    存在時**就是資料集的 label 物件本身**，那行等於把 `__depLabel` 永久寫進資料集，
+    切換分析／語言後不會被清掉。改為複製後再加欄位。
+  - `twoWayAnova/Result.jsx`：在 `useMemo` 之外就地寫入 `result.factorA = ...`——
+    修改 memo 快取住的物件，且 error 分支會提前 return，導致 result 有時帶欄位、
+    有時沒有。改為在 memo 內組出新物件。
+- **`AppContext.jsx` 拆分**：context ＋ hooks 留原檔、Provider 移到 `AppProvider.jsx`。
+  原本三者混在一起觸發 `react-refresh/only-export-components`——Fast Refresh 失效，
+  每次改動都整頁重載、已載入的資料全丟。全 codebase 既有的
+  `import { useApp } from '../context/AppContext'` 完全不受影響。
+- **`TransformDialog` 重構**：從「永遠掛載 ＋ 兩個 useEffect 重設 state」改為
+  「開才掛載」，兩個 `set-state-in-effect` 直接消失。name 欄位改為
+  「自動建議值 ＋ 使用者覆寫」的 render 期調整模式。行為以 6 條測試釘死。
+- **共用元件抽取**：`Heading`（24 份**位元完全相同**的複製 → 1 份）、
+  `VarSelect`（11 份 → 1 份）。
+  ⚠ VarSelect 原本的「5 種版本」其實只有 **2 種真實外觀差異**
+  （`rounded-md`＋cocoa 邊框 vs `rounded-lg`＋cream/amber 邊框），其餘是排版差異。
+  **這兩種外觀的分歧是設計系統本身的不一致**（設計稿的 `.select` 用
+  `--line: #e8dcc9`、`border-radius: 10px`，兩者都對不上）。統一成哪一種是設計決策
+  → 本次**兩種都保留**（`variant` prop），確保「UI 目視無回歸」；
+  拍板後只要改 `VarSelect.jsx` 的 DEFAULT 一行即可全站統一。
+- **`reference/statlite.jsx` 不刪，改為 eslint 排除**（Kevin 2026-07-13 裁決）：
+  它是專案最初的單檔原型，三個統計檔的檔頭註解以它為出處。加檔頭警語 ＋
+  `globalIgnores(['dist', 'reference'])`。
+- **`clipboard.js` 的 nbsp regex**：`no-irregular-whitespace` 抱怨的那個字面 nbsp
+  **是寫在 regex 裡當比對目標的**，不是誤植空白。清理時一度把它換成普通空格
+  （等於讓 regex 去比對普通空格），已改回 ` ` 跳脫寫法並加註警告。
+- **CI 補上把關**：`deploy.yml` 原本只跑 build——統計核心改壞、eslint 破表都能一路
+  部署上線。現在 lint ＋ 全測試 ＋ build 三關，任一失敗即擋下。
+- index.html 補 OG / Twitter meta ＋ theme-color ＋ canonical；產出 1200×630 的
+  `public/og-image.jpg`（原 `duoduo.jpg` 在 repo 根目錄、不會進 dist，OG 圖會 404）。
+
+### R5：UI 測試
+
+- **`tests/ui.smoke.test.jsx`**：對 25 個有示範設定的分析各跑 5 條
+  （Result / Narrative / Notes / Config / 英文介面），共 **128 條**。
+  斷言「沒落進 ErrorBoundary」＋「Result 有實際內容」。
+- **`tests/errorCodes.test.js`**：掃出統計核心會回傳的 **91 個需 i18n 的字串錯誤碼**
+  （PLS-SEM 的 37 個一律自帶中文 `message`，不需查表，已排除），逐一確認中英都查得到。
+  攔到 **16 個缺漏**（`no-data`、`y-not-binary`、`singular-reduced-model` 等低階防呆碼）
+  → 補上 `t.errors.stats.*` 共用命名空間，並在 44 處錯誤查表加上 fallback。
+  修復前這些碼觸發時，畫面會直接印出裸的英文代碼。
+- Modal（7 條）、Toast（5 條）、ErrorBoundary（5 條）、TransformDialog（6 條）行為測試。
+
+### 未處理（已知）
+
+- **CFA 的 CFI 截斷於 1、TLI 不截斷**（本 fixture TLI = 1.0223），截斷慣例不一致。
+- **VarSelect 的兩種外觀待設計拍板**（見上）。
+- **PLS-SEM 引擎的錯誤訊息是硬編碼中文**：英文介面下會看到中文引擎訊息。
+  37 個 message 需要翻譯，屬獨立工作項。
+- **`twoWayAnova` 沒有示範資料集**：內建四個資料集都缺「兩個類別因子 ＋ 連續依變項」
+  的組合，使用者只能自行上傳。補一個 factorial 示範資料集可讓它進入煙霧測試的
+  `describe.each` 涵蓋範圍。
+
 ## 如何重跑
 
 ```bash

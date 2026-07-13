@@ -35,7 +35,7 @@
  *
  * 對標 R::glm + summary、SPSS 邏輯斯迴歸輸出。
  */
-import { transpose, matmul, matvec, inverse } from './matrix.js'
+import { matvec, inverse } from './matrix.js'
 import { normalCdf, pChiSq } from './pvalue.js'
 
 /** Sigmoid 函式（含 numerically stable 分支） */
@@ -79,7 +79,7 @@ export function logisticRegression(X, y, predictorNames) {
   const maxIter = 50
   const tol = 1e-8
   let converged = false
-  let iter = 0
+  let iter
 
   for (iter = 0; iter < maxIter; iter++) {
     const eta = matvec(Xa, beta)

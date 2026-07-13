@@ -38,7 +38,6 @@
  * 對標 SPSS Factor / R::psych::fa.parallel + principal()。
  */
 import { isMissing } from '../variableTypes.js'
-import { mean, sd } from './descriptive.js'
 import { pearsonCorr } from './correlation.js'
 import { pChiSq } from './pvalue.js'
 import { inverse } from './matrix.js'

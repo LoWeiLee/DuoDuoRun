@@ -1,3 +1,17 @@
+/*
+ * ⚠ 歷史原型 — 唯讀，請勿修改、請勿 import。
+ *
+ * 這是多多快跑最早的單檔實作（React + 統計核心 + 檔案解析全部混在一起）。
+ * 現行程式碼已把統計核心抽到 src/lib/stats/、UI 抽到 src/components/ 與
+ * src/analyses/，本檔不再參與 build、不被任何模組 import。
+ *
+ * 保留原因：src/lib/stats/{pvalue,descriptive,ttest}.js 的檔頭註解以本檔為
+ * 出處（「從 reference/statlite.jsx 抽出，已對標 SPSS / R」）——刪掉會讓那些
+ * 溯源說明失去指向。
+ *
+ * 已於 eslint.config.js 的 globalIgnores 排除（2026-07-13 紅隊 R4）：它的舊寫法
+ * 會持續產生 lint 噪音，掩蓋真正該修的新警報。
+ */
 import { useState, useCallback } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";

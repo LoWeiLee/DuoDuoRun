@@ -56,9 +56,10 @@ function Config() {
           {t.ancova.config.yLabel}
         </label>
         <select
+          aria-label={t.ancova.config.yLabel}
           value={yVar || ''}
           onChange={(e) => setY(e.target.value || null)}
-          className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+          className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
         >
           <option value="">{t.ancova.config.pickY}</option>
           {yOpts.map((c) => (
@@ -73,9 +74,10 @@ function Config() {
           {t.ancova.config.factorLabel}
         </label>
         <select
+          aria-label={t.ancova.config.factorLabel}
           value={factorVar || ''}
           onChange={(e) => setFactor(e.target.value || null)}
-          className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
+          className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
         >
           <option value="">{t.ancova.config.pickFactor}</option>
           {factorOpts.map((o) => (

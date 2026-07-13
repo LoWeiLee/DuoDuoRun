@@ -43,7 +43,7 @@
  */
 import { mean, sd } from './descriptive.js'
 import { pT, pF } from './pvalue.js'
-import { transpose, matmul, matvec, inverse, diag } from './matrix.js'
+import { transpose, matmul, matvec, inverse } from './matrix.js'
 
 /** 對 X (n×k) 加上一個全 1 截距 column，回傳 n×(k+1) 矩陣 */
 function augment(X) {

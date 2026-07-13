@@ -14,14 +14,7 @@ import { runCronbachAlpha } from './compute'
 import StatCards from '../../components/StatCards'
 import { alphaInterpretationKey } from '../../lib/stats/alpha'
 import { fmtNum, fmtInt, fillTemplate } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -157,7 +150,7 @@ function Result() {
   const result = useMemo(() => (dataset ? runCronbachAlpha(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.alpha[result.error] || result.error}</div>
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.alpha[result.error] || t.errors.stats[result.error] || result.error}</div>
   }
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}

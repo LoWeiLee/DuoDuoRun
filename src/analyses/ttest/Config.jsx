@@ -12,6 +12,7 @@
  *   { type, depVar, groupVar, var1, var2, mu0 }
  */
 import { useApp, useAnalysisState } from '../../context/AppContext'
+import VarSelect from '../../components/ui/VarSelect'
 
 const DEFAULT_STATE = {
   type: 'independent',
@@ -56,27 +57,6 @@ function TypeSelector({ value, onChange, t }) {
   )
 }
 
-function VarSelect({ label, value, onChange, options, hint, placeholder }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-duo-cocoa-700 mb-1">{label}</label>
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      {hint && <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">{hint}</p>}
-    </div>
-  )
-}
-
 function Config() {
   const { dataset, variables, lang, t } = useApp()
   const [rawState, update] = useAnalysisState()
@@ -109,14 +89,14 @@ function Config() {
 
       {state.type === 'independent' && (
         <div className="space-y-3">
-          <VarSelect
+          <VarSelect variant="cream"
             label={t.ttest.config.depVar}
             value={state.depVar}
             onChange={(v) => update({ depVar: v })}
             options={numericOptions}
             placeholder={t.ttest.config.pickDep}
           />
-          <VarSelect
+          <VarSelect variant="cream"
             label={t.ttest.config.groupVar}
             value={state.groupVar}
             onChange={(v) => update({ groupVar: v })}
@@ -129,14 +109,14 @@ function Config() {
 
       {state.type === 'paired' && (
         <div className="space-y-3">
-          <VarSelect
+          <VarSelect variant="cream"
             label={t.ttest.config.var1}
             value={state.var1}
             onChange={(v) => update({ var1: v })}
             options={numericOptions}
             placeholder={t.ttest.config.pickVar1}
           />
-          <VarSelect
+          <VarSelect variant="cream"
             label={t.ttest.config.var2}
             value={state.var2}
             onChange={(v) => update({ var2: v })}
@@ -148,7 +128,7 @@ function Config() {
 
       {state.type === 'oneSample' && (
         <div className="space-y-3">
-          <VarSelect
+          <VarSelect variant="cream"
             label={t.ttest.config.depVar}
             value={state.depVar}
             onChange={(v) => update({ depVar: v })}
@@ -168,7 +148,7 @@ function Config() {
                 update({ mu0: v === '' ? '' : Number(v) })
               }}
               placeholder={t.ttest.config.enterMu0}
-              className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus:outline-none focus:border-duo-amber-500"
+              className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500"
             />
           </div>
         </div>

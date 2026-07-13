@@ -4,14 +4,8 @@ import { runEFA } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fmtSig, fillTemplate, toneForP } from '../../lib/format'
 import { ScreePlot } from './ScreePlot'
+import Heading from '../../components/ui/Heading'
 
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
 function Th({ children, align = 'right' }) {
   return (
     <th className={`px-3 py-2 text-${align} font-medium text-duo-cocoa-700 border-b border-duo-cocoa-100 whitespace-nowrap`}>
@@ -52,7 +46,7 @@ function loadingColor(v) {
   return 'text-duo-amber-800 font-semibold'
 }
 
-function SuitabilitySection({ result, t, lang }) {
+function SuitabilitySection({ result, t }) {
   const c = t.efa.result.cols
   const ki = result.kmo ? kmoInterpKey(result.kmo.overall) : null
   const bSig = Number.isFinite(result.bartlett.p) && result.bartlett.p < 0.05
@@ -194,13 +188,13 @@ function Result() {
   const result = useMemo(() => (dataset ? runEFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || result.error}</div>
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || t.errors.stats[result.error] || result.error}</div>
   }
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
 
   return (
     <div>
-      <SuitabilitySection result={result} t={t} lang={lang} />
+      <SuitabilitySection result={result} t={t} />
 
       {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
       <StatCards

@@ -85,11 +85,8 @@ export function fisherExact(rows, rowVar, colVar, successRow, successCol) {
   if (!colSet.has(successColKey)) return { error: 'pickSuccessCol' }
 
   // 取「成功」與「失敗」的兩列、兩欄；
-  // 失敗類別 = 第一個非成功的類別（用前兩個 levels 的另一個）
-  const rowLevelsTop2 = rowLevelsAll.slice(0, 2)
-  const colLevelsTop2 = colLevelsAll.slice(0, 2)
-
-  // 若 successRow 不在 top2 內，將其補入並把另一個非 success 拉入
+  // 失敗類別 = 第一個非成功的類別（pickPair 內部自行從 allLevels 挑，
+  // 不需預先切出 top2——2026-07-13 紅隊清理掉未使用的中間變數）
   const pickPair = (allLevels, successKey) => {
     const others = allLevels.filter(l => l !== successKey)
     if (others.length === 0) return null

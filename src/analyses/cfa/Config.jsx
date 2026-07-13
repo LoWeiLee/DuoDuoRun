@@ -101,7 +101,7 @@ function Config() {
                     value={f.name}
                     onChange={(e) => renameFactor(fi, e.target.value)}
                     placeholder={`F${fi + 1}`}
-                    className="flex-1 h-7 px-2 text-sm rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500"
+                    className="flex-1 h-7 px-2 text-sm rounded-md bg-duo-cream-50 border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus-ring focus:border-duo-amber-500"
                   />
                 </div>
                 <div className="text-[11px] text-duo-cocoa-500 mb-1.5">

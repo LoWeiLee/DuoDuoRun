@@ -20,16 +20,10 @@ import { runCluster } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fillTemplate } from '../../lib/format'
 import { niceTicks, linearScale, niceDomain } from '../../lib/viz/scale'
+import Heading from '../../components/ui/Heading'
 
 /* ─────────────────────────  shared helpers  ───────────────────────── */
 
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
 function Th({ children, align = 'right' }) {
   return (
     <th className={`px-3 py-2 text-${align} font-medium text-duo-cocoa-700 border-b border-duo-cocoa-100 whitespace-nowrap`}>
@@ -110,7 +104,6 @@ function ElbowPlot({ elbow, currentK, width = 560, height = 280 }) {
   const innerW = width - padding.left - padding.right
   const innerH = height - padding.top - padding.bottom
   const wssMax = Math.max(...elbow.map((d) => d.wss))
-  const wssMin = Math.min(...elbow.map((d) => d.wss))
   const yDomain = niceDomain(0, wssMax)
   const yTicks = niceTicks(yDomain[0], yDomain[1], 5)
   const xCount = elbow.length
@@ -430,7 +423,7 @@ function Result() {
         k: result.meta?.k ?? 0,
         p: result.meta?.p ?? 0,
       })
-    else msg = t.cluster.errors[result.error] || result.error
+    else msg = t.cluster.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}

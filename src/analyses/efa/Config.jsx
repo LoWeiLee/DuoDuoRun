@@ -80,7 +80,7 @@ function Config() {
             const v = e.target.value
             update({ nFactors: v === '' ? undefined : Number(v) })
           }}
-          className="w-full h-9 px-3 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500"
+          className="w-full h-9 px-3 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus-ring focus:border-duo-amber-500"
         />
         <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">
           {t.efa.config.nFactorsHint}

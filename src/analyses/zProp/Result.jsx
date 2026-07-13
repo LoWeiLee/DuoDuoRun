@@ -6,14 +6,7 @@ import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runZProp } from './compute'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
-
-function Heading({ children }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-duo-cocoa-400 mb-2 mt-5 first:mt-0">
-      {children}
-    </h3>
-  )
-}
+import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
   return (
@@ -45,7 +38,7 @@ function hInterpKey(h) {
   return 'large'
 }
 
-function OneSampleResult({ result, t, lang, valueLabels }) {
+function OneSampleResult({ result, t, valueLabels }) {
   const successLabel = valueLabels[result.successLevel] || result.successLevel
   const sig = result.p < 0.05
   const interp = fillTemplate(t.zProp.interp.oneOverall, {
@@ -238,12 +231,12 @@ function TwoSampleResult({ result, t, lang, dataset, groupVar, valueVar }) {
 }
 
 function Result() {
-  const { dataset, lang, mode, t } = useApp()
+  const { dataset, lang, t } = useApp()
   const [state] = useAnalysisState()
   const result = useMemo(() => (dataset ? runZProp(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    let msg = t.zProp.errors[result.error] || result.error
+    let msg = t.zProp.errors[result.error] || t.errors.stats[result.error] || result.error
     if (result.error === 'tooManyGroups' && result.extra?.groups) {
       msg = msg + '：' + result.extra.groups.join(', ')
     }
@@ -251,7 +244,7 @@ function Result() {
   }
   if (result.type === 'one') {
     const valueLabels = dataset.valueLabels?.[state.var1]?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
-    return <OneSampleResult result={result} t={t} lang={lang} valueLabels={valueLabels} />
+    return <OneSampleResult result={result} t={t} valueLabels={valueLabels} />
   }
   return (
     <TwoSampleResult

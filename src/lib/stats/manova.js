@@ -77,12 +77,6 @@ function determinant(M) {
   return det
 }
 
-/** trace(M) — diagonal sum / 對角線總和 */
-function trace(M) {
-  let s = 0
-  for (let i = 0; i < M.length; i++) s += M[i][i]
-  return s
-}
 
 /** A + B（assume same shape） */
 function matAdd(A, B) {
@@ -299,10 +293,10 @@ export function manova(rows, factorVar, dvVars) {
   const wilksLambda = detEplusH > 0 ? detE / detEplusH : NaN
 
   // E^(-1) H 的特徵值 / eigenvalues of E^(-1)·H
-  let eigenvalues = []
+  let eigenvalues
   try {
     eigenvalues = eigenvaluesEinvH(E, H)
-  } catch (_e) {
+  } catch {
     eigenvalues = []
   }
   // 只保留 s = min(p, df_h) 個非零特徵值（理論上其餘為 0）

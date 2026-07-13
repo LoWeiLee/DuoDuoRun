@@ -49,7 +49,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runEFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || result.error}</div>
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || t.errors.stats[result.error] || result.error}</div>
   }
   const zhText = buildNarrative(result, 'zh-TW')
   const enText = buildNarrative(result, 'en')

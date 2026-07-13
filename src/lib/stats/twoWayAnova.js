@@ -17,7 +17,9 @@
  *       marginalA: { [a]: { mean, n } },
  *       marginalB: { [b]: { mean, n } },
  *       grandMean,
- *       effectA, effectB, effectAB, error, total,    // 各 SS / df / MS / F / p / partialEta2
+ *       effectA, effectB, effectAB, errorTerm, total,  // 各 SS / df / MS / F / p / partialEta2
+ *       （errorTerm ＝ 誤差／殘差項，不是「錯誤」；error 一律保留給字串錯誤碼，
+ *         2026-07-13 紅隊 R5 改名，原本的撞名讓 Result.jsx 永遠走進錯誤分支）
  *     }
  */
 import { isMissing } from '../variableTypes.js'
@@ -202,7 +204,7 @@ export function twoWayANOVA(rows, depVar, factorA, factorB) {
     effectA:  { ss: ssA,  df: dfA,  ms: msA,  F: fA,  p: pA,  partialEta2: peA },
     effectB:  { ss: ssB,  df: dfB,  ms: msB,  F: fB,  p: pB,  partialEta2: peB },
     effectAB: { ss: ssAB, df: dfAB, ms: msAB, F: fAB, p: pAB, partialEta2: peAB },
-    error:    { ss: ssError, df: dfError, ms: msError },
+    errorTerm: { ss: ssError, df: dfError, ms: msError },
     total:    { ss: ssTotal, df: dfTotal },
   }
 }

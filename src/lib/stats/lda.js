@@ -375,13 +375,14 @@ export function lda(rows, groupVar, predictors) {
   }
 
   /* ─── Discriminant functions：W^-1 B 的特徵分解 ─── */
-  let eigVals = []
-  let eigVecs = []
+  let eigVals
+  let eigVecs
   try {
     const ed = eigDecompWinvB(W, B)
     eigVals = ed.values
     eigVecs = ed.vectors // p × p, columns are eigenvectors of W^-1 B
-  } catch (_e) {
+  } catch {
+    // Jacobi 不收斂或 W 奇異 → 回傳空的判別函數，由呼叫端以 numFunctions=0 處理
     eigVals = []
     eigVecs = []
   }

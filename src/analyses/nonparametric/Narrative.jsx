@@ -82,7 +82,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runNonparametric(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.np.config[result.error] || result.error}</div>
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.np.config[result.error] || t.errors.stats[result.error] || result.error}</div>
   }
   const zhText = buildNarrative(result, dataset, 'zh-TW')
   const enText = buildNarrative(result, dataset, 'en')

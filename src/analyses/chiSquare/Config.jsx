@@ -6,6 +6,7 @@
  * 適合度：類別變數 + 期望機率輸入
  */
 import { useApp, useAnalysisState } from '../../context/AppContext'
+import VarSelect from '../../components/ui/VarSelect'
 
 const DEFAULT = { type: 'independence', rowVar: null, colVar: null, gofVar: null, expectedProps: null }
 
@@ -43,26 +44,7 @@ function TypeSelector({ value, onChange, t }) {
   )
 }
 
-function VarSelect({ label, value, onChange, options, hint, placeholder }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-duo-cocoa-700 mb-1">{label}</label>
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-full h-9 px-3 pr-8 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus:outline-none focus:border-duo-amber-500 cursor-pointer"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-      {hint && <p className="text-[10px] text-duo-cocoa-400 mt-1 leading-snug">{hint}</p>}
-    </div>
-  )
-}
-
-function GofExpectedTable({ gofVar, dataset, variables, t, lang, expectedProps, update }) {
+function GofExpectedTable({ gofVar, dataset, t, lang, expectedProps, update }) {
   if (!gofVar) return null
   // 從資料集中蒐集 gofVar 的所有 levels（按出現順序）
   const seen = new Set()
@@ -107,7 +89,7 @@ function GofExpectedTable({ gofVar, dataset, variables, t, lang, expectedProps, 
               value={current[lv] !== undefined ? current[lv] : ''}
               onChange={(e) => handleChange(lv, e.target.value)}
               placeholder={`1/${levels.length} = ${(1 / levels.length).toFixed(3)}`}
-              className="w-24 h-7 px-2 text-xs rounded bg-white border border-duo-cocoa-100 text-duo-cocoa-800 focus:outline-none focus:border-duo-amber-500 font-mono"
+              className="w-24 h-7 px-2 text-xs rounded bg-white border border-duo-cocoa-100 text-duo-cocoa-800 focus-ring focus:border-duo-amber-500 font-mono"
             />
           </div>
         ))}
@@ -173,7 +155,6 @@ function Config() {
           <GofExpectedTable
             gofVar={state.gofVar}
             dataset={dataset}
-            variables={variables}
             t={t}
             lang={lang}
             expectedProps={state.expectedProps}

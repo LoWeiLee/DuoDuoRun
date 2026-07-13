@@ -53,7 +53,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runIcc(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    const msg = t.icc.errors[result.error] || result.error
+    const msg = t.icc.errors[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const zhText = buildNarrative(result, dataset, state, 'zh-TW')

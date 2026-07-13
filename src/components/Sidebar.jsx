@@ -167,12 +167,20 @@ function Sidebar() {
             <ul className="pl-5">
               {COMING_SOON.map(item => (
                 <li key={item.id}>
-                  <div
+                  {/*
+                    2026-07-13 紅隊 R3：原本是 <div>，螢幕報讀完全不會提及它是
+                    「尚未開放的分析項目」——只會念出項目名稱，使用者以為可以點。
+                    改為 disabled 的 <button> ＋ aria-disabled，輔具會明確播報停用狀態。
+                  */}
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
                     title={t.sidebar.comingSoonHint}
                     className="w-full flex items-center pl-5 pr-3 py-1.5 text-xs text-left border-l-2 border-transparent text-duo-cocoa-300 cursor-not-allowed select-none"
                   >
                     <span>{t.sidebar[item.i18nKey] || item.id}</span>
-                  </div>
+                  </button>
                 </li>
               ))}
             </ul>

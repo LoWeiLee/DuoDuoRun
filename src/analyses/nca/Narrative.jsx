@@ -35,7 +35,7 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runNCACompute(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    const msg = t.nca.config[result.error] || result.error
+    const msg = t.nca.config[result.error] || t.errors.stats[result.error] || result.error
     return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const zhText = buildNarrative(result, dataset, 'zh-TW')
