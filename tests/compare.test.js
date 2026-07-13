@@ -7,6 +7,15 @@
  *   放寬項目見 TOL — 數值積分 / 迭代收斂細節造成的可容忍差異
  *   PLS 迭代估計量統一 1e-4（TOL_PLS_ITERATIVE）；封閉式公式（標準化 α、HTMT）維持 1e-6
  *   SKIP — 已知且已記錄的慣例差異（詳見 docs/validation-report-v1.md）
+ *
+ * ★ 這個測試的**能力邊界**（2026-07-13 補記，務必理解）：
+ *   標題寫「Python 黃金標準」，但 reference.json 有一部分方法的基準是
+ *   generate_reference.py 裡的 **numpy 手算**——與 JS 實作出自同一個作者對論文的
+ *   同一次理解。對那些方法而言，本測試只能抓到「兩邊抄不一致」，
+ *   **抓不到「公式本身讀錯」**。
+ *   哪些方法屬於這一類、各自的權威來源與查證狀態，見
+ *   tests/fixtures/provenance.json 與 docs/formula-provenance.md；
+ *   tests/provenance.test.js 會硬擋未登記的新方法。
  */
 import { describe, it, expect } from 'vitest'
 import { ADAPTERS, REF } from './adapters.mjs'

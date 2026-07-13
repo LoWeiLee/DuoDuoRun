@@ -193,6 +193,23 @@ with open(os.path.join(FIX, "datasets.json"), "w") as f:
 # 2. 基準值
 # ---------------------------------------------------------------
 REF = {}
+# ─────────────────────────────────────────────────────────────────────────────
+# ★ 新增基準前必讀（2026-07-13 起強制）
+#
+# 每個 put() 進來的方法，都必須在 tests/fixtures/provenance.json 登記溯源，
+# 否則 tests/provenance.test.js 紅燈、進不了 commit。
+#
+# 順序不可顛倒：
+#   1. 先找**可執行的第三方實作**（pip 裝得到，或 Kevin 本機 R 跑得動）
+#   2. 找不到才回到**原始論文並記下方程式編號**
+#   3. 兩者都做不到 → 不做，或明確標為「無法驗證」並在 UI 警告
+#   4. **然後**才寫這裡的基準與 JS 的實作
+#
+# 為什麼：本檔的「numpy 手算」基準與 JS 實作出自同一個作者對論文的同一次理解——
+# 兩邊編碼的是同一個猜測。compare.test.js 抓得到「兩邊抄不一致」，
+# 抓不到「公式讀錯」。2026-07-13 的 R 抽驗找到的四個 bug 全部落在手算基準。
+# 詳見 docs/formula-provenance.md。
+# ─────────────────────────────────────────────────────────────────────────────
 def put(name, source, **values):
     REF[name] = {"source": source, "values": {
         k: (None if v is None or (isinstance(v, float) and not math.isfinite(v)) else

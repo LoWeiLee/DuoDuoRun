@@ -1,0 +1,569 @@
+{
+ "ancova": {
+  "authority": "pingouin",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "anova_oneway": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cfa_2factor": {
+  "authority": "semopy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 semopy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cfa_2factor_loadings": {
+  "authority": "semopy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 semopy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cfa_noncentral_chi2": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cfa_rmsea_ci": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "chisquare_2x2": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cluster_kmeans_k3": {
+  "authority": "scikit-learn",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cluster_ward_k3": {
+  "authority": "scikit-learn",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cohen_kappa": {
+  "authority": "scikit-learn",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cronbach_alpha_6items": {
+  "authority": "pingouin",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "cronbach_alpha_f1": {
+  "authority": "pingouin",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "descriptive_y": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "efa_pca_none": {
+  "authority": "factor_analyzer",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "efa_pca_varimax": {
+  "authority": "factor_analyzer",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "efa_pca_varimax_k3": {
+  "authority": "factor_analyzer",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "fisher_exact": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "icc": {
+  "authority": "pingouin",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "kruskal_wallis": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "ks_lilliefors": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "lda_group3": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "levene_mean_spss_default": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "levene_median": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "logistic_regression": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "mann_whitney": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "mann_whitney_small": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "mann_whitney_ties": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "manova": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "mixed_anova": {
+  "authority": "pingouin",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "nca_bottleneck": {
+  "authority": "NCA (R)",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 NCA (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "nca_ce_fdh": {
+  "authority": "R NCA 5.0.2（Dul 2016）",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：scope 3501.5488、CE zone 835.0134、d_ce 0.2384697、peers = 8、bottleneck 逐 level、NN 語意——全部與 R NCA 逐值一致，零差異。"
+ },
+ "nca_cr_fdh": {
+  "authority": "NCA (R)",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 NCA (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pearson_x1_x2": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pls_basic": {
+  "authority": "seminr 2.5.0",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：M1 核心的 loadings／weights／path／R²／adjR²／alpha／rhoA／rhoC／AVE／HTMT／LV 相關全部與 seminr 逐值一致（小數 6 位）。見 validation-report「R 抽驗銷帳（Session A）」一之表。"
+ },
+ "pls_bca_reference": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_cipma": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_copula": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_copula_inputs": {
+  "authority": "不適用（純輸入型 fixture）",
+  "note": "",
+  "status": "exempt",
+  "tier": "I",
+  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+ },
+ "pls_cta": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_fimix": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_fimix_inputs": {
+  "authority": "不適用（純輸入型 fixture）",
+  "note": "",
+  "status": "exempt",
+  "tier": "I",
+  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+ },
+ "pls_fit": {
+  "authority": "cSEM 0.6.1；Henseler et al. (2014) ORM 17(2)；Dijkstra & Henseler (2015) MISQ 39(2)",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：SRMR（飽和 0.0975623／估計 0.1043736）、d_ULS（0.5235117／0.5991614）、NFI（0.6684221）與 cSEM 逐值一致。d_G 為**已知底數差異**：本工具用 ln（測地距離的幾何定義 ½·Σ(ln λ)²），cSEM 用 log₁₀ 且其原始碼自承不確定底數；差 (ln10)²=5.3019 倍，統計結論不受影響，已於 UI Notes 雙處標註。"
+ },
+ "pls_formative": {
+  "authority": "待審計",
+  "note": "已有部分第三方交叉驗證：plspm",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_gof": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_hoc_disjoint": {
+  "authority": "plspm、seminr (R)",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 plspm、seminr (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pls_hoc_embedded": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_hoc_repeated": {
+  "authority": "plspm",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pls_ipma": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_itcriteria": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_mediation": {
+  "authority": "plspm",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pls_mga_formulas": {
+  "authority": "seminr (R)、cSEM (R)",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 seminr (R)、cSEM (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pls_mga_perm": {
+  "authority": "Chin & Dibbern (2010)；cSEM 0.6.1 的 Chin approach",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：diffObs = 0.332255 與 cSEM Chin 的 −0.3323 同值（僅群組相減方向不同）；permutation p 以 1000 次跑得 0.042 vs cSEM 0.032（近似檢定、種子不同，同決策）。"
+ },
+ "pls_mga_perm_inputs": {
+  "authority": "不適用（純輸入型 fixture）",
+  "note": "",
+  "status": "exempt",
+  "tier": "I",
+  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+ },
+ "pls_micom": {
+  "authority": "Henseler, Ringle & Sarstedt (2016)；cSEM 0.6.1 原始碼（postestimate_test_MICOM.R）",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：step 2 的 c 本工具為 0.9823249（以標準化指標算複合體），**cSEM 因在未標準化資料上計算而有尺度依賴瑕疵**（其自身註解誤稱不影響相關）。step 3 的變異數比較原用『差』，經 cSEM 原始碼確認 Henseler 原式為 **log 變異數比**，已修正（varDiff −0.116466 → −0.114790，與排序後 cSEM 逐值吻合）。另查出 cSEM step 3 在資料未按群組排序時有群組錯位 bug。"
+ },
+ "pls_mod_ortho": {
+  "authority": "seminr 2.5.0；Little, Bovaird & Widaman (2006)",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗（04_ortho_check.R 決定性檢驗）：seminr 的 orthogonal 交互構念分數 sd = 0.835227；以標準化分數重跑 OLS 得 −0.115582／−0.223428／0.334718、R² = 0.177043，與本工具逐值吻合。同一尺度慣例差異，已雙處標註。"
+ },
+ "pls_mod_pi": {
+  "authority": "seminr 2.5.0；Chin, Marcolin & Newsted (2003)",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：路徑與 R² 與 seminr 一致。交互項係數為**已知尺度慣例差異**——本工具報標準化係數，seminr 報未標準化（其交互構念分數 sd = 1.001905）；0.194320 = 0.194690 ÷ 1.001905，配適完全相同。"
+ },
+ "pls_mod_threeway": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_mod_twostage": {
+  "authority": "seminr 2.5.0；Chin et al. (2003)；SmartPLS 4 Moderation 文件",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：F1／C／交互項係數與 R² 與 seminr 一致（交互項對到未標準化的 path_int_Y = 0.14728）。"
+ },
+ "pls_pairwise_wpls": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_plsc": {
+  "authority": "cSEM 0.6.1",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：rhoA（1.017597／0.707796／0.888324）、一致 loadings（含 i2 = 1.151977 > 1）、校正後路徑、R² 全部與 cSEM 逐值一致；『rhoA > 1 不截斷』的行為亦確認同步。"
+ },
+ "pls_pos": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_pos_inputs": {
+  "authority": "不適用（純輸入型 fixture）",
+  "note": "",
+  "status": "exempt",
+  "tier": "I",
+  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+ },
+ "pls_predict": {
+  "authority": "seminr 2.5.0；Shmueli et al. (2016, 2019)",
+  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "2026-07-13 R 抽驗：RMSE／MAE 的量級與 PLS-vs-LM 方向與 seminr 一致。**無法逐值比對**——k-fold 的 fold 指派為隨機，兩邊不可能相同；這是方法本身的性質，不是實作差異。"
+ },
+ "pls_q2": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_quadratic": {
+  "authority": "待審計",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "status": "pending",
+  "tier": "B",
+  "verification": "待審計"
+ },
+ "pls_scheme_centroid": {
+  "authority": "plspm",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pls_scheme_factorial": {
+  "authority": "plspm",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "regression_hierarchical": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "regression_multiple": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "regression_simple": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "repeated_anova": {
+  "authority": "pingouin",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "shapiro_wilk": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "spearman_x1_x2": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "ttest_independent_welch": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "ttest_one_sample": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "ttest_paired": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "tukey_hsd": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "twoway_anova_type3": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "wilcoxon_signed_rank": {
+  "authority": "scipy",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "zprop_one": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "zprop_two": {
+  "authority": "statsmodels",
+  "note": "",
+  "status": "verified",
+  "tier": "A",
+  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ }
+}
