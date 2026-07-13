@@ -1,0 +1,330 @@
+== cSEM 版本 ==
+[1] '0.6.1'
+
+== 資料檢核（應為 n=60）==
+n = 60 
+
+
+########## [1] M4 標準 PLS（.disattenuate = FALSE）##########
+
+-- 路徑係數 --
+          F1        F2 C Y
+F1  0.000000  0.000000 0 0
+F2  0.341962  0.000000 0 0
+C  -0.230180 -0.357076 0 0
+Y   0.000000  0.140591 0 0
+
+-- loadings --
+         i1       i2       i3       i4       i5       i6    cond1    cond2
+F1 0.153005 0.900815 0.196634 0.000000 0.000000 0.000000 0.000000 0.000000
+F2 0.000000 0.000000 0.000000 0.628055 0.785832 0.904778 0.000000 0.000000
+C  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.748876 0.570015
+Y  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000
+     cond3 y
+F1 0.00000 0
+F2 0.00000 0
+C  0.97929 0
+Y  0.00000 1
+
+-- 構念相關 --
+          F1        F2         C         Y
+F1  1.000000  0.341962 -0.352286  0.066657
+F2  0.341962  1.000000 -0.435789  0.140591
+C  -0.352286 -0.435789  1.000000 -0.268678
+Y   0.066657  0.140591 -0.268678  1.000000
+
+-- R2 --
+      F2        C        Y 
+0.116938 0.236699 0.019766 
+
+
+########## [2] 模型適配 SRMR / dL(=d_ULS) / dG / NFI ##########
+★ 高優先抽驗項：多多快跑用 Henseler et al. (2014) composite factor model 的隱含矩陣。
+  cSEM 的飽和/估計模型口徑若不同，此處數字會有系統性差異。
+________________________________________________________________________________
+
+--------------------------- Distance and fit measures --------------------------
+
+	Geodesic distance             = 0.1108847
+	Squared Euclidean distance    = 0.4235815
+
+	Chi_square       = 31.41947
+	NFI              = 0.8608175
+	SRMR             = 0.08775808
+
+	Degrees of freedom       = 26
+________________________________________________________________________________
+
+-- fit_summary（若可用，含 saturated vs estimated）--
+                i1          i2           i3          i4          i5          i6
+i1     1.000000000  0.53872391  0.510525556  0.03286097  0.04111616  0.04733965
+i2     0.538723912  1.00000000  0.506160397  0.19346891  0.24207135  0.27871211
+i3     0.510525556  0.50616040  1.000000000  0.04223132  0.05284049  0.06083861
+i4     0.032860968  0.19346891  0.042231318  1.00000000  0.39871547  0.45705971
+i5     0.041116163  0.24207135  0.052840493  0.39871547  1.00000000  0.48516343
+i6     0.047339646  0.27871211  0.060838612  0.45705971  0.48516343  1.00000000
+cond1 -0.040365514 -0.23765191 -0.051875796 -0.20496668 -0.25645755 -0.29527585
+cond2 -0.030724643 -0.18089130 -0.039485817 -0.15601258 -0.19520541 -0.22475237
+cond3 -0.052785149 -0.31077249 -0.067836906 -0.26803069 -0.33536424 -0.38612612
+y      0.007356001  0.04330844  0.009453574  0.08829908  0.11048120  0.12720402
+            cond1       cond2       cond3            y
+i1    -0.04036551 -0.03072464 -0.05278515  0.007356001
+i2    -0.23765191 -0.18089130 -0.31077249  0.043308444
+i3    -0.05187580 -0.03948582 -0.06783691  0.009453574
+i4    -0.20496668 -0.15601258 -0.26803069  0.088299079
+i5    -0.25645755 -0.19520541 -0.33536424  0.110481204
+i6    -0.29527585 -0.22475237 -0.38612612  0.127204019
+cond1  1.00000000  0.69428642  0.72517086 -0.045882247
+cond2  0.69428642  1.00000000  0.69785546 -0.034923763
+cond3  0.72517086  0.69785546  1.00000000 -0.059999266
+y     -0.04588225 -0.03492376 -0.05999927  1.000000000
+
+
+########## [3] PLSc（.disattenuate = TRUE，Dijkstra & Henseler 2015）##########
+
+-- 一致 loadings --
+         i1       i2       i3       i4       i5       i6    cond1    cond2
+F1 0.153005 0.900815 0.196634 0.000000 0.000000 0.000000 0.000000 0.000000
+F2 0.000000 0.000000 0.000000 0.628055 0.785832 0.904778 0.000000 0.000000
+C  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.748876 0.570015
+Y  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000
+     cond3 y
+F1 0.00000 0
+F2 0.00000 0
+C  0.97929 0
+Y  0.00000 1
+
+-- 校正後路徑 --
+          F1        F2 C Y
+F1  0.000000  0.000000 0 0
+F2  0.341962  0.000000 0 0
+C  -0.230180 -0.357076 0 0
+Y   0.000000  0.140591 0 0
+
+-- 校正後構念相關 --
+          F1        F2         C         Y
+F1  1.000000  0.341962 -0.352286  0.066657
+F2  0.341962  1.000000 -0.435789  0.140591
+C  -0.352286 -0.435789  1.000000 -0.268678
+Y   0.066657  0.140591 -0.268678  1.000000
+
+-- R2 --
+      F2        C        Y 
+0.116938 0.236699 0.019766 
+
+-- rhoA（cSEM 的 Reliabilities 欄位）--
+   對照：rhoA F1=1.017597（>1！）、F2=0.707796、C=0.888324
+F1 F2  C  Y 
+ 1  1  1  1 
+
+-- assess() 全量品質指標（版本間欄位名稱可能不同，全印出來保險）--
+________________________________________________________________________________
+
+	Construct        AVE           R2          R2_adj    
+	F2               NA          0.1169        0.1017    
+	C                NA          0.2367        0.2099    
+	Y                NA          0.0198        0.0029    
+
+--------------------------- Distance and fit measures --------------------------
+
+	Geodesic distance             = 0.1108847
+	Squared Euclidean distance    = 0.4235815
+	ML distance                   = 0.5325334
+
+	Chi_square       = 31.41947
+	Chi_square_df    = 1.208441
+	CFI              = 0.9700156
+	CN               = 74.01915
+	GFI              = 0.8346422
+	IFI              = 0.9728678
+	NFI              = 0.8608175
+	NNFI             = 0.9481039
+	RMSEA            = 0.05943822
+	RMS_theta        = 0.07915628
+	SRMR             = 0.08775808
+
+	Degrees of freedom       = 26
+
+--------------------------- Model selection criteria ---------------------------
+
+	Construct        AIC          AICc          AICu     
+	F2             -4.4700       57.9585       -2.4359   
+	C             -11.2146       51.5127       -8.1370   
+	Y              1.7937        64.2223       3.8278    
+
+	Construct        BIC           FPE           GM      
+	F2             -0.2813       0.9282        67.1078   
+	C              -4.9315       0.8296        71.2306   
+	Y              5.9824        1.0304        70.7931   
+
+	Construct        HQ            HQc       Mallows_Cp  
+	F2             -2.8316       -2.4289       2.9192    
+	C              -8.7569       -7.9881       4.9476    
+	Y              3.4322        3.8349        6.6044    
+
+----------------------- Variance inflation factors (VIFs) ----------------------
+
+  Dependent construct: 'C'
+
+	Independent construct    VIF value 
+	F1                        1.1324   
+	F2                        1.1324   
+
+-------------- Variance inflation factors (VIFs) for modeB weights -------------
+
+  Construct: 'F1'
+
+	Weight    VIF value 
+	i1         1.5780   
+	i2         1.5686   
+	i3         1.5058   
+
+  Construct: 'F2'
+
+	Weight    VIF value 
+	i4         1.3331   
+	i5         1.3793   
+	i6         1.4663   
+
+  Construct: 'C'
+
+	Weight    VIF value 
+	cond1      2.4687   
+	cond2      2.2817   
+	cond3      2.4926   
+
+  Construct: 'Y'
+
+	Weight    VIF value 
+
+-------------------------- Effect sizes (Cohen's f^2) --------------------------
+
+  Dependent construct: 'F2'
+
+	Independent construct       f^2    
+	F1                        0.1324   
+
+  Dependent construct: 'C'
+
+	Independent construct       f^2    
+	F1                        0.0613   
+	F2                        0.1475   
+
+  Dependent construct: 'Y'
+
+	Independent construct       f^2    
+	F2                        0.0202   
+
+----------------------- Discriminant validity assessment -----------------------
+
+	Heterotrait-monotrait ratio of correlations matrix (HTMT matrix)
+
+NULL
+
+
+	Advanced heterotrait-monotrait ratio of correlations matrix (HTMT2 matrix)
+
+NULL
+
+
+------------------------------------ Effects -----------------------------------
+
+Estimated total effects:
+========================
+  Total effect    Estimate  Std. error   t-stat.   p-value
+  F2 ~ F1           0.3420          NA        NA        NA
+  C ~ F1           -0.3523          NA        NA        NA
+  C ~ F2           -0.3571          NA        NA        NA
+  Y ~ F1            0.0481          NA        NA        NA
+  Y ~ F2            0.1406          NA        NA        NA
+
+Estimated indirect effects:
+===========================
+  Indirect effect    Estimate  Std. error   t-stat.   p-value
+  C ~ F1              -0.1221          NA        NA        NA
+  Y ~ F1               0.0481          NA        NA        NA
+________________________________________________________________________________
+
+※ 關鍵行為問題：多多快跑的 rhoA(F1)=1.017597、一致 loading(i2)=1.151977，
+  兩者都 > 1。多多快跑的處置是『警告但不截斷』（自認對齊 cSEM）。
+  請看上面 cSEM 的輸出：是同樣不截斷、截斷至 1、還是直接報錯？
+  （如果 cSEM 這裡出現 warning 訊息，也請一併把 warning 全文回報。）
+
+
+########## [4] MICOM（group2：M vs F；簡單模型 F1 -> F2）##########
+★ 高優先抽驗項：step 2 的 c（多多快跑：各組權重估自組內標準化資料、分數算在 pooled 標準化資料）
+▃▃▃▃▃▃▃▃ Test for measurement invariance based on Henseler et al (2016) ▃▃▃▃▃▃▃▃ 
+
+________________________________________________________________________________
+-------- Test for measurement invariance based on Henseler et al (2016) --------
+======================== Step 1 - Configural invariance ========================
+
+	Configural invariance is a precondition for step 2 and 3.
+	Do not proceed to interpret results unless
+	configural invariance has been established.
+
+======================= Step 2 - Compositional invariance ======================
+
+Null hypothesis:
+
+       ┌─────────────────────────────────────────────────────────────────┐
+       │                                                                 │
+       │   H0: Compositional measurement invariance of the constructs.   │
+       │                                                                 │
+       └─────────────────────────────────────────────────────────────────┘
+
+Test statistic and p-value: 
+
+  Compared groups: F_M
+	         	              	 p-value by adjustment
+	Construct	Test statistic	    none
+	F1       	    0.6131    	  0.4968
+	F2       	    0.1537    	  0.3448
+	
+
+================= Step 3 - Equality of the means and variances =================
+
+Null hypothesis:
+
+          ┌────────────────────────────────────────────────────────────┐
+          │                                                            │
+          │   1. H0: Difference between group means is zero            │
+          │   2. H0: Log of the ratio of the group variances is zero   │
+          │                                                            │
+          └────────────────────────────────────────────────────────────┘
+
+Test statistic and critical values: 
+
+  Compared groups: F_M
+
+	Mean
+	         	              	 p-value by adjustment
+	Construct	Test statistic	    none
+	F1       	    0.0996    	  0.7250
+	F2       	    0.2241    	  0.3730
+	
+	Var
+	         	              	 p-value by adjustment
+	Construct	Test statistic	    none
+	F1       	    0.0425    	  0.8960
+	F2       	    -0.0872   	  0.7740
+	
+	
+Additional information:
+
+	Out of 1000 permutation runs, 928 where admissible.
+	See ?verify() for what constitutes an inadmissible result.
+
+	The seed used was: -2128499534
+
+	Number of observations per group:
+
+	Group      No. observations
+	F          30             
+	M          30             
+________________________________________________________________________________
+
+
+########## [5] MGD 多群組差異檢定（group2）##########
+註：多多快跑以 permutation 為主判準；Henseler MGA 回報單尾 P(b1<=b2)。
+    請確認 cSEM 的 Henseler p 是單尾還是雙尾。

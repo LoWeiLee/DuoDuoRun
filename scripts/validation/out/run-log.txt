@@ -1,0 +1,1175 @@
+==================== RUN START ====================
+DATE: 週一 2026/07/13 15:42:20.36
+[OK] Rscript = C:\Program Files\R\R-4.6.0\bin\Rscript.exe
+[OK] R version key = 4.6
+[OK] R_LIBS_USER = C:\Users\serpe\AppData\Local\R\win-library\4.6
+
+---------- library paths seen by R ----------
+libPaths:
+[1] "C:/Users/serpe/AppData/Local/R/win-library/4.6"
+[2] "C:/Program Files/R/R-4.6.0/library"            
+writable (0 = yes): 0 -1 
+
+---------- installing missing packages ----------
+missing: seminr, cSEM, NCA 
+also installing the dependencies 'fs', 'rappdirs', 'sass', 'prettyunits', 'sys', 'utf8', 'evaluate', 'highr', 'xfun', 'bslib', 'fontawesome', 'jquerylib', 'tinytex', 'progress', 'gmp', 'sets', 'askpass', 'generics', 'pillar', 'R6', 'tidyselect', 'fastmap', 'knitr', 'rmarkdown', 'yaml', 'clipr', 'hms', 'vroom', 'tzdb', 'farver', 'labeling', 'stringi', 'curl', 'abind', 'partitions', 'plyr', 'polynom', 'orthopolynom', 'bitops', 'mime', 'openssl', 'later', 'otel', 'bit', 'cachem', 'mnormt', 'pbivnorm', 'numDeriv', 'quadprog', 'dplyr', 'htmltools', 'htmlwidgets', 'igraph', 'RColorBrewer', 'readr', 'rstudioapi', 'scales', 'stringr', 'tibble', 'tidyr', 'viridisLite', 'visNetwork', 'V8', 'globals', 'digest', 'listenv', 'parallelly', 'mvtnorm', 'admisc', 'GPArotation', 'vctrs', 'rbibutils', 'cubature', 'combinat', 'multipol', 'mpoly', 'nleqslv', 'qrng', 'spacefillr', 'Rcpp', 'RcppArmadillo', 'gtools', 'caTools', 'SparseM', 'MatrixModels', 'gtable', 'isoband', 'S7', 'withr', 'httr', 'jsonlite', 'base64enc', 'lazyeval', 'crosstalk', 'data.table', 'promises', 'bit64', 'blob', 'memoise', 'pkgconfig', 'cpp11', 'lavaan', 'glue', 'DiagrammeR', 'DiagrammeRsvg', 'alabama', 'cli', 'crayon', 'expm', 'future.apply', 'future', 'lifecycle', 'magrittr', 'matrixcalc', 'matrixStats', 'polycor', 'progressr', 'psych', 'purrr', 'Rdpack', 'rlang', 'symmoments', 'TruncatedNormal', 'gplots', 'quantreg', 'lpSolve', 'ggplot2', 'doParallel', 'foreach', 'iterators', 'plotly', 'truncnorm', 'DBI', 'RSQLite'
+
+
+  There is a binary version available but the source version is later:
+        binary source needs_compilation
+mvtnorm  1.4-1  1.4-2              TRUE
+
+  Binaries will be installed
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/fs_2.1.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/rappdirs_0.3.4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/sass_0.4.10.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/prettyunits_1.2.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/sys_3.4.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/utf8_1.2.6.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/evaluate_1.0.5.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/highr_0.12.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/xfun_0.60.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/bslib_0.11.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/fontawesome_0.5.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/jquerylib_0.1.4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/tinytex_0.60.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/progress_1.2.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/gmp_0.7-5.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/sets_1.0-25.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/askpass_1.2.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/generics_0.1.4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/pillar_1.11.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/R6_2.6.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/tidyselect_1.2.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/fastmap_1.2.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/knitr_1.51.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/rmarkdown_2.31.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/yaml_2.3.12.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/clipr_0.8.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/hms_1.1.4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/vroom_1.7.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/tzdb_0.5.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/farver_2.1.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/labeling_0.4.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/stringi_1.8.7.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/curl_7.1.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/abind_1.4-8.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/partitions_1.10-9.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/plyr_1.8.9.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/polynom_1.4-1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/orthopolynom_1.0-6.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/bitops_1.0-9.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/mime_0.13.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/openssl_2.4.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/later_1.4.8.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/otel_0.2.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/bit_4.6.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/cachem_1.1.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/mnormt_2.1.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/pbivnorm_0.6.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/numDeriv_2016.8-1.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/quadprog_1.5-8.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/dplyr_1.2.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/htmltools_0.5.9.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/htmlwidgets_1.6.4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/igraph_2.3.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/RColorBrewer_1.1-3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/readr_2.2.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/rstudioapi_0.19.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/scales_1.4.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/stringr_1.6.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/tibble_3.3.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/tidyr_1.3.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/viridisLite_0.4.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/visNetwork_2.1.4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/V8_8.2.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/globals_0.19.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/digest_0.6.39.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/listenv_1.0.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/parallelly_1.48.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/mvtnorm_1.4-1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/admisc_0.40.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/GPArotation_2026.6-1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/vctrs_0.7.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/rbibutils_2.4.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/cubature_2.1.4-1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/combinat_0.0-8.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/multipol_1.0-9.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/mpoly_1.1.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/nleqslv_3.3.7.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/qrng_0.0-11.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/spacefillr_0.4.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/Rcpp_1.1.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/RcppArmadillo_15.4.0-1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/gtools_3.9.5.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/caTools_1.18.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/SparseM_1.84-2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/MatrixModels_0.5-4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/gtable_0.3.6.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/isoband_0.3.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/S7_0.2.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/withr_3.0.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/httr_1.4.8.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/jsonlite_2.0.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/base64enc_0.1-6.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/lazyeval_0.2.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/crosstalk_1.2.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/data.table_1.18.4.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/promises_1.5.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/bit64_4.8.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/blob_1.3.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/memoise_2.0.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/pkgconfig_2.0.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/cpp11_0.5.5.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/lavaan_0.6-21.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/glue_1.8.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/DiagrammeR_1.0.12.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/DiagrammeRsvg_0.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/alabama_2025.1.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/cli_3.6.6.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/crayon_1.5.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/expm_1.0-0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/future.apply_1.20.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/future_1.70.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/lifecycle_1.0.5.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/magrittr_2.0.5.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/matrixcalc_1.0-6.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/matrixStats_1.5.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/polycor_0.8-2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/progressr_1.0.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/psych_2.6.5.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/purrr_1.2.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/Rdpack_2.6.6.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/rlang_1.3.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/symmoments_1.2.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/TruncatedNormal_2.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/gplots_3.3.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/quantreg_6.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/lpSolve_5.6.23.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/ggplot2_4.0.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/doParallel_1.0.17.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/foreach_1.5.2.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/iterators_1.0.14.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/plotly_4.12.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/truncnorm_1.0-9.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/DBI_1.3.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/RSQLite_3.53.3.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/seminr_2.5.0.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/cSEM_0.6.1.zip'
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.6/NCA_5.0.2.zip'
+package 'fs' successfully unpacked and MD5 sums checked
+package 'rappdirs' successfully unpacked and MD5 sums checked
+package 'sass' successfully unpacked and MD5 sums checked
+package 'prettyunits' successfully unpacked and MD5 sums checked
+package 'sys' successfully unpacked and MD5 sums checked
+package 'utf8' successfully unpacked and MD5 sums checked
+package 'evaluate' successfully unpacked and MD5 sums checked
+package 'highr' successfully unpacked and MD5 sums checked
+package 'xfun' successfully unpacked and MD5 sums checked
+package 'bslib' successfully unpacked and MD5 sums checked
+package 'fontawesome' successfully unpacked and MD5 sums checked
+package 'jquerylib' successfully unpacked and MD5 sums checked
+package 'tinytex' successfully unpacked and MD5 sums checked
+package 'progress' successfully unpacked and MD5 sums checked
+package 'gmp' successfully unpacked and MD5 sums checked
+package 'sets' successfully unpacked and MD5 sums checked
+package 'askpass' successfully unpacked and MD5 sums checked
+package 'generics' successfully unpacked and MD5 sums checked
+package 'pillar' successfully unpacked and MD5 sums checked
+package 'R6' successfully unpacked and MD5 sums checked
+package 'tidyselect' successfully unpacked and MD5 sums checked
+package 'fastmap' successfully unpacked and MD5 sums checked
+package 'knitr' successfully unpacked and MD5 sums checked
+package 'rmarkdown' successfully unpacked and MD5 sums checked
+package 'yaml' successfully unpacked and MD5 sums checked
+package 'clipr' successfully unpacked and MD5 sums checked
+package 'hms' successfully unpacked and MD5 sums checked
+package 'vroom' successfully unpacked and MD5 sums checked
+package 'tzdb' successfully unpacked and MD5 sums checked
+package 'farver' successfully unpacked and MD5 sums checked
+package 'labeling' successfully unpacked and MD5 sums checked
+package 'stringi' successfully unpacked and MD5 sums checked
+package 'curl' successfully unpacked and MD5 sums checked
+package 'abind' successfully unpacked and MD5 sums checked
+package 'partitions' successfully unpacked and MD5 sums checked
+package 'plyr' successfully unpacked and MD5 sums checked
+package 'polynom' successfully unpacked and MD5 sums checked
+package 'orthopolynom' successfully unpacked and MD5 sums checked
+package 'bitops' successfully unpacked and MD5 sums checked
+package 'mime' successfully unpacked and MD5 sums checked
+package 'openssl' successfully unpacked and MD5 sums checked
+package 'later' successfully unpacked and MD5 sums checked
+package 'otel' successfully unpacked and MD5 sums checked
+package 'bit' successfully unpacked and MD5 sums checked
+package 'cachem' successfully unpacked and MD5 sums checked
+package 'mnormt' successfully unpacked and MD5 sums checked
+package 'pbivnorm' successfully unpacked and MD5 sums checked
+package 'numDeriv' successfully unpacked and MD5 sums checked
+package 'quadprog' successfully unpacked and MD5 sums checked
+package 'dplyr' successfully unpacked and MD5 sums checked
+package 'htmltools' successfully unpacked and MD5 sums checked
+package 'htmlwidgets' successfully unpacked and MD5 sums checked
+package 'igraph' successfully unpacked and MD5 sums checked
+package 'RColorBrewer' successfully unpacked and MD5 sums checked
+package 'readr' successfully unpacked and MD5 sums checked
+package 'rstudioapi' successfully unpacked and MD5 sums checked
+package 'scales' successfully unpacked and MD5 sums checked
+package 'stringr' successfully unpacked and MD5 sums checked
+package 'tibble' successfully unpacked and MD5 sums checked
+package 'tidyr' successfully unpacked and MD5 sums checked
+package 'viridisLite' successfully unpacked and MD5 sums checked
+package 'visNetwork' successfully unpacked and MD5 sums checked
+package 'V8' successfully unpacked and MD5 sums checked
+package 'globals' successfully unpacked and MD5 sums checked
+package 'digest' successfully unpacked and MD5 sums checked
+package 'listenv' successfully unpacked and MD5 sums checked
+package 'parallelly' successfully unpacked and MD5 sums checked
+package 'mvtnorm' successfully unpacked and MD5 sums checked
+package 'admisc' successfully unpacked and MD5 sums checked
+package 'GPArotation' successfully unpacked and MD5 sums checked
+package 'vctrs' successfully unpacked and MD5 sums checked
+package 'rbibutils' successfully unpacked and MD5 sums checked
+package 'cubature' successfully unpacked and MD5 sums checked
+package 'combinat' successfully unpacked and MD5 sums checked
+package 'multipol' successfully unpacked and MD5 sums checked
+package 'mpoly' successfully unpacked and MD5 sums checked
+package 'nleqslv' successfully unpacked and MD5 sums checked
+package 'qrng' successfully unpacked and MD5 sums checked
+package 'spacefillr' successfully unpacked and MD5 sums checked
+package 'Rcpp' successfully unpacked and MD5 sums checked
+package 'RcppArmadillo' successfully unpacked and MD5 sums checked
+package 'gtools' successfully unpacked and MD5 sums checked
+package 'caTools' successfully unpacked and MD5 sums checked
+package 'SparseM' successfully unpacked and MD5 sums checked
+package 'MatrixModels' successfully unpacked and MD5 sums checked
+package 'gtable' successfully unpacked and MD5 sums checked
+package 'isoband' successfully unpacked and MD5 sums checked
+package 'S7' successfully unpacked and MD5 sums checked
+package 'withr' successfully unpacked and MD5 sums checked
+package 'httr' successfully unpacked and MD5 sums checked
+package 'jsonlite' successfully unpacked and MD5 sums checked
+package 'base64enc' successfully unpacked and MD5 sums checked
+package 'lazyeval' successfully unpacked and MD5 sums checked
+package 'crosstalk' successfully unpacked and MD5 sums checked
+package 'data.table' successfully unpacked and MD5 sums checked
+package 'promises' successfully unpacked and MD5 sums checked
+package 'bit64' successfully unpacked and MD5 sums checked
+package 'blob' successfully unpacked and MD5 sums checked
+package 'memoise' successfully unpacked and MD5 sums checked
+package 'pkgconfig' successfully unpacked and MD5 sums checked
+package 'cpp11' successfully unpacked and MD5 sums checked
+package 'lavaan' successfully unpacked and MD5 sums checked
+package 'glue' successfully unpacked and MD5 sums checked
+package 'DiagrammeR' successfully unpacked and MD5 sums checked
+package 'DiagrammeRsvg' successfully unpacked and MD5 sums checked
+package 'alabama' successfully unpacked and MD5 sums checked
+package 'cli' successfully unpacked and MD5 sums checked
+package 'crayon' successfully unpacked and MD5 sums checked
+package 'expm' successfully unpacked and MD5 sums checked
+package 'future.apply' successfully unpacked and MD5 sums checked
+package 'future' successfully unpacked and MD5 sums checked
+package 'lifecycle' successfully unpacked and MD5 sums checked
+package 'magrittr' successfully unpacked and MD5 sums checked
+package 'matrixcalc' successfully unpacked and MD5 sums checked
+package 'matrixStats' successfully unpacked and MD5 sums checked
+package 'polycor' successfully unpacked and MD5 sums checked
+package 'progressr' successfully unpacked and MD5 sums checked
+package 'psych' successfully unpacked and MD5 sums checked
+package 'purrr' successfully unpacked and MD5 sums checked
+package 'Rdpack' successfully unpacked and MD5 sums checked
+package 'rlang' successfully unpacked and MD5 sums checked
+package 'symmoments' successfully unpacked and MD5 sums checked
+package 'TruncatedNormal' successfully unpacked and MD5 sums checked
+package 'gplots' successfully unpacked and MD5 sums checked
+package 'quantreg' successfully unpacked and MD5 sums checked
+package 'lpSolve' successfully unpacked and MD5 sums checked
+package 'ggplot2' successfully unpacked and MD5 sums checked
+package 'doParallel' successfully unpacked and MD5 sums checked
+package 'foreach' successfully unpacked and MD5 sums checked
+package 'iterators' successfully unpacked and MD5 sums checked
+package 'plotly' successfully unpacked and MD5 sums checked
+package 'truncnorm' successfully unpacked and MD5 sums checked
+package 'DBI' successfully unpacked and MD5 sums checked
+package 'RSQLite' successfully unpacked and MD5 sums checked
+package 'seminr' successfully unpacked and MD5 sums checked
+package 'cSEM' successfully unpacked and MD5 sums checked
+package 'NCA' successfully unpacked and MD5 sums checked
+
+The downloaded binary packages are in
+	C:\Users\serpe\AppData\Local\Temp\RtmpYbVXZ2\downloaded_packages
+
+---------- verify ----------
+seminr : OK 
+cSEM : OK 
+NCA : OK 
+
+---------- [1/3] seminr ----------
+Warning message:
+package 'seminr' was built under R version 4.6.1 
+== seminr 版本 ==
+[1] '2.5.0'
+
+== 資料檢核（應為 n=60）==
+n = 60 
+
+
+########## [1] M1 核心：F1(i1-i3) -> F2(i4-i6) ##########
+Generating the seminr model
+All 60 observations are valid.
+
+-- loadings --
+      F1    F2
+i1 0.788 0.000
+i2 0.896 0.000
+i3 0.764 0.000
+i4 0.000 0.855
+i5 0.000 0.753
+i6 0.000 0.752
+
+-- weights --
+      F1    F2
+i1 0.325 0.000
+i2 0.563 0.000
+i3 0.313 0.000
+i4 0.000 0.562
+i5 0.000 0.377
+i6 0.000 0.313
+
+-- paths (含 R2) --
+          F2
+R^2    0.130
+AdjR^2 0.115
+F1     0.360
+
+-- 信效度 (alpha / rhoC / AVE / rhoA) --
+   alpha  rhoA  rhoC   AVE
+F1 0.764 0.867 0.858 0.670
+F2 0.708 0.765 0.831 0.622
+
+Alpha, rhoA, and rhoC should exceed 0.7 while AVE should exceed 0.5
+
+-- HTMT --
+      F1 F2
+F1     .  .
+F2 0.427  .
+
+-- LV 相關 --
+      F1    F2
+F1 1.000 0.360
+F2 0.360 1.000
+
+
+########## [2] M4：F1->F2, F1->C, F2->C, F2->Y ##########
+Generating the seminr model
+All 60 observations are valid.
+
+-- loadings --
+          F1     F2      C      Y
+i1     0.766  0.000 -0.000 -0.000
+i2     0.923  0.000 -0.000  0.000
+i3     0.731  0.000 -0.000 -0.000
+i4     0.000  0.785 -0.000  0.000
+i5     0.000  0.792 -0.000  0.000
+i6     0.000  0.807 -0.000  0.000
+cond1 -0.000 -0.000  0.887 -0.000
+cond2 -0.000 -0.000  0.890 -0.000
+cond3 -0.000 -0.000  0.912 -0.000
+y     -0.000  0.000 -0.000  1.000
+
+-- paths --
+          F2      C     Y
+R^2    0.124  0.136 0.025
+AdjR^2 0.109  0.105 0.009
+F1     0.353 -0.230     .
+F2         . -0.218 0.160
+
+-- 信效度 --
+   alpha  rhoA  rhoC   AVE
+F1 0.764 1.018 0.851 0.658
+F2 0.708 0.708 0.837 0.631
+C  0.878 0.888 0.924 0.803
+Y  1.000 1.000 1.000 1.000
+
+Alpha, rhoA, and rhoC should exceed 0.7 while AVE should exceed 0.5
+
+-- 總效果（中介抽驗用）--
+      F1    F2      C     Y
+F1 0.000 0.353 -0.307 0.056
+F2 0.000 0.000 -0.218 0.160
+C  0.000 0.000  0.000 0.000
+Y  0.000 0.000  0.000 0.000
+
+
+########## [3] 調節 product indicator（Chin et al. 2003）##########
+模型：F1 -> Y, C -> Y, F1*C -> Y（Y 為單指標 y）
+Generating the seminr model
+All 60 observations are valid.
+
+-- paths --
+            Y
+R^2     0.099
+AdjR^2  0.051
+F1     -0.151
+C      -0.174
+F1*C   -0.194
+
+
+########## [4] 調節 orthogonalizing（Little et al. 2006）##########
+Generating the seminr model
+All 60 observations are valid.
+
+-- paths --
+            Y
+R^2     0.177
+AdjR^2  0.133
+F1     -0.116
+C      -0.223
+F1*C    0.401
+
+
+########## [5] 調節 two-stage（seminr 版；係數為標準化量尺）##########
+註：多多快跑預設回報 SmartPLS 4 慣例的『未標準化交互項係數』，
+    對照本節請用多多快跑的 path_int_Y_std（標準化值）。
+Generating the seminr model
+All 60 observations are valid.
+
+-- paths --
+            Y
+R^2     0.085
+AdjR^2  0.036
+F1     -0.135
+C      -0.279
+F1*C    0.147
+
+
+########## [6] HOC 兩階段：G = {F1, F2} -> C -> Y ##########
+Generating the seminr model
+Generating the seminr model
+All 60 observations are valid.
+All 60 observations are valid.
+
+-- HOC loadings（G 對 F1/F2 分數）--
+           G      C      Y    F1    F2
+cond1 -0.000  0.890 -0.000 0.000 0.000
+cond2 -0.000  0.877 -0.000 0.000 0.000
+cond3 -0.000  0.920 -0.000 0.000 0.000
+y      0.000 -0.000  1.000 0.000 0.000
+F1     0.804 -0.000  0.000 0.000 0.000
+F2     0.826 -0.000  0.000 0.000 0.000
+i1     0.000  0.000  0.000 0.739 0.000
+i2     0.000  0.000  0.000 0.950 0.000
+i3     0.000  0.000  0.000 0.686 0.000
+i4     0.000  0.000  0.000 0.000 0.647
+i5     0.000  0.000  0.000 0.000 0.847
+i6     0.000  0.000  0.000 0.000 0.848
+
+-- paths --
+            C      Y
+R^2     0.162  0.047
+AdjR^2  0.147  0.031
+G      -0.402      .
+C           . -0.218
+
+
+########## [7] PLSpredict（M4；k=10 folds、1 rep）##########
+註：fold 指派為隨機，數字不會與多多快跑逐位相同；看『量級與 PLS vs LM 的方向』是否一致。
+
+-- PLS 預測誤差 --
+        i4    i5    i6 cond1 cond2 cond3     y
+RMSE 0.966 0.992 1.186 5.478 5.466 4.585 7.646
+MAE  0.756 0.784 0.949 4.385 4.078 3.755 5.757
+
+-- LM 基準 --
+        i4    i5    i6 cond1 cond2 cond3     y
+RMSE 0.976 1.019 1.182 5.740 5.745 4.734 7.782
+MAE  0.772 0.807 0.940 4.701 4.454 3.755 6.006
+
+
+== 完成。請把 out/01_seminr_out.txt 全文回報 ==
+exitcode=0
+
+---------- [2/3] cSEM ----------
+
+Attaching package: 'cSEM'
+
+The following object is masked from 'package:stats':
+
+    predict
+
+The following object is masked from 'package:grDevices':
+
+    savePlot
+
+Warning message:
+package 'cSEM' was built under R version 4.6.1 
+== cSEM 版本 ==
+[1] '0.6.1'
+
+== 資料檢核（應為 n=60）==
+n = 60 
+
+
+########## [1] M4 標準 PLS（.disattenuate = FALSE）##########
+
+-- 路徑係數 --
+          F1        F2 C Y
+F1  0.000000  0.000000 0 0
+F2  0.341962  0.000000 0 0
+C  -0.230180 -0.357076 0 0
+Y   0.000000  0.140591 0 0
+
+-- loadings --
+         i1       i2       i3       i4       i5       i6    cond1    cond2
+F1 0.153005 0.900815 0.196634 0.000000 0.000000 0.000000 0.000000 0.000000
+F2 0.000000 0.000000 0.000000 0.628055 0.785832 0.904778 0.000000 0.000000
+C  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.748876 0.570015
+Y  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000
+     cond3 y
+F1 0.00000 0
+F2 0.00000 0
+C  0.97929 0
+Y  0.00000 1
+
+-- 構念相關 --
+          F1        F2         C         Y
+F1  1.000000  0.341962 -0.352286  0.066657
+F2  0.341962  1.000000 -0.435789  0.140591
+C  -0.352286 -0.435789  1.000000 -0.268678
+Y   0.066657  0.140591 -0.268678  1.000000
+
+-- R2 --
+      F2        C        Y 
+0.116938 0.236699 0.019766 
+
+
+########## [2] 模型適配 SRMR / dL(=d_ULS) / dG / NFI ##########
+★ 高優先抽驗項：多多快跑用 Henseler et al. (2014) composite factor model 的隱含矩陣。
+  cSEM 的飽和/估計模型口徑若不同，此處數字會有系統性差異。
+________________________________________________________________________________
+
+--------------------------- Distance and fit measures --------------------------
+
+	Geodesic distance             = 0.1108847
+	Squared Euclidean distance    = 0.4235815
+
+	Chi_square       = 31.41947
+	NFI              = 0.8608175
+	SRMR             = 0.08775808
+
+	Degrees of freedom       = 26
+________________________________________________________________________________
+
+-- fit_summary（若可用，含 saturated vs estimated）--
+                i1          i2           i3          i4          i5          i6
+i1     1.000000000  0.53872391  0.510525556  0.03286097  0.04111616  0.04733965
+i2     0.538723912  1.00000000  0.506160397  0.19346891  0.24207135  0.27871211
+i3     0.510525556  0.50616040  1.000000000  0.04223132  0.05284049  0.06083861
+i4     0.032860968  0.19346891  0.042231318  1.00000000  0.39871547  0.45705971
+i5     0.041116163  0.24207135  0.052840493  0.39871547  1.00000000  0.48516343
+i6     0.047339646  0.27871211  0.060838612  0.45705971  0.48516343  1.00000000
+cond1 -0.040365514 -0.23765191 -0.051875796 -0.20496668 -0.25645755 -0.29527585
+cond2 -0.030724643 -0.18089130 -0.039485817 -0.15601258 -0.19520541 -0.22475237
+cond3 -0.052785149 -0.31077249 -0.067836906 -0.26803069 -0.33536424 -0.38612612
+y      0.007356001  0.04330844  0.009453574  0.08829908  0.11048120  0.12720402
+            cond1       cond2       cond3            y
+i1    -0.04036551 -0.03072464 -0.05278515  0.007356001
+i2    -0.23765191 -0.18089130 -0.31077249  0.043308444
+i3    -0.05187580 -0.03948582 -0.06783691  0.009453574
+i4    -0.20496668 -0.15601258 -0.26803069  0.088299079
+i5    -0.25645755 -0.19520541 -0.33536424  0.110481204
+i6    -0.29527585 -0.22475237 -0.38612612  0.127204019
+cond1  1.00000000  0.69428642  0.72517086 -0.045882247
+cond2  0.69428642  1.00000000  0.69785546 -0.034923763
+cond3  0.72517086  0.69785546  1.00000000 -0.059999266
+y     -0.04588225 -0.03492376 -0.05999927  1.000000000
+
+
+########## [3] PLSc（.disattenuate = TRUE，Dijkstra & Henseler 2015）##########
+
+-- 一致 loadings --
+         i1       i2       i3       i4       i5       i6    cond1    cond2
+F1 0.153005 0.900815 0.196634 0.000000 0.000000 0.000000 0.000000 0.000000
+F2 0.000000 0.000000 0.000000 0.628055 0.785832 0.904778 0.000000 0.000000
+C  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.748876 0.570015
+Y  0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000
+     cond3 y
+F1 0.00000 0
+F2 0.00000 0
+C  0.97929 0
+Y  0.00000 1
+
+-- 校正後路徑 --
+          F1        F2 C Y
+F1  0.000000  0.000000 0 0
+F2  0.341962  0.000000 0 0
+C  -0.230180 -0.357076 0 0
+Y   0.000000  0.140591 0 0
+
+-- 校正後構念相關 --
+          F1        F2         C         Y
+F1  1.000000  0.341962 -0.352286  0.066657
+F2  0.341962  1.000000 -0.435789  0.140591
+C  -0.352286 -0.435789  1.000000 -0.268678
+Y   0.066657  0.140591 -0.268678  1.000000
+
+-- R2 --
+      F2        C        Y 
+0.116938 0.236699 0.019766 
+
+-- rhoA（cSEM 的 Reliabilities 欄位）--
+   對照：rhoA F1=1.017597（>1！）、F2=0.707796、C=0.888324
+F1 F2  C  Y 
+ 1  1  1  1 
+
+-- assess() 全量品質指標（版本間欄位名稱可能不同，全印出來保險）--
+________________________________________________________________________________
+
+	Construct        AVE           R2          R2_adj    
+	F2               NA          0.1169        0.1017    
+	C                NA          0.2367        0.2099    
+	Y                NA          0.0198        0.0029    
+
+--------------------------- Distance and fit measures --------------------------
+
+	Geodesic distance             = 0.1108847
+	Squared Euclidean distance    = 0.4235815
+	ML distance                   = 0.5325334
+
+	Chi_square       = 31.41947
+	Chi_square_df    = 1.208441
+	CFI              = 0.9700156
+	CN               = 74.01915
+	GFI              = 0.8346422
+	IFI              = 0.9728678
+	NFI              = 0.8608175
+	NNFI             = 0.9481039
+	RMSEA            = 0.05943822
+	RMS_theta        = 0.07915628
+	SRMR             = 0.08775808
+
+	Degrees of freedom       = 26
+
+--------------------------- Model selection criteria ---------------------------
+
+	Construct        AIC          AICc          AICu     
+	F2             -4.4700       57.9585       -2.4359   
+	C             -11.2146       51.5127       -8.1370   
+	Y              1.7937        64.2223       3.8278    
+
+	Construct        BIC           FPE           GM      
+	F2             -0.2813       0.9282        67.1078   
+	C              -4.9315       0.8296        71.2306   
+	Y              5.9824        1.0304        70.7931   
+
+	Construct        HQ            HQc       Mallows_Cp  
+	F2             -2.8316       -2.4289       2.9192    
+	C              -8.7569       -7.9881       4.9476    
+	Y              3.4322        3.8349        6.6044    
+
+----------------------- Variance inflation factors (VIFs) ----------------------
+
+  Dependent construct: 'C'
+
+	Independent construct    VIF value 
+	F1                        1.1324   
+	F2                        1.1324   
+
+-------------- Variance inflation factors (VIFs) for modeB weights -------------
+
+  Construct: 'F1'
+
+	Weight    VIF value 
+	i1         1.5780   
+	i2         1.5686   
+	i3         1.5058   
+
+  Construct: 'F2'
+
+	Weight    VIF value 
+	i4         1.3331   
+	i5         1.3793   
+	i6         1.4663   
+
+  Construct: 'C'
+
+	Weight    VIF value 
+	cond1      2.4687   
+	cond2      2.2817   
+	cond3      2.4926   
+
+  Construct: 'Y'
+
+	Weight    VIF value 
+
+-------------------------- Effect sizes (Cohen's f^2) --------------------------
+
+  Dependent construct: 'F2'
+
+	Independent construct       f^2    
+	F1                        0.1324   
+
+  Dependent construct: 'C'
+
+	Independent construct       f^2    
+	F1                        0.0613   
+	F2                        0.1475   
+
+  Dependent construct: 'Y'
+
+	Independent construct       f^2    
+	F2                        0.0202   
+
+----------------------- Discriminant validity assessment -----------------------
+
+	Heterotrait-monotrait ratio of correlations matrix (HTMT matrix)
+
+NULL
+
+
+	Advanced heterotrait-monotrait ratio of correlations matrix (HTMT2 matrix)
+
+NULL
+
+
+------------------------------------ Effects -----------------------------------
+
+Estimated total effects:
+========================
+  Total effect    Estimate  Std. error   t-stat.   p-value
+  F2 ~ F1           0.3420          NA        NA        NA
+  C ~ F1           -0.3523          NA        NA        NA
+  C ~ F2           -0.3571          NA        NA        NA
+  Y ~ F1            0.0481          NA        NA        NA
+  Y ~ F2            0.1406          NA        NA        NA
+
+Estimated indirect effects:
+===========================
+  Indirect effect    Estimate  Std. error   t-stat.   p-value
+  C ~ F1              -0.1221          NA        NA        NA
+  Y ~ F1               0.0481          NA        NA        NA
+________________________________________________________________________________
+
+※ 關鍵行為問題：多多快跑的 rhoA(F1)=1.017597、一致 loading(i2)=1.151977，
+  兩者都 > 1。多多快跑的處置是『警告但不截斷』（自認對齊 cSEM）。
+  請看上面 cSEM 的輸出：是同樣不截斷、截斷至 1、還是直接報錯？
+  （如果 cSEM 這裡出現 warning 訊息，也請一併把 warning 全文回報。）
+
+
+########## [4] MICOM（group2：M vs F；簡單模型 F1 -> F2）##########
+★ 高優先抽驗項：step 2 的 c（多多快跑：各組權重估自組內標準化資料、分數算在 pooled 標準化資料）
+▃▃▃▃▃▃▃▃ Test for measurement invariance based on Henseler et al (2016) ▃▃▃▃▃▃▃▃ 
+
+________________________________________________________________________________
+-------- Test for measurement invariance based on Henseler et al (2016) --------
+======================== Step 1 - Configural invariance ========================
+
+	Configural invariance is a precondition for step 2 and 3.
+	Do not proceed to interpret results unless
+	configural invariance has been established.
+
+======================= Step 2 - Compositional invariance ======================
+
+Null hypothesis:
+
+       ┌─────────────────────────────────────────────────────────────────┐
+       │                                                                 │
+       │   H0: Compositional measurement invariance of the constructs.   │
+       │                                                                 │
+       └─────────────────────────────────────────────────────────────────┘
+
+Test statistic and p-value: 
+
+  Compared groups: F_M
+	         	              	 p-value by adjustment
+	Construct	Test statistic	    none
+	F1       	    0.6131    	  0.4968
+	F2       	    0.1537    	  0.3448
+	
+
+================= Step 3 - Equality of the means and variances =================
+
+Null hypothesis:
+
+          ┌────────────────────────────────────────────────────────────┐
+          │                                                            │
+          │   1. H0: Difference between group means is zero            │
+          │   2. H0: Log of the ratio of the group variances is zero   │
+          │                                                            │
+          └────────────────────────────────────────────────────────────┘
+
+Test statistic and critical values: 
+
+  Compared groups: F_M
+
+	Mean
+	         	              	 p-value by adjustment
+	Construct	Test statistic	    none
+	F1       	    0.0996    	  0.7250
+	F2       	    0.2241    	  0.3730
+	
+	Var
+	         	              	 p-value by adjustment
+	Construct	Test statistic	    none
+	F1       	    0.0425    	  0.8960
+	F2       	    -0.0872   	  0.7740
+	
+	
+Additional information:
+
+	Out of 1000 permutation runs, 928 where admissible.
+	See ?verify() for what constitutes an inadmissible result.
+
+	The seed used was: -2128499534
+
+	Number of observations per group:
+
+	Group      No. observations
+	F          30             
+	M          30             
+________________________________________________________________________________
+
+
+########## [5] MGD 多群組差異檢定（group2）##########
+註：多多快跑以 permutation 為主判準；Henseler MGA 回報單尾 P(b1<=b2)。
+    請確認 cSEM 的 Henseler p 是單尾還是雙尾。
+Error: unexpected end of input
+Execution halted
+exitcode=1
+
+---------- [3/3] NCA ----------
+
+Please cite the NCA package as:
+
+  Dul, J. & Buijs, G. 2026.
+  Necessary Condition Analysis.
+  R Package Version 5.0.2.
+  URL: https://cran.r-project.org/web/packages/NCA/
+
+This package is based on:
+  Dul, J. (2026). Necessary Condition Analysis - NCA.
+  Principles and Application. Chapman & Hall/CRC Press.
+  An online version is here:
+    https://jandul.github.io/NCA/
+
+For general information about NCA see:
+  https://www.erim.nl/nca
+
+Warning message:
+package 'NCA' was built under R version 4.6.1 
+== NCA 版本 ==
+[1] '5.0.2'
+
+== 資料檢核（應為 n=48）==
+n = 48 
+x: min = 12.9495  max = 86.334 
+y: min = 1  max = 48.7151 
+（多多快跑：xmin=12.9495 xmax=86.334 ymin=1 ymax=48.7151）
+
+
+########## [A] 實證 scope：ce_fdh + cr_fdh + permutation 檢定 ##########
+對照：scope=3501.548756 / CE zone=835.013354 / d_ce=0.238470 / peers=8
+      CR intercept=13.142064 / slope=0.516124 / CR zone=808.530148 / d_cr=0.230906
+      permutation p (CE-FDH d) = 0.005025
+
+Setting up parallelization, this might take a few seconds...                                                               Do test for  :  ce_fdh - xDone test for:  ce_fdh - x       
+Do test for  :  cr_fdh - xDone test for:  cr_fdh - x       
+
+---- nca_output（格式化摘要 ＋ 檢定 ＋ bottleneck）----
+
+---------------------------------------------------------------------------
+Bottleneck CE-FDH (cutoff = 0)
+Y y (percentage.range)
+1 x (percentage.range)
+---------------------------------------------------------------------------
+Y        1   
+0       NN  
+10      NN  
+20      NN  
+30      10.1
+40      10.1
+50      10.1
+60      10.1
+70      44.2
+80      55.2
+90      55.2
+100     86.6
+
+
+---------------------------------------------------------------------------
+Bottleneck CR-FDH (cutoff = 0)
+Y y (percentage.range)
+1 x (percentage.range)
+---------------------------------------------------------------------------
+Y        1   
+0       NN  
+10      NN  
+20      NN  
+30      NN  
+40      0.7 
+50      13.3
+60      25.9
+70      38.5
+80      51.1
+90      63.7
+100     76.3
+
+
+---------------------------------------------------------------------------
+NCA Parameters : x - y
+---------------------------------------------------------------------------
+                               
+Number of observations   48    
+Scope                  3501.549
+Xmin                     12.950
+Xmax                     86.334
+Ymin                      1.000
+Ymax                     48.715
+
+                   ce_fdh        cr_fdh     
+Ceiling zone      835.013       808.530     
+Effect size         0.238         0.231     
+# above             0             4         
+Slope                             0.516     
+Intercept                        13.142     
+p-value             0.001         0.011     
+p-accuracy          0.000         0.002     
+                                            
+Complexity          8             1         
+Fit               100  %         96.8%      
+Ceiling accuracy  100  %         91.7%  (44)
+Noise               0  %   (0)    6.2%   (3)
+Exceptions          0  %   (0)    2.1%   (1)
+Support            41.7%  (20)   22.9%  (11)
+Spread              0.43          0.41      
+Sharpness           1.00          0.75      
+                                            
+Abs. ineff.      1181.281      1884.488     
+Rel. ineff.        33.736        53.819     
+Condition ineff.   13.439        23.725     
+Outcome ineff.     23.449        39.454     
+
+dev.new(): using pdf(file="Rplots1.pdf")
+
+
+---- 原始結構傾印（欄位名稱以此為準）----
+List of 1
+ $ x:List of 3
+  ..$ global: num [1:6, 1] 48 3501.5 12.9 86.3 1 ...
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:6] "Number of observations" "Scope" "Xmin" "Xmax" ...
+  .. .. ..$ : chr ""
+  ..$ params:List of 50
+  .. ..$ : num 835
+  .. ..$ : num 0.238
+  .. ..$ : num 0
+  .. ..$ : num NA
+  .. ..$ : num NA
+  .. ..$ : num 0.0011
+  .. ..$ : num 0.00065
+  .. ..$ : logi NA
+  .. ..$ : num 8
+  .. ..$ : num 100
+  .. ..$ : num 100
+  .. ..$ : NULL
+  .. ..$ : num 0
+  .. ..$ : int 0
+  .. ..$ : num 0
+  .. ..$ : int 0
+  .. ..$ : num 41.7
+  .. ..$ : int 20
+  .. ..$ : num 0.43
+  .. ..$ : num 1
+  .. ..$ : logi NA
+  .. ..$ : num 1181
+  .. ..$ : num 33.7
+  .. ..$ : num 13.4
+  .. ..$ : num 23.4
+  .. ..$ : num 809
+  .. ..$ : num 0.231
+  .. ..$ : num 4
+  .. ..$ : num 0.516
+  .. ..$ : num 13.1
+  .. ..$ : num 0.0115
+  .. ..$ : num 0.00209
+  .. ..$ : logi NA
+  .. ..$ : num 1
+  .. ..$ : num 96.8
+  .. ..$ : num 91.7
+  .. ..$ : int 44
+  .. ..$ : num 6.2
+  .. ..$ : int 3
+  .. ..$ : num 2.1
+  .. ..$ : int 1
+  .. ..$ : num 22.9
+  .. ..$ : int 11
+  .. ..$ : num 0.41
+  .. ..$ : num 0.75
+  .. ..$ : logi NA
+  .. ..$ : num 1884
+  .. ..$ : num 53.8
+  .. ..$ : num 23.7
+  .. ..$ : num 39.5
+  .. ..- attr(*, "dim")= int [1:2] 25 2
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:25] "Ceiling zone" "Effect size" "# above" "Slope" ...
+  .. .. ..$ : chr [1:2] "ce_fdh" "cr_fdh"
+  ..$ names : chr [1:2] "x" "y"
+
+
+---- 直接取數（若上面版本欄位不同，看這裡）----
+params：
+                 ce_fdh       cr_fdh     
+Ceiling zone     835.0134     808.5301   
+Effect size      0.2384697    0.2309064  
+# above          0            4          
+Slope            NA           0.5161235  
+Intercept        NA           13.14206   
+p-value          0.00109989   0.01149885 
+p-accuracy       0.0006496564 0.002089603
+                 NA           NA         
+Complexity       8            1          
+Fit              100          96.82841   
+Ceiling accuracy 100          91.66667   
+Accuracy nof     NULL         44         
+Noise            0            6.2        
+Noise nof        0            3          
+Exceptions       0            2.1        
+Exceptions nof   0            1          
+Support          41.7         22.9       
+Support nof      20           11         
+Spread           0.43         0.41       
+Sharpness        1            0.75       
+                 NA           NA         
+Abs. ineff.      1181.281     1884.488   
+Rel. ineff.      33.73594     53.81871   
+Condition ineff. 13.43853     23.72505   
+Outcome ineff.   23.44855     39.45419   
+
+ceilings 區塊：
+NULL
+
+
+########## [B] ★★ CR-FDH 迴歸線：截距與斜率 ##########
+多多快跑對『CE-FDH peers（8 點）』做 OLS → intercept=13.142064, slope=0.516124
+若 R 的數字不同，代表迴歸樣本點選取慣例不同（是否含水平段上的觀察值）——
+這會連動 d_cr，是最可能出岔的一項。
+
+多多快跑的 8 個 peers（x, y）：
+        x       y
+1 12.9495 12.1885
+2 14.8039 15.1187
+3 20.3327 29.7227
+4 23.4081 33.6525
+5 45.3518 35.2303
+6 53.4781 44.0808
+7 61.7612 45.6817
+8 76.4722 48.7151
+
+對這 8 點做 OLS 的結果（本機重算，應等於 13.142064 / 0.516124）：
+(Intercept)           x 
+ 13.1420637   0.5161235 
+
+→ 請與上面 R NCA 報的 CR-FDH intercept/slope 比對。
+
+
+########## [C] bottleneck 表（所需 X 的實際值）##########
+對照（多多快跑，y 以 range% 表達）：10%→12.9495、40%→20.3327、80%→45.3518
+
+
+---------------------------------------------------------------------------
+Bottleneck CE-FDH (cutoff = 0)
+Y y (percentage.range)
+1 x (actual)
+---------------------------------------------------------------------------
+Y        1     
+0       NN    
+10      NN    
+20      NN    
+30      20.333
+40      20.333
+50      20.333
+60      20.333
+70      45.352
+80      53.478
+90      53.478
+100     76.472
+
+$ce_fdh
+     y      x
+1    0     NN
+2   10     NN
+3   20     NN
+4   30 20.333
+5   40 20.333
+6   50 20.333
+7   60 20.333
+8   70 45.352
+9   80 53.478
+10  90 53.478
+11 100 76.472
+
+attr(,"mpy")
+             y
+ [1,]  1.00000
+ [2,]  5.77151
+ [3,] 10.54302
+ [4,] 15.31453
+ [5,] 20.08604
+ [6,] 24.85755
+ [7,] 29.62906
+ [8,] 34.40057
+ [9,] 39.17208
+[10,] 43.94359
+[11,] 48.71510
+attr(,"flip.y")
+[1] FALSE
+
+
+########## [D] 理論界線 scope（敏感性檢查，不需對齊）##########
+多多快跑用實證 min/max。這裡跑一次理論界線版留底：x:[0,100]、y:[0,50]。
+（僅示範用的界線，非正式判準——目的是確認 d 對 scope 設定的敏感度。）
+
+
+---------------------------------------------------------------------------
+NCA Parameters : x - y
+---------------------------------------------------------------------------
+                                        
+Number of observations   48             
+Scope  emp / theo      3501.549 5000.000
+Xmin                     12.950    0.000
+Xmax                     86.334  100.000
+Ymin                      1.000    0.000
+Ymax                     48.715   50.000
+
+                   ce_fdh        cr_fdh     
+Ceiling zone     1594.340      1316.068     
+Effect size         0.319         0.263     
+# above             0             4         
+Slope                             0.516     
+Intercept                        13.142     
+                                            
+Complexity          8             1         
+Fit               100  %         82.5%      
+Ceiling accuracy  100  %         91.7%  (44)
+Noise               0  %   (0)    6.2%   (3)
+Exceptions          0  %   (0)    2.1%   (1)
+Support            41.7%  (20)   22.9%  (11)
+Spread              0.43          0.41      
+Sharpness           1.00          0.75      
+                                            
+Abs. ineff.      2108.471      2367.864     
+Rel. ineff.        42.169        47.357     
+Condition ineff.   23.528        28.587     
+Outcome ineff.     24.377        26.284     
+
+
+
+== 完成。請把 out/03_nca_out.txt 全文回報 ==
+exitcode=0
+
+---------- out\ listing ----------
+01_seminr_out.txt
+02_csem_out.txt
+03_nca_out.txt
+run-log.txt
+==================== RUN END ====================
