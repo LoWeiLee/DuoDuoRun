@@ -2103,10 +2103,12 @@ export default {
     employee: '員工滿意度調查',
     intervention: '教學介入實驗',
     multigroup: '多組比較研究',
+    factorial: '二因子實驗設計',
     categorical: '類別資料調查',
     employeeDesc: 'Likert 量表 + 部門 + 年資 — 適合相關、迴歸、α',
     interventionDesc: '實驗組／控制組 + 前後測 — 適合 t 檢定',
     multigroupDesc: '三組以上的依變項 — 適合 ANOVA',
+    factorialDesc: '2×3 交叉設計 + 前後測 — 適合雙因子 ANOVA、ANCOVA',
     categoricalDesc: '類別變數交叉 — 適合卡方',
   },
   common: {

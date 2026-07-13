@@ -76,6 +76,14 @@ export const ANALYSIS_DEMOS = {
     dataset: 'employee',
     settings: { yVar: 'performance_score', factorVar: 'department', covariateVars: ['tenure_years'] },
   },
+  // 2026-07-13 紅隊 R5 新增。two-way-anova 原本沒有示範設定——內建的四個資料集
+  // 都缺「兩個類別因子 ＋ 一個連續依變項」的組合——因此也逃過了全模組 UI 煙霧測試，
+  // 而它其實藏著與 ANCOVA 相同的 error 欄位撞名 bug（白畫面）。factorial 資料集補上這個缺口。
+  // 三個效果都刻意做成顯著：主效果 A（F=15.4）、主效果 B（F=17.3）、交互作用（F=5.4）。
+  'two-way-anova': {
+    dataset: 'factorial',
+    settings: { depVar: 'posttest', factorA: 'teaching_mode', factorB: 'feedback_type' },
+  },
   'repeated-anova': {
     dataset: 'intervention',
     settings: { conditionVars: ['pre_score', 'post_score'] },

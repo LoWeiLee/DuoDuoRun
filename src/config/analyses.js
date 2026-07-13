@@ -124,5 +124,6 @@ export const DEMO_DATASETS = [
   { id: 'employee',      i18nKey: 'employee',      descKey: 'employeeDesc' },
   { id: 'intervention',  i18nKey: 'intervention',  descKey: 'interventionDesc' },
   { id: 'multigroup',    i18nKey: 'multigroup',    descKey: 'multigroupDesc' },
+  { id: 'factorial',     i18nKey: 'factorial',     descKey: 'factorialDesc' },
   { id: 'categorical',   i18nKey: 'categorical',   descKey: 'categoricalDesc' },
 ]

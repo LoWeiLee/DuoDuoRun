@@ -27,14 +27,14 @@ function Config() {
 
   return (
     <div className="space-y-3">
-      <VarSelect variant="cream"
+      <VarSelect
         label={t.anova.config.depVar}
         value={state.depVar}
         onChange={(v) => update({ depVar: v })}
         options={numericOpts}
         placeholder={t.anova.config.pickDep}
       />
-      <VarSelect variant="cream"
+      <VarSelect
         label={t.anova.config.factor}
         value={state.factor}
         onChange={(v) => update({ factor: v })}

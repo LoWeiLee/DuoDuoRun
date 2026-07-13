@@ -554,7 +554,7 @@ function Config() {
                   aria-label={fillTemplate(c.ariaIntA, { n: ii + 1 })}
                   value={q.a}
                   onChange={(e) => setIntField(ii, 'a', e.target.value)}
-                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                 >
                   <option value="">{c.intFactor1}</option>
                   {constructOptions.map((name) => (
@@ -566,7 +566,7 @@ function Config() {
                   aria-label={fillTemplate(c.ariaIntB, { n: ii + 1 })}
                   value={q.b}
                   onChange={(e) => setIntField(ii, 'b', e.target.value)}
-                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                  className="flex-1 min-w-0 h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                 >
                   <option value="">{c.intFactor2}</option>
                   {constructOptions.map((name) => (
@@ -624,7 +624,7 @@ function Config() {
                 aria-label={fillTemplate(c.ariaPathFrom, { n: pi + 1 })}
                 value={p.from}
                 onChange={(e) => setPathEnd(pi, 'from', e.target.value)}
-                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.pickLv}</option>
                 {pathFromOptions.map((name) => (
@@ -636,7 +636,7 @@ function Config() {
                 aria-label={fillTemplate(c.ariaPathTo, { n: pi + 1 })}
                 value={p.to}
                 onChange={(e) => setPathEnd(pi, 'to', e.target.value)}
-                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                className="flex-1 min-w-0 h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.pickLv}</option>
                 {constructOptions
@@ -760,7 +760,7 @@ function Config() {
                     aria-label={c.ariaMgaGroupCol}
                     value={w5.groupColumn || ''}
                     onChange={(e) => setW5({ groupColumn: e.target.value, g1: undefined, g2: undefined })}
-                    className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                    className="w-full h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                   >
                     <option value="">{c.w5PickColumn}</option>
                     {Object.keys(variables).map((col) => (
@@ -776,7 +776,7 @@ function Config() {
                         aria-label={fillTemplate(c.ariaMgaGroupValue, { n: key === 'g1' ? 1 : 2 })}
                         value={w5[key] ?? ''}
                         onChange={(e) => setW5({ [key]: e.target.value })}
-                        className="flex-1 min-w-0 h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                        className="flex-1 min-w-0 h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
                       >
                         <option value="">{key === 'g1' ? c.w5G1 : c.w5G2}</option>
                         {groupValues.map((v) => (
@@ -830,7 +830,7 @@ function Config() {
                 aria-label={c.ariaIpmaTarget}
                 value={w5.target || ''}
                 onChange={(e) => setW5({ target: e.target.value })}
-                className="w-full h-8 px-2 text-xs rounded-md bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                className="w-full h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{c.w5Target}</option>
                 {endoOptions.map((name) => (

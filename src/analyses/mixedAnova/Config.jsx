@@ -56,7 +56,7 @@ function Config() {
           aria-label={t.mixedAnova.config.betweenVar}
           value={betweenVar || ''}
           onChange={(e) => update({ betweenVar: e.target.value || null })}
-          className="w-full h-9 px-3 pr-8 text-sm rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-200 focus-ring focus:border-duo-amber-500 cursor-pointer"
+          className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
         >
           <option value="">{t.mixedAnova.config.pickBetween}</option>
           {factorOpts.map((o) => (

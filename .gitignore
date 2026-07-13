@@ -35,3 +35,6 @@ _cmp*.mjs
 
 # Python cache（generate_reference.py）
 tests/__pycache__/
+
+# 本機維運腳本（雙擊執行用），不進公開 repo
+*.bat

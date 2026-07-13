@@ -128,7 +128,7 @@ function TransformDialogInner({ onClose }) {
                 aria-label={t.transform.sourceLabel}
                 value={source || ''}
                 onChange={(e) => setSource(e.target.value || null)}
-                className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 <option value="">{t.transform.pickSource}</option>
                 {sourceCandidates.map((c) => (
@@ -147,7 +147,7 @@ function TransformDialogInner({ onClose }) {
                 aria-label={t.transform.typeLabel}
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
+                className="w-full h-9 px-3 pr-8 text-sm rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 cursor-pointer"
               >
                 {TRANSFORM_TYPES.map((tp) => (
                   <option key={tp} value={tp}>
@@ -171,7 +171,7 @@ function TransformDialogInner({ onClose }) {
                     step="any"
                     value={rangeMin}
                     onChange={(e) => setRangeMin(e.target.value)}
-                    className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500"
+                    className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500"
                   />
                 </div>
                 <div>
@@ -183,7 +183,7 @@ function TransformDialogInner({ onClose }) {
                     step="any"
                     value={rangeMax}
                     onChange={(e) => setRangeMax(e.target.value)}
-                    className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500"
+                    className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500"
                   />
                 </div>
               </div>
@@ -197,7 +197,7 @@ function TransformDialogInner({ onClose }) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cream-200 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 font-mono"
+                className="w-full h-9 px-3 text-sm rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500 font-mono"
               />
               <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">
                 {t.transform.nameHint}

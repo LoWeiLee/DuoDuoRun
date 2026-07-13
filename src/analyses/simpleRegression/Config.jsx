@@ -19,14 +19,14 @@ function Config() {
 
   return (
     <div className="space-y-3">
-      <VarSelect variant="cream"
+      <VarSelect
         label={t.simpleReg.config.yLabel}
         value={state.yVar}
         onChange={(v) => update({ yVar: v })}
         options={opts.filter((o) => o.value !== state.xVar)}
         placeholder={t.simpleReg.config.pickY}
       />
-      <VarSelect variant="cream"
+      <VarSelect
         label={t.simpleReg.config.xLabel}
         value={state.xVar}
         onChange={(v) => update({ xVar: v })}

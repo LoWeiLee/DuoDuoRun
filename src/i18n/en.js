@@ -2046,10 +2046,12 @@ export default {
     employee: 'Employee satisfaction survey',
     intervention: 'Teaching intervention experiment',
     multigroup: 'Multi-group comparison study',
+    factorial: 'Two-factor experimental design',
     categorical: 'Categorical survey data',
     employeeDesc: 'Likert + department + tenure — for correlation, regression, α',
     interventionDesc: 'Treatment/control + pre/post — for t-test',
     multigroupDesc: 'Three or more groups — for ANOVA',
+    factorialDesc: '2×3 crossed design + pre/post — for two-way ANOVA, ANCOVA',
     categoricalDesc: 'Cross-tab of categorical vars — for chi-square',
   },
   common: {

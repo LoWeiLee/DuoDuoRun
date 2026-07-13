@@ -1,5 +1,5 @@
 /**
- * 匯出 4 個示範資料集為 CSV，輸出到 public/<dataset>.csv
+ * 匯出 5 個示範資料集為 CSV，輸出到 public/<dataset>.csv
  *
  * 用途：
  *   - 提供給使用者下載原始資料（部署後可從 https://loweilee.github.io/DuoDuoRun/<id>.csv 取得）
@@ -22,6 +22,7 @@ import { EMPLOYEE_DATA } from '../src/data/employee.js'
 import { INTERVENTION_DATA } from '../src/data/intervention.js'
 import { MULTIGROUP_DATA } from '../src/data/multigroup.js'
 import { CATEGORICAL_DATA } from '../src/data/categorical.js'
+import { FACTORIAL_DATA } from '../src/data/factorial.js'
 
 function escapeCell(v) {
   if (v === null || v === undefined) return ''
@@ -50,6 +51,7 @@ const datasets = [
   ['intervention.csv', INTERVENTION_DATA],
   ['multigroup.csv',   MULTIGROUP_DATA],
   ['categorical.csv',  CATEGORICAL_DATA],
+  ['factorial.csv',    FACTORIAL_DATA],
 ]
 
 for (const [filename, data] of datasets) {

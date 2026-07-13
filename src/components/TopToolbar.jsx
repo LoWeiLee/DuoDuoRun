@@ -381,7 +381,7 @@ function TopToolbar() {
         <button
           type="button"
           onClick={() => setHistoryOpen(true)}
-          className="h-8 px-3 text-xs font-medium rounded-md bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-cocoa-300 cursor-pointer transition"
+          className="h-8 px-3 text-xs font-medium rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 cursor-pointer transition"
           title={t.history.title}
         >
           {t.history.title}

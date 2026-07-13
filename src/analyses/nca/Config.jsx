@@ -19,14 +19,14 @@ function Config() {
 
   return (
     <div className="space-y-3">
-      <VarSelect variant="cream"
+      <VarSelect
         label={t.nca.config.xLabel}
         value={state.xVar}
         onChange={(v) => update({ xVar: v })}
         options={opts.filter((o) => o.value !== state.yVar)}
         placeholder={t.nca.config.pickX}
       />
-      <VarSelect variant="cream"
+      <VarSelect
         label={t.nca.config.yLabel}
         value={state.yVar}
         onChange={(v) => update({ yVar: v })}

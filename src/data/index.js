@@ -14,6 +14,7 @@ import { EMPLOYEE_DATA, EMPLOYEE_LABELS, EMPLOYEE_SCALE_VARS } from './employee'
 import { INTERVENTION_DATA, INTERVENTION_LABELS, INTERVENTION_VALUE_LABELS } from './intervention'
 import { MULTIGROUP_DATA, MULTIGROUP_LABELS, MULTIGROUP_VALUE_LABELS } from './multigroup'
 import { CATEGORICAL_DATA, CATEGORICAL_LABELS, CATEGORICAL_VALUE_LABELS } from './categorical'
+import { FACTORIAL_DATA, FACTORIAL_LABELS, FACTORIAL_VALUE_LABELS } from './factorial'
 
 const REGISTRY = {
   employee: {
@@ -33,6 +34,12 @@ const REGISTRY = {
     rows: MULTIGROUP_DATA,
     labels: MULTIGROUP_LABELS,
     valueLabels: MULTIGROUP_VALUE_LABELS,
+  },
+  factorial: {
+    id: 'factorial',
+    rows: FACTORIAL_DATA,
+    labels: FACTORIAL_LABELS,
+    valueLabels: FACTORIAL_VALUE_LABELS,
   },
   categorical: {
     id: 'categorical',
