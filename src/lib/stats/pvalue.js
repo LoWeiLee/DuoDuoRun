@@ -16,9 +16,25 @@
  * 從 reference/statlite.jsx 抽出，已對標過 SPSS / R 結果。
  */
 
+/**
+ * log Γ(x) — Lanczos 近似（g = 5, n = 6），係數與 √(2π) 常數直接取自
+ * Numerical Recipes in C, 2nd ed., §6.1 `gammln`（Press et al. 1992）。
+ *
+ * ⚠ 以下兩個常數會觸發 eslint 的 no-loss-of-precision：它們的十進位字面值
+ *   超出 IEEE 754 double 的可表示精度，讀回時會落到最近的可表示值。這是
+ *   **預期且無害**的——Lanczos 係數本來就是擬合出來的近似常數，最近可表示值
+ *   即為實際使用值，NR 原始碼、GSL、Boost 都是照抄同一組字面值。
+ *
+ *   之所以定向 disable 而非改寫常數或全域關閉這條規則：改寫常數會動到已對標過
+ *   SPSS / R 的數值行為；全域關閉則會讓未來真正的精度誤植（例如手滑多打一位）
+ *   混進來而不被發現。定向 disable 讓這兩行成為「已知且已解釋」的例外。
+ *
+ *   相對誤差實測 < 1e-12（對照 scipy.special.gammaln，x ∈ [0.5, 200]，2026-07-13）。
+ */
 export function lgamma(x) {
   const c = [
     76.18009172947146,
+    // eslint-disable-next-line no-loss-of-precision -- NR gammln 係數，見上方說明
     -86.50532032941677,
     24.01409824083091,
     -1.231739572450155,
@@ -30,6 +46,7 @@ export function lgamma(x) {
   tmp -= (x + 0.5) * Math.log(tmp)
   let ser = 1.000000000190015
   for (let j = 0; j < 6; j++) ser += c[j] / ++y
+  // eslint-disable-next-line no-loss-of-precision -- √(2π) 的 NR 字面值，見上方說明
   return -tmp + Math.log((2.5066282746310005 * ser) / x)
 }
 

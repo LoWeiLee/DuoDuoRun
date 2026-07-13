@@ -385,16 +385,35 @@ function nullModelFit(S, logDetS) {
  * 級數展開：P(X² ≥ x | df, λ) = Σ_{j=0..} e^(−λ/2) (λ/2)^j / j! · P(χ²_{df+2j} ≥ x)
  * 收斂條件：j-th 項 < 1e-10 或 j > 200
  */
-function pChiSqNoncentral(x, df, ncp) {
-  if (ncp <= 0) return pChiSq(x, df)
+export function pChiSqNoncentral(x, df, ncp) {
+  if (!(ncp > 0)) return pChiSq(x, df)
   const lambda2 = ncp / 2
-  let term = Math.exp(-lambda2)
-  let sum = term * pChiSq(x, df)
-  for (let j = 1; j < 200; j++) {
-    term *= lambda2 / j
-    const inc = term * pChiSq(x, df + 2 * j)
-    sum += inc
-    if (term < 1e-12 && inc < 1e-12) break
+
+  // 極端 ncp：非中央分布已整體遠離 x，尾機率飽和 → 直接回傳，避免長級數
+  const meanNC = df + ncp
+  const sdNC = Math.sqrt(2 * (df + 2 * ncp))
+  if (meanNC - x > 12 * sdNC) return 1
+  if (x - meanNC > 12 * sdNC) return 0
+
+  // Poisson 混合：P(X ≥ x) = Σ_j w_j · P(χ²_{df+2j} ≥ x)，w_j = Poisson(j; λ/2)
+  //
+  // ⚠ 2026-07-13 紅隊修復。修復前寫成
+  //     let term = Math.exp(-lambda2); ... if (term < 1e-12 && inc < 1e-12) break
+  //   Poisson 權重的眾數在 j ≈ lambda2，但 w_0 = exp(−lambda2) 在 ncp ≳ 60 時
+  //   已 < 1e-12 → 迴圈在 j = 1 就 break，級數在爬上眾數之前被砍掉，整個函式
+  //   對 ncp ≳ 100 塌成 ~0（實測 ncp = 100 回傳 7e-21，正確值 ≈ 1）。
+  //   後果：rmseaCI 的 bisection 一路倍增撞上 1e6 上限，RMSEA 90% CI 印出
+  //   [59.954, 59.954] 這種超出定義域的值；大模型的 close-fit p 也會誤報為 0。
+  //   修法：(1) 只有跑過眾數（j > lambda2）才允許截斷；
+  //         (2) 權重走 log 域，避免 lambda2 > 709 時 exp(−lambda2) 下溢為 0。
+  const jMax = Math.ceil(lambda2 + 10 * Math.sqrt(lambda2 + 1)) + 50
+  const LOG_TINY = Math.log(1e-15)
+  let logW = -lambda2 // log w_0
+  let sum = 0
+  for (let j = 0; j <= jMax; j++) {
+    if (j > 0) logW += Math.log(lambda2) - Math.log(j)
+    if (logW > -745) sum += Math.exp(logW) * pChiSq(x, df + 2 * j)
+    if (j > lambda2 && logW < LOG_TINY) break
   }
   return Math.min(1, Math.max(0, sum))
 }
@@ -403,7 +422,7 @@ function pChiSqNoncentral(x, df, ncp) {
  * RMSEA 90% CI：以 bisection 找 ncp 使 P(χ²_df,ncp ≥ chi2) = 0.05 / 0.95
  * RMSEA = sqrt(ncp / (df · (N-1)))
  */
-function rmseaCI(chi2, df, n, level = 0.9) {
+export function rmseaCI(chi2, df, n, level = 0.9) {
   if (chi2 <= 0 || df <= 0) return { low: NaN, high: NaN }
   const alpha = (1 - level) / 2
   const findNcp = (target) => {
@@ -421,14 +440,16 @@ function rmseaCI(chi2, df, n, level = 0.9) {
     }
     return (lo + hi) / 2
   }
-  // 下界：尋 ncp 使 P(χ² ≥ chi2 | ncp) = 1 − α (95%)
-  // 上界：尋 ncp 使 P(χ² ≥ chi2 | ncp) = α (5%)
-  let ncpLow = 0
-  if (pChiSqNoncentral(chi2, df, 0) < 1 - alpha) {
-    // 卡方已很大 → 下界 ncp > 0
-    ncpLow = findNcp(1 - alpha)
-  }
-  const ncpHigh = findNcp(alpha)
+  // MacCallum, Browne & Sugawara (1996)：ncp 的 90% CI 為 [λ_L, λ_U]，其中
+  //   λ_L 使 P(χ²_df,λ ≥ chi2) = α      (=.05)  → 下界
+  //   λ_U 使 P(χ²_df,λ ≥ chi2) = 1 − α  (=.95)  → 上界
+  // 尾機率 P(χ² ≥ chi2 | ncp) 對 ncp 遞增，故 λ_L < λ_U。
+  //
+  // ⚠ 2026-07-13 紅隊修復：修復前上下界標籤對調（ncpLow 取 1−α、ncpHigh 取 α），
+  //   會得到 low > high 的反轉區間。見 docs/validation-report-v1.md。
+  const sf0 = pChiSqNoncentral(chi2, df, 0)
+  const ncpLow = sf0 < alpha ? findNcp(alpha) : 0
+  const ncpHigh = sf0 < 1 - alpha ? findNcp(1 - alpha) : 0
   const denom = df * Math.max(n - 1, 1)
   return {
     low: Math.sqrt(Math.max(0, ncpLow) / denom),
@@ -440,7 +461,7 @@ function rmseaCI(chi2, df, n, level = 0.9) {
  * RMSEA p 值（對 H0: RMSEA ≤ 0.05 的「close fit」檢定）
  * P(χ² ≥ chi2 | ncp_close)，ncp_close = 0.05² · df · (N − 1)
  */
-function rmseaPValue(chi2, df, n) {
+export function rmseaPValue(chi2, df, n) {
   if (df <= 0) return NaN
   const ncpClose = 0.05 * 0.05 * df * Math.max(n - 1, 1)
   return pChiSqNoncentral(chi2, df, ncpClose)

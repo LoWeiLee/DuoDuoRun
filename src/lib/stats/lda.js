@@ -35,8 +35,21 @@
  *   Bartlett 近似：χ² = − (N − 1 − (p + k) / 2) · ln(Λ_j)
  *                    df = (p − j + 1)(k − j)
  *
- *   Standardized coefficients：對 raw eigenvector w 縮放使 wᵀ S_p w = 1
- *   Structure coefficients：predictor 與 discriminant score 之相關
+ *   Unstandardized coefficients：對 raw eigenvector w 縮放使 wᵀ S_p w = 1
+ *     （＝ SPSS「未標準化典型判別函數係數」；判別分數即由此係數計算）
+ *   Standardized coefficients：unstandardized × 各預測變項的組內合併標準差
+ *     b*_j = b_j · √(S_p[j][j])
+ *     （＝ SPSS「標準化典型判別函數係數」；用於比較預測變項的相對重要性）
+ *   Structure coefficients：predictor 與 discriminant score 的**組內合併**
+ *     （pooled within-group）相關 — SPSS / R MASS 的標準定義。先對各組做組內
+ *     置中（減去該組平均）再求相關，去除組間差異的影響。
+ *
+ *   ⚠ 2026-07-13 紅隊修復：修復前 standardizedCoefficients 回傳的其實是
+ *     SPSS 的「未標準化」係數（保留原始單位），使用者會誤判預測變項的相對重要性
+ *     （fixture main / group3 ~ x1+x2+x3 函數1：[−.091, .100, .047] 讀起來像 x3
+ *     最不重要，真正的標準化係數 [−.724, .754, .718] 顯示三者貢獻相當）；
+ *     structureCoefficients 則用全樣本相關而非組內合併相關。
+ *     見 docs/validation-report-v1.md。
  *
  *   Classification（線性判別分數）：
  *     δ_g(x) = xᵀ S_p^-1 μ_g − ½ μ_gᵀ S_p^-1 μ_g + log(π_g)
@@ -223,6 +236,35 @@ function pearson(xs, ys) {
   return denom > 0 ? num / denom : NaN
 }
 
+/**
+ * 組內合併（pooled within-group）相關：先把每個觀察值減去其所屬組的平均
+ * （組內置中），再對置中後的資料求 Pearson 相關。這是 SPSS 結構矩陣的定義。
+ */
+function pooledWithinCorr(xs, ys, groupIdx, k) {
+  const n = xs.length
+  const sumX = new Array(k).fill(0)
+  const sumY = new Array(k).fill(0)
+  const cnt = new Array(k).fill(0)
+  for (let i = 0; i < n; i++) {
+    const g = groupIdx[i]
+    sumX[g] += xs[i]
+    sumY[g] += ys[i]
+    cnt[g] += 1
+  }
+  let sxy = 0, sxx = 0, syy = 0
+  for (let i = 0; i < n; i++) {
+    const g = groupIdx[i]
+    if (cnt[g] === 0) continue
+    const dx = xs[i] - sumX[g] / cnt[g]
+    const dy = ys[i] - sumY[g] / cnt[g]
+    sxy += dx * dy
+    sxx += dx * dx
+    syy += dy * dy
+  }
+  const denom = Math.sqrt(sxx * syy)
+  return denom > 0 ? sxy / denom : NaN
+}
+
 /* ─────────────────────────  主要 LDA  ───────────────────────── */
 
 export function lda(rows, groupVar, predictors) {
@@ -366,8 +408,8 @@ export function lda(rows, groupVar, predictors) {
   let cumProportion = 0
 
   // 預先存 standardized & raw eigenvectors，以便算 group centroids
-  const rawEigenvectors = [] // length numFunctions, each length p
-  const stdEigenvectors = [] // 相同 shape
+  const rawEigenvectors = []   // length numFunctions, each length p（任意尺度特徵向量）
+  const unstdEigenvectors = [] // 未標準化係數（wᵀ S_p w = 1）— 投影判別分數 / centroids 用
   const scoresPerFunction = [] // numFunctions × N (列 = function, 欄 = case)
 
   for (let i = 0; i < numFunctions; i++) {
@@ -386,17 +428,22 @@ export function lda(rows, groupVar, predictors) {
     let scale = 0
     for (let a = 0; a < p; a++) scale += w[a] * Spw[a]
     const norm = scale > 0 ? Math.sqrt(scale) : 1
-    const wStd = w.map((v) => v / norm)
+    // 未標準化係數（SPSS unstandardized）：縮放使 wᵀ S_p w = 1，判別分數由此計算
+    const wUnstd = w.map((v) => v / norm)
+    // 標準化係數（SPSS standardized）：未標準化 × 該預測變項的組內合併 SD
+    const wStd = wUnstd.map((v, j) => v * Math.sqrt(Math.max(0, Sp[j][j])))
 
     rawEigenvectors.push(w)
-    stdEigenvectors.push(wStd)
+    unstdEigenvectors.push(wUnstd)
 
-    // 每個 case 的判別分數（以 standardized vector 計算，但中心化於 grandMean
-    // 以呈現「離全平均的偏移」，方便算 structure matrix 與 centroids）
+    // 每個 case 的判別分數：必須用**未標準化**係數（wᵀ S_p w = 1）投影，
+    // 中心化於 grandMean 以呈現「離全平均的偏移」。
+    // ⚠ 不可用標準化係數 wStd——它是 wUnstd 與各變項組內 SD 的逐元素乘積，
+    //   方向與判別軸不同，會算出錯誤的 structure matrix 與 centroids。
     const scores = new Array(allX.length).fill(0)
     for (let n = 0; n < allX.length; n++) {
       let s = 0
-      for (let j = 0; j < p; j++) s += (allX[n][j] - grandMean[j]) * wStd[j]
+      for (let j = 0; j < p; j++) s += (allX[n][j] - grandMean[j]) * wUnstd[j]
       scores[n] = s
     }
     scoresPerFunction.push(scores)
@@ -406,11 +453,14 @@ export function lda(rows, groupVar, predictors) {
     const propVar = lambdaSum > 0 ? lam / lambdaSum : NaN
     if (Number.isFinite(propVar)) cumProportion += propVar
 
-    // structure coefficients = corr(predictor, discriminant score)
+    // structure coefficients = 預測變項與判別分數的組內合併（pooled within-group）
+    // 相關（SPSS / R MASS 定義）。全樣本相關另存為 structureCoefficientsTotal 供對照。
     const structure = new Array(p).fill(NaN)
+    const structureTotal = new Array(p).fill(NaN)
     for (let j = 0; j < p; j++) {
       const xs = allX.map((r) => r[j])
-      structure[j] = pearson(xs, scores)
+      structure[j] = pooledWithinCorr(xs, scores, allGroupIdx, k)
+      structureTotal[j] = pearson(xs, scores)
     }
 
     // Sequential Wilks' Λ_j = Π_{i ≥ j} 1 / (1 + λ_i)
@@ -430,8 +480,10 @@ export function lda(rows, groupVar, predictors) {
       proportionOfVariance: propVar,
       cumulativeProportion: cumProportion,
       rawCoefficients: w,
+      unstandardizedCoefficients: wUnstd,
       standardizedCoefficients: wStd,
       structureCoefficients: structure,
+      structureCoefficientsTotal: structureTotal,
       wilksLambda: wilks,
       chi2,
       df,
@@ -445,7 +497,7 @@ export function lda(rows, groupVar, predictors) {
     const row = new Array(numFunctions).fill(0)
     for (let i = 0; i < numFunctions; i++) {
       let s = 0
-      for (let j = 0; j < p; j++) s += (groupMeans[g][j] - grandMean[j]) * stdEigenvectors[i][j]
+      for (let j = 0; j < p; j++) s += (groupMeans[g][j] - grandMean[j]) * unstdEigenvectors[i][j]
       row[i] = s
     }
     groupCentroids.push(row)

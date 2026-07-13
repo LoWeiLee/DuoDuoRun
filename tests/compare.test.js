@@ -24,8 +24,18 @@ const TOL = {
   'zprop_two.p': 1e-4,
   'ks_lilliefors.D': 1e-4,
   'shapiro_wilk.p': 1e-5, // Royston 近似 vs scipy
-  'efa_pca_varimax.absLoadingsSorted': 5e-3, // varimax 收斂容差差異
-  'efa_pca_varimax.communalities': 1e-4,
+  // 2026-07-13 紅隊：efa_pca_varimax 原本放寬到 5e-3（absLoadings）／1e-4（communalities），
+  // 查證後發現差距來自 factor_analyzer 的 varimax 預設容差沒收斂完全，不是 JS 錯
+  // （JS 解的 varimax 準則值反而較高）。基準改用 rotation tol=1e-12 重生後，
+  // 兩者最大相對誤差 2.7e-7 → 容差收回預設 1e-6，不再需要條目。
+  'efa_pca_varimax_k3.loadings': 1e-4, // 第 3 因子有 ~0.005 的極小負荷，絕對差僅 2e-7、相對差被放大
+  'cfa_2factor_loadings.lambdaStd_i1': 5e-4, // ML 最佳化收斂細節（semopy vs JS）；絕對差 < 1.1e-4
+  'cfa_2factor_loadings.lambdaStd_i2': 5e-4,
+  'cfa_2factor_loadings.lambdaStd_i3': 5e-4,
+  'cfa_2factor_loadings.lambdaStd_i4': 5e-4,
+  'cfa_2factor_loadings.lambdaStd_i5': 5e-4,
+  'cfa_2factor_loadings.lambdaStd_i6': 5e-4,
+  'cfa_2factor_loadings.factorCorr_F1F2': 5e-4,
   'logistic_regression.p_x1': 1e-5,
 }
 

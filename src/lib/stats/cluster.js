@@ -16,12 +16,13 @@
  *
  * 演算法概要：
  *   k-means (Lloyd):
- *     1. k-means++ seeding：第 1 顆種子均勻隨機；第 j 顆依與最近既有種子的
- *        距離平方加權抽樣
+ *     1. greedy k-means++ seeding：第 1 顆種子均勻隨機；第 j 顆依與最近既有種子的
+ *        距離平方加權抽出 2+⌊ln k⌋ 個候選，取加入後 potential 最小者
+ *        （＝ scikit-learn init='k-means++' 的實作）
  *     2. assign each x_i to nearest centroid (Euclidean)
  *     3. update centroids = group means
  *     4. repeat until assignments unchanged or 100 iterations
- *     5. 重啟 10 次，保留 WSS 最小者
+ *     5. 重啟 25 次，保留 WSS 最小者
  *
  *   Hierarchical (Ward):
  *     1. start with n clusters, each containing one point
@@ -130,37 +131,66 @@ function euclid(a, b) { return Math.sqrt(euclid2(a, b)) }
 /* ─────────────────────────  k-means  ───────────────────────── */
 
 /**
- * k-means++ seeding：first centroid uniform；後續以與最近既有種子的
- * 平方距離加權抽樣（標準 Arthur & Vassilvitskii 2007）。
+ * greedy k-means++ seeding（Arthur & Vassilvitskii 2007 §3.1 的 local-trials 變體，
+ * 亦即 scikit-learn `init='k-means++'` 的實際實作）。
+ *
+ * 第 1 顆種子均勻隨機；第 j 顆先依「與最近既有種子的平方距離」加權抽出
+ * nTrials 個**候選**，再取「加入後全樣本 potential（Σ 最近距離平方）最小」者。
+ * nTrials = 2 + ⌊ln k⌋，與 scikit-learn 同式。
+ *
+ * ⚠ 2026-07-13 紅隊修復：修復前為原始的單抽 k-means++（每顆種子只抽一個候選），
+ *   收斂品質系統性劣於 sklearn 同等重啟數。fixture（x1,x2,x3、10 次重啟、
+ *   30 個基礎種子的中位數 WSS）：
+ *     k=7  單抽 45.60 / greedy 45.35 / sklearn n_init=10 45.45
+ *     k=8  單抽 40.94 / greedy 39.77 / sklearn n_init=10 39.78
+ *     k=10 單抽 33.16 / greedy 32.06 / sklearn n_init=10 32.03
+ *   單一不利種子下差距更大（原 k=7 的手肘點 49.10，全域最佳約 44.1）。
+ *   改為 greedy 後與 sklearn 同級。見 docs/validation-report-v1.md。
  */
 function kmeansPPSeed(X, k, rand) {
   const n = X.length
+  const nTrials = 2 + Math.floor(Math.log(k))
   const centroids = []
-  const firstIdx = Math.floor(rand() * n)
-  centroids.push([...X[firstIdx]])
-  const minD2 = new Array(n)
+  centroids.push([...X[Math.floor(rand() * n)]])
+  let minD2 = new Array(n)
   for (let i = 0; i < n; i++) minD2[i] = euclid2(X[i], centroids[0])
+
+  // 依 minD2 加權抽一個索引
+  const drawIdx = (total) => {
+    if (total <= 0) return Math.floor(rand() * n) // 退化：所有點重合
+    let r = rand() * total
+    for (let i = 0; i < n; i++) {
+      r -= minD2[i]
+      if (r <= 0) return i
+    }
+    return n - 1
+  }
+
   for (let c = 1; c < k; c++) {
     let total = 0
     for (let i = 0; i < n; i++) total += minD2[i]
-    if (total <= 0) {
-      // 退化情況：所有點都重合 — 隨機挑一個
-      centroids.push([...X[Math.floor(rand() * n)]])
-    } else {
-      let r = rand() * total
-      let pickIdx = n - 1
+
+    let bestIdx = -1
+    let bestPotential = Infinity
+    let bestMinD2 = null
+    for (let t = 0; t < nTrials; t++) {
+      const idx = drawIdx(total)
+      // 試算把 X[idx] 納為種子後的 potential 與新的 minD2
+      const cand = new Array(n)
+      let potential = 0
       for (let i = 0; i < n; i++) {
-        r -= minD2[i]
-        if (r <= 0) { pickIdx = i; break }
+        const d = euclid2(X[i], X[idx])
+        cand[i] = d < minD2[i] ? d : minD2[i]
+        potential += cand[i]
       }
-      centroids.push([...X[pickIdx]])
+      if (potential < bestPotential) {
+        bestPotential = potential
+        bestIdx = idx
+        bestMinD2 = cand
+      }
     }
-    // 更新 minD2
-    const newC = centroids[centroids.length - 1]
-    for (let i = 0; i < n; i++) {
-      const d = euclid2(X[i], newC)
-      if (d < minD2[i]) minD2[i] = d
-    }
+    centroids.push([...X[bestIdx]])
+    minD2 = bestMinD2
   }
   return centroids
 }
@@ -225,9 +255,15 @@ function runLloyd(X, k, initCentroids, maxIter = 100) {
 /**
  * k-means with multiple restarts。回傳 WSS 最小的解。
  * X 為（已視需要標準化的）數值矩陣；不做尺度轉換。
+ *
+ * 重啟次數預設 25（2026-07-13 紅隊由 10 提高）。搭配 greedy k-means++ 後，
+ * fixture 上各 k 的解已達到或優於 sklearn `n_init=25`；10 次時仍會撞到不利種子
+ * （k=8 落在 41.73，25 次為 40.07），在手肘圖上造成假轉折。
+ * 成本：n=60 的完整 clusterAnalysis（含 k=2..10 的 elbow）約 4 ms → 10 ms，
+ * 與 n 呈線性。需要更快時可由 opts.restarts / opts.elbowRestarts 覆寫。
  */
 function kmeansCore(X, k, opts = {}) {
-  const restarts = opts.restarts ?? 10
+  const restarts = opts.restarts ?? 25
   const maxIter = opts.maxIter ?? 100
   const seed = opts.seed ?? (X.length * 1000 + (X[0]?.length || 0) * 31 + k)
   const rand = mulberry32(seed)
@@ -526,6 +562,11 @@ export function hierarchicalWard(rows, vars, k, opts = {}) {
 /**
  * 為不同 k 值計算 WSS（elbow 分析）。
  * Run the chosen method across k = 2..min(10, n − 1) for an elbow plot.
+ *
+ * ⚠ 重啟次數必須與主分析一致（kmeansCore 預設 10）。2026-07-13 紅隊修復前這裡
+ *   寫死 5 次，導致 elbow 落在較差的區域最佳解——手肘圖在選定的 k 上顯示的 WSS
+ *   與報表主數字不一致（fixture main / x1,x2,x3 / k=3：elbow 87.156 vs 報表 85.730），
+ *   且整條曲線被系統性抬高、手肘形狀失真。見 docs/validation-report-v1.md。
  */
 function computeElbow(rows, vars, method, opts) {
   const Xraw = extractMatrix(rows, vars)
@@ -538,7 +579,8 @@ function computeElbow(rows, vars, method, opts) {
   const out = []
   for (let kk = 2; kk <= maxK; kk++) {
     if (method === 'kmeans') {
-      const sol = kmeansCore(X, kk, { ...opts, restarts: opts.elbowRestarts ?? 5 })
+      // restarts 與主分析同步（預設 10），確保 elbow 曲線與報表 WSS 對得起來
+      const sol = kmeansCore(X, kk, { ...opts, restarts: opts.elbowRestarts ?? opts.restarts ?? 25 })
       out.push({ k: kk, wss: sol.wss })
     } else {
       const { assignments } = hierarchicalWardCore(X, kk)

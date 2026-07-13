@@ -44,9 +44,14 @@
 
 1. **單次 bash 呼叫 45 秒上限，背景程序不跨呼叫存活**（bwrap
    --die-with-parent --unshare-pid；nohup/setsid 無效，`pgrep -f` 會誤匹配
-   自己）。完整 `generate_reference.py`（含 semopy）會超時 →
-   **用 `tests/run_pls_ref_only.py`**（exec 抽取 PLS 區塊，2–3 秒，
-   單一事實來源不變）。
+   自己）。
+   ~~完整 `generate_reference.py`（含 semopy）會超時~~ —— **此敘述已過時**
+   （2026-07-13 實測）：全量 `python3 tests/generate_reference.py` 在沙盒
+   **6.5 秒**跑完 74 組基準，且既有基準值零漂移（可安全全量重生）。
+   `run_pls_ref_only.py` / `run_cta_ref_only.py` 仍保留為「只重生單一區塊」的
+   快捷路徑，但不再是規避超時的必要手段。
+   注意：沙盒重建後 Python 套件會消失，需先
+   `pip install numpy pandas scipy scikit-learn statsmodels pingouin factor_analyzer semopy plspm --break-system-packages`。
 2. **掛載目錄禁止 unlink**：`git stash` 會半途失敗並打壞 .git/index。
    修復：以 Cowork 的檔案刪除授權工具開權限 → `rm .git/index.lock .git/index`
    → `git reset`。**比對 HEAD 用 `git show HEAD:path`，永遠不要 stash**。

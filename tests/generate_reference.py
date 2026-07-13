@@ -355,15 +355,21 @@ bart_chi2, bart_p = calculate_bartlett_sphericity(items)
 kmo_per, kmo_overall = calculate_kmo(items)
 corr = items.corr().values
 eigvals = np.sort(np.linalg.eigvalsh(corr))[::-1]
-fa = FactorAnalyzer(n_factors=2, rotation="varimax", method="principal")
+# ⚠ 2026-07-13 紅隊修復：factor_analyzer 的 varimax 預設容差沒收斂完全
+#   （準則值 2.4540048 < 嚴格收斂的 2.4540421），與 JS 的差距 1.75e-3 迫使
+#   compare.test.js 把容差放寬到 5e-3，反而掩蓋了真實的防線。查證方式：以
+#   tol=1e-12 的 SVD varimax 重算，得到的正是 JS 的解（差 5.3e-7）→ 錯的是基準。
+#   改用 rotation_kwargs 收緊容差後，容差得以從 5e-3 收回 1e-6。
+fa = FactorAnalyzer(n_factors=2, rotation="varimax", method="principal",
+                    rotation_kwargs={"tol": 1e-12, "max_iter": 1000})
 fa.fit(items)
 load = fa.loadings_
-put("efa_pca_varimax", "factor_analyzer(principal, varimax)",
+put("efa_pca_varimax", "factor_analyzer(principal, varimax, rotation tol=1e-12)",
     bartlettChi2=bart_chi2, bartlettP=bart_p, kmo=kmo_overall,
     eig1=eigvals[0], eig2=eigvals[1], eig3=eigvals[2],
     # 轉軸後負荷（絕對值排序無關符號/因子順序，比對時取絕對值）
-    absLoadingsSorted=sorted(np.abs(load).max(axis=1).round(6).tolist()),
-    communalities=sorted(fa.get_communalities().round(6).tolist()))
+    absLoadingsSorted=sorted(np.abs(load).max(axis=1).round(8).tolist()),
+    communalities=sorted(fa.get_communalities().round(8).tolist()))
 
 # --- MANOVA
 from statsmodels.multivariate.manova import MANOVA
@@ -1648,6 +1654,206 @@ try:
 except Exception as e:
     put("pls_cta", f"CTA baseline FAILED: {e}")
 # --- CTA-PLS 基準區塊 迄 ------------------------------------------------------
+
+# ---------------------------------------------------------------
+# 紅隊 R1 增補（2026-07-13）：cluster / lda 首次建立基準、EFA 補設定、
+# CFA 擴充至 loadings 與非中央 χ² 機制。見 docs/redteam-audit-workplan-v1.md。
+# ---------------------------------------------------------------
+
+# 共用正規化：消除「與統計內容無關」的任意性，讓逐值比對可行
+def _canon_labels(lab):
+    """分群標籤依首次出現順序重新編號 → 兩邊的分割相同則陣列逐值相等。"""
+    m, out, nxt = {}, [], 0
+    for v in lab:
+        if v not in m:
+            m[v] = nxt; nxt += 1
+        out.append(m[v])
+    return out
+
+def _canon_cols(L):
+    """負荷/係數矩陣（列=變項、欄=因子）：每欄符號使 |最大| 元素為正，
+    欄序依平方和遞減。消除因子順序與符號的任意性。"""
+    L = np.array(L, float).copy()
+    for j in range(L.shape[1]):
+        if L[np.argmax(np.abs(L[:, j])), j] < 0:
+            L[:, j] *= -1
+    return L[:, np.argsort(-(L ** 2).sum(0))]
+
+# --- 集群分析（k-means / Ward 階層）：JS 以樣本 SD（ddof=1）做 z-score
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.metrics import silhouette_score
+
+_cl_vars = ["x1", "x2", "x3"]
+_Xcl = mainc[_cl_vars].values.astype(float)
+_Zcl = (_Xcl - _Xcl.mean(0)) / _Xcl.std(0, ddof=1)
+_tss = float(((_Zcl - _Zcl.mean(0)) ** 2).sum())
+
+def _cluster_metrics(lab, k):
+    cent = np.array([_Zcl[lab == c].mean(0) for c in range(k)])
+    wss_pc = np.array([((_Zcl[lab == c] - cent[c]) ** 2).sum() for c in range(k)])
+    o = np.argsort(np.bincount(lab, minlength=k))  # 依群大小排序，消除標籤任意性
+    return dict(
+        wss=float(wss_pc.sum()), tss=_tss, bss=_tss - float(wss_pc.sum()),
+        silhouette=float(silhouette_score(_Zcl, lab)),
+        sizesSorted=sorted(np.bincount(lab, minlength=k).tolist()),
+        wssPerClusterSorted=sorted(np.round(wss_pc, 8).tolist()),
+        labelsCanonical=_canon_labels(lab.tolist()),
+    )
+
+# k-means：n_init=50 取近全域最佳解。JS 用 k-means++ ＋ 10 次重啟，
+# 在 k=2/3（fixture 的實際結構）會收斂到同一組全域最佳解。
+_km = KMeans(n_clusters=3, init="k-means++", n_init=50, max_iter=300, random_state=0).fit(_Zcl)
+put("cluster_kmeans_k3",
+    "sklearn.KMeans(k=3, k-means++, n_init=50) on z-scored(ddof=1) x1,x2,x3；"
+    "silhouette 由 sklearn.metrics.silhouette_score（歐氏）計算。"
+    "標籤以「首次出現順序」正規化後逐值比對（分割相同即完全相等，ARI=1）",
+    **_cluster_metrics(_km.labels_, 3))
+
+# Ward 階層：scipy/sklearn 的 ward linkage 距離為 sqrt(2·ΔSS)，與 JS 儲存的 ΔSS
+# 差一個單調變換 → 合併順序與切樹結果完全相同。
+_ag = AgglomerativeClustering(n_clusters=3, linkage="ward").fit(_Zcl)
+_ward_elbow = []
+for _k in range(2, 11):
+    _a = AgglomerativeClustering(n_clusters=_k, linkage="ward").fit(_Zcl).labels_
+    _c = np.array([_Zcl[_a == j].mean(0) for j in range(_k)])
+    _ward_elbow.append(float(sum(((_Zcl[_a == j] - _c[j]) ** 2).sum() for j in range(_k))))
+put("cluster_ward_k3",
+    "sklearn.AgglomerativeClustering(k=3, linkage='ward') on z-scored(ddof=1) x1,x2,x3。"
+    "elbowWss 為 k=2..10 的 within-SS 曲線（Ward 為確定性演算法，可逐值比對）",
+    elbowWss=[round(v, 8) for v in _ward_elbow],
+    **_cluster_metrics(_ag.labels_, 3))
+
+# --- LDA（Fisher 多組線性判別）
+from scipy.linalg import eigh as _geigh
+
+_lda_pred = ["x1", "x2", "x3"]
+_Xl = mainc[_lda_pred].values.astype(float)
+_gl = mainc["group3"].values
+_lev = sorted(set(_gl))
+_Yl = np.array([_lev.index(v) for v in _gl])
+_kl, _pl, _Nl = len(_lev), len(_lda_pred), len(_Yl)
+_gm = np.array([_Xl[_Yl == c].mean(0) for c in range(_kl)])
+_ng = np.array([(_Yl == c).sum() for c in range(_kl)])
+_grand = (_ng[:, None] * _gm).sum(0) / _Nl
+_Bl = sum(_ng[c] * np.outer(_gm[c] - _grand, _gm[c] - _grand) for c in range(_kl))
+_Wl = sum((_Xl[_Yl == c] - _gm[c]).T @ (_Xl[_Yl == c] - _gm[c]) for c in range(_kl))
+_Sp = _Wl / (_Nl - _kl)
+_lam, _vec = _geigh(_Bl, _Wl)                       # 廣義特徵問題 B w = λ W w
+_ord = np.argsort(_lam)[::-1]
+_nf = min(_kl - 1, _pl)
+_lam = np.clip(_lam[_ord][:_nf], 0, None)
+_vec = _vec[:, _ord][:, :_nf]
+# 未標準化係數（SPSS unstandardized）：縮放使 wᵀ Sp w = 1
+_Wun = np.column_stack([_vec[:, i] / np.sqrt(_vec[:, i] @ _Sp @ _vec[:, i]) for i in range(_nf)])
+# 符號正規化：使每個函數中絕對值最大的未標準化係數為正（消除特徵向量符號任意性）
+for i in range(_nf):
+    if _Wun[np.argmax(np.abs(_Wun[:, i])), i] < 0:
+        _Wun[:, i] *= -1
+_scores = (_Xl - _grand) @ _Wun
+# 標準化係數（SPSS standardized）= 未標準化 × 組內合併 SD
+_Wstd = _Wun * np.sqrt(np.diag(_Sp))[:, None]
+# structure matrix：SPSS = 組內合併（pooled within-group）相關
+_Xw = np.vstack([_Xl[_Yl == c] - _gm[c] for c in range(_kl)])
+_Sw = np.vstack([_scores[_Yl == c] - _scores[_Yl == c].mean(0) for c in range(_kl)])
+_struct_w = np.array([[np.corrcoef(_Xw[:, j], _Sw[:, i])[0, 1] for j in range(_pl)] for i in range(_nf)])
+_struct_t = np.array([[np.corrcoef(_Xl[:, j], _scores[:, i])[0, 1] for j in range(_pl)] for i in range(_nf)])
+_cent_l = np.array([(_gm[c] - _grand) @ _Wun for c in range(_kl)])
+_wilks = [float(np.prod([1 / (1 + _lam[q]) for q in range(i, _nf)])) for i in range(_nf)]
+_chi2_l = [-(_Nl - 1 - (_pl + _kl) / 2) * math.log(_wilks[i]) for i in range(_nf)]
+# 分類（resubstitution）：δ_g(x) = xᵀSp⁻¹μ_g − ½μ_gᵀSp⁻¹μ_g + ln π_g
+_SpI = np.linalg.inv(_Sp)
+_delta = _Xl @ (_SpI @ _gm.T) - 0.5 * np.einsum("gi,ij,gj->g", _gm, _SpI, _gm) + np.log(_ng / _Nl)
+_pred = _delta.argmax(1)
+put("lda_group3",
+    "Fisher 多組 LDA（group3 ~ x1+x2+x3）：scipy.linalg.eigh(B, W) 廣義特徵分解；"
+    "未標準化係數縮放使 wᵀSp w = 1（SPSS unstandardized），標準化係數 = 未標準化 × 組內合併 SD"
+    "（SPSS standardized），structure matrix 為組內合併（pooled within-group）相關（SPSS/R MASS 定義）。"
+    "符號以「函數內絕對值最大的未標準化係數為正」正規化",
+    eigenvalues=_lam.tolist(),
+    canonicalCorrelations=np.sqrt(_lam / (1 + _lam)).tolist(),
+    proportionOfVariance=(_lam / _lam.sum()).tolist(),
+    wilksLambda=_wilks,
+    chi2=_chi2_l,
+    df=[float((_pl - i) * (_kl - 1 - i)) for i in range(_nf)],
+    unstandardizedCoefficients=_Wun.T.flatten().tolist(),
+    standardizedCoefficients=_Wstd.T.flatten().tolist(),
+    structureCoefficients=_struct_w.flatten().tolist(),
+    structureCoefficientsTotal=_struct_t.flatten().tolist(),
+    groupCentroids=_cent_l.flatten().tolist(),
+    groupSizes=_ng.tolist(),
+    overallAccuracy=float((_pred == _Yl).mean()))
+
+# --- EFA 補設定：未轉軸（rotation='none'）與 3 因子 varimax
+# ⚠ 模組邊界：EFA 只支援 PCA 萃取（principal）＋ varimax|none。
+#   promax 斜交與 ML 萃取尚未實作 → 無法建立基準，見 validation-report「模組邊界」。
+_fa_none = FactorAnalyzer(n_factors=2, rotation=None, method="principal")
+_fa_none.fit(items)
+put("efa_pca_none",
+    "factor_analyzer(principal, rotation=None)：未轉軸主成分負荷。"
+    "負荷矩陣以「每欄 |最大| 元素為正、欄序依平方和遞減」正規化後逐值比對",
+    loadings=_canon_cols(_fa_none.loadings_).flatten().tolist(),
+    communalities=sorted(_fa_none.get_communalities().round(8).tolist()),
+    eigAll=np.sort(np.linalg.eigvalsh(items.corr().values))[::-1].tolist())
+
+_fa_k3 = FactorAnalyzer(n_factors=3, rotation="varimax", method="principal",
+                        rotation_kwargs={"tol": 1e-12, "max_iter": 1000})
+_fa_k3.fit(items)
+put("efa_pca_varimax_k3",
+    "factor_analyzer(principal, varimax, 3 因子, rotation tol=1e-12)",
+    loadings=_canon_cols(_fa_k3.loadings_).flatten().tolist(),
+    communalities=sorted(_fa_k3.get_communalities().round(8).tolist()))
+
+# --- CFA 擴充：標準化 loadings、因子相關（semopy 逐值比對）
+try:
+    _ins = mod_cfa.inspect(std_est=True)
+    _lam_rows = _ins[_ins["op"] == "~"]
+    _lstd = {r["lval"]: float(r["Est. Std"]) for _, r in _lam_rows.iterrows()}
+    _pc = _ins[(_ins["op"] == "~~") & (_ins["lval"] == "F1") & (_ins["rval"] == "F2")]
+    put("cfa_2factor_loadings",
+        "semopy(ML) 標準化解：各指標的標準化因子負荷與 F1–F2 因子相關。"
+        "χ² 慣例差異（N vs N−1）只影響適配指標，不影響參數估計 → loadings 可逐值比對",
+        lambdaStd_i1=_lstd["i1"], lambdaStd_i2=_lstd["i2"], lambdaStd_i3=_lstd["i3"],
+        lambdaStd_i4=_lstd["i4"], lambdaStd_i5=_lstd["i5"], lambdaStd_i6=_lstd["i6"],
+        factorCorr_F1F2=float(_pc["Est. Std"].iloc[0]))
+except Exception as e:
+    put("cfa_2factor_loadings", f"semopy loadings FAILED: {e}")
+
+# --- 非中央 χ² 尾機率與 RMSEA 90% CI（MacCallum, Browne & Sugawara 1996）
+# 2026-07-13 修復的 pChiSqNoncentral 級數截斷 bug 的回歸防線：
+# 修復前 ncp ≳ 100 會塌成 ~0，導致 RMSEA CI 印出 [59.954, 59.954]。
+from scipy.stats import ncx2 as _ncx2, chi2 as _chi2d
+from scipy.optimize import brentq as _brentq
+
+_nc_grid = [(7.1044, 8, 5.0), (7.1044, 8, 50.0), (7.1044, 8, 100.0), (7.1044, 8, 500.0),
+            (60.0, 50, 20.0), (60.0, 50, 62.4), (200.0, 50, 100.0), (500.0, 120, 300.0)]
+put("cfa_noncentral_chi2",
+    "scipy.stats.ncx2.sf(x, df, ncp) — 非中央 χ² 尾機率 P(X ≥ x)。"
+    "格點刻意涵蓋 ncp ≳ 100 的區間（2026-07-13 修復前此區塊會塌成 ~0）",
+    **{f"sf_x{x:g}_df{df}_ncp{ncp:g}": float(_ncx2.sf(x, df, ncp)) for x, df, ncp in _nc_grid})
+
+def _rmsea_ci(chi2v, dfv, nv, level=0.9):
+    a = (1 - level) / 2
+    def _ncp_at(target):
+        f = lambda L: _ncx2.sf(chi2v, dfv, L) - target
+        if _chi2d.sf(chi2v, dfv) >= target:
+            return 0.0
+        return _brentq(f, 0, 1e6)
+    den = dfv * max(nv - 1, 1)
+    return math.sqrt(_ncp_at(a) / den), math.sqrt(_ncp_at(1 - a) / den)
+
+_ci_grid = [(7.1044, 8, 60), (60.0, 50, 200), (200.0, 50, 500), (500.0, 120, 800)]
+_ci_vals = {}
+for _c, _d, _n in _ci_grid:
+    _lo, _hi = _rmsea_ci(_c, _d, _n)
+    _tag = f"chi2{_c:g}_df{_d}_n{_n}"
+    _ci_vals[f"lo_{_tag}"] = _lo
+    _ci_vals[f"hi_{_tag}"] = _hi
+    _ci_vals[f"pclose_{_tag}"] = float(_ncx2.sf(_c, _d, 0.05 ** 2 * _d * (_n - 1)))
+put("cfa_rmsea_ci",
+    "RMSEA 90% CI（MacCallum, Browne & Sugawara 1996）：λ_L 使 P(χ²_df,λ ≥ χ²) = .05、"
+    "λ_U 使 = .95，RMSEA = √(λ / (df·(N−1)))；pclose = close-fit 檢定 P(χ² ≥ χ²obs | λ = .05²·df·(N−1))。"
+    "scipy.stats.ncx2 ＋ brentq。2026-07-13 修復前上下界標籤對調且級數截斷 → 全部失效",
+    **_ci_vals)
 
 
 with open(os.path.join(FIX, "reference.json"), "w") as f:

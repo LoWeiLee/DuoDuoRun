@@ -30,7 +30,9 @@ import { cohenKappa } from '../src/lib/stats/kappa.js'
 import { icc } from '../src/lib/stats/icc.js'
 import { exploratoryFactorAnalysis } from '../src/lib/stats/efa.js'
 import { oneProp, twoProp } from '../src/lib/stats/zProp.js'
-import { cfa } from '../src/lib/stats/cfa.js'
+import { cfa, pChiSqNoncentral, rmseaCI, rmseaPValue } from '../src/lib/stats/cfa.js'
+import { clusterAnalysis } from '../src/lib/stats/cluster.js'
+import { lda } from '../src/lib/stats/lda.js'
 import {
   runPLS, blindfoldPLS, mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS,
   mgaParametricTest, henselerMgaP,
@@ -47,6 +49,47 @@ const by = (g, name, gvar = 'group2', rows = main) =>
   rows.filter((r) => r[gvar] === g).map((r) => r[name])
 const groups3 = ['A', 'B', 'C'].map((g) => ({ name: g, values: by(g, 'y', 'group3') }))
 const items6 = ['i1', 'i2', 'i3', 'i4', 'i5', 'i6']
+const clVars = ['x1', 'x2', 'x3']
+
+/* ── 比對用正規化：消除與統計內容無關的任意性（與 generate_reference.py 同規則）── */
+
+/** 分群標籤依「首次出現順序」重新編號 → 分割相同即陣列逐值相等。 */
+function canonLabels(labels) {
+  const m = new Map()
+  return labels.map((v) => {
+    if (!m.has(v)) m.set(v, m.size)
+    return m.get(v)
+  })
+}
+
+/** 負荷矩陣（列=變項、欄=因子）：每欄符號使 |最大| 元素為正，欄序依平方和遞減。 */
+function canonCols(L) {
+  const p = L.length
+  const k = L[0].length
+  const M = L.map((row) => [...row])
+  for (let j = 0; j < k; j++) {
+    let bi = 0
+    for (let i = 1; i < p; i++) if (Math.abs(M[i][j]) > Math.abs(M[bi][j])) bi = i
+    if (M[bi][j] < 0) for (let i = 0; i < p; i++) M[i][j] = -M[i][j]
+  }
+  const ss = Array.from({ length: k }, (_, j) => M.reduce((s, row) => s + row[j] * row[j], 0))
+  const order = ss.map((_, j) => j).sort((a, b) => ss[b] - ss[a])
+  return M.map((row) => order.map((j) => row[j]))
+}
+
+/** 集群分析的共用比對欄位。 */
+function clusterFields(r) {
+  const sizes = [...r.clusterSizes].sort((a, b) => a - b)
+  return {
+    wss: r.wss,
+    tss: r.tss,
+    bss: r.bss,
+    silhouette: r.silhouette,
+    sizesSorted: sizes,
+    wssPerClusterSorted: [...r.wssPerCluster].sort((a, b) => a - b),
+    labelsCanonical: canonLabels(r.assignments),
+  }
+}
 
 export const ADAPTERS = {
   descriptive_y() {
@@ -218,6 +261,21 @@ export const ADAPTERS = {
     const r = twoProp(main, 'group2', 'ybin', '1')
     return { z: r.z, p: r.p, p1: r.p1, p2: r.p2 }
   },
+  efa_pca_none() {
+    const r = exploratoryFactorAnalysis(main, items6, { nFactors: 2, rotation: 'none' })
+    return {
+      loadings: canonCols(r.unrotatedLoadings).flat(),
+      communalities: r.communalities.slice().sort((a, b) => a - b),
+      eigAll: r.eigenvalues.slice(0, 6),
+    }
+  },
+  efa_pca_varimax_k3() {
+    const r = exploratoryFactorAnalysis(main, items6, { nFactors: 3, rotation: 'varimax' })
+    return {
+      loadings: canonCols(r.rotatedLoadings).flat(),
+      communalities: r.communalities.slice().sort((a, b) => a - b),
+    }
+  },
   efa_pca_varimax() {
     const r = exploratoryFactorAnalysis(main, items6, { nFactors: 2, rotation: 'varimax' })
     const load = r.rotatedLoadings // p×m
@@ -234,6 +292,79 @@ export const ADAPTERS = {
     ])
     return { chi2: r.chi2, df: r.df, cfi: r.fitIndices?.cfi, tli: r.fitIndices?.tli,
       rmsea: r.fitIndices?.rmsea }
+  },
+  cfa_2factor_loadings() {
+    const r = cfa(main, [
+      { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+      { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+    ])
+    const L = Object.fromEntries(r.loadings.map((q) => [q.indicator, q.lambdaStd]))
+    return {
+      lambdaStd_i1: L.i1, lambdaStd_i2: L.i2, lambdaStd_i3: L.i3,
+      lambdaStd_i4: L.i4, lambdaStd_i5: L.i5, lambdaStd_i6: L.i6,
+      factorCorr_F1F2: r.factorCorrelations[0][1],
+    }
+  },
+  // 非中央 χ² 尾機率（2026-07-13 修復的級數截斷 bug 的回歸防線）
+  cfa_noncentral_chi2() {
+    const grid = [[7.1044, 8, 5], [7.1044, 8, 50], [7.1044, 8, 100], [7.1044, 8, 500],
+      [60, 50, 20], [60, 50, 62.4], [200, 50, 100], [500, 120, 300]]
+    const out = {}
+    for (const [x, df, ncp] of grid) {
+      const tag = `sf_x${x}_df${df}_ncp${ncp}`
+      out[tag] = pChiSqNoncentral(x, df, ncp)
+    }
+    return out
+  },
+  // RMSEA 90% CI ＋ close-fit p（2026-07-13 修復上下界對調的回歸防線）
+  cfa_rmsea_ci() {
+    const grid = [[7.1044, 8, 60], [60, 50, 200], [200, 50, 500], [500, 120, 800]]
+    const out = {}
+    for (const [chi2, df, n] of grid) {
+      const tag = `chi2${chi2}_df${df}_n${n}`
+      const ci = rmseaCI(chi2, df, n)
+      out[`lo_${tag}`] = ci.low
+      out[`hi_${tag}`] = ci.high
+      out[`pclose_${tag}`] = rmseaPValue(chi2, df, n)
+    }
+    return out
+  },
+  // 集群分析（2026-07-13 首次建立基準）。標籤依首次出現順序正規化後可逐值比對。
+  cluster_kmeans_k3() {
+    const r = clusterAnalysis(main, { vars: clVars, method: 'kmeans', k: 3, standardize: true })
+    return clusterFields(r)
+  },
+  cluster_ward_k3() {
+    const r = clusterAnalysis(main, { vars: clVars, method: 'hierarchical', k: 3, standardize: true })
+    return { ...clusterFields(r), elbowWss: r.elbow.map((e) => e.wss) }
+  },
+  // LDA（2026-07-13 首次建立基準）。符號依「函數內絕對值最大的未標準化係數為正」正規化。
+  lda_group3() {
+    const r = lda(main, 'group3', clVars)
+    const nf = r.functions.length
+    const sign = r.functions.map((f) => {
+      const w = f.unstandardizedCoefficients
+      let bi = 0
+      for (let j = 1; j < w.length; j++) if (Math.abs(w[j]) > Math.abs(w[bi])) bi = j
+      return w[bi] < 0 ? -1 : 1
+    })
+    const flat = (pick) => r.functions.flatMap((f, i) => pick(f).map((v) => v * sign[i]))
+    return {
+      eigenvalues: r.eigenvalues,
+      canonicalCorrelations: r.functions.map((f) => f.canonicalCorrelation),
+      proportionOfVariance: r.functions.map((f) => f.proportionOfVariance),
+      wilksLambda: r.functions.map((f) => f.wilksLambda),
+      chi2: r.functions.map((f) => f.chi2),
+      df: r.functions.map((f) => f.df),
+      unstandardizedCoefficients: flat((f) => f.unstandardizedCoefficients),
+      standardizedCoefficients: flat((f) => f.standardizedCoefficients),
+      structureCoefficients: flat((f) => f.structureCoefficients),
+      structureCoefficientsTotal: flat((f) => f.structureCoefficientsTotal),
+      // groupCentroids 為 k × nf，展平時逐函數套用同一符號
+      groupCentroids: r.groupCentroids.flatMap((row) => row.map((v, i) => v * sign[i])).slice(0, r.k * nf),
+      groupSizes: r.groupSizes,
+      overallAccuracy: r.classification.overallAccuracy,
+    }
   },
   // PLS-SEM（W1）：F1 =~ i1+i2+i3、F2 =~ i4+i5+i6、F1 → F2，path scheme、Mode A。
   // 基準：plspm（逐欄 z-score 後輸入，見 generate_reference.py 的移植怪癖註記）
