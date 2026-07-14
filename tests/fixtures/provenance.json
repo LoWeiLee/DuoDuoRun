@@ -140,11 +140,11 @@
   "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
  },
  "lda_group3": {
-  "authority": "待審計：R MASS::lda（隨 R 出貨，免 CRAN）＋必要時 SPSS",
-  "note": "2026-07-13 溯源審計：原標 tier A（authority scipy）屬申報過寬，改列 B／pending。",
-  "status": "pending",
+  "authority": "MASS 7.3.65（MASS::lda，隨 R 出貨）＋ base R manova（Wilks）；SPSS 慣例換算關係逐值確認",
+  "note": "2026-07-14 抽驗中發現工具鏈陷阱：library(cSEM) 會遮蔽 stats::predict（對 lda 物件直接進 cSEM 內部碼）——R 抽驗腳本一律顯式 stats::predict，已記入 validation-report。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計。現有「交叉驗證 1.5e-11」是 scipy 特徵分解原語對自己：所有統計上有意義的輸出（SPSS 未標準化縮放 wᵀSpw=1、標準化係數 ×pooled SD、structure matrix、Bartlett χ²、分類規則）皆為手編慣例，從未對過完整第三方 LDA。R1 紅隊已在此抓到標準化係數的解釋層實質錯誤。已排入 2026-07-13 Session Q1 本機 R 抽驗（05_lda.R）。"
+  "verification": "2026-07-14 溯源審計（Session Q1，04_q1_audit.R v4/v5）：MASS::lda 逐值一致——未標準化係數（LD1 −0.090887/0.099743/0.046781；MASS scaling 慣例＝SPSS unstandardized，wᵀSpw=1）、標準化係數（×pooled SD：−0.723571/0.754252/0.717626）、pooled SD（7.9612/7.5620/15.3400）、特徵值換算（λ=svd²(g−1)/(N−g)、proportion of trace 0.895133/0.104867）、組重心（fn1 0.239776/−0.302967/0.063191）、structure matrix（pooled within-group 相關，fn1 −0.274692/0.364920/0.732972）、再代入分類表（對角 8/10/7、accuracy 0.416667）。manova Wilks Λ=0.94302 同；Λ₂ 與 Bartlett χ² 由已驗特徵值之封閉式推得。第二判別函數整體翻號＝特徵向量符號任意性（fixture 符號正規化規則已文件化）。"
  },
  "levene_mean_spss_default": {
   "authority": "scipy",

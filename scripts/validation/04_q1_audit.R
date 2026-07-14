@@ -17,7 +17,7 @@ library(seminr)
 
 dir.create("out", showWarnings = FALSE)
 sink("out/04_q1_audit_out.txt", split = TRUE)
-cat("== 版本 ==\n")
+cat("== 版本 ==（04_q1_audit.R v5，2026-07-14；修 cSEM 遮蔽 predict）==\n")
 cat("seminr:", as.character(packageVersion("seminr")), " cSEM:", as.character(packageVersion("cSEM")),
     " MASS:", as.character(packageVersion("MASS")), " R:", R.version.string, "\n")
 
@@ -135,26 +135,51 @@ res3 <- tryCatch({
   cat("\n-- 標準化係數（= scaling × pooled SD）--\n")
   print(round(ld$scaling * sqrt(diag(Sp)), 6))
 
-  # 判別分數、組重心、structure matrix（組內合併相關）
-  sc <- predict(ld)$x
-  cat("\n-- 組重心（各組判別分數平均）--\n")
-  cen <- aggregate(sc, list(group = dat$group3), mean)
-  cen[, -1] <- round(cen[, -1], 6)
-  print(cen)
-  Xc <- as.matrix(dat[, c("x1", "x2", "x3")])
-  Xw <- do.call(rbind, lapply(split(as.data.frame(cbind(Xc, sc)), dat$group3),
-                              function(g) scale(g, scale = FALSE)))
-  cat("\n-- structure matrix（pooled within-group 相關）--\n")
-  print(round(cor(Xw[, 1:3], Xw[, 4:ncol(Xw)]), 6))
+  # 判別分數：predict() 三段防呆（v1–v3 的實際病灶在這行，不是 round）
+  cat("\n-- 診斷：str(group3) --\n"); str(dat$group3); print(table(dat$group3, useNA = "ifany"))
+  # v4 診斷結論：library(cSEM) 會遮蔽 stats::predict（其 predict 非泛型相容，
+  # 對 lda 物件直接跑進 cSEM 內部碼）→ 一律顯式呼叫 stats::predict
+  pr <- tryCatch(stats::predict(ld), error = function(e) {
+    cat("[3-stats::predict] 錯誤：", conditionMessage(e), "\n  出錯呼叫：")
+    print(conditionCall(e)); NULL })
+  if (is.null(pr)) {
+    cat("[3] predict 兩路皆敗 → 手動投影（分數仍為 MASS 係數；分類表本輪拿不到）\n")
+    mu0 <- colSums(ld$prior * ld$means)
+    sc <- sweep(as.matrix(dat[, c("x1", "x2", "x3")]), 2, mu0) %*% ld$scaling
+    cls <- NULL
+  } else { sc <- pr$x; cls <- pr$class }
+  tryCatch({
+    cat("\n-- 組重心（各組判別分數平均）--\n")
+    for (g in sort(unique(dat$group3))) {
+      m <- colMeans(sc[dat$group3 == g, , drop = FALSE])
+      cat(g, ":", sprintf("%.6f", m), "\n")
+    }
+  }, error = function(e) cat("[3-組重心] 錯誤：", conditionMessage(e), "\n"))
 
-  # Wilks（base R manova）
-  cat("\n-- manova Wilks --\n")
-  print(summary(manova(cbind(x1, x2, x3) ~ group3, data = dat), test = "Wilks"))
+  tryCatch({
+    cat("\n-- structure matrix（pooled within-group 相關）--\n")
+    Xc <- as.matrix(dat[, c("x1", "x2", "x3")])
+    Xw <- Xc; Sw <- sc
+    for (g in unique(dat$group3)) {
+      idx <- dat$group3 == g
+      Xw[idx, ] <- sweep(Xc[idx, , drop = FALSE], 2, colMeans(Xc[idx, , drop = FALSE]))
+      Sw[idx, ] <- sweep(sc[idx, , drop = FALSE], 2, colMeans(sc[idx, , drop = FALSE]))
+    }
+    print(round(cor(Xw, Sw), 6))
+  }, error = function(e) cat("[3-structure] 錯誤：", conditionMessage(e), "\n"))
 
-  # 再代入分類
-  cat("\n-- 再代入分類表 --\n")
-  tb <- table(actual = dat$group3, predicted = predict(ld)$class)
-  print(tb); cat("accuracy =", round(sum(diag(tb)) / sum(tb), 6), "\n")
+  tryCatch({
+    cat("\n-- manova Wilks --\n")
+    print(summary(manova(cbind(x1, x2, x3) ~ factor(group3), data = dat), test = "Wilks"))
+  }, error = function(e) cat("[3-Wilks] 錯誤：", conditionMessage(e), "\n"))
+
+  tryCatch({
+    cat("\n-- 再代入分類表 --\n")
+    if (is.null(cls)) { cat("（predict 失敗，本輪無分類表）\n") } else {
+      tb <- table(actual = dat$group3, predicted = cls)
+      print(tb); cat("accuracy =", sprintf("%.6f", sum(diag(tb)) / sum(tb)), "\n")
+    }
+  }, error = function(e) cat("[3-分類表] 錯誤：", conditionMessage(e), "\n"))
   TRUE
 }, error = function(e) { cat("[3] LDA 段錯誤：", conditionMessage(e), "\n"); FALSE })
 

@@ -72,6 +72,7 @@
 - +1：`lda_group3` 覆核由 tier A 改列待審計（scipy 只是特徵分解原語，SPSS 慣例縮放從未對過完整第三方）
 - −1：`pls_q2`（程序文獻路線——在世第三方不存在）
 - −2：`pls_formative`、`pls_ipma`（Kevin 本機 R 抽驗）
+- −1（2026-07-14）：`lda_group3`（MASS::lda 全項逐值一致）→ **10，Session Q1 結案**
 
 ## 4. 待審計清單（15 組）與審計路徑
 
@@ -133,7 +134,7 @@
 | `icc` | A | ✅ | pingouin |
 | `kruskal_wallis` | A | ✅ | scipy |
 | `ks_lilliefors` | A | ✅ | statsmodels |
-| `lda_group3` | B | ⬜ 待審計 | MASS::lda 抽驗中（係數已逐值吻合；組重心／structure／Wilks／分類表待補跑） |
+| `lda_group3` | B | ✅ | MASS 7.3.65＋base R manova（2026-07-14 全項逐值，含分類表） |
 | `levene_mean_spss_default` | A | ✅ | scipy |
 | `levene_median` | A | ✅ | scipy |
 | `logistic_regression` | A | ✅ | statsmodels |

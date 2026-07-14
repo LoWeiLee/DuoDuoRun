@@ -64,8 +64,8 @@
 ### Session Q1：批次 1（6 組）——【2026-07-13 執行，接近完成】
 
 `pls_formative` ✅、`pls_q2` ✅、`pls_predict` Q²predict 定義 ✅、`pls_ipma` ✅、
-`pls_itcriteria` ✅、`pls_gof` ✅；另盤點覆核新收 `lda_group3` ⬜（僅剩此組，
-04_q1_audit.R 第 [3] 段已修，待重跑 .bat 對組重心／structure／Wilks／分類表）。
+`pls_itcriteria` ✅、`pls_gof` ✅、盤點覆核新收的 `lda_group3` ✅（2026-07-14，
+MASS::lda 全項逐值含分類表）。**Session Q1 已結案。**
 
 **原工單兩處誤判已修正**（詳見 formula-provenance §6）：
 - seminr 沒有 `blindfold()`——blindfolding 在世第三方不存在（SmartPLS 4 已移除），
@@ -74,7 +74,8 @@
 
 **交付判準修正**：原「MAX_PENDING 降至 9」算術有誤——`pls_predict` 本就 verified，
 批次 1 只銷 5 筆 pending；加上覆核的 lda_group3 進（+1）出（−1），
-Q1 完成的正確落點是 **10**。目前 **11**（lda 待補跑）。`npm test` 全綠 ✅。
+Q1 的正確落點是 **10**——已於 2026-07-14 達成。`npm test` 全綠 ✅。
+下一步：Session Q2（批次 2 六組，回論文記方程式編號）。
 
 ### Session Q2：批次 2 —— 無主流實作，回到論文方程式編號（6 組）
 
