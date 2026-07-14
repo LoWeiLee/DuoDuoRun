@@ -66,7 +66,7 @@ const PROV = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures/provenance.jso
 // 2026-07-14：lda_group3 銷帳（MASS::lda 全項逐值一致，含分類表 accuracy 0.416667；
 // 期間發現 library(cSEM) 遮蔽 stats::predict 的工具鏈陷阱，見 validation-report）。
 // 11 − 1 = 10。★ Session Q1 正式結案：批次 1 六組＋覆核新收的 lda_group3 全數 verified。
-const MAX_PENDING = 10
+const MAX_PENDING = 9
 
 const TIERS = new Set(['A', 'B', 'I'])
 const STATUSES = new Set(['verified', 'pending', 'exempt'])

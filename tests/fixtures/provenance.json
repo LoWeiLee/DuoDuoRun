@@ -245,11 +245,11 @@
   "verification": "待審計"
  },
  "pls_cipma": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "Hauff, Richter, Sarstedt & Ringle (2024, J. Retailing & Consumer Services 78:103723)。全文無編號方程式（期刊排版事實），authority 以節號＋原式錨定：§3 效果量 d = C/S 與必要性判準（d ≥ .1 且 p < .05，另需理論支持）；§4.3 IPMA 0–100 重標定 LV 分數輸出為 NCA 輸入；§4.4 實證 scope＋僅取目標構念的直接前置構念＋CE-FDH bottleneck 表（實際值／百分位雙格式）；§4.5 於目標水準（如 Y=80）讀「未達所需水準之案例 %」；§5.4–5.5 實例同流程（CE-FDH 為主、CR-FDH 對照討論）",
+  "note": "重用 pls_ipma 的 _s100 與 nca_* 的 numpy 助手。IPMA 塊內量尺不一時的 0–100 先後灰區承 pls_ipma 條目（Q1 記錄）；Hauff et al. §4.1 明文要求單一構念的指標同量尺，混合量尺＝未滿足假設——UI 警告已入 roadmap P1。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-14 溯源審計（Session Q2）：(1) 逐項對 Hauff et al. (2024) 全文（OA：researchonline.jcu.edu.au/87274）——0–100 重標定分數作 NCA 輸入、實證 scope、僅直接前置構念、CE-FDH＋CR-FDH、d ≥ .1 且 p < .05、bottleneck 實際值＋未達案例 %——fixture 六項口徑逐項一致；(2) NCA 計算核心（CE-FDH ceiling／zone／CR-FDH OLS＋夾擠／permutation p）逐式重用已驗證的 nca_ce_fdh／nca_cr_fdh／nca_bottleneck 助手（R NCA 5.0.2 已逐值對過），cIPMA 新增的只有組合口徑；(3) permutation p ＝ #{d_perm ≥ d_obs}/199，與已驗 nca 條目同式；JS↔numpy 由 compare.test.js 全欄位鎖定。"
  },
  "pls_copula": {
   "authority": "待審計",

@@ -74,6 +74,9 @@
 - −2：`pls_formative`、`pls_ipma`（Kevin 本機 R 抽驗）
 - −1（2026-07-14）：`lda_group3`（MASS::lda 全項逐值一致）→ **10，Session Q1 結案**
 
+10 →（2026-07-14 溯源審計 Session Q2，批次 2：回論文記方程式編號）→
+- −1（2026-07-14）：`pls_cipma`（Hauff et al. 2024 全文口徑逐項核對；OA 全文）→ **9**
+
 ## 4. 待審計清單（15 組）與審計路徑
 
 盤點：29 組手算基準中，10 組已由 2026-07-13 的 R 抽驗逐項核對、4 組為純輸入型 fixture，
@@ -149,7 +152,7 @@
 | `pearson_x1_x2` | A | ✅ | scipy |
 | `pls_basic` | B | ✅ | seminr 2.5.0 |
 | `pls_bca_reference` | B | ⬜ 待審計 | 待審計 |
-| `pls_cipma` | B | ⬜ 待審計 | 待審計 |
+| `pls_cipma` | B | ✅ | Hauff et al. (2024) §3／§4.3–4.5——無編號方程式，記節號＋原式 d=C/S；NCA 核心重用已驗 nca_* 助手 |
 | `pls_copula` | B | ⬜ 待審計 | 待審計 |
 | `pls_copula_inputs` | I | — | 不適用（純輸入型 fixture） |
 | `pls_cta` | B | ⬜ 待審計 | 待審計 |
