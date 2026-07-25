@@ -7,20 +7,42 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：**PLS 已收尾**——P1 殘項（低風險 7 項＋會動統計核心 2 項）全部清完，
-調節式中介一併交付；P0 只剩 2 組卡文獻。功能開發（P2）尚未動工。
-最近一次本機全套驗收：**1,184 過、6 跳過、13 檔全綠**（2026-07-25，含本輪新增的
-2 條調節式中介 jsdom 測試）。
+**目前狀態一句話**：PLS 的**功能面已收尾**（P1 殘項全清、三項會動統計核心的都交付），
+但**溯源面沒有全部結案**——82 組基準中 2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。
+功能開發（階段 B）尚未動工。
+最近一次本機全套驗收：**1,184 過、6 跳過、13 檔全綠**（2026-07-25）。
 
-**建議的下一步（依序）**
+**★ 現在的下一步：階段 A**（Kevin 2026-07-25 裁決）。
+不要跳過它直接做 Wave F1——階段 A 的目的正是先確認「已經做好的東西是否可信」，
+再往上疊新功能。
 
-| 順位 | 工作 | 在哪 | 為什麼是這個順序 |
+---
+
+## ★ 階段總覽（Kevin 2026-07-25 裁決）
+
+| 階段 | 內容 | 詳細規格 | 狀態 |
 |---|---|---|---|
-| 1 | Wave F1 快贏包（McDonald's ω、Friedman、McNemar、專案檔存取） | §3 | PLS 收乾淨後的第一個功能波，全部 tier A 可達 |
-| 2 | Q2 尾巴 2 組（`pls_fimix`、`pls_bca_reference`） | §1 | **卡文獻取得**，拿到 PDF 才能做，不占 session 排程 |
+| **A** | **方法文件與紅隊盤點**——為每個已上線的統計方法產出一份文件（說明／用途／公式／文獻／對照狀態），同時逐項紅隊檢核 | **§6** | **← 現在做這個** |
+| B | 功能波 Wave F1–F8 | §3 | 未動工 |
+| C | CB-SEM | §4 | 暫緩，啟動前提已滿足，待重新裁決 |
+| D | COMING_SOON 側欄收斂 | §7 | 未動工（與 B 交錯進行） |
+| — | P0 溯源尾巴（2 組 pending ＋ 3 項覆核） | §1、§2.3 | **卡文獻取得**，不占 session 排程 |
+| — | 休眠與復工規格 | §8 | 環境重建已寫好；狀態快照待階段 A 收尾填 |
 
-★ PLS 側已無待辦。PLSpredict 重複的口徑已於 2026-07-25 核對定案（結論：不跟隨 seminr，
-理由見 `validation-report-v1.md` 第六節）。
+**階段 A 的定位（Kevin 原話）**：「這是一份盤點、一個負責任的檢查，也是一個我能確定
+多多快跑背後到底是否可信的重要工作。」——所以它**不是補文件的雜務**，
+產出文件只是副產品，真正的交付是**把散落在 provenance 欄位裡的保留系統性攤開檢查一遍**。
+
+★ **時程與在場狀況（2026-07-25 確認，這決定了交接火力該對準哪裡）**：
+- **階段 A：Kevin 全程參與**，與執行者一起做。所以 L3／L4 是**當場問**，不是累積等待。
+- **階段 A 完成後專案休眠**，Kevin 的時間轉去寫 paper。
+- **階段 B 最早 2026 年 9 月底才啟動**，接手者會是對本輪對話毫無記憶的 AI。
+
+⇒ 真正的交接負擔**不在階段 A，在階段 A 之後**。休眠前的收尾規格見 **§8「休眠與復工」**，
+該節必須在階段 A 收尾時填完才算階段 A 結案（已列入 §6.7 判準）。
+
+★ PLS 側已無**功能**待辦。PLSpredict 重複的口徑已於 2026-07-25 核對定案
+（結論：不跟隨 seminr，理由見 `validation-report-v1.md` 第六節）。
 
 **開工前必讀**：本文件 §0（品質規範，最高位階）＋ `handoff-roadmap-v1.md` §2（架構不變量）
 與 §3（沙盒作業手冊）。
@@ -50,7 +72,8 @@
 | `cb-sem-design-plan-v1.md` | CB-SEM 未來波次的設計稿（§4 暫緩中） | 保留 |
 | `mockups/mockup-d-final-hybrid.html` | UI 設計權威，`CLAUDE.md` 與 5 個元件引用 | 保留 |
 | `pls-sem-roadmap-v1.md` | W0–W6 波次史，全數交付；純歷史 | 保留（Kevin 2026-07-25 裁決保留開發史） |
-| `tests/verify_plspredict_reps.R` | 本機 seminr 核對腳本（PLSpredict 重複的彙總口徑）；沙盒無 R 故只能本機跑 | 保留至口徑定案 |
+| `tests/verify_plspredict_reps.R` | 本機 seminr 核對腳本；**口徑已於 2026-07-25 定案**（不跟隨 seminr） | 保留，供日後 seminr 修正 `reps` 後重驗 |
+| `docs/methods/`（階段 A 產出） | 每個統計方法一份文件＋索引；對外公開，從 README 連結 | 階段 A 建立，見 §6 |
 
 **2026-07-25 已刪除（Kevin 確認）**：`mockups/mockup-a-dark-tech.html`、
 `mockups/mockup-b-light-saas.html`、`mockups/mockup-c-brand-warm.html`
@@ -269,13 +292,25 @@ P0 公式溯源審計全數結案。解除封鎖路徑見 §1 Session Q2 節。
   ⚠ **命名保留**：斜率 a3·b1 在文獻上稱 index of moderated mediation（Hayes 2015, MBR 50(1)），
   **原文未取得**，故以描述性名稱回報並在 UI／敘述句／provenance 三處標註，未實作該文的檢定程序。
 
-**卡外部資源**
-- 【Q2】`pls_cta` 的非冗餘 tetrad 選取集：取得 Bollen & Ting (1993) 後覆核
-  （現行構造已保證極大獨立，僅個別 tetrad 的 CI 可能隨選取集而異）
-- 【Q2】`pls_pos`：取得 Becker et al. (2013) 線上 Appendix B 後覆核目標函數與距離量測；
-  若要補足「段別測量權重重估」則屬獨立一波（非殘項，見 §3 需求觸發再排）
-- 【Q2】`pls_bca_reference` 加一道 `scipy.stats.bootstrap(method='BCa')` 的獨立抽驗
-  （非權威、不能結案，但能提前抓實作錯誤；重生時 assert 化）——此項**不卡文獻，可隨時做**
+**卡外部資源（全部是「取得文獻才能做」，不占 session 排程）**
+
+這張表是 P0／P1 的**完整**未結案清單，與 §1 的 2 組 pending 合看即為全貌。
+階段 A 的紅隊若又發現新的「查不到出處」項目，一律補進這張表。
+
+| # | 項目 | 缺的文獻 | 現況與影響 |
+|---|---|---|---|
+| 1 | `pls_fimix` 溯源（**pending**） | Hahn et al. (2002) SBR 54(3), 243-269；Sarstedt et al. (2011) SBR 63(1), 34-62 | 待核參數計數 N_k、EN 正規化分母、是否含截距。現行替代驗證＝模擬還原＋EM 單調性＋JS↔numpy 逐值 |
+| 2 | `pls_bca_reference` 溯源（**pending**） | Efron & Tibshirani (1993) §14.3；Efron (1987) JASA 82(397) | 待核 z₀ 的並列／端點夾擠慣例、a 的 jackknife 估計式。已對 scipy `_bca_interval` 逐值 assert（非權威，不能結案） |
+| 3 | `pls_cta` 非冗餘 tetrad 選取集 | Bollen & Ting (1993) Sociological Methodology 23 | 現行構造已以 Jacobian 秩 assert 保證極大獨立、omnibus 判讀等價；僅**個別 tetrad 的 CI** 可能隨選取集而異 |
+| 4 | `pls_pos` 完整演算法 | Becker et al. (2013) 線上補充 Appendix B | 待核目標函數是否另含加權、距離量測定義。本工具已明示為結構模型層簡化版 |
+| 5 | `pls_modmed` 的術語標籤 | Hayes (2015) *Multivariate Behavioral Research* 50(1), 1-22 | 數值不受影響（合成層有代數斷言、迴歸層對 statsmodels assert）。待核的是「index of moderated mediation」這個**名稱**與其原始檢定程序；在此之前工具以描述性名稱回報並在 UI／敘述句／provenance 三處標註 |
+
+~~`pls_bca_reference` 的 scipy 獨立抽驗~~ **已於 2026-07-25 完成並升為重生時 assert**
+（四個量機器精度內全中，最大差 1.7e−18）。如預期不能結案，`MAX_PENDING` 維持 2。
+
+**解除封鎖的可行路徑（依成本排序）**：館際互借／文獻傳遞（1–3 個工作天，五項都適用）→
+Efron & Tibshirani 為統計系標準教科書，實體館藏取第 14 章即可 →
+寫信向作者索取（Ringle／Sarstedt 團隊對 PLS 社群索取一向回覆）。
 
 ---
 
@@ -353,8 +388,291 @@ gate 判準第 3 條「Kevin 本機 lavaan 抽驗」正是 tier A 的要求。
 
 ---
 
-## 版本紀錄
+## 6. 階段 A：方法文件與紅隊盤點【現在做這個】
 
+**Kevin 三項裁決（2026-07-25）**：粒度＝**可報告的統計方法**（不是側欄模組）；
+紅隊處置＝**分級**（偵錯當場修、改公式候裁決）；讀者＝**對外公開**，學生與審稿人都看得懂。
+
+### 6.1 為什麼要做，以及它不是什麼
+
+**不是**「補說明文件」的雜務。真正的交付是：把目前散落在 `provenance.json` 三個欄位
+（`authority`／`note`／`verification`）裡的保留，**系統性攤開檢查一遍**，
+並產出使用者與審稿人看得到的憑據。
+
+現況的數字（2026-07-25 實測）說明了為什麼值得做：
+
+| | 數量 | 意義 |
+|---|---|---|
+| tier A | 48 組 | 基準值直接來自可執行的第三方（scipy／statsmodels／pingouin／sklearn／factor_analyzer／semopy／plspm）。風險低 |
+| tier B | **30 組** | **沒有直接的第三方數值來源**，靠「權威文獻逐點 ＋ 機制同源 ＋ 代數斷言」撐住。**26 組在 PLS**。紅隊的主戰場 |
+| tier I | 4 組 | 純輸入型 fixture（注入的 permutation／bootstrap 索引），exempt |
+| pending | 2 組 | 卡文獻，見 §2.3 表 |
+| verified 但帶明文保留 | 4 組 | `pls_cta`／`pls_hoc_embedded`／`pls_pos`／`pls_modmed` |
+
+★ **排序原則：tier B 先做、tier A 後做。** 理由與 §0 同源——tier A 的數字有第三方擋著，
+tier B 只有「作者對文獻的理解」擋著，而 2026-07-13 與 Session Q2 各抓到一批 bug，
+**全部落在沒有第三方對照的那一側**。
+
+### 6.2 產出規格
+
+**位置**：`docs/methods/<method-id>.md`，一個方法一份；`docs/methods/README.md` 為索引
+（同時是「28 個側欄模組 → 方法」的對照表）。完成後從專案 README 連結。
+
+**`<method-id>` 命名**：小寫、連字號、與 `reference.json` 的鍵名對得起來
+（例：`pls-ipma.md` 對 `pls_ipma`；`mann-whitney.md` 對 `mann_whitney`＋`_small`＋`_ties` 三組）。
+
+**固定模板（八節，不可增刪節次，沒有內容的節寫「不適用」並說明為什麼）**：
+
+```markdown
+# <方法中文名>（English name）
+
+## 1. 這個方法在回答什麼問題
+一段白話。不預設讀者懂這個方法。
+
+## 2. 什麼時候該用、什麼時候不該用
+含「常見誤用」。這一節是寫給學生看的。
+
+## 3. 公式與定義
+符號表 → 公式 → 逐項說明。
+★ 有慣例分歧的地方**必須列出本工具採哪一個、為什麼**（例：Levene 的 center、
+  Mann-Whitney 的 U 慣例、CFA 的 χ² 分母、IPMA 的重標定界線）。
+
+## 4. 假設前提與本工具的檢核方式
+每個前提對應到 assumptionChecker 的哪一項；違反時工具怎麼警告。
+
+## 5. 參考文獻
+分兩欄：**方法出處**（誰提出的）與**程序指引**（怎麼做、怎麼判讀）。
+★ 未取得原文者一律標【原文未取得】，不以記憶充當引用。
+
+## 6. 對照與驗證狀態
+- 基準組：`reference.json` 的哪幾組（列鍵名）
+- tier / status：引 `provenance.json`
+- 對照過的第三方：scipy／statsmodels／pingouin／sklearn／factor_analyzer／semopy／
+  plspm／R（Kevin 本機）／SmartPLS——**沒對照過就寫沒有**
+- 已知與 SPSS／JASP／SmartPLS／R 的慣例差異及其影響
+- ★ **尚未驗證的部分**（誠實列出，這一節不准留白）
+
+## 7. 報表欄位對照
+UI 上每一個數字 → 對應第 3 節的哪一條公式。防止出現「沒人說得清這欄是什麼」的欄位。
+
+## 8. 紅隊檢核紀錄
+日期、執行者、查了哪幾項（對 6.3 的清單逐條）、結論、開出的待辦編號。
+```
+
+### 6.3 紅隊檢查表（每份文件都要逐條跑，結果寫進第 8 節）
+
+1. **公式 vs 程式碼**：文件寫的公式與 `src/lib/stats/*.js` 的實作逐項對得起來？（記檔名與行號區間）
+2. **authority 是否真的支持該公式**：provenance 的 authority 欄若寫了論文與方程式編號，
+   該編號是否真的對應這條公式？有沒有「以記憶充當引用」？
+3. **文獻真實性**：每一筆引用是否真實存在、卷期頁碼可查？未取得原文者是否已標註？
+4. **報表可追溯**：UI 呈現的每個數字都能追到公式嗎？有沒有孤兒欄位？
+5. **假設前提**：檢核項與方法相符嗎？違反時的警告文字誠實嗎（會不會過度嚇人或過度輕描淡寫）？
+6. **慣例分歧**：與 SPSS／JASP／R／SmartPLS 的已知差異都寫出來了嗎？
+7. **邊界條件**：n 小、零變異、完全共線、缺失值、並列（ties）、單指標構念——
+   程式碼有處理嗎？測試有覆蓋嗎？沒有的話開待辦。
+8. **APA 敘述句**：有沒有過度宣稱？前提與限制有沒有進句子？
+
+### 6.4 紅隊處置分級（Kevin 裁決：分級處理）
+
+| 級 | 範圍 | 處置 |
+|---|---|---|
+| **L1** 文件層 | 錯字、引用格式、註解與程式碼不符 | **當場修**，不必問 |
+| **L2** 呈現層 | UI 文字誤導、缺慣例說明、警告不夠明確、敘述句過度宣稱 | **當場修**，交付時列出改了什麼 |
+| **L3** 數值層 | 公式口徑、預設值改變、需要重生 fixture | **當場問 Kevin**（他全程參與階段 A）。裁決後才動手——因為會動 fixture 與既有數字 |
+| **L4** 真 bug | 數字算錯 | **立刻停止該批**，回報並優先修；比照 Session Q2 的 `pls_cta`／`pls_pos` 處理 |
+
+L3／L4 一律同步記入本節 6.6 的「紅隊待辦」表（含 Kevin 的裁決），不要只寫在 validation-report 裡。
+★ **不要累積 L3 等最後一次問**：A1–A3 的 PLS 內容彼此引用，A2 若帶著未定的假設往前走，
+到 A3 才發現口徑要改，前面兩批的文件就得重寫。當場定案，成本最低。
+
+### 6.5 批次表（＝進度追蹤，做完打勾）
+
+一批約一個 session。**tier B 優先**，故 PLS 排在前面。
+
+**A1 — PLS 測量與估計核心（tier B 密集）** ⬜
+`pls_basic`（三種 scheme）、`pls_formative`、`pls_plsc`、信效度（α／rho_A／CR／AVE／
+Fornell-Larcker／HTMT）、`pls_fit`＋`pls_gof`、bootstrap（percentile／`pls_bca_reference`）、
+`pls_q2`、`pls_pairwise_wpls`
+
+**A2 — PLS 調節／高階／中介（tier B 密集）** ⬜
+`pls_mediation`、`pls_mod_twostage`、`pls_mod_pi`、`pls_mod_ortho`、`pls_quadratic`、
+`pls_mod_threeway`、`pls_hoc_repeated`、`pls_hoc_disjoint`、`pls_hoc_embedded`、`pls_modmed`
+
+**A3 — PLS 進階分析（W5／W6，tier B 密集）** ⬜
+`pls_mga_formulas`＋`pls_mga_perm`、`pls_micom`、`pls_predict`（含多次重複）、
+`pls_itcriteria`、`pls_ipma`、`pls_cipma`、`pls_cta`、`pls_copula`、`pls_fimix`、`pls_pos`
+
+**A4 — 其餘 tier B ＋ 慣例分歧多者** ⬜
+`nca_ce_fdh`、`nca_cr_fdh`、`nca_bottleneck`、`lda_group3`、CFA（`cfa_2factor`／
+`cfa_2factor_loadings`／`cfa_noncentral_chi2`／`cfa_rmsea_ci`，χ² 慣例與 RMSEA CI 是重點）、
+EFA（`efa_pca_none`／`efa_pca_varimax`／`efa_pca_varimax_k3`）
+
+**A5 — 推論統計與無母數（tier A）** ⬜
+三種 t 檢定、`anova_oneway`＋`tukey_hsd`、`twoway_anova_type3`、`ancova`、`repeated_anova`、
+`mixed_anova`、`chisquare_2x2`、`fisher_exact`、`zprop_one`＋`zprop_two`、
+Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn）
+
+**A6 — 敘述／相關／迴歸／量表／多變量（tier A）** ⬜
+`descriptive_y`、`shapiro_wilk`、`ks_lilliefors`、Levene（兩慣例）、資料視覺化、
+`pearson_x1_x2`、`spearman_x1_x2`、`regression_simple`／`_multiple`／`_hierarchical`、
+`logistic_regression`、Cronbach's α（兩組）、`icc`、`cohen_kappa`、`manova`、
+集群（`cluster_kmeans_k3`／`cluster_ward_k3`）
+
+> 合計約 60 份文件。批次內順序不拘；**跨批不要跳著做**，
+> 因為 A1–A3 的 PLS 內容彼此引用（例如 A2 的 two-stage 會引 A1 的估計核心）。
+
+### 6.6 紅隊待辦（L3／L4，執行中累積；空表示目前沒有）
+
+| # | 批次 | 方法 | 級別 | 問題 | 建議處置 | Kevin 裁決 |
+|---|---|---|---|---|---|---|
+| （待階段 A 執行時填入） | | | | | | |
+
+### 6.7 完成判準（全部達成才算階段 A 結案）
+
+1. 每個方法都有 `docs/methods/<id>.md`，八節齊全，第 6 節「尚未驗證的部分」不留白
+2. `docs/methods/README.md` 索引完成，且涵蓋 28 個側欄模組 → 方法的對照
+3. 專案 README 有連結進去
+4. 6.6 的 L3／L4 待辦**全部有 Kevin 裁決或已修**
+5. ★ **新增一支防漂移測試**（比照 `provenance.test.js` 的硬擋精神）：
+   檢查 `reference.json` 的每一組基準都被至少一份 `docs/methods/*.md` 的第 6 節引用；
+   缺的就紅燈。這樣日後新增方法忘記寫文件會被擋下來，而不是靠自律。
+   建議檔名 `tests/docs.coverage.test.js`
+6. 全套測試綠燈（沙盒 8 檔 ＋ Kevin 本機 jsdom 5 檔）
+7. ★ **§8「休眠與復工」填完**——專案接著要休眠到 9 月底，這一條沒做完等於沒交接
+
+### 6.8 給執行者的提醒
+
+- **不要邊寫文件邊重構程式碼**。紅隊發現的 L3 要停下來等裁決，這是 6.4 的規定，
+  不是保守——動 fixture 會讓「文件說的」與「測試鎖的」在同一個 session 內互相追著跑。
+- **第 6 節「尚未驗證的部分」是這批文件的靈魂**。如果每份都寫「已完整驗證」，
+  這批文件就沒有價值——現況明明有 30 組 tier B。誠實標註才是 Kevin 要的東西。
+- **Kevin 全程在場**：L3／L4 當場問，問完就定案往下走。這比累積清單快，也避免後批返工。
+- **每批交付時同步更新 6.5 的勾選與 6.6 的待辦表**——休眠兩個月後，這兩張表就是唯一的進度真相。
+
+---
+
+## 7. 階段 D：COMING_SOON 側欄收斂
+
+`src/config/analyses.js` 的 `COMING_SOON`（34 項）目前是純訊號，沒有入口。兩件事要做：
+
+1. **每波上線後同步轉正式入口**，不留死入口。這一項與階段 B 交錯進行：
+   Wave F1 上線 → 把 ω／Friedman／McNemar 從灰色移進正式群組；依此類推。
+2. **長期不做的加註「長期」標記**（Bayesian 三支／ARIMA／Cox／IRT），避免過度承諾。
+   使用者看到「即將開放」會有時間預期，看到「長期規劃」不會。
+
+判準：階段 B 每一波交付時，同步檢查 `COMING_SOON` 有沒有該移除的項目；
+`analyses.js` 與 §3 波次表不得脫節。
+
+---
+
+## 8. 休眠與復工（階段 A 收尾時必須填完）
+
+**適用時機**：階段 A 完成後專案休眠，Kevin 轉去寫 paper，**階段 B 最早 2026 年 9 月底啟動**。
+接手者將是對本輪對話毫無記憶的 AI。本節是它的冷啟動入口。
+
+### 8.1 復工第一件事（照順序做，不要跳）
+
+1. 讀本檔 §0（品質規範，最高位階）→ §8.2（環境重建）→ §8.4（休眠當下的狀態快照）
+2. 讀 `docs/methods/README.md`——階段 A 產出的方法索引，**這是理解這個專案在做什麼最快的入口**，
+   比讀程式碼快得多
+3. 讀 `handoff-roadmap-v1.md` §2（架構不變量七條）與 §3（沙盒作業手冊）
+4. 請 Kevin 在 GitHub Desktop 對 DuoDuoRun 按 Fetch／Pull，再開始動檔
+5. 跑一次基準線驗收（見 §8.3），確認休眠期間沒有東西壞掉，再開始新工作
+
+### 8.2 環境重建（沙盒每次都是乾淨的，這些會消失）
+
+**Python 套件**——`tests/generate_reference.py` 要完整執行需要六個套件，沙盒預設只有 numpy／pandas：
+
+```
+pip install scipy statsmodels scikit-learn pingouin factor_analyzer semopy plspm --break-system-packages
+```
+
+裝完 `python3 tests/generate_reference.py` 可完整重生，且輸出逐位元可重現
+（2026-07-25 實測；重生會同時覆寫 `reference.json` 與 `datasets.json`，
+**跑之前先備份再 diff**，確認只有預期中的差異）。
+
+**`.bat` 檔會不見**——`.gitignore` 擋 `*.bat`（Kevin 2026-07-25 裁決維持），重新 clone 後
+`跑UI測試.bat`、`只跑UI煙霧測試.bat`、`安裝相依套件.bat`、`跑seminr核對.bat` 全都不存在。
+叫 Kevin 雙擊前**先確認檔案還在**，不見就直接重建（內容很短，重建比找回快）。
+
+**R 只在 Kevin 本機**——沙盒沒有 R，也拿不到 root（apt 需要 dpkg lock、sudo 被
+no-new-privileges 擋）。凡是需要 seminr／cSEM／lavaan／psych／processR 的溯源，
+只能產出 R 腳本請 Kevin 本機跑。既有範例：`tests/verify_plspredict_reps.R`
+（自我診斷式寫法，值得照抄——沙盒無法測 R，腳本一失敗就中止會變成一輪一輪猜參數）。
+Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝路徑找 `Rscript.exe`。
+另外他的系統 library 不可寫，R 腳本必須先建 `R_LIBS_USER` 個人套件庫。
+
+**jsdom 測試沙盒跑不動**——五個 `ui.*.test.jsx` 在沙盒會掛住到 timeout。
+動到 `src/analyses/**`、`src/i18n/**` 或任何元件，一定要請 Kevin 本機補驗。
+這不是形式：2026-07-25 的 `narrative.js` vs `Narrative.jsx` 大小寫撞名 bug，
+沙盒 990 項全綠，就是本機的 `ui.smoke` 抓到的。
+
+**`vite build` 在沙盒會失敗**——`lightningcss` 缺 Linux 原生檔（node_modules 是 Windows 端裝的）。
+這是環境問題不是程式碼問題；只要看到 `transforming...✓ N modules transformed` 就代表 import 全部解析成功。
+
+### 8.3 復工基準線驗收（確認休眠期間沒壞）
+
+| 檢查 | 指令 | 休眠當下的預期值 |
+|---|---|---|
+| 沙盒 node 測試（8 檔） | `npx vitest run tests/compare.test.js tests/errorCodes.test.js tests/i18n.test.js tests/nca.test.js tests/pls.narrative.test.js tests/pls.test.js tests/provenance.test.js tests/a11y.guard.test.js` | 【階段 A 收尾時填】 |
+| lint | `npx eslint src tests` | 0 problems |
+| fixture 重生可重現 | 備份 → `python3 tests/generate_reference.py` → diff | 逐位元相同 |
+| 本機全套（Kevin） | 雙擊 `跑UI測試.bat` | 【階段 A 收尾時填】 |
+
+對不上就**先查清楚為什麼**再往下做——休眠期間唯一會變的是外部套件版本，
+數字對不上通常代表某個第三方套件改了預設值，那本身就是要記進 validation-report 的事。
+
+### 8.4 休眠當下的狀態快照【階段 A 收尾時填】
+
+- 階段 A 完成日期：
+- `reference.json` 組數 / provenance 狀態分布（verified / exempt / pending）：
+- `MAX_PENDING` 當時值：
+- 階段 A 紅隊開出的 L3／L4 項目與 Kevin 裁決結果（或指向 §6.6）：
+- 階段 A 期間發現但**刻意不處理**的事項，及不處理的理由：
+- 復工後建議的第一批工作（§3 Wave F1 的具體切法）：
+
+### 8.5 給復工執行者的三句話
+
+1. **這個專案的價值在「可驗證」而不是「功能多」**。§0 的溯源規範凌駕所有排序，
+   `provenance.test.js` 的 `MAX_PENDING` 是只能往下調的棘輪——新增方法不能以 pending 落地。
+2. **tier B 是風險所在**。休眠當下 82 組基準有 30 組 tier B（沒有第三方數值對照）。
+   歷來抓到的 bug 全部落在這一側。新增方法時，先問「有沒有可執行的第三方」，沒有就回論文記方程式編號。
+3. **第三方實作不等於可照抄的數字**。2026-07-25 查到 seminr 的 `predict_pls(reps=)` 根本不生效，
+   且其彙總口徑有系統性樂觀偏誤——查核的價值在於**知道它做了什麼**，然後自己判斷。
+
+---
+
+## 版本紀錄
+- v2.9（2026-07-25）：修正 v2.8 的一個前提錯誤。原以為 Kevin 在階段 A 期間不在場，
+  實際是**他全程參與階段 A，休眠發生在階段 A 之後**（階段 B 最早 2026-09 底）。
+  影響兩處並已改：§6.4 的 L3（數值層）處置由「累積清單等裁決」改為「當場問」
+  （理由：A1–A3 的 PLS 內容彼此引用，帶著未定假設往前走會導致後批返工）；
+  §6.8 的「不在場時」條款作廢。
+  ★ 更重要的是交接火力對準了錯的地方——真正的交接負擔在階段 A **之後**。
+  新增 **§8「休眠與復工」**：8.2 環境重建（沙盒要 pip 裝哪七個套件、`.bat` 會消失、
+  R 只在本機且不在 PATH、jsdom 沙盒跑不動、`vite build` 的 lightningcss 假失敗）
+  與 8.5 三句話已寫死；8.3 基準線數字與 8.4 狀態快照留給階段 A 收尾填，
+  並列入 §6.7 完成判準第 7 條——沒填完不算階段 A 結案。
+- v2.8（2026-07-25）：**階段化重整**。Kevin 裁決把後續工作切成 A→B→C→D 四階段並寫入本檔：
+  A＝方法文件與紅隊盤點（新增 §6，**現在做這個**）、B＝Wave F1–F8（§3）、C＝CB-SEM（§4）、
+  D＝COMING_SOON 收斂（新增 §7）。階段 A 的三項規格由 Kevin 當場裁決：
+  粒度＝可報告的統計方法（約 60 份，非 28 個側欄模組）、紅隊處置＝分級
+  （L1/L2 當場修、L3/L4 停下來候裁決）、讀者＝對外公開。
+  §6 刻意寫成「Kevin 不在場也能執行」的規格（他將在階段 A 後暫停）：
+  批次表可接續、八節模板固定、八條紅隊檢查表、完成判準含一支防漂移測試
+  （`docs.coverage.test.js`，比照 provenance 棘輪擋住「新增方法忘了寫文件」）。
+  同時修掉三處工單失準：§2.3 卡外部資源清單漏標 bca scipy 抽驗已完成、
+  `verify_plspredict_reps.R` 的處置過期、`pls_modmed` 的 Hayes 標籤未列入卡文獻清單
+  （現已整併為一張 5 列的完整表）。版本紀錄改為倒序。
+  ★ 一個要記住的數字：82 組基準裡 tier B 有 **30 組**（26 組在 PLS），
+  那是沒有第三方數值對照、只靠文獻理解撐住的部分——階段 A 的排序因此是 tier B 優先。
+- v2.7（2026-07-25）：PLSpredict 重複口徑核對定案。**查到 seminr 的 `reps` 不生效**
+  （洗牌在重複迴圈外、迴圈內分摺為決定性；本機實測 reps=1 與 reps=10 逐位元相同，
+  與原始碼判讀一致），且其意圖採用的「先平均預測值再算指標」口徑有系統性樂觀偏誤
+  （模糊分解，沙盒數值驗證 <1e-12）。本工具維持「平均各次指標」，
+  依據寫入 JSDoc／UI 警告／provenance／validation-report 四處。
+  ★ 給後續的註腳：§0 的「找可執行的第三方實作」不等於「照抄它的數字」——
+  第三方也可能有 bug 或採可辯論的口徑，查核的價值在於知道它做了什麼。
 - v2.6（2026-07-25）：**PLS 收尾**。§2.3「會動統計核心」三項全數交付：PLSpredict 多次重複
   （恆等式溯源，不新增基準組）、MGA 的 PLSc 版（盤點發現引擎已通，補測試與揭露）、
   調節式中介（新基準組 `pls_modmed`，對 statsmodels OLS 逐值 assert，verified）。
@@ -364,13 +682,6 @@ gate 判準第 3 條「Kevin 本機 lavaan 抽驗」正是 tier A 的要求。
   誠實標註一項：index of moderated mediation 的標籤待 Hayes (2015) 原文核定。
   PLSpredict 重複的彙總口徑已於同日核對定案（不跟隨 seminr，見 v2.7）。
   ★ 前置關卡記錄：沙盒無 R 亦無 root，seminr／cSEM 只能在本機跑——這決定了上述兩項的溯源路線。
-- v2.7（2026-07-25）：PLSpredict 重複口徑核對定案。**查到 seminr 的 `reps` 不生效**
-  （洗牌在重複迴圈外、迴圈內分摺為決定性；本機實測 reps=1 與 reps=10 逐位元相同，
-  與原始碼判讀一致），且其意圖採用的「先平均預測值再算指標」口徑有系統性樂觀偏誤
-  （模糊分解，沙盒數值驗證 <1e-12）。本工具維持「平均各次指標」，
-  依據寫入 JSDoc／UI 警告／provenance／validation-report 四處。
-  ★ 給後續的註腳：§0 的「找可執行的第三方實作」不等於「照抄它的數字」——
-  第三方也可能有 bug 或採可辯論的口徑，查核的價值在於知道它做了什麼。
 - v2.5（2026-07-25）：P1 低風險殘項第二批全數交付（§2.3 七項）＋ `pls_bca_reference`
   的 scipy 獨立抽驗並 assert 化。★ 過程中修正一處錯誤敘述：IPMA 改用量表理論界線
   **同時**改變 performance 與 importance（原宣稱只影響 performance），三處說明已改並留斷言。
@@ -378,13 +689,6 @@ gate 判準第 3 條「Kevin 本機 lavaan 抽驗」正是 tier A 的要求。
   順帶修掉示範模型缺 `mode` 欄位導致「載入示範即顯示設定已變更」的既有缺陷。
   `MAX_PENDING` 維持 2（scipy 非權威，如預期不能結案）。
   本機全套驗收 **1,155 過、6 跳過、13 檔全綠**（含 3 條新增的 W4 畫布測試）；eslint 0 problems。
-- v2（2026-07-13）：初版。合併 `pls-sem-w6-workplan-v1`（A–F 已交付）、
-  `redteam-audit-workplan-v1`（R1–R5 已交付）、`handoff §6.8/§7`、
-  `feature-priority-roadmap-v1`（20 項未做）；新增 §0 品質規範與 P0 公式溯源審計。
-- v2.1（2026-07-25）：Session Q2 部分交付。§1 補 Q2 進度表、交付判準算術修正（3 → 4）、
-  兩組卡文獻的解除封鎖路徑；§2 補 Q2 產生的三筆品質殘項。
-  棘輪 10 → 6；抓到並修正 `pls_cta`（t → z）與 `pls_pos`（ΣSSE → ΣR²）兩處公式偏離。
-  完整測試套件本機驗收 1136 過、6 跳過、零失敗。
 - v2.4（2026-07-25）：文件盤點與收斂。新增「下一個 session 從這裡開始」與「文件清單」兩節；
   表頭的舊整併紀錄（四份已刪工單、optimization-roadmap 失蹤備註）已完成階段性任務，一併移除。
   修正兩處失效參照（`cb-sem-design-plan-v1.md` 引已刪的 w6-workplan、`pls-model-schema.md`
@@ -401,3 +705,10 @@ gate 判準第 3 條「Kevin 本機 lavaan 抽驗」正是 tier A 的要求。
   `pls_pairwise_wpls` 取得三道沙盒第三方對照並升為重生時 assert；`pls_hoc_embedded` 引用補正
   （方法源出 Ringle et al. 2012）。修正原工單兩處誤植（批次 3 是 4 組非 3 組；Q3 判準 0 → 2）。
   P0 只剩 Q2 卡文獻的兩組。
+- v2.1（2026-07-25）：Session Q2 部分交付。§1 補 Q2 進度表、交付判準算術修正（3 → 4）、
+  兩組卡文獻的解除封鎖路徑；§2 補 Q2 產生的三筆品質殘項。
+  棘輪 10 → 6；抓到並修正 `pls_cta`（t → z）與 `pls_pos`（ΣSSE → ΣR²）兩處公式偏離。
+  完整測試套件本機驗收 1136 過、6 跳過、零失敗。
+- v2（2026-07-13）：初版。合併 `pls-sem-w6-workplan-v1`（A–F 已交付）、
+  `redteam-audit-workplan-v1`（R1–R5 已交付）、`handoff §6.8/§7`、
+  `feature-priority-roadmap-v1`（20 項未做）；新增 §0 品質規範與 P0 公式溯源審計。
