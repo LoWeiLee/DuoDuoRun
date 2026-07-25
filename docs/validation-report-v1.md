@@ -1108,3 +1108,127 @@ ui.smoke 133、ui.modal 8、ui.transformDialog 6、ui.errorBoundary 5、ui.toast
    需 `iconv -f UTF-16LE` 才讀得到。下次在 Tee-Object 後加 `-Encoding UTF8`。
 3. `ui.smoke` **並不慢**（本機 4.11 秒、133 項）。先前整套跑的 log 缺 ui.smoke 與總結區塊，
    是 log 在 vitest 收尾前被取走，**不是**效能或掛起問題——不要再據此推論它是瓶頸。
+
+## 公式溯源審計 Session Q3（2026-07-25，Opus 5）：批次 3 補登記與補驗
+
+依 `roadmap-v2.md` §1／`formula-provenance.md` §4 批次 3。四組全數 verified，
+棘輪 `MAX_PENDING` 6 → **2**（剩下的 2 組是 Q2 卡文獻者，非本批）。
+本批的定位是「機制已在 W6 詳記、補上權威來源與可執行的交叉驗證」，
+但實際做下來有一組升級成第三方對照、三組抓到引用或口徑需要補正的地方。
+
+### 一、銷帳（4 組）
+
+| 組 | 路線 | 證據 |
+|---|---|---|
+| `pls_pairwise_wpls` | **沙盒第三方（本批最強）** | pairwise-complete 相關 vs `pandas.DataFrame.corr()`（pandas 預設即 pairwise-complete）最大差 **3.886e-16**；加權相關 vs `statsmodels DescrStatsW(ddof=0).corrcoef` **4.441e-16**、vs `numpy.cov(aweights, ddof=0)` **2.220e-16**。三道**已寫入 `generate_reference.py` 成為重生時 assert**（容差 1e-12）——與 Q1 的 `pls_gof`／`pls_itcriteria` 同級的結構性防護，不是一次性抽驗。另實測確認 ddof 取 0 或 1 得到同一個相關矩陣（差 <1e-15，因相關為尺度不變量），排除了慣例分歧風險 |
+| `pls_hoc_embedded` | 權威文獻逐點＋第一階段第三方錨 | Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), IJCHM 35(1) accepted MS pp. 15-16（OA: ueaeprints 171785）逐點核對四項口徑：第一階段＝repeated indicators 識別 HOC ✓、第二階段 HOC 指標＝第一階段 LOC 分數 ✓、**全部非階層構念改以第一階段分數為單指標** ✓、反映型 HOC 用 Mode A ＋ path scheme ✓。第一階段即 `pls_hoc_repeated`，該組已有對 plspm 的重生時 assert <1e-6 → embedded 的輸入分數是第三方錨定的 |
+| `pls_quadratic` | 官方文件逐點＋實作層查核 | SmartPLS 4「Nonlinear Relationships」官方文件：二次效果「is like a self-moderation」、「uses the two-stage approach」、「uses the latent variable scores of the latent predictor variable **from the main effects model (without the quadratic effect term)**」、「used to calculate the **squared indicator** for the second stage」——四項全中 |
+| `pls_mod_threeway` | 權威文獻逐字 | Becker et al. (2023) guidance 表：「As with two-way interactions, researchers should draw on the two-stage approach to estimate models with three-way interactions. The resulting product should not be standardized, and the researchers should estimate and interpret the unstandardized coefficient.」逐字對上；階層完整規格（3 主效果＋3 兩向＋1 三向）依 Aiken & West (1991) |
+
+### 二、本輪的三筆補正
+
+1. **`pls_hoc_embedded` 的引用不精確**。原標「Sarstedt et al. 2019」為方法出處；依 Becker et al.
+   (2023) p. 15，embedded two-stage 的方法源出 **Ringle, Sarstedt & Straub (2012)**，
+   Sarstedt et al. (2019) 與 Becker et al. (2023) 是程序指引。已補正 provenance 與
+   `generate_reference.py` 的 source 字串（**不影響任何數值**，重生後僅該組 source 更新）。
+   ——與 Q1 的 `pls_itcriteria` 引用錯置（2019 JAIS vs 2021 Dec. Sci. 作者組合）同一類問題。
+2. **工單誤植兩處**。批次 3 標題寫「3 組」但列出 4 個方法（`pls_quadratic` 與 `pls_mod_threeway`
+   是兩組獨立 fixture）；Q3 判準「`MAX_PENDING` 降至 0」建立在 Q2 降到 4 的前提上，
+   Q2 因文獻未取得只到 6，故 Q3 的正確落點是 **2**。已修 `roadmap-v2.md`。
+3. **`pls_quadratic` 的第一階段乾淨性做了實作層查核**（不只讀文件）。SmartPLS 要求第一階段
+   取「主效果模型（不含二次項）」的分數。查 `pls.js` 的 two-stage 分支：先以 `curPaths`
+   （僅主效果）呼叫 `estimateStage`，交互路徑 `intPaths` 在該次估計**之後**才併入——確認乾淨。
+
+### 三、誠實標註的殘餘限制
+
+`pls_quadratic`／`pls_mod_threeway`／`pls_hoc_embedded` 三組**沒有專屬的第三方數值對照**：
+SmartPLS 4 授權已過期，seminr 沒有 quadratic、三向交互、embedded 變體的支援。
+它們的保證來自三者疊加——**權威文獻逐字或逐點 ＋ 與已對 seminr 逐值的 `pls_mod_twostage`／
+`pls_hoc_disjoint` 走同一條程式路徑 ＋ 規格完整性查核**。這比 Q1 的「純手算＋自我一致」強，
+但比 `pls_pairwise_wpls` 的重生時第三方 assert 弱。各組的 provenance `verification`
+已逐條寫明強度到哪裡為止，不做過度宣稱。
+
+### 四、回歸驗證
+
+`reference.json` 全量重生（約 11 秒）：**數值零漂移**，僅 `pls_hoc_embedded` 一條 source
+字串更新；重生時通過的第三方 assert 由 Q1 的 2 道（plspm gof、statsmodels 恆等式）
+＋ HOC repeated 對 plspm，增加到**加上本輪 3 道 = 共 6 道**。
+
+沙盒可跑的測試全綠：**979 過、6 記錄性跳過**（compare 795＋6、pls 150、nca 16、
+provenance 7、a11y/errorCodes/i18n 11）。五個 jsdom `ui.*.test.jsx` 沙盒仍跑不動
+（環境層問題，見 Q2 節），需由 Kevin 雙擊 `跑UI測試.bat` 在本機補驗。
+
+## P1 品質殘項 第一批（2026-07-25，Opus 5）：APA 敘述句補齊 8 項
+
+依 `roadmap-v2.md` §2。本批只做「不動統計核心」的部分，交付一項並順帶清掉兩條過期工單。
+
+### 一、交付：APA 敘述句 8 項（中英各一份）
+
+原工單寫「MGA／PLSpredict／IPMA 缺敘述句」——那是 W5 時期的盤點。實查 `Narrative.jsx`：
+已有測量、適配、Q²、路徑、R²、調節（含二次）、中介；**W6 新增的 CTA、Gaussian copula、
+FIMIX、PLS-POS、cIPMA 同樣沒有敘述句**，實際缺口是 8 項。本次一次補齊。
+
+**撰寫原則（寫進 i18n 檔頭註解，供後續維護遵守）**：句子只重述報表已呈現的判讀，
+不引入新的統計主張；**每一項方法的界線必須進入句子**，因為使用者會把敘述直接貼進論文——
+敘述句是最後一道防止過度宣稱的關卡。各項強制寫入的界線：
+
+| 區塊 | 強制入句的界線 |
+|---|---|
+| MGA | 測量恆等性（MICOM）未達 partial invariance 時，群組間係數比較不具意義 |
+| PLSpredict | Q²predict 與 RMSE-vs-LM 的計數如實呈現，三種判讀（全優／部分／未優）不含糊 |
+| IPMA | 0–100 重標定用的是**觀察極值**而非理論界線，數值會與採理論界線者不同 |
+| cIPMA | 判準為 d ≥ .10 且 permutation p < .05；且「必要」不等於「充分」 |
+| CTA-PLS | 結論僅及於「反映型設定是否與資料相容」，不證成形成型的內容效度；指標 < 4 者已排除 |
+| Gaussian copula | 候選構念未拒絕常態時，**明說結果不足以判定內生性**（Park & Gupta 的識別條件） |
+| FIMIX | EN < .50 時明說分段區隔度不足、不宜據此分群解讀 |
+| PLS-POS | 目標函數隨段數上升且無懲罰項，**不可用於決定段數**；並揭露本實作為結構模型層簡化版 |
+
+### 二、順帶的架構調整
+
+句子組裝自 `Narrative.jsx` 抽成純函式模組 **`src/analyses/pls/apaNarrative.js`**
+（`buildNarrative(res, lang)`）。兩個理由：對齊架構不變量 1「邏輯與 UI 解耦」；
+以及讓敘述句能在 **node 環境**被測試——`Narrative` 是 jsdom 元件，而 jsdom 在
+Cowork 沙盒卡在環境初始化（見 Session Q2 節），抽出後就繞開了這個限制。
+
+新增 `tests/pls.narrative.test.js`（11 項）：涵蓋未開啟時不得出現、error 時整段略過、
+八個區塊各自的數值與界線關鍵字、以及「八項同時開啟時中英兩版都不得殘留未填模板或 NaN」。
+
+**測試當場抓到一個 bug**：`copulaIntro` 含 `{b}`（bootstrap 次數）但組裝時忘了走
+`fillTemplate`，輸出會殘留字面的 `bootstrap（{b} 次）`。若只靠肉眼看畫面很容易漏掉——
+這正是把它變成可測純函式的價值。已修。
+
+另外 `i18n.test.js` 的 placeholder 對稱性檢查也擋下一次真實不對稱
+（zh 用 `{predVerdict}`／`{enVerdict}` 佔位、en 版原本寫成句尾接續），已改為兩語一致。
+
+### 三、清掉兩條過期工單 ＋ 一條裁決
+
+- **59 個既有 eslint 問題** → 已歸零。`npx eslint src tests` 現為 0 problems。
+- **`deploy.yml` 加 lint step** → 早已存在（2026-07-13 紅隊 R4 同時補上 lint 與 test）。
+- **刪 `reference/statlite.jsx`** → **Kevin 裁決保留**。它不是可安全刪除的 dead code：
+  `descriptive.js`／`pvalue.js`／`ttest.js` 三個檔的檔頭以它為溯源出處；
+  且 `eslint.config.js` 已將 `reference/` 排除，原本「讓 lint 破表」的刪除理由不成立。
+
+### 四、回歸驗證
+
+沙盒可跑的測試：**990 過、6 記錄性跳過**（較 Q3 的 979 多 11 ＝ 新增的敘述句測試）；
+`npx eslint src tests` 0 problems。統計核心未變動，`reference.json` 未重生。
+五個 jsdom `ui.*.test.jsx` 仍需 Kevin 本機以 `跑UI測試.bat` 補驗
+（本批動到 `Narrative.jsx`，`ui.smoke` 會渲染它）。
+
+### 五、★ 本批抓到的跨平台事故（記錄在案，勿重蹈）
+
+句子模組**最初命名為 `narrative.js`**，與同目錄的 `Narrative.jsx` 只差首字母大小寫。
+
+- **沙盒（Linux，檔名分大小寫）**：`import Narrative from './Narrative'` 精準解析到
+  `Narrative.jsx`，990 項測試全綠，看不出任何問題。
+- **Kevin 本機（Windows，檔名不分大小寫）**：同一行 import 解析到 `narrative.js`——
+  該檔沒有 default export → `Narrative` 為 undefined → 元件掛不上 →
+  `ui.smoke > pls-sem > Narrative` 紅燈（`expected null to be truthy`）。
+
+**已改名為 `apaNarrative.js`**，並在該檔與 `Narrative.jsx` 檔頭都寫下「不可改回 narrative.js」
+的原因，避免後人「整理命名」時又撞回去。
+
+**教訓（對後續 session 有效）**：本專案的開發環境是 **Linux 沙盒**、使用者環境是 **Windows**。
+凡是新增檔案，**檔名不得與同目錄既有檔案僅差在大小寫**——這類錯誤在沙盒 100% 測不出來。
+這也是「五個 jsdom `ui.*.test.jsx` 沙盒跑不動、必須由 Kevin 本機補驗」不只是形式的證明：
+本次正是 `ui.smoke` 在本機抓到了沙盒全綠的實質缺陷。

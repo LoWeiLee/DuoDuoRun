@@ -3306,6 +3306,70 @@ Gaussian copula（Park & Gupta, 2012；PLS-SEM 流程依 Hult et al., 2018）用
         none: '無效果型',
       },
       noDirect: '無（未設定直接路徑）',
+      // ── W5／W6 敘述句（2026-07-25 P1 補齊）───────────────────────────
+      // 原則：句子只重述報表已呈現的判讀，不引入新的統計主張；
+      // 每一項的方法界線（Bonferroni、非常態前提、EN 門檻、POS 不可選段數、
+      // NCA 的 d≥.1 且 p<.05）都必須進句子，避免使用者複製後在論文中過度宣稱。
+      mgaIntro: '多群組分析（MGA）方面，以 {g1}（n = {n1}）與 {g2}（n = {n2}）兩群比較路徑係數，' +
+        'permutation 檢定（{np} 次有效重排）結果：',
+      mgaPath: '{from} → {to}（β_{g1} = {b1}, β_{g2} = {b2}, 差異 = {diff}, permutation {pStr}，{sig}）',
+      mgaSigYes: '兩群差異顯著',
+      mgaSigNo: '兩群差異未達顯著',
+      mgaTail: '。MICOM 的測量恆等性未達 partial invariance 時，群組間的係數比較不具意義，' +
+        '應先確認恆等性再解讀本表。',
+      predictIntro: 'PLSpredict（k = {k} 折交叉驗證）方面，' +
+        '{nInd} 個指標中有 {nQ2ok} 個的 Q²predict > 0、{nBeatLm} 個的 RMSE 低於線性迴歸基準（LM），{predVerdict}',
+      predAll: '顯示模型具備優於基準的樣本外預測力。',
+      predSome: '顯示模型的樣本外預測力僅在部分指標上優於基準。',
+      predNone: '顯示模型未展現優於基準的樣本外預測力。',
+      predictCvpat: 'CVPAT 檢定顯示，相對於指標平均基準的平均損失差 = {dIA}（t = {tIA}, {pIA}）、' +
+        '相對於線性迴歸基準為 {dLM}（t = {tLM}, {pLM}）。',
+      ipmaIntro: '重要性—績效地圖分析（IPMA；Ringle & Sarstedt, 2016）以 {target} 為目標構念' +
+        '（其績效值 = {targetPerf}）：',
+      ipmaItem: '{lv}（重要性 = {imp}、績效 = {perf}）',
+      ipmaTail: '。重要性為標準化總效果、績效為重標定至 0–100 的構念分數；' +
+        '高重要性且低績效者為優先改善對象。本工具以觀察到的最小／最大值進行 0–100 重標定，' +
+        '若量表有明確的理論界線，數值會與採用理論界線者不同。',
+      // cIPMA（Hauff et al., 2024）
+      cipmaIntro: '結合必要條件分析的重要性—績效地圖分析（cIPMA；Hauff et al., 2024）方面，' +
+        '以 CE-FDH 天花板線檢視 {target} 的直接前置構念：',
+      cipmaItem: '{lv}（d = {d}, {pStr}，{verdict}）',
+      cipmaNecessaryYes: '構成必要條件',
+      cipmaNecessaryNo: '未構成必要條件',
+      cipmaTail: '。判準為效果量 d ≥ .10 且 permutation p < .05（Dul, 2016；Hauff et al., 2024）；' +
+        '必要條件的成立尚須理論支持，且「必要」不等於「充分」。',
+      // CTA-PLS（Gudergan et al., 2008）
+      ctaIntro: '驗證性四分差分析（CTA-PLS；Gudergan et al., 2008）方面，' +
+        '以 bias-corrected bootstrap 信賴區間（區塊內 Bonferroni 校正）檢定模型隱含的非冗餘 tetrad：',
+      ctaItem: '{lv}（{nTetrads} 個非冗餘 tetrad、校正後 α = {alpha}，{verdict}）',
+      ctaVerdictFormative: '至少一個 tetrad 顯著不為零，反映型設定被否證，宜改採形成型',
+      ctaVerdictReflective: '所有 tetrad 的信賴區間皆涵蓋零，與反映型設定一致',
+      ctaTail: '。CTA-PLS 的結論為「反映型設定是否與資料相容」，不直接證成形成型設定的內容效度；' +
+        '指標數少於四個的構念在數學上無法形成 tetrad，已排除於檢定之外。',
+      // Gaussian copula（Park & Gupta, 2012；Hult et al., 2018）
+      copulaIntro: 'Gaussian copula 內生性檢查（Park & Gupta, 2012；程序依 Hult et al., 2018）方面，' +
+        '以 bootstrap（{b} 次）檢定 copula 項的顯著性：',
+      copulaSigYes: '{n} 個模型的 copula 項達顯著，顯示對應的解釋構念可能存在內生性',
+      copulaSigNo: '所有模型的 copula 項均未達顯著，未發現內生性的證據',
+      copulaGateWarn: '。惟本次分析中，{lvs} 的構念分數未能拒絕常態（KS 檢定），' +
+        '而 Park & Gupta (2012) 的識別條件要求解釋變數為非常態——' +
+        '在此情形下 copula 項的結果不足以作為內生性的判準。',
+      copulaGateOk: '。前置的 KS 常態檢定顯示各候選構念分數均為非常態，符合 Park & Gupta (2012) 的識別條件。',
+      // FIMIX-PLS（Hahn et al., 2002；Sarstedt et al., 2011）
+      fimixIntro: '潛在異質性檢查方面，FIMIX-PLS（Hahn et al., 2002）在 K = {k} 的解下' +
+        '（lnL = {lnl}、n = {n}）得到各段相對大小為 {shares}',
+      fimixEn: '，正規化熵 EN = {en}，{enVerdict}',
+      fimixEnOk: '達 .50 門檻，分段具足夠的區隔度。',
+      fimixEnBad: '未達 .50 門檻，分段的區隔度不足，不宜據此分群解讀。',
+      fimixNoEn: '。',
+      fimixTail: '段數應依資訊準則（AIC/BIC/CAIC 等，Sarstedt et al., 2011）、理論與段別可解釋性共同判斷；' +
+        '未觀察異質性若成立，全樣本的路徑係數即為各段的加權平均，不宜逕自推論至個別次群體。',
+      // PLS-POS（Becker et al., 2013）
+      posIntro: '預測導向分段（PLS-POS；Becker et al., 2013）在 K = {k} 的解下，' +
+        '各段大小為 {sizes}，分段後整體 R² 由 {r2g} 提升至 {r2s}。',
+      posTail: 'POS 的目標函數為各段解釋變異之和，必然隨段數增加而上升且無懲罰項，' +
+        '**不可用於決定段數**；段數應依 FIMIX 的資訊準則、理論或段別可解釋性決定。' +
+        '本實作為結構模型層的簡化版（不重估段別的測量權重），僅適用於結構關係的異質性檢視。',
       copyHint: '一鍵複製 APA 敘述',
     },
   },

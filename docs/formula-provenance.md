@@ -78,6 +78,19 @@
 - −1（2026-07-14）：`pls_cipma`（Hauff et al. 2024 全文口徑逐項核對；OA 全文）→ **9**
 - −1（2026-07-25）：`pls_copula`（Park & Gupta 2012 Eq. (6)/(10)＋註 3；Hult 2018 Eq. (5)/(6)）→ **8**
 - −2（2026-07-25）：`pls_cta`、`pls_pos`（Kevin 提供 PDF；**兩組各修正一處公式偏離**，見下）→ **6**
+- ⛔ **Q2 未結案**：`pls_fimix`、`pls_bca_reference` 卡在原文取得（見 §4 批次 2 表與
+  `roadmap-v2.md` §1 的解除封鎖路徑）。兩者的替代交叉驗證已通過，但只鎖得住「JS↔numpy 一致」、
+  鎖不住「公式讀錯」，故**不以替代驗證充當結案**。取得原文後 6 → 4，Q2 方結案。
+
+6 →（2026-07-25 溯源審計 Session Q3，批次 3：補登記與補驗）→
+- −1：`pls_pairwise_wpls`（pairwise 相關對 pandas、加權相關對 statsmodels＋numpy，
+  **三道升為重生時 assert**）→ 5
+- −1：`pls_hoc_embedded`（Becker et al. 2023 IJCHM accepted MS pp.15-16 逐點核對；引用補正）→ 4
+- −1：`pls_quadratic`（SmartPLS 官方 Nonlinear 文件逐點；並查核第一階段確實排除二次項）→ 3
+- −1：`pls_mod_threeway`（Becker et al. 2023 guidance 表逐字）→ **2，批次 3 全數結案**
+
+★ **現況：待審計只剩 Q2 卡文獻的 2 組**（`pls_fimix`、`pls_bca_reference`）。
+取得該三份文獻後 2 → 0，P0 公式溯源審計全數結案。
 
 ## 4. 待審計清單（15 組）與審計路徑
 
@@ -101,19 +114,19 @@
 |---|---|---|
 | `pls_cta` | Gudergan, Ringle, Wende & Will (2008), JBR 61(12)；tetrad 定義 Bollen & Ting (1993) | 非冗餘 tetrad 的選取集、Bonferroni 的施加層級 |
 | `pls_copula` | Park & Gupta (2012), Mktg Sci 31(4)；Hult et al. (2018), JIM 26(3) | ECDF 的並列處理、H=1 的夾擠值——已對 Hult 的公開程式碼，但需記下出處 |
-| `pls_fimix` | Hahn, Johnson, Herrmann & Huber (2002), SBR 54(3)；準則 Sarstedt et al. (2011), SBR 63(1) | 參數計數 N_k、EN 的正規化、是否含截距 |
+| `pls_fimix` | Hahn, Johnson, Herrmann & Huber (2002), SBR 54(3)；準則 Sarstedt et al. (2011), SBR 63(1) | 參數計數 N_k、EN 的正規化、是否含截距 ★**2026-07-25：原文取不到，維持 pending**（OA 管道已窮盡＋機構訂閱未涵蓋） |
 | `pls_pos` | Becker, Rai, Ringle & Völckner (2013), MISQ 37(3) | 目標函數的定義、最小段大小 |
 | `pls_cipma` | Hauff, Richter, Sarstedt & Ringle (2024) | NCA × IPMA 的組合口徑 |
-| `pls_bca_reference` | Efron & Tibshirani (1993) §14.3 | BCa 的 z₀ 與 a 的估計式 |
+| `pls_bca_reference` | Efron & Tibshirani (1993) §14.3 | BCa 的 z₀ 與 a 的估計式 ★**2026-07-25：原文取不到，維持 pending**（同上） |
 
 ### 批次 3：本 session 新做、公式已在程式碼與 validation-report 中詳記，補登記即可（3 組）
 
 | 方法 | 說明 |
 |---|---|
-| `pls_pairwise_wpls` | pairwise-complete 相關與加權相關的定義是封閉式且無爭議；`full_*` 自我一致性欄位已鎖住「相關矩陣驅動的迭代必須重現 pls_basic」 |
-| `pls_quadratic` | 二次效果＝分數平方，機制同 two-stage（已對 seminr） |
-| `pls_mod_threeway` | 三向交互＝分數連乘，機制同上 |
-| `pls_hoc_embedded` | embedded two-stage HOC（Sarstedt et al. 2019）；disjoint 已對 seminr，embedded 需補 |
+| `pls_pairwise_wpls` | ✅ Q3：pairwise 對 pandas（3.9e-16）、加權對 statsmodels／numpy（4.4e-16／2.2e-16），三道已成重生時 assert |
+| `pls_quadratic` | ✅ Q3：SmartPLS 官方 Nonlinear 文件逐點（self-moderation、主效果模型分數、平方指標）＋機制同 two-stage（已對 seminr） |
+| `pls_mod_threeway` | ✅ Q3：Becker et al. (2023) guidance 表逐字（三向走 two-stage、乘積不標準化、回報未標準化係數）＋階層完整規格 |
+| `pls_hoc_embedded` | ✅ Q3：Becker et al. (2023) IJCHM accepted MS pp.15-16 逐點；第一階段＝已有 plspm assert 的 hoc_repeated；引用補正為 Ringle et al. (2012) 源出 |
 
 ## 5. 全表
 
@@ -164,7 +177,7 @@
 | `pls_formative` | B | ✅ | plspm（fixture 來源）＋seminr mode_B（2026-07-13 逐值） |
 | `pls_gof` | A | ✅ | plspm 0.5.7（Tenenhaus et al. 2005）；重生時 assert <1e-6 |
 | `pls_hoc_disjoint` | B | ✅ | seminr (R)（2026-07-13 逐值；覆核改列 B——重生無第三方 assert） |
-| `pls_hoc_embedded` | B | ⬜ 待審計 | 待審計 |
+| `pls_hoc_embedded` | B | ✅ | Becker et al. (2023) IJCHM 35(1) pp.15-16；方法源出 Ringle, Sarstedt & Straub (2012) |
 | `pls_hoc_repeated` | A | ✅ | plspm |
 | `pls_ipma` | B | ✅ | Ringle & Sarstedt (2016)；cSEM doIPMA 原始碼逐式＋數值複算（灰區見 note） |
 | `pls_itcriteria` | B | ✅ | seminr compute_metrics.R 同式＋本機 R 逐值；statsmodels 恆等式（重生 assert）；Sharma et al. 2019 JAIS／2021 Dec. Sci. |
@@ -175,15 +188,15 @@
 | `pls_micom` | B | ✅ | Henseler, Ringle & Sarstedt (2016)；cSEM 0.6.1 原始碼（postest… |
 | `pls_mod_ortho` | B | ✅ | seminr 2.5.0；Little, Bovaird & Widaman (2006) |
 | `pls_mod_pi` | B | ✅ | seminr 2.5.0；Chin, Marcolin & Newsted (2003) |
-| `pls_mod_threeway` | B | ⬜ 待審計 | 待審計 |
+| `pls_mod_threeway` | B | ✅ | Becker et al. (2023) IJCHM guidance 表逐字；Chin et al. (2003)；Aiken & West (1991) |
 | `pls_mod_twostage` | B | ✅ | seminr 2.5.0；Chin et al. (2003)；SmartPLS 4 Moderation 文件 |
-| `pls_pairwise_wpls` | B | ⬜ 待審計 | 待審計 |
+| `pls_pairwise_wpls` | B | ✅ | pandas `.corr()`／statsmodels `DescrStatsW`／numpy `cov(aweights)`（三道重生時 assert） |
 | `pls_plsc` | B | ✅ | cSEM 0.6.1 |
 | `pls_pos` | B | ✅ | Becker et al. (2013) p. 676（正文無編號式；Appendix B 未取得）；本工具為結構模型層簡化版，範圍限制見 provenance note |
 | `pls_pos_inputs` | I | — | 不適用（純輸入型 fixture） |
 | `pls_predict` | B | ✅ | seminr 2.5.0；Shmueli et al. (2016, 2019) |
 | `pls_q2` | B | ✅ | Hair et al. (2017) 第 6 章＋SmartPLS Blindfolding 官方文件（程序四要點）；無在世第三方實作 |
-| `pls_quadratic` | B | ⬜ 待審計 | 待審計 |
+| `pls_quadratic` | B | ✅ | SmartPLS 4「Nonlinear Relationships」官方文件；Chin et al. (2003)；Becker et al. (2023) |
 | `pls_scheme_centroid` | A | ✅ | plspm |
 | `pls_scheme_factorial` | A | ✅ | plspm |
 | `regression_hierarchical` | A | ✅ | statsmodels |

@@ -1,17 +1,14 @@
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90mC:/Users/serpe/OneDrive/文件/爬出地獄之路/Claude Cowork/Repos/DuoDuoRun[39m
 
- [32m✓[39m tests/a11y.guard.test.js[2m > [22m無障礙靜態防線[2m > [22m沒有裸的 focus:outline-none（一律用 .focus-ring utility）[32m 4[2mms[22m[39m
- [32m✓[39m tests/a11y.guard.test.js[2m > [22m無障礙靜態防線[2m > [22m每個 <select> 都有 aria-label（否則螢幕報讀念不出它是哪個欄位）[32m 2[2mms[22m[39m
- [32m✓[39m tests/a11y.guard.test.js[2m > [22m無障礙靜態防線[2m > [22m沒有使用 alert() / confirm()（改走 Toast / ConfirmDialog）[32m 15[2mms[22m[39m
  [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22mreference.json 的每個方法都必須有登記條目[32m 2[2mms[22m[39m
  [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22m登記表不得有 reference.json 裡不存在的方法（防止遺留條目）[32m 0[2mms[22m[39m
  [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22m每個條目的 tier / status 必須合法，authority 與 verification 不得為空[32m 0[2mms[22m[39m
  [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22mtier A 必須是 verified（A 的定義就是「值直接來自第三方實作」）[32m 0[2mms[22m[39m
  [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22mtier I 必須是 exempt，且不得用來規避溯源義務（只能是輸入型 fixture）[32m 0[2mms[22m[39m
  [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22mtier B 且已 verified 者，authority 不得停在「待審計」[32m 0[2mms[22m[39m
- [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22m★ 待審計數量的棘輪：不得超過 6（只能往下調）[32m 0[2mms[22m[39m
- [32m✓[39m tests/nca.test.js[2m > [22mNCA CE-FDH — 手算錨定[2m > [22mscope 由實證 min/max 決定[32m 1[2mms[22m[39m
+ [32m✓[39m tests/provenance.test.js[2m > [22m公式溯源登記（provenance）[2m > [22m★ 待審計數量的棘輪：不得超過 2（只能往下調）[32m 0[2mms[22m[39m
+ [32m✓[39m tests/nca.test.js[2m > [22mNCA CE-FDH — 手算錨定[2m > [22mscope 由實證 min/max 決定[32m 3[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA CE-FDH — 手算錨定[2m > [22mCE-FDH peers = 記錄點 (1,2)(3,4)(5,5)[32m 0[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA CE-FDH — 手算錨定[2m > [22mceiling zone C=8、effect size d=0.5（大效果）[32m 0[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA CE-FDH — 手算錨定[2m > [22mCE-FDH 準確度恆為 100%[32m 0[2mms[22m[39m
@@ -21,21 +18,35 @@
  [32m✓[39m tests/nca.test.js[2m > [22mareaAboveClampedLine — 夾擠積分[2m > [22m線完全在 scope 上緣之上 → 空白區為 0[32m 0[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mareaAboveClampedLine — 夾擠積分[2m > [22m線完全在 scope 下緣之下 → 空白區 = 整個 scope[32m 0[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mareaAboveClampedLine — 夾擠積分[2m > [22m水平線位於中間 → 空白 = 上半矩形[32m 0[2mms[22m[39m
- [32m✓[39m tests/nca.test.js[2m > [22mNCA permutation 檢定[2m > [22m注入相同 permutations → p 決定性一致[32m 0[2mms[22m[39m
+ [32m✓[39m tests/nca.test.js[2m > [22mNCA permutation 檢定[2m > [22m注入相同 permutations → p 決定性一致[32m 1[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA permutation 檢定[2m > [22m整數 P + 固定 seed → 生成路徑決定性[32m 1[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA permutation 檢定[2m > [22m未指定 permutations → 不做檢定[32m 0[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA 效果量標籤與邊界[2m > [22meffectSizeLabel 依 Dul 基準分級[32m 0[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA 效果量標籤與邊界[2m > [22m長度不符 / n<5 / 無變異 → 明確錯誤[32m 0[2mms[22m[39m
  [32m✓[39m tests/nca.test.js[2m > [22mNCA 效果量標籤與邊界[2m > [22mceFdhPeers 對同 x 取最大 y[32m 0[2mms[22m[39m
+ [32m✓[39m tests/a11y.guard.test.js[2m > [22m無障礙靜態防線[2m > [22m沒有裸的 focus:outline-none（一律用 .focus-ring utility）[32m 3[2mms[22m[39m
+ [32m✓[39m tests/a11y.guard.test.js[2m > [22m無障礙靜態防線[2m > [22m每個 <select> 都有 aria-label（否則螢幕報讀念不出它是哪個欄位）[32m 1[2mms[22m[39m
+ [32m✓[39m tests/a11y.guard.test.js[2m > [22m無障礙靜態防線[2m > [22m沒有使用 alert() / confirm()（改走 Toast / ConfirmDialog）[32m 10[2mms[22m[39m
  [32m✓[39m tests/i18n.test.js[2m > [22mi18n 對稱性：zh-TW ↔ en[2m > [22men 沒有缺任何 zh-TW 的 key[32m 2[2mms[22m[39m
  [32m✓[39m tests/i18n.test.js[2m > [22mi18n 對稱性：zh-TW ↔ en[2m > [22mzh-TW 沒有缺任何 en 的 key[32m 0[2mms[22m[39m
  [32m✓[39m tests/i18n.test.js[2m > [22mi18n 對稱性：zh-TW ↔ en[2m > [22m同一 key 的 placeholder 集合一致[32m 4[2mms[22m[39m
  [32m✓[39m tests/i18n.test.js[2m > [22mi18n 對稱性：zh-TW ↔ en[2m > [22m同一 key 的型別一致（不會一邊字串、一邊物件）[32m 1[2mms[22m[39m
- [32m✓[39m tests/i18n.test.js[2m > [22mi18n 對稱性：zh-TW ↔ en[2m > [22m沒有空字串（未填的翻譯）[32m 1[2mms[22m[39m
+ [32m✓[39m tests/i18n.test.js[2m > [22mi18n 對稱性：zh-TW ↔ en[2m > [22m沒有空字串（未填的翻譯）[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22m基底結果不含任何 W5／W6 句子（未開啟就不該出現）[32m 3[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22m★ 任一區塊回傳 error 時整段略過，不吐半成品句子[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22mMGA：兩群係數、差異、permutation p 與顯著判讀入句；恆等性前提必須提及[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22mPLSpredict：Q²predict 與 RMSE 對 LM 的計數正確，三種判讀各自對應[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22mIPMA：重要性／績效入句，且必須聲明 0–100 重標定用的是觀察極值[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22mcIPMA：d 與 p 入句，且必須寫出「必要不等於充分」與 d≥.10、p<.05 判準[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22mCTA：形成型／反映型判讀與 Bonferroni 校正後 α 入句[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22m★ copula：候選構念未拒絕常態時，必須明說結果不足以判定內生性[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22m★ FIMIX：EN 未達 .50 時必須明說不宜據此分群解讀[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22m★ POS：必須明說目標函數隨段數上升、不可用來選段數，並揭露簡化版範圍[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.narrative.test.js[2m > [22mAPA 敘述句：W5／W6 區塊[2m > [22m★ 八個區塊同時開啟：中英兩版都不得殘留未填模板或 NaN[32m 0[2mms[22m[39m
  [32m✓[39m tests/errorCodes.test.js[2m > [22merror code → i18n 訊息對映[2m > [22m統計核心確實會回傳字串錯誤碼（掃到 91 個）[32m 1[2mms[22m[39m
- [32m✓[39m tests/errorCodes.test.js[2m > [22merror code → i18n 訊息對映[2m > [22m每個錯誤碼在 zh-TW 都查得到訊息（否則畫面會出現裸代碼）[32m 0[2mms[22m[39m
+ [32m✓[39m tests/errorCodes.test.js[2m > [22merror code → i18n 訊息對映[2m > [22m每個錯誤碼在 zh-TW 都查得到訊息（否則畫面會出現裸代碼）[32m 1[2mms[22m[39m
  [32m✓[39m tests/errorCodes.test.js[2m > [22merror code → i18n 訊息對映[2m > [22m每個錯誤碼在 en 都查得到訊息[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22m合法模型通過並補上預設 mode[32m 2[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22m合法模型通過並補上預設 mode[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22mformative 是合法 mode（W3 起引擎支援）[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22m目前 schema 版本為 1[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22m拒絕非物件模型[32m 0[2mms[22m[39m
@@ -49,40 +60,40 @@
  [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22m拒絕自環與重複路徑[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22m拒絕循環結構模型[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mvalidatePLSModel（schema 驗證器）[2m > [22m拒絕孤立 LV[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m教科書模型收斂且結構完整[32m 4[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m教科書模型收斂且結構完整[32m 5[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22mLV 分數單位變異（ddof=1）且權重滿足 w′Rw=1[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m單一前置 LV 的內部 VIF = 1[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m拒絕未知 scheme[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m無效模型回傳中文錯誤[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m零變異指標報錯並指名指標[32m 1[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m零變異指標報錯並指名指標[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22mcasewise deletion：含缺失列被剔除並列入警告[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22mmean replacement：不減少樣本數[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m找不到指標欄位時報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mrunPLS（引擎行為）[2m > [22m小樣本邊界（n=8，2×2 指標模型）不炸並給低樣本警告[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：形成型測量（Mode B）[2m > [22m形成型模型收斂，權重滿足 w′Sw=1、附外部 VIF[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：形成型測量（Mode B）[2m > [22m形成型構念不定義 α/rho_A/CR/AVE（null），Fornell-Larcker 對角線 null、HTMT 配對 null[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW3：形成型測量（Mode B）[2m > [22m形成型權重 ∝ 對內部代理的 OLS 迴歸（與多元迴歸標準化係數同向）[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW3：形成型測量（Mode B）[2m > [22mbootstrap 回報 outer weights 的 SE/t/p/CI（形成型檢定表）[32m 16[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW3：形成型測量（Mode B）[2m > [22m形成型權重 ∝ 對內部代理的 OLS 迴歸（與多元迴歸標準化係數同向）[32m 2[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW3：形成型測量（Mode B）[2m > [22mbootstrap 回報 outer weights 的 SE/t/p/CI（形成型檢定表）[32m 15[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：weighting schemes（path / factorial / centroid）[2m > [22m接受 'factor' 為 'factorial' 的別名[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：weighting schemes（path / factorial / centroid）[2m > [22m三種 scheme 都收斂，且多前置構念下 path 與 factorial 結果不同[32m 2[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW3：PLSc（consistent PLS）[2m > [22m反衰減：|校正後構念相關| ≥ |未校正|（rho_A ≤ 1 的構念間），路徑改用校正後矩陣[32m 3[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW3：PLSc（consistent PLS）[2m > [22m反衰減：|校正後構念相關| ≥ |未校正|（rho_A ≤ 1 的構念間），路徑改用校正後矩陣[32m 4[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：PLSc（consistent PLS）[2m > [22m單指標構念 rho_A = 1、不校正；α 與 rho_A 報表值不因 PLSc 而變[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：PLSc（consistent PLS）[2m > [22m一致 loadings > 1 或校正後 |r| > 1 時警告不截斷[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：model fit（SRMR / d_ULS / d_G / NFI）[2m > [22m飽和與估計模型皆回報四指標；估計模型 SRMR ≥ 飽和模型[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：model fit（SRMR / d_ULS / d_G / NFI）[2m > [22m結構飽和的模型（無省略路徑）：估計 = 飽和[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW3：blindfolding Q²[2m > [22m只回報內生構念；同設定完全可重現[32m 11[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW3：blindfolding Q²[2m > [22m只回報內生構念；同設定完全可重現[32m 8[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：blindfolding Q²[2m > [22momission distance 可設定；無效值報錯；n 為 D 整數倍時警告[32m 3[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：BCa bootstrap CI[2m > [22mbcaInterval 對齊 numpy 手算基準（固定 draws + jackknife，Efron 1987）[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：BCa bootstrap CI[2m > [22m無偏誤且無偏態時（z0=0, a=0）BCa 退化為 percentile[32m 1[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW3：BCa bootstrap CI[2m > [22m引擎內 BCa：同種子與 percentile 共用點估計/SE，僅 CI 端點不同[32m 41[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW3：BCa bootstrap CI[2m > [22m引擎內 BCa：同種子與 percentile 共用點估計/SE，僅 CI 端點不同[32m 44[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW3：BCa bootstrap CI[2m > [22m拒絕未知 ciType[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22m同種子完全可重現、不同種子不同[32m 48[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22m路徑係數 SE / CI / t / p 的統計性質合理[32m 15[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22mconsistent bootstrap：PLSc 下同樣確定性可重現[32m 25[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22monProgress 有被呼叫且最終回報 total[32m 12[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mplsWorker 協定（Node 端 handleMessage 煙霧測試）[2m > [22mrun → progress + result[32m 6[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22m同種子完全可重現、不同種子不同[32m 50[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22m路徑係數 SE / CI / t / p 的統計性質合理[32m 13[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22mconsistent bootstrap：PLSc 下同樣確定性可重現[32m 34[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mbootstrapPLS（確定性與統計性質）[2m > [22monProgress 有被呼叫且最終回報 total[32m 16[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mplsWorker 協定（Node 端 handleMessage 煙霧測試）[2m > [22mrun → progress + result[32m 5[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mplsWorker 協定（Node 端 handleMessage 煙霧測試）[2m > [22mbootstrap: false → 只回點估計[32m 1[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mplsWorker 協定（Node 端 handleMessage 煙霧測試）[2m > [22mq2: true → 附 blindfolding 結果[32m 2[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mplsWorker 協定（Node 端 handleMessage 煙霧測試）[2m > [22mq2: true → 附 blindfolding 結果[32m 3[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mplsWorker 協定（Node 端 handleMessage 煙霧測試）[2m > [22m壞模型 → error 訊息[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mplsWorker 協定（Node 端 handleMessage 煙霧測試）[2m > [22m未知訊息類型 → error[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：模型驗證（interactions / higherOrder）[2m > [22m合法調節模型通過並補上預設 method（two-stage）[32m 0[2mms[22m[39m
@@ -97,7 +108,7 @@
  [32m✓[39m tests/pls.test.js[2m > [22mW4：模型驗證（interactions / higherOrder）[2m > [22mHOC：名稱與既有構念衝突被拒；LOC 不可作為交互項 factor[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：two-stage 調節（引擎行為）[2m > [22m自動補主效果路徑（C→Y）並記錄於 meta.autoAddedPaths[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：two-stage 調節（引擎行為）[2m > [22m交互項係數＝標準化係數 ÷ sd(乘積)；simple slopes 代數一致[32m 1[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW4：two-stage 調節（引擎行為）[2m > [22mstage1 子報表提供原始指標量測；最終（分數層）模型不報 fit[32m 1[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW4：two-stage 調節（引擎行為）[2m > [22mstage1 子報表提供原始指標量測；最終（分數層）模型不報 fit[32m 2[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：two-stage 調節（引擎行為）[2m > [22mderived 新資料檔：構念分數欄＋交互項欄、列數 = n[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：two-stage 調節（引擎行為）[2m > [22mPLSc 與調節／高階構念併用被拒[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：two-stage 調節（引擎行為）[2m > [22mblindfoldPLS 拒絕 W4 模型[32m 0[2mms[22m[39m
@@ -105,14 +116,14 @@
  [32m✓[39m tests/pls.test.js[2m > [22mW4：高階構念（引擎行為）[2m > [22mdisjoint / embedded：G 以 LOC 分數為指標，stage1 提供 LOC 量測[32m 2[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22mM4 中介分解代數一致：indirect = 路徑乘積、total = direct + totalIndirect、VAF[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22m單一路徑模型（無中介鏈）mediation 為 null[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22mbootstrap 回報中介效果 CI 且同種子完全可重現[32m 36[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22m調節模型 bootstrap：可重現、paths 用未標準化交互係數、slopes 附 CI[32m 17[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22mHOC repeated 模型 bootstrap 可重現且路徑含 G→C[32m 13[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW5：PLS-MGA[2m > [22m同種子完全可重現；三法並列且 p 值合法[32m 25[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22mbootstrap 回報中介效果 CI 且同種子完全可重現[32m 39[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22m調節模型 bootstrap：可重現、paths 用未標準化交互係數、slopes 附 CI[32m 18[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW4：中介與 bootstrap[2m > [22mHOC repeated 模型 bootstrap 可重現且路徑含 G→C[32m 12[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW5：PLS-MGA[2m > [22m同種子完全可重現；三法並列且 p 值合法[32m 26[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW5：PLS-MGA[2m > [22mhenselerMgaP：完全分離的 draws → p ≈ 0；同分布 → p ≈ .5[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW5：PLS-MGA[2m > [22m壞群組設定報錯[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW5：MICOM[2m > [22mc ≤ 1、報表結構完整；W4 模型被拒[32m 2[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mW5：PLSpredict ＋ CVPAT[2m > [22m同種子可重現；Q²predict 合理；CVPAT 對 IA 顯著（模型有預測力）[32m 4[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW5：PLS-MGA[2m > [22m壞群組設定報錯[32m 1[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW5：MICOM[2m > [22mc ≤ 1、報表結構完整；W4 模型被拒[32m 4[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mW5：PLSpredict ＋ CVPAT[2m > [22m同種子可重現；Q²predict 合理；CVPAT 對 IA 顯著（模型有預測力）[32m 6[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW5：PLSpredict ＋ CVPAT[2m > [22m壞 k 報錯；W4 模型被拒[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW5：IT 準則與 IPMA[2m > [22mIT 準則代數一致（AIC 與 BIC 之差 = (k+1)(ln n − 2)）[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW5：IT 準則與 IPMA[2m > [22mIPMA：performance 落在 0–100、目標必須內生、指標層 importance 分解一致[32m 1[2mms[22m[39m
@@ -123,54 +134,54 @@
  [32m✓[39m tests/pls.test.js[2m > [22mW6：cIPMA（IPMA × NCA 組合）[2m > [22m注入同一批 permutations → p 決定性一致[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mW6：cIPMA（IPMA × NCA 組合）[2m > [22m錯誤傳遞：壞 target 與 W4 模型沿 ipmaPLS 慣例[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m非冗餘 tetrad 數 = k(k−3)/2（Bollen & Ting 1993 的自由度）[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22mtetrad 值 = σ_gh·σ_ij − σ_gi·σ_hj（對第一個 tetrad 手算錨定）[32m 1[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22mtetrad 值 = σ_gh·σ_ij − σ_gi·σ_hj（對第一個 tetrad 手算錨定）[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m單因子反映型區塊（cr1–cr5）→ tetrads 消失 → 判反映型[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m非單因子區塊（cm1–cm4）→ tetrads 不消失 → 判形成型並標記與宣告衝突[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22mBonferroni：α_adj = α/T，臨界值隨 T 變大而變嚴[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22mCI 為 bias-corrected：中心 = τ̂ − bias、半寬 = zCrit·se（原文 Eq. 2 用常態分位數）[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m指標少於 4 的構念：明確列入 skipped 並附中文說明，不靜默略過[32m 5[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m指標少於 4 的構念：明確列入 skipped 並附中文說明，不靜默略過[32m 3[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m所有構念都不足 4 指標 → 明確中文錯誤（不回半成品）[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m注入同一批重抽索引 → 逐位元決定性重現[32m 3[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m未注入索引時：固定種子 → 同種子重現、不同種子不同[32m 9[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m注入同一批重抽索引 → 逐位元決定性重現[32m 5[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m未注入索引時：固定種子 → 同種子重現、不同種子不同[32m 10[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22m參數把關：壞 alpha／bootstrap 次數不足／壞注入索引 → 明確中文錯誤[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mCTA-PLS[2m > [22mW4 範圍限制：含調節／高階構念的模型明確報錯（沿 rejectW4 慣例）[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mcopulaTerm：Φ⁻¹(ecdf)，長度不變、有限值、嚴格保序[32m 1[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mcopulaTerm：Φ⁻¹(ecdf)，長度不變、有限值、嚴格保序[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mcopulaTerm：最大值不產生 Infinity（H=1 夾為 1−1e−7）[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mcopulaTerm：對單調遞增變換不變（秩基底）[32m 1[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m主流程：每個內生構念一組方程，k 個候選 → 2^k − 1 個模型[32m 20[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m每個 copula 係數都有 se / t / p / CI，且 CI 含 coef 附近[32m 14[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m常態前置把關：LV 分數未拒絕常態時給出警告，但仍照算（不靜默擋掉）[32m 11[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mbootstrapIndices 注入 → 結果決定性（同索引兩次跑相同）[32m 35[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mconstructs 可限定只檢定部分構念[32m 10[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m主流程：每個內生構念一組方程，k 個候選 → 2^k − 1 個模型[32m 24[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m每個 copula 係數都有 se / t / p / CI，且 CI 含 coef 附近[32m 24[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m常態前置把關：LV 分數未拒絕常態時給出警告，但仍照算（不靜默擋掉）[32m 17[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mbootstrapIndices 注入 → 結果決定性（同索引兩次跑相同）[32m 40[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mconstructs 可限定只檢定部分構念[32m 13[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m拒絕 W4 模型（調節／高階構念）[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m沒有結構路徑 → 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m指定不存在的構念 → 明確中文報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m指定的構念不是任何路徑的起點（純內生）→ 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22mciAlpha 超出範圍 → 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mGaussian copula 內生性檢查[2m > [22m樣本過少 → 明確報錯[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m★ 還原已知的兩段結構：資料由 β=+0.80 與 β=−0.80 兩段組成[32m 8[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m★ 全域單一模型會掩蓋這個結構（FIMIX 存在的理由）[32m 5[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m★ 還原已知的兩段結構：資料由 β=+0.80 與 β=−0.80 兩段組成[32m 9[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m★ 全域單一模型會掩蓋這個結構（FIMIX 存在的理由）[32m 7[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m★ EM 的對數概似單調不減（數學保證，違反即為實作錯誤）[32m 197[2mms[22m[39m
+ [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22mtone=bad 用 role="alert"（螢幕報讀立即打斷）[32m 93[2mms[22m[39m
  [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22m子元件正常時原樣渲染[32m 18[2mms[22m[39m
- [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22m子元件炸掉時顯示錯誤卡片，不讓畫面變空白[32m 33[2mms[22m[39m
- [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22m有 role="dialog"、aria-modal，且 aria-labelledby 指向標題[32m 46[2mms[22m[39m
+ [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22m子元件炸掉時顯示錯誤卡片，不讓畫面變空白[32m 40[2mms[22m[39m
+ [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22m有 role="dialog"、aria-modal，且 aria-labelledby 指向標題[32m 51[2mms[22m[39m
  [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22m開啟時焦點移入對話框內[32m 5[2mms[22m[39m
- [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m關閉時完全不掛載（不留 dialog 在 DOM）[32m 56[2mms[22m[39m
- [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m開啟時 source 預設第一個候選、type 預設 zscore、name 為自動建議值[32m 22[2mms[22m[39m
- [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22mname 隨 type 變動自動更新[32m 16[2mms[22m[39m
- [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22m技術細節預設收起，可展開看到原始錯誤訊息[32m 59[2mms[22m[39m
- [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22m「重新嘗試」清除錯誤狀態（子元件不再炸則恢復正常）[32m 63[2mms[22m[39m
- [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22mresetKey 變動（切換分析）時自動復原，不卡在錯誤卡片[32m 5[2mms[22m[39m
- [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m使用者手動改 name 後，輸入被保留（不被自動建議覆蓋）[32m 12[2mms[22m[39m
- [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m手動改過 name 之後再換 type，name 回到自動建議值[32m 16[2mms[22m[39m
+ [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22mEsc 觸發 onClose[32m 25[2mms[22m[39m
+ [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22m技術細節預設收起，可展開看到原始錯誤訊息[32m 68[2mms[22m[39m
+ [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22m「重新嘗試」清除錯誤狀態（子元件不再炸則恢復正常）[32m 62[2mms[22m[39m
+ [32m✓[39m tests/ui.errorBoundary.test.jsx[2m > [22mErrorBoundary[2m > [22mresetKey 變動（切換分析）時自動復原，不卡在錯誤卡片[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22mtone=ok 用 role="status"（polite，不打斷）[32m 60[2mms[22m[39m
+ [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m關閉時完全不掛載（不留 dialog 在 DOM）[32m 51[2mms[22m[39m
+ [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m開啟時 source 預設第一個候選、type 預設 zscore、name 為自動建議值[32m 25[2mms[22m[39m
+ [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22mname 隨 type 變動自動更新[32m 19[2mms[22m[39m
+ [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m使用者手動改 name 後，輸入被保留（不被自動建議覆蓋）[32m 13[2mms[22m[39m
+ [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m手動改過 name 之後再換 type，name 回到自動建議值[32m 18[2mms[22m[39m
  [32m✓[39m tests/ui.transformDialog.test.jsx[2m > [22mTransformDialog（R4 重構後）[2m > [22m關閉再開啟 → state 回到初值（原本靠 useEffect，現在靠重新掛載）[32m 27[2mms[22m[39m
- [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22mtone=bad 用 role="alert"（螢幕報讀立即打斷）[32m 115[2mms[22m[39m
- [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22mtone=ok 用 role="status"（polite，不打斷）[32m 43[2mms[22m[39m
- [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22mEsc 觸發 onClose[32m 49[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m段數選擇：K=2 在 AIC/BIC/CAIC 上皆優於 K=1、K=3、K=4[33m 331[2mms[22m[39m
- [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22m不搶焦點——觸發後焦點仍留在原按鈕（原生 alert() 做不到）[32m 47[2mms[22m[39m
- [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22m可手動關閉[32m 110[2mms[22m[39m
+ [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22m不搶焦點——觸發後焦點仍留在原按鈕（原生 alert() 做不到）[32m 64[2mms[22m[39m
+ [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22m可手動關閉[32m 109[2mms[22m[39m
  [32m✓[39m tests/ui.toast.test.jsx[2m > [22mToast[2m > [22m逾時後自動消失[32m 9[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m段數選擇：K=2 在 AIC/BIC/CAIC 上皆優於 K=1、K=3、K=4[33m 414[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mdescriptive_y[2m > [22mn (tol=0.000001)[32m 2[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mdescriptive_y[2m > [22mmean (tol=0.000001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mdescriptive_y[2m > [22msd (tol=0.000001)[32m 0[2mms[22m[39m
@@ -863,7 +874,7 @@
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_loading_i3 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_loading_i4 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_loading_i5 (tol=0.0001)[32m 0[2mms[22m[39m
- [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_loading_i6 (tol=0.0001)[32m 8[2mms[22m[39m
+ [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_loading_i6 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_weight_i1 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_weight_i2 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_weight_i3 (tol=0.0001)[32m 0[2mms[22m[39m
@@ -874,7 +885,7 @@
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mpw_minEig (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mw_path_F1_F2 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mw_lvCorr_F1F2 (tol=0.0001)[32m 0[2mms[22m[39m
- [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mw_r2_F2 (tol=0.0001)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mw_r2_F2 (tol=0.0001)[32m 7[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mw_ave_F1 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mw_rhoC_F1 (tol=0.0001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mpls_pairwise_wpls[2m > [22mw_ave_F2 (tol=0.0001)[32m 0[2mms[22m[39m
@@ -971,27 +982,27 @@
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mcfa_rmsea_ci[2m > [22mhi_chi2500_df120_n800 (tol=0.000001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22m統計核心 vs Python 黃金標準[2m > [22mcfa_rmsea_ci[2m > [22mpclose_chi2500_df120_n800 (tol=0.000001)[32m 0[2mms[22m[39m
  [32m✓[39m tests/compare.test.js[2m > [22mCFA χ² 慣例換算（(N−1)/N）[2m > [22mJS χ² × N/(N−1) ≈ semopy χ²[32m 4[2mms[22m[39m
- [32m✓[39m tests/compare.test.js[2m > [22mCFA χ² 慣例換算（(N−1)/N）[2m > [22mdf 一致[32m 3[2mms[22m[39m
+ [32m✓[39m tests/compare.test.js[2m > [22mCFA χ² 慣例換算（(N−1)/N）[2m > [22mdf 一致[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22mfocus trap：Tab 到最後一個元素後繞回第一個，不會跑出對話框[33m 379[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22mEN（normed entropy）：K=1 為 null、K=2 超過 .50 判準[32m 3[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22mEN < .50 時給出「分離不佳」警告（main 資料沒有真實段結構）[32m 26[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m參數個數 N_k = (K−1) + K·R + K·M[33m 307[2mms[22m[39m
- [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22mfocus trap：Tab 到最後一個元素後繞回第一個，不會跑出對話框[33m 363[2mms[22m[39m
- [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22mShift+Tab 反向也被關在對話框內[33m 615[2mms[22m[39m
- [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22m關閉時把焦點還回開啟前的元素[32m 111[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22mEN < .50 時給出「分離不佳」警告（main 資料沒有真實段結構）[32m 25[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m參數個數 N_k = (K−1) + K·R + K·M[33m 322[2mms[22m[39m
+ [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22mShift+Tab 反向也被關在對話框內[33m 607[2mms[22m[39m
+ [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22m關閉時把焦點還回開啟前的元素[32m 95[2mms[22m[39m
  [32m✓[39m tests/ui.modal.test.jsx[2m > [22mModal[2m > [22m開啟時鎖住背景捲動，關閉後還原[32m 3[2mms[22m[39m
- [32m✓[39m tests/ui.modal.test.jsx[2m > [22mConfirmDialog（取代原生 confirm()）[2m > [22m確認鈕觸發 onConfirm、取消鈕觸發 onCancel，兩者都可鍵盤操作[32m 109[2mms[22m[39m
+ [32m✓[39m tests/ui.modal.test.jsx[2m > [22mConfirmDialog（取代原生 confirm()）[2m > [22m確認鈕觸發 onConfirm、取消鈕觸發 onCancel，兩者都可鍵盤操作[32m 123[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m後驗機率逐列和為 1；assignment = argmax[32m 6[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22mlabel switching：段別依佔比遞減排序 → 輸出決定性[32m 31[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22mkMax → 產生段數選擇表[33m 975[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22mlabel switching：段別依佔比遞減排序 → 輸出決定性[32m 26[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22mkMax → 產生段數選擇表[33m 968[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m拒絕 W4 模型（調節／高階構念）[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m沒有結構路徑 → 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m段數不合法 → 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22m樣本不足以支撐段數 → 明確報錯（每段 10 筆下限）[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mFIMIX-PLS（潛在異質性分段）[2m > [22minitPosteriors 形狀錯誤 → 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m★ 還原已知的兩段結構（與 FIMIX 同一份模擬資料）[32m 3[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m★ 分段大幅提高目標函數 ΣR²、並降低整體預測誤差[32m 1[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m★ 爬山法的目標函數單調遞增（違反即為實作錯誤）[32m 7[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m★ 目標函數必然隨段數上升 → 明確警告不可用 POS 選段數[32m 4[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m★ 分段大幅提高目標函數 ΣR²、並降低整體預測誤差[32m 2[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m★ 爬山法的目標函數單調遞增（違反即為實作錯誤）[32m 6[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m★ 目標函數必然隨段數上升 → 明確警告不可用 POS 選段數[32m 5[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m段別大小下限為硬約束[32m 5[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22mlabel switching：段別依大小遞減排序 → 輸出決定性[32m 7[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22massignment 值域正確、段別大小與 assignment 一致[32m 5[2mms[22m[39m
@@ -999,14 +1010,153 @@
  [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22mK < 2 → 明確報錯（K=1 就是全域模型）[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22m樣本不足以支撐段數 → 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mPLS-POS（prediction-oriented segmentation）[2m > [22minitAssignment 不合法 → 明確報錯[32m 1[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22m★ 相關矩陣驅動的重構：完整資料、無權重 → 與既有基準逐值相同（零回歸的根本保證）[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22m★ pairwise：不剔除任何列（n 維持 60），casewise 則會剔除[32m 2[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22m★ 相關矩陣驅動的重構：完整資料、無權重 → 與既有基準逐值相同（零回歸的根本保證）[32m 1[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22m★ pairwise：不剔除任何列（n 維持 60），casewise 則會剔除[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mpairwise：報表明確告知「最少配對數」與分數的來源[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22m★ blindfolding（Q²）與 pairwise 互斥 → 明確報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22m★ WPLS：全 1 權重 = 未加權（加權相關的自我一致性）[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22m★ WPLS：權重同乘常數不改變結果（相關為尺度不變量）[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mWPLS：權重可用欄位名指定[32m 1[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mWPLS：權重為 0 的列實質不參與估計（報表明說）[32m 1[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mWPLS：非法權重 → 明確中文報錯[32m 1[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mWPLS：非法權重 → 明確中文報錯[32m 0[2mms[22m[39m
  [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mpairwise：配對過少 → 明確報錯（不給不可靠的相關）[32m 0[2mms[22m[39m
- [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mpairwise 與 WPLS 可併用（同一條相關矩陣入口）[32m 0[2mms[22m[39m
+ [32m✓[39m tests/pls.test.js[2m > [22mpairwise deletion ＋ WPLS（相關矩陣驅動）[2m > [22mpairwise 與 WPLS 可併用（同一條相關矩陣入口）[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22m涵蓋所有有示範設定的分析（共 26 個）[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mdesc-stats[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 22[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mdesc-stats[2m > [22mNarrative（報告模式）不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mdesc-stats[2m > [22mNotes（教學模式）不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mdesc-stats[2m > [22mConfig 不會炸[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mdesc-stats[2m > [22m切換到英文介面不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnormality[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnormality[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnormality[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnormality[2m > [22mConfig 不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnormality[2m > [22m切換到英文介面不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mvisualization[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 12[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mvisualization[2m > [22mNarrative（報告模式）不會炸[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mvisualization[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mvisualization[2m > [22mConfig 不會炸[32m 5[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mvisualization[2m > [22m切換到英文介面不會炸[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mt-test[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mt-test[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mt-test[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mt-test[2m > [22mConfig 不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mt-test[2m > [22m切換到英文介面不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mone-way-anova[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 29[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mone-way-anova[2m > [22mNarrative（報告模式）不會炸[32m 19[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mone-way-anova[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mone-way-anova[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mone-way-anova[2m > [22m切換到英文介面不會炸[32m 26[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mchi-square[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mchi-square[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mchi-square[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mchi-square[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mchi-square[2m > [22m切換到英文介面不會炸[32m 5[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnonparametric[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnonparametric[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnonparametric[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnonparametric[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnonparametric[2m > [22m切換到英文介面不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mz-prop[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mz-prop[2m > [22mNarrative（報告模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mz-prop[2m > [22mNotes（教學模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mz-prop[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mz-prop[2m > [22m切換到英文介面不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mfisher-exact[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mfisher-exact[2m > [22mNarrative（報告模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mfisher-exact[2m > [22mNotes（教學模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mfisher-exact[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mfisher-exact[2m > [22m切換到英文介面不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mancova[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 9[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mancova[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mancova[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mancova[2m > [22mConfig 不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mancova[2m > [22m切換到英文介面不會炸[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mtwo-way-anova[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 12[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mtwo-way-anova[2m > [22mNarrative（報告模式）不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mtwo-way-anova[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mtwo-way-anova[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mtwo-way-anova[2m > [22m切換到英文介面不會炸[32m 8[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mrepeated-anova[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 12[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mrepeated-anova[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mrepeated-anova[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mrepeated-anova[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mrepeated-anova[2m > [22m切換到英文介面不會炸[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmixed-anova[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 10[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmixed-anova[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmixed-anova[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmixed-anova[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmixed-anova[2m > [22m切換到英文介面不會炸[32m 8[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcorrelation[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 12[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcorrelation[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcorrelation[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcorrelation[2m > [22mConfig 不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcorrelation[2m > [22m切換到英文介面不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22msimple-regression[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22msimple-regression[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22msimple-regression[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22msimple-regression[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22msimple-regression[2m > [22m切換到英文介面不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmultiple-regression[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 8[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmultiple-regression[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmultiple-regression[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmultiple-regression[2m > [22mConfig 不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmultiple-regression[2m > [22m切換到英文介面不會炸[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mhierarchical-regression[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mhierarchical-regression[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mhierarchical-regression[2m > [22mNotes（教學模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mhierarchical-regression[2m > [22mConfig 不會炸[32m 5[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mhierarchical-regression[2m > [22m切換到英文介面不會炸[32m 5[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcronbach-alpha[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 5[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcronbach-alpha[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcronbach-alpha[2m > [22mNotes（教學模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcronbach-alpha[2m > [22mConfig 不會炸[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcronbach-alpha[2m > [22m切換到英文介面不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mefa[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 9[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mefa[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mefa[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mefa[2m > [22mConfig 不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mefa[2m > [22m切換到英文介面不會炸[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22micc[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22micc[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22micc[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22micc[2m > [22mConfig 不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22micc[2m > [22m切換到英文介面不會炸[32m 5[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcfa[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 18[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcfa[2m > [22mNarrative（報告模式）不會炸[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcfa[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcfa[2m > [22mConfig 不會炸[32m 4[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcfa[2m > [22m切換到英文介面不會炸[32m 14[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmanova[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 10[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmanova[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmanova[2m > [22mNotes（教學模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmanova[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mmanova[2m > [22m切換到英文介面不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mlda[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 10[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mlda[2m > [22mNarrative（報告模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mlda[2m > [22mNotes（教學模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mlda[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mlda[2m > [22m切換到英文介面不會炸[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcluster[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 17[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcluster[2m > [22mNarrative（報告模式）不會炸[32m 9[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcluster[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcluster[2m > [22mConfig 不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mcluster[2m > [22m切換到英文介面不會炸[32m 10[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mpls-sem[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 54[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mpls-sem[2m > [22mNarrative（報告模式）不會炸[32m 3[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mpls-sem[2m > [22mNotes（教學模式）不會炸[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mpls-sem[2m > [22mConfig 不會炸[32m 10[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mpls-sem[2m > [22m切換到英文介面不會炸[32m 7[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnca[2m > [22mResult 渲染出實際內容，且未落進錯誤卡片[32m 69[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnca[2m > [22mNarrative（報告模式）不會炸[32m 62[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnca[2m > [22mNotes（教學模式）不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnca[2m > [22mConfig 不會炸[32m 2[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m全模組 UI 煙霧測試[2m > [22mnca[2m > [22m切換到英文介面不會炸[32m 61[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22mtwoWayAnova（無 demo，用合成的兩因子資料補測）[2m > [22m計算成功時 result.error 必須是 undefined（不可是誤差項物件）[32m 1[2mms[22m[39m
+ [32m✓[39m tests/ui.smoke.test.jsx[2m > [22m結構防線：error 欄位只能是字串錯誤碼[2m > [22m所有 lib/stats 模組都沒有 `error: { ... }` 形式的物件欄位[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m13 passed[39m[22m[90m (13)[39m
+[2m      Tests [22m [1m[32m1147 passed[39m[22m[2m | [22m[33m6 skipped[39m[90m (1153)[39m
+[2m   Start at [22m 12:55:53
+[2m   Duration [22m 4.56s[2m (transform 3.93s, setup 870ms, import 6.61s, tests 5.48s, environment 4.55s)[22m
+

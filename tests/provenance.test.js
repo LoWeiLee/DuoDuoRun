@@ -66,7 +66,28 @@ const PROV = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures/provenance.jso
 // 2026-07-14：lda_group3 銷帳（MASS::lda 全項逐值一致，含分類表 accuracy 0.416667；
 // 期間發現 library(cSEM) 遮蔽 stats::predict 的工具鏈陷阱，見 validation-report）。
 // 11 − 1 = 10。★ Session Q1 正式結案：批次 1 六組＋覆核新收的 lda_group3 全數 verified。
-const MAX_PENDING = 6
+// ── Session Q2（2026-07-14／25，批次 2：無主流實作，回原始論文記方程式編號）──
+// 2026-07-14：pls_cipma 銷帳（Hauff et al. 2024 OA 全文逐項口徑核對；該文無編號方程式，
+// authority 記節號＋原式 d = C/S）。10 − 1 = 9。
+// 2026-07-25（Kevin 提供三篇 PDF）：pls_copula（Park & Gupta 2012 Eq. 6/10 ＋ p. 572 註 3
+// 明文授權 ECDF；Hult et al. 2018 Eq. 5/6）。9 − 1 = 8。
+// 同日 pls_cta 與 pls_pos 銷帳，**兩組各抓到一處公式偏離並修正**——
+//   pls_cta：CI 半寬原用 Student t(df=B−1)，Gudergan Eq. (2) 為常態 z → 已改（欄位 tCrit→zCrit）；
+//   pls_pos：目標函數原為 ΣSSE 最小化，Becker p. 676 為 ΣR² 最大化（兩者不等價）→ 已改，
+//            段別還原率 0.837 → 0.857。8 − 2 = 6。
+// ★ Session Q2 未結案：批次 2 尚餘 pls_fimix、pls_bca_reference 兩組，**卡在原文取得**
+//   （Hahn 2002 SBR／Sarstedt 2011 SBR／Efron & Tibshirani 1993 第 14 章，開放存取管道已窮盡，
+//   Kevin 的機構訂閱亦未涵蓋）。兩者的替代交叉驗證已就位並通過，但不等於溯源閉環，
+//   故維持 pending——見 provenance.json 對應條目的 note/verification。
+// ── Session Q3（2026-07-25，批次 3：補登記與補驗）──
+// pls_pairwise_wpls：pairwise 相關對 pandas.corr()（3.9e-16）、加權相關對 statsmodels
+//   DescrStatsW 與 numpy.cov(aweights)（4.4e-16／2.2e-16）→ **三道升為重生時 assert**。
+// pls_hoc_embedded：對 Becker et al. (2023) IJCHM accepted MS pp.15-16 逐點核對兩階段口徑；
+//   引用補正（方法源出 Ringle et al. 2012）；第一階段＝已有 plspm 重生時 assert 的 hoc_repeated。
+// pls_quadratic：對 SmartPLS 官方 Nonlinear 文件逐點核對，並在 pls.js 查核第一階段確實排除二次項。
+// pls_mod_threeway：對 Becker et al. (2023) guidance 表逐字核對（三向亦走 two-stage、不標準化）。
+// 6 − 4 = 2。★ 批次 3 全數 verified；**P0 只剩 Q2 卡文獻的兩組**。
+const MAX_PENDING = 2
 
 const TIERS = new Set(['A', 'B', 'I'])
 const STATUSES = new Set(['verified', 'pending', 'exempt'])

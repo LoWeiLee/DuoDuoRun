@@ -934,8 +934,9 @@ except Exception as e:
 #   pls_hoc_repeated — 高階構念 repeated indicators（Wold 原始法；程序依
 #         Becker, Klein & Wetzels 2012）：HOC 區塊 = 全部 LOC 指標（重複掛載）、
 #         反映型 HOC 之內部路徑 HOC→LOC。以 plspm（欄位複製別名）交叉驗證
-#   pls_hoc_disjoint / pls_hoc_embedded — 兩階段 HOC（disjoint：Becker et al. 2023
-#         guidelines；embedded：Sarstedt et al. 2019）：第一階段取 LOC 分數，
+#   pls_hoc_disjoint / pls_hoc_embedded — 兩階段 HOC（disjoint：Agarwal & Karahanna 2000／
+#         Becker et al. 2012，程序依 Becker et al. 2023；embedded：源出 Ringle, Sarstedt &
+#         Straub 2012，程序依 Becker et al. 2023 pp.15-16 與 Sarstedt et al. 2019）：第一階段取 LOC 分數，
 #         第二階段以 LOC 分數為 HOC 指標（disjoint 其他構念用原始指標、
 #         embedded 全構念用第一階段分數）
 # 手算部分沿用 W3 的獨立 numpy PLS 引擎 _pls_engine（已與 plspm 交叉驗證 <1e-6）。
@@ -1154,9 +1155,12 @@ try:
                                       [(0, 1), (1, 2)], "path")
     _Re2 = np.corrcoef(_Ye2, rowvar=False)
     put("pls_hoc_embedded",
-        "embedded two-stage HOC（Sarstedt, Hair, Cheah, Becker & Ringle 2019）："
-        "第一階段 repeated indicators 模型取分數；第二階段 HOC 指標 = LOC 分數、"
-        "其他構念 = 分數單指標。numpy PLS 複算。待 Kevin 本機抽驗",
+        "embedded two-stage HOC（方法源出 Ringle, Sarstedt & Straub 2012；程序依 "
+        "Becker, Cheah, Gholamzade, Ringle & Sarstedt 2023, IJCHM 35(1) pp.15-16 與 "
+        "Sarstedt, Hair, Cheah, Becker & Ringle 2019, AMJ 27(3)）："
+        "第一階段 repeated indicators 模型取分數（該模型已對 plspm assert <1e-6）；"
+        "第二階段 HOC 指標 = LOC 分數、**全部非階層構念改以第一階段分數為單指標**"
+        "（Becker et al. 2023 原文要求）。numpy PLS 複算",
         loading_G_sF1=float(_Le2[0][0]), loading_G_sF2=float(_Le2[0][1]),
         path_G_C=float(_Re2[0, 1]), path_C_Y=float(_Re2[1, 2]),
         r2_C=float(_Re2[0, 1]) ** 2, r2_Y=float(_Re2[1, 2]) ** 2)
@@ -2300,6 +2304,12 @@ try:
             _va, _vb = _pw_Xm[_ok, _a], _pw_Xm[_ok, _b]
             _r = float(np.corrcoef(_va, _vb)[0, 1])
             _R_pw[_a, _b] = _R_pw[_b, _a] = _r
+    # ★ 重生時第三方 assert（Session Q3）：pandas 的 DataFrame.corr() 預設即 pairwise-complete，
+    #   是獨立於本檔手算的第三方實作。此 assert 攔截「pairwise 的可觀察子集選取寫錯」。
+    _R_pw_pandas = pd.DataFrame(_pw_Xm, columns=_pw_cols).corr(method="pearson").values
+    assert np.nanmax(np.abs(_R_pw - _R_pw_pandas)) < 1e-12, \
+        ("pairwise-complete 相關與 pandas DataFrame.corr() 不一致："
+         f"最大差 {np.nanmax(np.abs(_R_pw - _R_pw_pandas)):.3e}")
     _W_pw, _it_pw = _pls_engine_from_corr(_R_pw, _pw_blocks, ["A"] * 2, _pw_pairs, "path")
     _pw_vals = {f"pw_{k}": v for k, v in _pw_report(_R_pw, _W_pw).items()}
     _pw_vals["pw_minPairs"] = _min_pairs
@@ -2313,6 +2323,20 @@ try:
     _sd = np.sqrt(np.diag(_cov))
     _R_w = _cov / np.outer(_sd, _sd)
     np.fill_diagonal(_R_w, 1.0)
+    # ★ 重生時第三方 assert（Session Q3）：加權相關對兩個獨立實作——
+    #   statsmodels DescrStatsW(weights=...).corrcoef 與 numpy.cov(aweights=..., ddof=0)。
+    #   兩者都用「可靠度權重」慣例（分母 Σw）。註：相關為尺度不變量，ddof 取 0 或 1
+    #   都得到同一個相關矩陣（已實測差 <1e-15），故此處不存在 ddof 慣例分歧的風險。
+    from statsmodels.stats.weightstats import DescrStatsW as _DSW
+    _R_w_sm = _DSW(_pw_X, weights=_pw_w, ddof=0).corrcoef
+    _cov_np = np.cov(_pw_X, rowvar=False, aweights=_pw_w, ddof=0)
+    _sd_np = np.sqrt(np.diag(_cov_np))
+    _R_w_np = _cov_np / np.outer(_sd_np, _sd_np)
+    np.fill_diagonal(_R_w_np, 1.0)
+    assert np.abs(_R_w - _R_w_sm).max() < 1e-12, \
+        f"加權相關與 statsmodels DescrStatsW 不一致：最大差 {np.abs(_R_w - _R_w_sm).max():.3e}"
+    assert np.abs(_R_w - _R_w_np).max() < 1e-12, \
+        f"加權相關與 numpy.cov(aweights) 不一致：最大差 {np.abs(_R_w - _R_w_np).max():.3e}"
     _W_w, _it_w = _pls_engine_from_corr(_R_w, _pw_blocks, ["A"] * 2, _pw_pairs, "path")
     _pw_vals.update({f"w_{k}": v for k, v in _pw_report(_R_w, _W_w).items()})
 
@@ -2334,7 +2358,9 @@ try:
         "WPLS：加權平均／加權共變異／加權相關（權重同乘常數不影響結果）。"
         "統計量（loadings／lvCorr／路徑／R²／rhoC／AVE）一律由 R 導出。"
         "固定 MCAR 遮罩（約 11.4%）與固定抽樣權重見 datasets.json:pw。"
-        "full_* 為自我一致性欄位：完整資料走同一條相關矩陣路徑，必須重現 pls_basic",
+        "full_* 為自我一致性欄位：完整資料走同一條相關矩陣路徑，必須重現 pls_basic。"
+        "★ 重生時第三方 assert（Q3）：pairwise 相關對 pandas DataFrame.corr()（預設 pairwise-complete）、"
+        "加權相關對 statsmodels DescrStatsW 與 numpy.cov(aweights) 雙實作，皆 <1e-12",
         **_pw_vals)
 except Exception as e:
     put("pls_pairwise_wpls", f"pairwise/WPLS baseline FAILED: {e}")

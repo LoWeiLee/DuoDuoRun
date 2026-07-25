@@ -238,11 +238,11 @@
   "verification": "2026-07-13 R 抽驗：M1 核心的 loadings／weights／path／R²／adjR²／alpha／rhoA／rhoC／AVE／HTMT／LV 相關全部與 seminr 逐值一致（小數 6 位）。見 validation-report「R 抽驗銷帳（Session A）」一之表。"
  },
  "pls_bca_reference": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "authority": "待審計【卡文獻取得，非技術問題】。已鎖定的權威來源：Efron & Tibshirani (1993),《An Introduction to the Bootstrap》第 14.3 節（BCa 的 z₀ 與加速常數 a 的估計式）；原始出處 Efron (1987), JASA 82(397), 171-185「Better Bootstrap Confidence Intervals」。待核兩個風險點：z₀ = Φ⁻¹(#{θ̂*_b < θ̂}/B) 的並列與端點夾擠慣例、a = Σ(θ̄_(·)−θ̂_(i))³ / (6[Σ(θ̄_(·)−θ̂_(i))²]^{3/2}) 的 jackknife 定義與符號方向。",
+  "note": "無主流第三方實作可對照，基準為 numpy 手算（scipy.stats.bootstrap 的 BCa 可作對照候選，但其內部亦為同一族公式的再實作，且未逐式文件化，不足以單獨作為權威）。2026-07-25 已試開放存取管道：Efron 個人頁（efron.ckirby.su.domains）與 JASA 均取不到 1987 原文；書籍第 14 章無合法開放全文。Kevin 亦回報找不到。**在取得前維持 pending，不以記憶中的公式充當 authority。**",
   "status": "pending",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "待審計（原文未取得）。**現行替代交叉驗證（已實施且通過）**：固定 B=999 draws（rng seed 20260704）＋完整 jackknife 一併寫入 fixture，JS 的 bcaInterval() 對同一批 draws/jackknife 逐值比對（z₀、a、alphaLower、alphaUpper、ciLower、ciUpper 六欄）。此法鎖住『JS 與 numpy 實作一致』，**抓不到『z₀ 或 a 的估計式本身讀錯』**——正是 §0 規範指出的手算基準結構缺陷。取得原文後應優先核對 a 的分母指數（3/2 次方）與 jackknife 偏差項的符號。**補充對照建議**：沙盒的 scipy.stats.bootstrap(method='BCa') 可作為第二道獨立實作抽驗（非權威但可交叉），Q3 可順手做。"
  },
  "pls_cipma": {
   "authority": "Hauff, Richter, Sarstedt & Ringle (2024, J. Retailing & Consumer Services 78:103723)。全文無編號方程式（期刊排版事實），authority 以節號＋原式錨定：§3 效果量 d = C/S 與必要性判準（d ≥ .1 且 p < .05，另需理論支持）；§4.3 IPMA 0–100 重標定 LV 分數輸出為 NCA 輸入；§4.4 實證 scope＋僅取目標構念的直接前置構念＋CE-FDH bottleneck 表（實際值／百分位雙格式）；§4.5 於目標水準（如 Y=80）讀「未達所需水準之案例 %」；§5.4–5.5 實例同流程（CE-FDH 為主、CR-FDH 對照討論）",
@@ -273,11 +273,11 @@
   "verification": "2026-07-25 溯源審計（Session Q2）：(1) Gudergan et al. (2008) 原文 PDF 逐式核對 Eq. (1)（tetrad 定義）、Eq. (2)（bias-corrected CI）、Step 1–5 與 Bonferroni 的施加層級（單一測量模型內，與本工具的『區塊內 Bonferroni』一致）。(2) **審計發現並修正一處偏離**：原實作的 CI 半寬用 Student t（df = B−1），原文 Eq. (2) 明確為常態分位數 z_{1−α/2}；t 用 df=B−1 亦無理論依據（B 是重抽次數而非樣本數）。已改為 z_{1−α/(2T)} 並重生基準（B=300、T=5 時 CI 縮 0.64%；R 塊仍 reflective、M 塊仍 formative，判讀結論不變）。欄位 tCrit → zCrit。(3) 非冗餘選取集：Gudergan 將細節指向 Bollen & Ting (1993)，該文未取得 → 本工具的構造以 Jacobian 秩 assert 保證極大獨立（見 note 的等價性與限制）。(4) JS↔numpy：300 組固定重抽索引注入，全欄位逐值對齊（compare.test.js）；資料集設計 assert 鎖定 R 塊 reflective／M 塊 formative。"
  },
  "pls_fimix": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
+  "authority": "待審計【卡文獻取得，非技術問題】。已鎖定的權威來源：Hahn, Johnson, Herrmann & Huber (2002), Schmalenbach Business Review 54(3), 243-269（EM 演算法與『不含截距』的設定）；段數選擇準則：Sarstedt, Becker, Ringle & Schwaiger (2011), SBR 63(1), 34-62（AIC/AIC3/AIC4/BIC/CAIC/HQ/MDL5/EN 的定義與模擬比較）。待核三個風險點：參數計數 N_k = (K−1) + K·R + K·M 是否與原文一致、EN（normed entropy）的正規化分母、迴歸式是否含截距。",
+  "note": "無主流第三方 Python/R 完整實作可對照，基準為 numpy 手算。2026-07-25 已窮盡開放存取管道：SSRN (321004) 僅摘要、Cornell eCommons／scholarship.sha.cornell.edu 全文受限、SBR 官網與 Springer 為付費牆。Kevin 的機構訂閱亦未涵蓋（2026-07-25 回報找不到）。**現況不是沒查，是拿不到原文**——在取得前維持 pending，不以二手轉述充當 authority（違反全域文獻真實性鐵律）。替代驗證已就位（見 verification），故實作可繼續使用，只是溯源未閉環。",
   "status": "pending",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "待審計（原文未取得）。**現行替代交叉驗證（已實施且通過，但不等於溯源閉環）**：(1) 模擬還原——datasets.json:fimix 為兩段已知係數（β = +0.80 / −0.80、180/120）的模擬資料，對稱設計使全域路徑大幅相消；引擎還原率 0.853、EN 0.566，K=2 在所有資訊準則上皆最佳；(2) EM 單調性——lnL 每步不得下降，基準端 assert ＋引擎端 warnings 雙重斷言；(3) JS↔numpy 逐值——初始後驗機率固定注入（pls_fimix_inputs）繞開兩邊 RNG 差異，71 欄位全對齊。這三重策略能抓『兩邊抄不一致』與『EM 寫錯』，**抓不到『N_k 或 EN 的定義讀錯』**——後者只有回原文能結案。"
  },
  "pls_fimix_inputs": {
   "authority": "不適用（純輸入型 fixture）",
@@ -315,11 +315,11 @@
   "verification": "fixture 值直接由 plspm、seminr (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
  },
  "pls_hoc_embedded": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), International Journal of Contemporary Hospitality Management 35(1), 321-346，accepted MS pp. 15-16（開放取用：ueaeprints.uea.ac.uk/id/document/171785）——逐句界定 embedded 兩階段：第一階段「models the entire higher-order construct in its first stage by repeating the LOCs' indicators to identify the HOC」；第二階段「all non-hierarchical constructs need to be measured using single items that use the latent variable scores from the first stage as input」，HOC 指標＝第一階段的 LOC 分數；反映型 HOC 用 Mode A；weighting scheme 建議 path。方法原始出處為 Ringle, Sarstedt & Straub (2012)；Sarstedt, Hair, Cheah, Becker & Ringle (2019), Australasian Marketing Journal 27(3), 197-211 為程序指引（本次僅取得摘要與 SmartPLS 官方轉述，全文未取得）。",
+  "note": "**引用修正（Q3）**：原 authority 僅標「Sarstedt et al. 2019」。依 Becker et al. (2023)，embedded two-stage 的方法出處是 Ringle, Sarstedt & Straub (2012)，Sarstedt et al. (2019) 與 Becker et al. (2023) 是程序指引——已補正。另記錄一項官方偏好：Becker et al. (2023) 明確建議優先用 **disjoint** two-stage，理由是它容許在指標層跑 PLSpredict／CVPAT（embedded 的非階層構念在第二階段已成單指標）。UI Notes 既有「disjoint…近年文獻建議」的敘述與此一致。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 Becker et al. (2023) accepted MS pp. 15-16 **逐點核對四項口徑**——第一階段＝repeated indicators 模型（重複掛載 LOC 指標識別 HOC）✓；第二階段 HOC 指標＝第一階段 LOC 分數 ✓；第二階段全部非階層構念改為「以第一階段分數為單指標」✓（實作 `_e2_X = [sF1, sF2, C分數, Y分數]`、blocks `[[0,1],[2],[3]]`）；反映型 HOC 用 Mode A、scheme 用 path ✓。(2) **第一階段有第三方錨**：embedded 的第一階段就是 `pls_hoc_repeated`，該組已有對 plspm（欄位複製別名）的**重生時 assert <1e-6**，故 embedded 的輸入分數是第三方錨定的，不是純手算。(3) 第二階段的迭代與 `pls_hoc_disjoint` 共用同一引擎，後者已對 seminr 2.5.0 逐值（G→C −0.402148、loadings 0.803529／0.826177）。(4) JS↔numpy 逐值（compare.test.js）。**殘餘限制**：SmartPLS 4 授權過期、seminr 無 embedded 變體，故第二階段無法取得 embedded 專屬的第三方數值；本組的保證來自「第一階段第三方 assert ＋ 第二階段引擎與已驗 disjoint 同源 ＋ 程序逐點對照權威文獻」三者疊加。"
  },
  "pls_hoc_repeated": {
   "authority": "plspm",
@@ -392,11 +392,11 @@
   "verification": "2026-07-13 R 抽驗：路徑與 R² 與 seminr 一致。交互項係數為**已知尺度慣例差異**——本工具報標準化係數，seminr 報未標準化（其交互構念分數 sd = 1.001905）；0.194320 = 0.194690 ÷ 1.001905，配適完全相同。"
  },
  "pls_mod_threeway": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), IJCHM 35(1), 321-346，accepted MS guidance 表「How should a three-way interaction analysis be conducted?」**逐字**：「As with two-way interactions, researchers should draw on the two-stage approach to estimate models with three-way interactions. The resulting product should not be standardized, and the researchers should estimate and interpret the unstandardized coefficient.」two-stage 機制原始出處：Chin, Marcolin & Newsted (2003), ISR 14(2)。階層完整規格（三向項必須與三個主效果＋三個兩向項同時進入模型）：Aiken & West (1991)。",
+  "note": "與 `pls_mod_twostage`／`pls_quadratic` **同一條程式路徑**（two-stage 分支對 factors 陣列連乘，不限兩因子）。本 fixture 的規格為 3 主效果（F1、C、F2）＋3 兩向（F1×C、F1×F2、C×F2）＋1 三向（F1×C×F2），符合階層完整性。無法取得第三方數值（SmartPLS 4 授權過期；seminr 無三向支援）。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 Becker et al. (2023) guidance 表**逐字核對**——三向走 two-stage ✓、乘積不標準化 ✓、回報未標準化係數 ✓（基準端 `path_*` 皆為 `_bt[k] / _t_sds[k]`，即除以乘積 sd 還原為未標準化量尺）。(2) 階層完整性：fixture 同時納入 3 個主效果與全部 3 個兩向項，符合 Aiken & West (1991) 的規格要求——若省略任一低階項，三向係數將無法解釋。(3) 機制同源於已對 seminr 逐值的 `pls_mod_twostage`（同一 two-stage 分支，差別僅在連乘的因子數）。(4) JS↔numpy 逐值（compare.test.js）。**殘餘限制**：無三向交互的第三方實作可對，本組保證來自「權威文獻逐字＋機制同源＋規格完整性」三者，不含獨立數值對照。"
  },
  "pls_mod_twostage": {
   "authority": "seminr 2.5.0；Chin et al. (2003)；SmartPLS 4 Moderation 文件",
@@ -406,11 +406,11 @@
   "verification": "2026-07-13 R 抽驗：F1／C／交互項係數與 R² 與 seminr 一致（交互項對到未標準化的 path_int_Y = 0.14728）。"
  },
  "pls_pairwise_wpls": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "pairwise-complete 相關：pandas `DataFrame.corr()`（預設即 pairwise-complete，獨立第三方實作）。加權相關：statsmodels `DescrStatsW(weights=...).corrcoef` 與 `numpy.cov(aweights=..., ddof=0)`（兩個獨立第三方實作，皆為「可靠度權重」慣例、分母 Σw）。相關矩陣驅動的 Lohmöller 迭代：handoff-roadmap-v1 §6.6／§6.7 的設計，其正確性由 `full_*` 自我一致性欄位錨定到 `pls_basic`（已對 seminr 2.5.0 逐值）。",
+  "note": "本組是批次 3 中唯一能在沙盒取得完整第三方對照的：pairwise 與加權相關都是封閉式，且有現成的獨立實作。★ 2026-07-25 Session Q3 已把三道對照升為**重生時 assert**（結構性防護，非一次性抽驗）——之後任何人改動這段手算碼，重生基準就會紅燈。註：相關為尺度不變量，加權共變異的 ddof 取 0 或 1 得到同一個相關矩陣（已實測差 <1e-15），故此處不存在 ddof 慣例分歧的風險。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-25 溯源審計（Session Q3）：(1) pairwise-complete 相關 vs `pandas.DataFrame.corr()` 最大絕對差 **3.886e-16**；(2) 加權相關 vs `statsmodels DescrStatsW(ddof=0).corrcoef` 最大絕對差 **4.441e-16**；(3) 加權相關 vs `numpy.cov(aweights, ddof=0)` 最大絕對差 **2.220e-16**。三道皆已寫入 `generate_reference.py` 成為重生時 assert（容差 1e-12）。(4) `full_*` 自我一致性：完整資料＋全 1 權重走同一條相關矩陣路徑，必須重現 `pls_basic` 的 path_F1_F2 = 0.3603108815（既有 assert，容差 1e-6；實測差約 1.3e-8）——這條把整條相關矩陣驅動的迭代錨定到已對 seminr 的基準上。(5) 行為測試另鎖：權重同乘常數不改變結果、權重為 0 的列實質不參與、pairwise 與 blindfolding 互斥報錯、配對 <3 筆報錯。(6) JS↔numpy 59 欄位逐值（compare.test.js）。"
  },
  "pls_plsc": {
   "authority": "cSEM 0.6.1",
@@ -448,11 +448,11 @@
   "verification": "2026-07-13 溯源審計（Session Q1）：對照 SmartPLS Blindfolding 官方文件，程序四要點逐項一致——(1) 輪數＝omission distance D；(2) 第 d 輪自第 d 個資料點起每隔 D 刪一點（逐 LV 指標矩陣序列計數）；(3) 略去點按缺失值處理、以欄平均補值後全模型重估；(4) n/D 不得為整數的合規約束（n=60、D=7 ✓）。cross-validated redundancy＝結構預測分數 × loading 還原指標，符合 Hair et al. (2017) 第 6 章定義。JS 與獨立 numpy 引擎逐值互驗。第三方實作已不存在，此為「程序文獻」路線所能達到的最強驗證。"
  },
  "pls_quadratic": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "SmartPLS 4 官方文件「Nonlinear Relationships」（smartpls.com/documentation/algorithms-and-techniques/nonlinear）：二次效果「is like a self-moderation」，「The computation of results uses the two-stage approach. This approach uses the latent variable scores of the latent predictor variable **from the main effects model (without the quadratic effect term)**. These latent variable scores are saved and used to calculate the **squared indicator** for the second stage analysis」。two-stage 機制原始出處：Chin, Marcolin & Newsted (2003), Information Systems Research 14(2), 189-217。乘積項不標準化、回報未標準化係數：Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), IJCHM 35(1) 的 guidance 表（「The resulting product should not be standardized, and the researchers should estimate and interpret the unstandardized coefficient」）。條件斜率 dY/dX = b₁ + 2·b_q·x 為 Y = b₁X + b_qX² 的微分（非慣例選擇）；取值點 ±1 SD 依 Aiken & West (1991)。",
+  "note": "與 `pls_mod_twostage` **同一條程式路徑**：二次效果即 factors = [F1, F1] 的自我調節，pls.js 的 two-stage 分支不區分兩者。因此 `pls_mod_twostage` 對 seminr 的逐值抽驗（path_int_Y = 0.14728）同時是本組的機制證據。無法取得二次效果專屬的第三方數值（SmartPLS 4 授權過期；seminr 無 quadratic 支援）。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 SmartPLS 官方 Nonlinear 文件**逐點核對三項口徑**——第一階段取「主效果模型（不含二次項）」的 LV 分數 ✓、平方作為第二階段指標 ✓、走 two-stage 而非 product indicator ✓。(2) **實作層查核第一階段是否真的排除二次項**：`pls.js` 的 two-stage 分支先以 `curPaths`（僅主效果）呼叫 `estimateStage`，交互路徑 `intPaths` 在該次估計**之後**才併入 `curPaths`——確認第一階段乾淨。(3) 係數量尺：基準端對標準化平方項做 OLS 再除以 sd(平方項)，與直接對未標準化平方項迴歸恆等（置中後截距吸收均值），故回報值即權威文獻要求的未標準化係數。(4) 條件斜率為封閉式微分，已由行為測試鎖住 slopes = b₁ + 2·b_q·x 於 x = −1/0/+1。(5) 機制同源於已對 seminr 的 `pls_mod_twostage`。(6) JS↔numpy 逐值（compare.test.js）。"
  },
  "pls_scheme_centroid": {
   "authority": "plspm",
