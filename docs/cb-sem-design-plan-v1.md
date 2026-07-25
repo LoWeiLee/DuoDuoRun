@@ -89,7 +89,9 @@
 ## 6. 執行紀律
 
 - 沙盒限制、fixture-first、架構不變量、git 流程全部沿用
-  `handoff-roadmap-v1.md` §2–§3 與 `pls-sem-w6-workplan-v1.md` §4，不重述
+  `handoff-roadmap-v1.md` §2–§3，不重述
+  （原另引 `pls-sem-w6-workplan-v1.md` §4，該檔已於 roadmap-v2 整併時刪除；
+  2026-07-25 修正此失效參照）
 - **啟動順序建議**：PLS 收尾 workplan 的 Session A–F 完成後再啟動 Phase S；
   若 Kevin 想提前，Phase S 與 PLS W6 各 session 相互獨立、可穿插
 

@@ -2,7 +2,7 @@
 
 本文件定義多多快跑 PLS-SEM 引擎（`src/lib/stats/pls.js`）唯一的模型輸入格式。
 表單式宣告器（W1）與拖拉式畫布（W2）都只是產生這份 JSON 的編輯器；
-引擎、報表、測試不知道任何 UI 存在（見 `pls-sem-roadmap-v1.md` 架構原則）。
+引擎、報表、測試不知道任何 UI 存在（架構原則見 `handoff-roadmap-v1.md` §2 架構不變量第 1 條）。
 
 **v3 變更（W4）**：新增 `interactions[]`（調節／二次效果／三向交互）與
 `higherOrder[]`（高階構念）兩個選填欄位。既有欄位語意未變，`schemaVersion`

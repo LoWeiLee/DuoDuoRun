@@ -1,22 +1,57 @@
-# 多多快跑 主工單 v2（2026-07-13）
+# 多多快跑 主工單 v2（2026-07-13 建立，2026-07-25 最後更新）
 
 **讀者**：後續執行的 AI 與 Kevin。
-**定位**：**單一主工單**。合併並取代下列四份已完成或已過期的工單——
+**定位**：**單一主工單**。專案的所有待辦以本文件為準，其餘文件不放待辦。
 
-| 被取代的文件 | 狀態 | 處置 |
+---
+
+## ★ 下一個 session 從這裡開始
+
+**目前狀態一句話**：P0 公式溯源審計只剩 2 組卡文獻；P1 品質殘項清完第一批；
+功能開發（P2）尚未動工。最近一次本機全套驗收：**1147 過、6 跳過、13 檔全綠**（2026-07-25）。
+
+**建議的下一步（依序）**
+
+| 順位 | 工作 | 在哪 | 為什麼是這個順序 |
+|---|---|---|---|
+| 1 | P1 剩餘的低風險項（IPMA 兩項 UI、Q² legacy 註記、W4 畫布、示範資料集、App.css／README） | §2.3 | 不動統計核心、可一個 session 清完；其中「示範資料集」會連帶擴大 `ui.smoke` 對 W5／W6 的涵蓋 |
+| 2 | `pls_bca_reference` 的 scipy 抽驗 | §2.3 | 不卡文獻、順手可做，能提前抓 BCa 實作錯誤 |
+| 3 | Wave F1 快贏包（McDonald's ω、Friedman、McNemar、專案檔存取） | §3 | P0／P1 收乾淨後的第一個功能波，全部 tier A 可達 |
+| 4 | Q2 尾巴 2 組（`pls_fimix`、`pls_bca_reference`） | §1 | **卡文獻取得**，拿到 PDF 才能做，不占 session 排程 |
+
+**開工前必讀**：本文件 §0（品質規範，最高位階）＋ `handoff-roadmap-v1.md` §2（架構不變量）
+與 §3（沙盒作業手冊）。
+
+**環境提醒（踩過的坑）**
+- 沙盒是 **Linux**、Kevin 的機器是 **Windows**：新檔名不得與同目錄既有檔僅差大小寫
+  （2026-07-25 因 `narrative.js` vs `Narrative.jsx` 實際炸過，詳見 validation-report）。
+- 五個 `ui.*.test.jsx` 用 jsdom，**沙盒跑不動**，動到 `src/analyses/**` 或 `src/i18n/**`
+  一定要請 Kevin 本機雙擊 `跑UI測試.bat` 補驗——上述 bug 就是這樣抓到的。
+- `.bat` 被 `.gitignore` 擋（Kevin 2026-07-25 裁決維持），重新 clone 就會消失；
+  叫 Kevin 雙擊前先確認檔案還在，不見就直接重建。
+- 文件行尾**不一致**：`cb-sem-design-plan-v1.md` 是 LF，其餘 .md 是 CRLF。
+  改檔前先驗，不要整檔轉換（會讓 diff 變成全檔改動）。
+
+---
+
+## 文件清單（2026-07-25 盤點）
+
+| 檔案 | 定位 | 處置 |
 |---|---|---|
-| `pls-sem-w6-workplan-v1.md` | Session A–F **全數交付**（2026-07-13），只剩 G（品質小任務） | **可刪**；G 已併入本文件 §2 |
-| `redteam-audit-workplan-v1.md` | R1–R5 **全數交付**，只剩 `reference/statlite.jsx` 未刪 | **可刪**；殘項已併入本文件 §2 |
-| `handoff-roadmap-v1.md` §6.8／§7 | W6 全交付；§6.8 品質小任務與 §7 產品 backlog 仍未做 | **不可刪**——§2（架構不變量）／§3（沙盒作業手冊）／§5–§6（執行規格）仍然有效。待辦已搬入本文件 |
-| `feature-priority-roadmap-v1.md` | 20 項功能**一項都沒做**（COMING_SOON 34 個側欄項目全在） | **可刪**；全部內容已併入本文件 §3 |
+| `roadmap-v2.md` | 單一主工單（本檔） | 保留 |
+| `formula-provenance.md` | 溯源登記規範；`provenance.test.js` 的失敗訊息硬編此路徑 | 保留 |
+| `validation-report-v1.md` | 活的驗證紀錄，本身即溯源證據 | 保留 |
+| `pls-model-schema.md` | 模型 JSON 規格；`pls.js` 的執行期錯誤訊息會指向它 | 保留 |
+| `handoff-roadmap-v1.md` | §2 架構不變量／§3 沙盒手冊仍有效；`provenance.json` 以其 §6.6–6.7 為 authority | 保留 |
+| `w0-engine-spike-report.md` | `tests/pls.test.js` 的 bootstrap SE 容差帶以它為出處 | 保留 |
+| `cb-sem-design-plan-v1.md` | CB-SEM 未來波次的設計稿（§4 暫緩中） | 保留 |
+| `mockups/mockup-d-final-hybrid.html` | UI 設計權威，`CLAUDE.md` 與 5 個元件引用 | 保留 |
+| `pls-sem-roadmap-v1.md` | W0–W6 波次史，全數交付；純歷史 | 保留（Kevin 2026-07-25 裁決保留開發史） |
 
-保留不動：`validation-report-v1.md`（活的驗證紀錄）、`formula-provenance.md`（新建，溯源登記）、
-`pls-model-schema.md`（規格）、`w0-engine-spike-report.md`（歷史證據）、
-`pls-sem-roadmap-v1.md`（W0–W6 波次史，標記完成）、`cb-sem-design-plan-v1.md`（見 §4）。
-
-> ⚠️ `optimization-roadmap-v1.md` 在 2026-07-13 這個 session 中途從工作目錄消失
-> （session 開始時還在）。其內容大致已被 `feature-priority-roadmap-v1.md` 吸收，
-> 但 Kevin 若在意，可從 git 歷史確認是否為誤刪。
+**2026-07-25 已刪除（Kevin 確認）**：`mockups/mockup-a-dark-tech.html`、
+`mockups/mockup-b-light-saas.html`、`mockups/mockup-c-brand-warm.html`
+（選案階段淘汰稿，repo 內零引用）、`code-review-2026-05-13.md`
+（第四階段殘項經查核只剩 2 項，已搬入 §2.3）。
 
 ---
 
@@ -192,8 +227,15 @@ P0 公式溯源審計全數結案。解除封鎖路徑見 §1 Session Q2 節。
   higherOrder，表單為 source of truth）
 - 示範資料集：加一個含調節／HOC／群組欄位的 PLS 示範（`src/config/demos.js`）——
   順帶擴大 `ui.smoke` 的涵蓋（現行 PLS 示範沒有開任何 W5／W6 開關）
-- `code-review-2026-05-13.md` 第四階段殘項：README 里程碑、OG meta、
-  PDF metadata／動態 scale、多 sheet 警告
+- **上線前清理殘項**（原出自 `code-review-2026-05-13.md` 第四階段，該檔已於 2026-07-25 刪除；
+  逐項查核後原列 5 項只剩 2 項，其餘均已完成）：
+  - 刪 `src/App.css`（184 行，**零 import**，確認為死碼）。註：同批列的 `reference/`
+    經 Kevin 2026-07-25 裁決保留（見 §2.2）；`public/*.csv` 是活的示範資料集，不是殘留
+  - README 補「里程碑」段落（目前 README 無任何進度／里程碑敘述）
+  - ~~OG meta~~ 已完成（index.html 有 9 處 og:、含 theme-color 與 canonical）
+  - ~~PDF metadata／動態 scale~~ 已完成（`pdfExport.js` 有 `setProperties` 與動態 scale＋降階重試）
+  - ~~多 sheet 警告~~ 已完成（`fileParser.js` 的 `ignored-sheets` 警告碼）
+  - ~~i18n placeholder 不對稱~~ 已完成（`i18n.test.js` 有對稱性檢查且全綠）
 
 **會動統計核心（需 fixture 與重生）**
 - PLSpredict 多次重複取平均（SmartPLS 預設 10 reps）；MGA 的 PLSc 版
@@ -293,6 +335,13 @@ gate 判準第 3 條「Kevin 本機 lavaan 抽驗」正是 tier A 的要求。
   兩組卡文獻的解除封鎖路徑；§2 補 Q2 產生的三筆品質殘項。
   棘輪 10 → 6；抓到並修正 `pls_cta`（t → z）與 `pls_pos`（ΣSSE → ΣR²）兩處公式偏離。
   完整測試套件本機驗收 1136 過、6 跳過、零失敗。
+- v2.4（2026-07-25）：文件盤點與收斂。新增「下一個 session 從這裡開始」與「文件清單」兩節；
+  表頭的舊整併紀錄（四份已刪工單、optimization-roadmap 失蹤備註）已完成階段性任務，一併移除。
+  修正兩處失效參照（`cb-sem-design-plan-v1.md` 引已刪的 w6-workplan、`pls-model-schema.md`
+  引 `pls-sem-roadmap-v1.md`）。`code-review-2026-05-13.md` 第四階段殘項逐項查核，
+  5 項只剩 2 項（App.css 死碼、README 里程碑），已搬入 §2.3。
+  Kevin 確認後刪除 4 檔：3 份選案淘汰的 mockup ＋ `code-review-2026-05-13.md`；
+  `pls-sem-roadmap-v1.md` 經裁決**保留**（保留開發史）。
 - v2.3（2026-07-25）：P1 第一批交付——APA 敘述句補齊 8 項（原工單寫 3 項為 W5 時期的過期盤點）、
   句子組裝抽成 `apaNarrative.js` 純函式模組並補 11 項行為測試。§2 全面改寫：
   移除兩條已完成的過期項（59 個 eslint 已歸零、deploy.yml lint step 已存在）、
