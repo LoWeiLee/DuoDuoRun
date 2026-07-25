@@ -7,17 +7,20 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：P0 公式溯源審計只剩 2 組卡文獻；**P1 低風險殘項已全部清完**
-（2026-07-25 第二批）；功能開發（P2）尚未動工。
-最近一次本機全套驗收：**1,155 過、6 跳過、13 檔全綠**（2026-07-25，含第二批的 3 條 W4 畫布測試）。
+**目前狀態一句話**：**PLS 已收尾**——P1 殘項（低風險 7 項＋會動統計核心 2 項）全部清完，
+調節式中介一併交付；P0 只剩 2 組卡文獻。功能開發（P2）尚未動工。
+最近一次本機全套驗收：**1,184 過、6 跳過、13 檔全綠**（2026-07-25，含本輪新增的
+2 條調節式中介 jsdom 測試）。
 
 **建議的下一步（依序）**
 
 | 順位 | 工作 | 在哪 | 為什麼是這個順序 |
 |---|---|---|---|
-| 1 | Wave F1 快贏包（McDonald's ω、Friedman、McNemar、專案檔存取） | §3 | P0／P1 收乾淨後的第一個功能波，全部 tier A 可達 |
-| 2 | P1 剩下「會動統計核心」的兩項（PLSpredict 多次重複取平均、MGA 的 PLSc 版） | §2.3 | 需要重生 fixture，成本高於 Wave F1，且非阻塞 |
-| 3 | Q2 尾巴 2 組（`pls_fimix`、`pls_bca_reference`） | §1 | **卡文獻取得**，拿到 PDF 才能做，不占 session 排程 |
+| 1 | Wave F1 快贏包（McDonald's ω、Friedman、McNemar、專案檔存取） | §3 | PLS 收乾淨後的第一個功能波，全部 tier A 可達 |
+| 2 | Q2 尾巴 2 組（`pls_fimix`、`pls_bca_reference`） | §1 | **卡文獻取得**，拿到 PDF 才能做，不占 session 排程 |
+
+★ PLS 側已無待辦。PLSpredict 重複的口徑已於 2026-07-25 核對定案（結論：不跟隨 seminr，
+理由見 `validation-report-v1.md` 第六節）。
 
 **開工前必讀**：本文件 §0（品質規範，最高位階）＋ `handoff-roadmap-v1.md` §2（架構不變量）
 與 §3（沙盒作業手冊）。
@@ -47,6 +50,7 @@
 | `cb-sem-design-plan-v1.md` | CB-SEM 未來波次的設計稿（§4 暫緩中） | 保留 |
 | `mockups/mockup-d-final-hybrid.html` | UI 設計權威，`CLAUDE.md` 與 5 個元件引用 | 保留 |
 | `pls-sem-roadmap-v1.md` | W0–W6 波次史，全數交付；純歷史 | 保留（Kevin 2026-07-25 裁決保留開發史） |
+| `tests/verify_plspredict_reps.R` | 本機 seminr 核對腳本（PLSpredict 重複的彙總口徑）；沙盒無 R 故只能本機跑 | 保留至口徑定案 |
 
 **2026-07-25 已刪除（Kevin 確認）**：`mockups/mockup-a-dark-tech.html`、
 `mockups/mockup-b-light-saas.html`、`mockups/mockup-c-brand-warm.html`
@@ -244,10 +248,26 @@ P0 公式溯源審計全數結案。解除封鎖路徑見 §1 Session Q2 節。
 條目只能二選一。示範選了 W5／W6，W4 畫布改以 `ui.smoke` 內的合成 state 直接測
 （3 條新測試，**沙盒未執行過**，需本機補驗）。
 
-**會動統計核心（需 fixture 與重生）**
-- PLSpredict 多次重複取平均（SmartPLS 預設 10 reps）；MGA 的 PLSc 版
-- moderated mediation（條件間接效果；W4 機制同源，PROCESS 式輸出）——
-  這其實是**新功能不是殘項**，建議移入 §3 波次
+**會動統計核心（需 fixture 與重生）—— 2026-07-25 全數交付 ✅**
+（詳見 `validation-report-v1.md`「PLS 收尾」節）
+- ✅ **PLSpredict 多次重複**（UI 1／5／10，預設仍為 1）。溯源走「沙盒可驗的恆等式」而非新基準組
+  （Kevin 裁決）：reps=1 逐值等同原行為、reps=R 的指標層逐值等於 R 次單跑的算術平均（實測差 0）。
+  CVPAT 另立規則：先平均逐案損失再檢定一次，不平均 t 或 p。
+  ✅ **彙總口徑已核對定案（2026-07-25）：不跟隨 seminr**。查到兩件事：
+  (1) seminr 的 `reps` **實際不生效**——洗牌寫在重複迴圈外、迴圈內分摺是決定性的，
+  本機實測 reps=1 與 reps=10 逐位元相同，與原始碼一致（兩條獨立證據）；
+  (2) 它意圖採用的「先平均預測值再算指標」口徑有系統性樂觀偏誤，
+  差額＝各次預測值之間的變異（集成效果，非樣本外表現）。
+  本工具維持「平均各次指標」，依據寫入 JSDoc／UI 警告／provenance 三處。
+- ✅ **MGA 的 PLSc 版**。盤點發現引擎層**本來就通**（consistent 隨 baseOpts 傳進 runPLS／
+  bootstrapPLS／每一次 permutation），實際缺口是沒有測試鎖住、UI 沒揭露。已補 3 條測試
+  （關鍵一條測 bootstrap SE 與 permutation 分布同樣改變，擋的是日後把 consistent 濾掉造成的
+  「點估計校正、推論未校正」靜默混用）、結果加 `consistent` 標記與 rho_A 解讀警告。不新增基準組。
+- ✅ **moderated mediation（條件間接效果）**。新基準組 `pls_modmed`，status = verified：
+  第二階段兩條方程對 **statsmodels OLS** 逐值 assert（1e-10，重生時執行）＋第一階段沿用已對
+  plspm assert 的 two-stage 路徑＋合成層代數斷言三層疊加。
+  ⚠ **命名保留**：斜率 a3·b1 在文獻上稱 index of moderated mediation（Hayes 2015, MBR 50(1)），
+  **原文未取得**，故以描述性名稱回報並在 UI／敘述句／provenance 三處標註，未實作該文的檢定程序。
 
 **卡外部資源**
 - 【Q2】`pls_cta` 的非冗餘 tetrad 選取集：取得 Bollen & Ting (1993) 後覆核
@@ -335,6 +355,22 @@ gate 判準第 3 條「Kevin 本機 lavaan 抽驗」正是 tier A 的要求。
 
 ## 版本紀錄
 
+- v2.6（2026-07-25）：**PLS 收尾**。§2.3「會動統計核心」三項全數交付：PLSpredict 多次重複
+  （恆等式溯源，不新增基準組）、MGA 的 PLSc 版（盤點發現引擎已通，補測試與揭露）、
+  調節式中介（新基準組 `pls_modmed`，對 statsmodels OLS 逐值 assert，verified）。
+  reference.json 81 → **82** 組；`MAX_PENDING` 維持 2。
+  本機全套驗收 **1,184 過、6 跳過、13 檔全綠**（`pls.test.js` 155 → 170 條）；
+  eslint 0；fixture 完整重生逐位元可重現。
+  誠實標註一項：index of moderated mediation 的標籤待 Hayes (2015) 原文核定。
+  PLSpredict 重複的彙總口徑已於同日核對定案（不跟隨 seminr，見 v2.7）。
+  ★ 前置關卡記錄：沙盒無 R 亦無 root，seminr／cSEM 只能在本機跑——這決定了上述兩項的溯源路線。
+- v2.7（2026-07-25）：PLSpredict 重複口徑核對定案。**查到 seminr 的 `reps` 不生效**
+  （洗牌在重複迴圈外、迴圈內分摺為決定性；本機實測 reps=1 與 reps=10 逐位元相同，
+  與原始碼判讀一致），且其意圖採用的「先平均預測值再算指標」口徑有系統性樂觀偏誤
+  （模糊分解，沙盒數值驗證 <1e-12）。本工具維持「平均各次指標」，
+  依據寫入 JSDoc／UI 警告／provenance／validation-report 四處。
+  ★ 給後續的註腳：§0 的「找可執行的第三方實作」不等於「照抄它的數字」——
+  第三方也可能有 bug 或採可辯論的口徑，查核的價值在於知道它做了什麼。
 - v2.5（2026-07-25）：P1 低風險殘項第二批全數交付（§2.3 七項）＋ `pls_bca_reference`
   的 scipy 獨立抽驗並 assert 化。★ 過程中修正一處錯誤敘述：IPMA 改用量表理論界線
   **同時**改變 performance 與 importance（原宣稱只影響 performance），三處說明已改並留斷言。

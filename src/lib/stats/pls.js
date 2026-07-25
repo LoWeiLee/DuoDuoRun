@@ -1992,6 +1992,98 @@ function buildMediationReport(pathCoefficients, plan) {
   return { effects }
 }
 
+/**
+ * 調節式中介（moderated mediation）：兩步鏈 X → M → Y 的**條件間接效果**。
+ *
+ * 適用：a 路徑（X→M）或 b 路徑（M→Y）被交互項調節，且交互項走 two-stage、恰兩個因子。
+ *   a(w) = a1 + a3·w   （a1 = coef(X→M)、a3 = coef(X×W→M)）
+ *   b(w) = b1 + b3·w   （b1 = coef(M→Y)、b3 = coef(M×W→Y)）
+ *   條件間接效果(w) = a(w)·b(w)
+ * 構念分數已標準化，故 w ∈ {−1, 0, +1} 即 ∓1 SD（Aiken & West 1991 的慣例，
+ * 與本工具既有的 simple slopes 取值一致）。
+ *
+ * ★ 命名的誠實標註：只有**恰一條**路徑被調節時，條件間接效果對 w 是線性的，
+ *   其斜率（a 被調節時為 a3·b1、b 被調節時為 a1·b3）在文獻上稱為
+ *   「index of moderated mediation」。該名稱與其檢定的出處為 Hayes (2015),
+ *   Multivariate Behavioral Research 50(1), 1-22——**原文未取得**，故本工具
+ *   以描述性名稱回報這個量（`slopeOverW`）並在 UI 標註「文獻上稱為
+ *   index of moderated mediation，標籤待原文核定」，不逕自掛上該名稱。
+ * ★ 兩條路徑同時被調節時，條件間接效果對 w 是二次的，沒有單一斜率可報，
+ *   `slopeOverW` 為 null（誠實回 null，不硬給一個數）。
+ *
+ * 回傳 null（無可報的條件間接效果）或 { effects: [...] }。
+ */
+function buildModeratedMediationReport(pathCoefficients, plan) {
+  const ints = plan.ints || []
+  if (ints.length === 0) return null
+  const intNames = new Set(ints.map((q) => q.name))
+  const coefBy = new Map()
+  pathCoefficients.forEach((q, i) => coefBy.set(`${q.from}→${q.to}`, { coef: q.coef, idx: i }))
+
+  // 只取 two-stage、恰兩個相異因子的交互項（product-indicator／orthogonal 的
+  // 係數尺度與 simple slopes 慣例不同，本版不納入，避免混用口徑）
+  const usable = ints.filter((it) => it.method === 'two-stage'
+    && it.factors.length === 2 && it.factors[0] !== it.factors[1])
+  if (usable.length === 0) return null
+  /** 找出「調節 src→dst 這條路徑」的交互項：因子含 src，另一個因子即調節變數 */
+  const moderatorOf = (src, dst) => {
+    for (const it of usable) {
+      if (!coefBy.has(`${it.name}→${dst}`)) continue
+      const [fa, fb] = it.factors
+      if (fa === src) return { name: it.name, w: fb, idx: coefBy.get(`${it.name}→${dst}`).idx, coef: coefBy.get(`${it.name}→${dst}`).coef }
+      if (fb === src) return { name: it.name, w: fa, idx: coefBy.get(`${it.name}→${dst}`).idx, coef: coefBy.get(`${it.name}→${dst}`).coef }
+    }
+    return null
+  }
+
+  const effects = []
+  for (const q of pathCoefficients) {
+    if (intNames.has(q.from)) continue
+    const X = q.from
+    const M = q.to
+    if (intNames.has(M)) continue
+    for (const q2 of pathCoefficients) {
+      if (q2.from !== M) continue
+      const Y = q2.to
+      if (Y === X || intNames.has(Y)) continue
+      const aMod = moderatorOf(X, M)
+      const bMod = moderatorOf(M, Y)
+      if (!aMod && !bMod) continue
+      // 調節變數若本身就是 M 或 Y，條件間接效果的解讀會退化（W 同時是鏈上的節點），
+      // 這種規格屬於使用者建模問題，直接略過不報，不給一個看起來合理但講不清的數。
+      if ((aMod && (aMod.w === M || aMod.w === Y)) || (bMod && (bMod.w === X || bMod.w === Y))) continue
+      const a1 = q.coef
+      const b1 = q2.coef
+      const a3 = aMod ? aMod.coef : 0
+      const b3 = bMod ? bMod.coef : 0
+      const conditional = [-1, 0, 1].map((w) => ({
+        level: w,
+        a: a1 + a3 * w,
+        b: b1 + b3 * w,
+        indirect: (a1 + a3 * w) * (b1 + b3 * w),
+      }))
+      effects.push({
+        x: X,
+        m: M,
+        y: Y,
+        moderatorA: aMod ? aMod.w : null,
+        moderatorB: bMod ? bMod.w : null,
+        interactionA: aMod ? aMod.name : null,
+        interactionB: bMod ? bMod.name : null,
+        idxA: coefBy.get(`${X}→${M}`).idx,
+        idxB: coefBy.get(`${M}→${Y}`).idx,
+        idxIntA: aMod ? aMod.idx : null,
+        idxIntB: bMod ? bMod.idx : null,
+        conditional,
+        // 恰一條被調節 → 對 w 線性，斜率可報；兩條都被調節 → 二次，回 null
+        slopeOverW: (aMod && bMod) ? null : (aMod ? a3 * b1 : a1 * b3),
+        bothModerated: !!(aMod && bMod),
+      })
+    }
+  }
+  return effects.length > 0 ? { effects } : null
+}
+
 /* ─────────────────────────  主 API：runPLS  ───────────────────────── */
 
 /**
@@ -2086,6 +2178,7 @@ export function runPLS(rows, model, options = {}) {
   if (exec.notes.length > 0) report.meta.stages = exec.notes
   if (exec.derived) report.derived = exec.derived
   report.mediation = buildMediationReport(report.pathCoefficients, plan)
+  report.moderatedMediation = buildModeratedMediationReport(report.pathCoefficients, plan)
 
   return report
 }
@@ -2484,6 +2577,41 @@ export function bootstrapPLS(rows, model, options = {}) {
     if (slopes.length === 0) slopes = null
   }
 
+  // 條件間接效果（moderated mediation）：整條量都是路徑係數的函數，
+  // 所以與 simple slopes 同一條路——用同一批 pathDraws / jackPaths 推導，
+  // CI 型別（percentile / BCa）與正負號校正沿用主設定，不另立一套。
+  let conditionalIndirect = null
+  if (original.moderatedMediation && original.moderatedMediation.effects.length > 0) {
+    conditionalIndirect = []
+    for (const e of original.moderatedMediation.effects) {
+      const aOf = (get, w) => get(e.idxA) + (e.idxIntA !== null ? get(e.idxIntA) * w : 0)
+      const bOf = (get, w) => get(e.idxB) + (e.idxIntB !== null ? get(e.idxIntB) * w : 0)
+      const levels = e.conditional.map((c) => {
+        const fn = (get) => aOf(get, c.level) * bOf(get, c.level)
+        return {
+          level: c.level,
+          ...summarize(derive(pathDraws, fn), c.indirect, jackPaths ? derive(jackPaths, fn) : null),
+        }
+      })
+      let slope = null
+      if (e.slopeOverW !== null) {
+        // 恰一條路徑被調節 → 斜率 = a3·b1（調節 a）或 a1·b3（調節 b）
+        const fn = e.idxIntA !== null
+          ? (get) => get(e.idxIntA) * get(e.idxB)
+          : (get) => get(e.idxA) * get(e.idxIntB)
+        slope = summarize(derive(pathDraws, fn), e.slopeOverW, jackPaths ? derive(jackPaths, fn) : null)
+      }
+      conditionalIndirect.push({
+        x: e.x, m: e.m, y: e.y,
+        moderatorA: e.moderatorA, moderatorB: e.moderatorB,
+        bothModerated: e.bothModerated,
+        levels,
+        slopeOverW: slope,
+      })
+    }
+    if (conditionalIndirect.length === 0) conditionalIndirect = null
+  }
+
   return {
     nRequested: B, nValid, nSkipped, seed, ciAlpha, signCorrection, ciType,
     ...(options._keepDraws ? { draws: { paths: pathDraws } } : {}),
@@ -2502,6 +2630,7 @@ export function bootstrapPLS(rows, model, options = {}) {
     })),
     ...(indirectEffects ? { indirectEffects, totalIndirectEffects, totalEffects } : {}),
     ...(slopes ? { slopes } : {}),
+    ...(conditionalIndirect ? { conditionalIndirect } : {}),
   }
 }
 
@@ -2684,12 +2813,29 @@ export function mgaPLS(rows, model, options = {}) {
       permutation: { p: pPerm, diffs },
     }
   })
+  // PLSc（consistent PLS）與 MGA 併用：引擎層本來就通——consistent 隨 baseOpts 一路
+  // 傳進 runPLS / bootstrapPLS / 每一次 permutation 的重估，所以點估計、bootstrap SE、
+  // Henseler draws、permutation 分布**全部**走反衰減後的相關矩陣，不會混用兩種口徑。
+  // 這裡把它明確回報出來並轉呈群組層的 PLSc 警告：反衰減的分母是**各群組各自**的 rho_A，
+  // 群組樣本小時 rho_A 不穩，校正後 |r| 可能 > 1（引擎已警告不截斷）。
+  const consistent = baseOpts.consistent === true
+  const plscWarnings = consistent
+    ? [
+      ...(r1.meta?.warnings || []).filter((w) => w.startsWith('PLSc')).map((w) => `群組「${groups[0]}」${w}`),
+      ...(r2.meta?.warnings || []).filter((w) => w.startsWith('PLSc')).map((w) => `群組「${groups[1]}」${w}`),
+    ]
+    : []
   return {
     groupColumn, groups: [...groups], n1: g1.length, n2: g2.length,
     bootstrapN: B, nPermValid, nPermFailed,
+    consistent,
     paths,
     warnings: [
       ...(g1.length < 30 || g2.length < 30 ? [`群組樣本偏低（${g1.length}／${g2.length}），MGA 檢定力有限`] : []),
+      ...(consistent
+        ? ['本次 MGA 以 PLSc（consistent PLS）估計：兩群的點估計、bootstrap 與 permutation 皆走各群組自己的 rho_A 反衰減後相關矩陣。群組樣本小時 rho_A 不穩，跨群比較的係數差異會同時反映信度估計的差異，解讀請一併看 MICOM']
+        : []),
+      ...plscWarnings,
     ],
   }
 }
@@ -2864,7 +3010,34 @@ function olsFit(Xcols, y, rowsIdx) {
  * CVPAT（Liengaard et al. 2021：PLS vs IA、PLS vs LM 的逐案損失成對 t 檢定）。
  * k-fold 交叉驗證；LM 基準 = 各內生指標對全部外生指標的 OLS。
  * 僅支援一般模型。
- * @param {object} options { k=10, seed=42, foldIndices?（測試注入：長度 n 的 fold id 陣列）,
+ *
+ * **重複（repetitions）**：單次 k-fold 的結果會隨「這一次剛好怎麼切」而變動。
+ * repetitions > 1 時把整套 k-fold 跑 R 次（每次用不同的分摺）再彙總，降低分摺噪音。
+ * 彙總口徑（**兩個量的規則不同，刻意如此**）：
+ *   - 指標層 RMSE／MAE／Q²predict（含 LM 基準）：取 R 次的**算術平均**。
+ *   - CVPAT：先把**逐案損失**在 R 次之間平均，再對平均後的損失跑一次成對 t 檢定。
+ *     不平均 t 或 p——平均 p 值沒有統計意義；CVPAT 的虛無假設本來就是關於
+ *     平均損失差，對損失取平均正是「降低分摺噪音」要做的事。
+ * ★ 這一層是**聚合**，不是新公式：repetitions=1 逐值等同原本的單次 k-fold；
+ *   repetitions=R 的指標層逐值等於 R 次單跑的算術平均（兩者皆有測試鎖住）。
+ *
+ * ★ 口徑分歧已於 2026-07-25 核對完畢（結論：不跟隨 seminr），依據有二：
+ *   (1) **seminr 採另一種口徑**：R/feature_plspredict.R 的 predict_pls 在 reps 非 NULL 時，
+ *       把各次的**預測值**逐格平均（apply(array, c(1,2), mean)），再對平均後的殘差算一次
+ *       RMSE／MAE。
+ *   (2) **但 seminr 的 reps 實際上不生效**：洗牌 order <- sample(...) 在重複迴圈**之外**，
+ *       迴圈內的 prediction_matrices() 以 cut(seq(1,n), breaks=noFolds) 決定分摺——那是
+ *       決定性的。所以每次重複用的是完全相同的分割，reps 不會改變任何數字。
+ *       Kevin 本機實測（seminr 2.5.0 / R 4.6.0）reps=1 與 reps=10 逐位元相同，與原始碼一致。
+ *   ⇒ seminr 無法作為本層的數值基準；且其口徑有系統性樂觀偏誤——由模糊分解
+ *     mean_r MSE_r − MSE(p̄) = mean_r mean_i (p_ri − p̄_i)² ≥ 0，
+ *     先平均預測值再算指標必然給出**不高於**「平均各次指標」的誤差，差額恰為各次預測值
+ *     之間的變異；重複次數越多、看起來越準，但那是集成效果不是樣本外表現。
+ *   本工具因此維持「平均各次指標」。詳見 docs/validation-report-v1.md。
+ *
+ * @param {object} options { k=10, seed=42, repetitions=1,
+ *                           foldIndices?（測試注入：長度 n 的 fold id 陣列；
+ *                             repetitions>1 時可傳長度 R 的陣列之陣列）,
  *                           ...runPLS options }
  */
 export function plspredictPLS(rows, model, options = {}) {
@@ -2882,18 +3055,35 @@ export function plspredictPLS(rows, model, options = {}) {
   const spec = buildSpec(plan.model, plan)
   if (spec.error) return spec
 
-  // fold 指派
-  let foldOf
+  // 重複次數（SmartPLS 預設 10；本工具預設 1 以保留原有口徑，UI 另行提供設定）
+  const reps = options.repetitions ?? 1
+  if (!Number.isInteger(reps) || reps < 1 || reps > 100) {
+    return { error: 'bad-repetitions', message: `repetitions 必須是 1–100 的整數，收到「${options.repetitions}」` }
+  }
+
+  // 各次重複的 fold 指派。
+  // options.foldIndices 可為「長度 n 的陣列」（單次，向後相容）或「長度 R 的陣列之陣列」（逐次注入）。
+  const foldPlans = []
   if (options.foldIndices) {
-    if (options.foldIndices.length !== n) {
-      return { error: 'bad-folds', message: `foldIndices 長度（${options.foldIndices.length}）與有效樣本數（${n}）不符` }
+    const inj = Array.isArray(options.foldIndices[0]) ? options.foldIndices : [options.foldIndices]
+    if (inj.length !== reps) {
+      return { error: 'bad-folds', message: `注入的 foldIndices 組數（${inj.length}）與 repetitions（${reps}）不符` }
     }
-    foldOf = options.foldIndices
+    for (const fo of inj) {
+      if (!Array.isArray(fo) || fo.length !== n) {
+        return { error: 'bad-folds', message: `foldIndices 長度（${fo?.length}）與有效樣本數（${n}）不符` }
+      }
+      foldPlans.push(fo)
+    }
   } else {
-    const rand = mulberry32((options.seed ?? 42) + 13)
-    const pos = shuffledPositions(n, rand)
-    foldOf = new Array(n)
-    pos.forEach((p, i) => { foldOf[p] = i % k })
+    // 每次重複用不同的分摺；種子固定 → 整體仍完全可重現
+    for (let r = 0; r < reps; r++) {
+      const rand = mulberry32((options.seed ?? 42) + 13 + r * 1009)
+      const pos = shuffledPositions(n, rand)
+      const fo = new Array(n)
+      pos.forEach((p, i) => { fo[p] = i % k })
+      foldPlans.push(fo)
+    }
   }
 
   const exoIdx = []
@@ -2911,6 +3101,8 @@ export function plspredictPLS(rows, model, options = {}) {
     return col
   })
 
+  // 單次 k-fold：回傳指標層度量與逐案損失。多次重複只是重複呼叫它再彙總。
+  const runOnce = (foldOf) => {
   const predPls = spec.indicators.map(() => new Float64Array(n).fill(NaN))
   const predLm = spec.indicators.map(() => new Float64Array(n).fill(NaN))
   const predNaive = spec.indicators.map(() => new Float64Array(n).fill(NaN))
@@ -3027,10 +3219,50 @@ export function plspredictPLS(rows, model, options = {}) {
     }
     return out
   }
-  const lPls = lossOf(predPls)
+  return { indicators, lPls: lossOf(predPls), lIA: lossOf(predNaive), lLM: lossOf(predLm) }
+  }
+
+  const runs = []
+  for (const fo of foldPlans) {
+    const one = runOnce(fo)
+    if (one.error) return one
+    runs.push(one)
+  }
+
+  // ── 彙總 ──
+  // (a) 指標層：R 次的算術平均。Q²predict 在某次為 null（naive 無變異）時整體記 null，
+  //     不用「有值的那幾次」偷偷取平均——那會讓分母口徑隨資料浮動。
+  const avg = (vals) => (vals.some((v) => v === null || !Number.isFinite(v))
+    ? null
+    : vals.reduce((s, v) => s + v, 0) / vals.length)
+  const indicators = runs[0].indicators.map((_, idx) => {
+    const across = runs.map((r) => r.indicators[idx])
+    const base = across[0]
+    return {
+      lv: base.lv,
+      indicator: base.indicator,
+      rmse: avg(across.map((q) => q.rmse)),
+      mae: avg(across.map((q) => q.mae)),
+      q2predict: avg(across.map((q) => q.q2predict)),
+      lm: {
+        rmse: avg(across.map((q) => q.lm.rmse)),
+        mae: avg(across.map((q) => q.lm.mae)),
+        q2predict: avg(across.map((q) => q.lm.q2predict)),
+      },
+    }
+  })
+
+  // (b) CVPAT：先把逐案損失在 R 次之間平均，再跑一次成對 t 檢定（理由見檔頭 JSDoc）
+  const meanLoss = (key) => {
+    const out = new Float64Array(n)
+    for (const r of runs) for (let i = 0; i < n; i++) out[i] += r[key][i]
+    for (let i = 0; i < n; i++) out[i] /= runs.length
+    return out
+  }
+  const lPlsBar = meanLoss('lPls')
   const cvOne = (lBench) => {
     const D = new Float64Array(n)
-    for (let i = 0; i < n; i++) D[i] = lBench[i] - lPls[i]
+    for (let i = 0; i < n; i++) D[i] = lBench[i] - lPlsBar[i]
     const dBar = meanOf(D)
     const sdD = sdOf(D)
     const t = sdD > 0 ? dBar / (sdD / Math.sqrt(n)) : null
@@ -3039,9 +3271,12 @@ export function plspredictPLS(rows, model, options = {}) {
   return {
     k,
     n,
+    repetitions: reps,
     indicators,
-    cvpat: { vsIA: cvOne(lossOf(predNaive)), vsLM: cvOne(lossOf(predLm)) },
-    warnings: [],
+    cvpat: { vsIA: cvOne(meanLoss('lIA')), vsLM: cvOne(meanLoss('lLM')) },
+    warnings: reps > 1
+      ? ['本次 PLSpredict 重複 ' + reps + ' 次 k-fold 後彙總：指標層取各次的算術平均，CVPAT 則先平均逐案損失再檢定一次（不平均 t 或 p）。註：seminr 的 predict_pls 採另一種口徑（先平均各次預測值、再算一次指標），該口徑會系統性低估誤差（差額＝各次預測值之間的變異，屬集成效果而非樣本外表現），且其 reps 因洗牌寫在重複迴圈之外而實際不生效；本工具不跟隨，判讀依據見 docs/validation-report-v1.md']
+      : [],
   }
 }
 

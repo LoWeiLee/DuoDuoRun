@@ -844,14 +844,26 @@ function Config() {
               hint={c.w5PredictHint}
             />
             {w5.predict && (
-              <div className="pl-1">
-                <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5KTitle}</div>
-                <Segmented
-                  items={[5, 10].map((n) => ({ key: n, label: String(n) }))}
-                  value={w5.k ?? 10}
-                  onChange={(key) => setW5({ k: key })}
-                  mono
-                />
+              <div className="pl-1 space-y-2">
+                <div>
+                  <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5KTitle}</div>
+                  <Segmented
+                    items={[5, 10].map((n) => ({ key: n, label: String(n) }))}
+                    value={w5.k ?? 10}
+                    onChange={(key) => setW5({ k: key })}
+                    mono
+                  />
+                </div>
+                <div>
+                  <div className="text-[11px] text-duo-cocoa-500 mb-1">{c.w5RepsTitle}</div>
+                  <Segmented
+                    items={[1, 5, 10].map((n) => ({ key: n, label: String(n) }))}
+                    value={w5.predictReps ?? 1}
+                    onChange={(key) => setW5({ predictReps: key })}
+                    mono
+                  />
+                  <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{c.w5RepsHint}</p>
+                </div>
               </div>
             )}
           </div>

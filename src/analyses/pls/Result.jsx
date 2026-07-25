@@ -916,6 +916,87 @@ function DerivedBlock({ derived, r }) {
   )
 }
 
+/** 調節式中介：條件間接效果（w = ∓1 SD 與均值） */
+function ModMedBlock({ estimate, boot, bootOk, r }) {
+  const mm = estimate.moderatedMediation
+  if (!mm || mm.effects.length === 0) return null
+  const ciMap = new Map()
+  if (bootOk) for (const q of boot.conditionalIndirect || []) ciMap.set(`${q.x}|${q.m}|${q.y}`, q)
+  return (
+    <div>
+      <Heading>{r.modmedTitle}</Heading>
+      {mm.effects.map((e) => {
+        const b = ciMap.get(`${e.x}|${e.m}|${e.y}`)
+        const modName = e.moderatorA && e.moderatorB
+          ? `${e.moderatorA} / ${e.moderatorB}`
+          : (e.moderatorA || e.moderatorB)
+        return (
+          <div key={`${e.x}|${e.m}|${e.y}`} className="mb-3">
+            <p className="text-[11px] text-duo-cocoa-500 mb-1 font-mono">
+              {fillTemplate(r.modmedChain, { x: e.x, m: e.m, y: e.y, w: modName })}
+              {e.moderatorA && !e.moderatorB && ` · ${r.modmedOnA}`}
+              {!e.moderatorA && e.moderatorB && ` · ${r.modmedOnB}`}
+              {e.bothModerated && ` · ${r.modmedBoth}`}
+            </p>
+            <TableBox>
+              <thead className="bg-duo-cream-50">
+                <tr>
+                  <Th align="left">{r.modmedColLevel}</Th>
+                  <Th>{r.modmedColA}</Th>
+                  <Th>{r.modmedColB}</Th>
+                  <Th>{r.modmedColIndirect}</Th>
+                  <Th>{r.cols.se}</Th>
+                  <Th>{r.cols.ci}</Th>
+                  <Th>{r.cols.p}</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {e.conditional.map((cnd) => {
+                  const bl = b ? b.levels.find((q) => q.level === cnd.level) : null
+                  return (
+                    <tr key={cnd.level}>
+                      <Td align="left" mono={false} bold>
+                        {cnd.level === 0 ? r.modmedAtMean : fillTemplate(r.modmedAtSd, { s: cnd.level > 0 ? '+1' : '−1' })}
+                      </Td>
+                      <Td>{fmtNum(cnd.a, 3)}</Td>
+                      <Td>{fmtNum(cnd.b, 3)}</Td>
+                      <Td>{fmtNum(cnd.indirect, 3)}</Td>
+                      <Td>{fmtNum(bl ? bl.se : null, 3)}</Td>
+                      <Td>{bl ? `[${fmtNum(bl.ciLower, 3)}, ${fmtNum(bl.ciUpper, 3)}]` : '—'}</Td>
+                      <Td>{bl ? <span className={TONE_TEXT[toneForP(bl.p)] || ''}>{fmtP(bl.p)}</span> : '—'}</Td>
+                    </tr>
+                  )
+                })}
+                {e.slopeOverW !== null && (
+                  <tr className="bg-duo-cream-50/60">
+                    <Td align="left" mono={false} bold>{r.modmedSlope}</Td>
+                    <Td> </Td>
+                    <Td> </Td>
+                    <Td>{fmtNum(e.slopeOverW, 3)}</Td>
+                    <Td>{fmtNum(b && b.slopeOverW ? b.slopeOverW.se : null, 3)}</Td>
+                    <Td>
+                      {b && b.slopeOverW
+                        ? `[${fmtNum(b.slopeOverW.ciLower, 3)}, ${fmtNum(b.slopeOverW.ciUpper, 3)}]`
+                        : '—'}
+                    </Td>
+                    <Td>
+                      {b && b.slopeOverW
+                        ? <span className={TONE_TEXT[toneForP(b.slopeOverW.p)] || ''}>{fmtP(b.slopeOverW.p)}</span>
+                        : '—'}
+                    </Td>
+                  </tr>
+                )}
+              </tbody>
+            </TableBox>
+          </div>
+        )
+      })}
+      <WarnBox>{r.modmedLabelCaveat}</WarnBox>
+      <Note>{r.modmedNote}</Note>
+    </div>
+  )
+}
+
 /** W5：PLS-MGA 三法並列表 */
 function MgaBlock({ mga, r }) {
   return (
@@ -926,7 +1007,11 @@ function MgaBlock({ mga, r }) {
           g1: mga.groups[0], n1: mga.n1, g2: mga.groups[1], n2: mga.n2,
           b: mga.bootstrapN, np: mga.nPermValid,
         })}
+        {mga.consistent && ` · ${r.mgaPlscTag}`}
       </p>
+      {Array.isArray(mga.warnings) && mga.warnings.length > 0 && (
+        <div>{mga.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}</div>
+      )}
       <TableBox>
         <thead className="bg-duo-cream-50">
           <tr>
@@ -1034,6 +1119,14 @@ function PredictBlock({ predict, r }) {
   return (
     <div>
       <Heading>{fillTemplate(r.predictTitle, { k: predict.k })}</Heading>
+      {predict.repetitions > 1 && (
+        <p className="text-[11px] text-duo-cocoa-400 mb-1.5 font-mono">
+          {fillTemplate(r.predictReps, { r: predict.repetitions })}
+        </p>
+      )}
+      {Array.isArray(predict.warnings) && predict.warnings.length > 0 && (
+        <div>{predict.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}</div>
+      )}
       <TableBox>
         <thead className="bg-duo-cream-50">
           <tr>
@@ -1813,6 +1906,9 @@ function Result() {
       <EffectsTable estimate={estimate} r={r} />
       {estimate.mediation && (
         <MediationTable estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
+      )}
+      {estimate.moderatedMediation && (
+        <ModMedBlock estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
       )}
       {meas.fit && <FitTable fit={meas.fit} gof={meas.gof} r={r} />}
       {estimate.derived && <DerivedBlock derived={estimate.derived} r={r} />}

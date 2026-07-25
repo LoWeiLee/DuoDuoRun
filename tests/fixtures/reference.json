@@ -535,7 +535,7 @@
   }
  },
  "pls_bca_reference": {
-  "source": "numpy \u624b\u7b97 BCa\uff08Efron 1987 JASA 82(397); Efron & Tibshirani 1993 \u00a714.3\uff09\uff1a\u7d71\u8a08\u91cf=main.y \u5e73\u5747\u3001B=999 \u56fa\u5b9a draws\uff08rng seed 20260704\uff09\uff0bjackknife\uff1bdraws/jackknife \u4e00\u4f75\u5165 fixture \u4f9b JS bcaInterval() \u9010\u503c\u6bd4\u5c0d",
+  "source": "numpy \u624b\u7b97 BCa\uff08Efron 1987 JASA 82(397); Efron & Tibshirani 1993 \u00a714.3\uff09\uff1a\u7d71\u8a08\u91cf=main.y \u5e73\u5747\u3001B=999 \u56fa\u5b9a draws\uff08rng seed 20260704\uff09\uff0bjackknife\uff1bdraws/jackknife \u4e00\u4f75\u5165 fixture \u4f9b JS bcaInterval() \u9010\u503c\u6bd4\u5c0d\u3002\u91cd\u751f\u6642\u53e6\u5c0d scipy.stats._resampling._bca_interval \u9010\u503c assert\uff08z\u2080\uff0fa\uff0falpha \u4e0a\u4e0b\u754c\uff0c\u5bb9\u5dee 1e-12\uff09\u2014\u2014\u975e\u6b0a\u5a01\u3001\u4e0d\u80fd\u7d50\u6848\uff0c\u53ea\u6514\u300e\u672c\u6a94\u516c\u5f0f\u6253\u932f\u300f",
   "values": {
    "original": 40.343340000000005,
    "z0": -0.02132928514383558,
@@ -1633,6 +1633,23 @@
    "slope_lo": -0.28208025052687996,
    "slope_mid": -0.13480075477096787,
    "slope_hi": 0.012478740984944225
+  }
+ },
+ "pls_modmed": {
+  "source": "numpy \u624b\u7b97\u8abf\u7bc0\u5f0f\u4e2d\u4ecb\uff08\u689d\u4ef6\u9593\u63a5\u6548\u679c\uff09\uff1a\u7b2c\u4e00\u968e\u6bb5\uff1d\u4e3b\u6548\u679c\u6a21\u578b\u7684 LV \u5206\u6578\uff08two-stage\uff0c\u540c pls_mod_twostage \u6163\u4f8b\uff0c\u8a72\u7d44\u7b2c\u4e00\u968e\u6bb5\u5df2\u5c0d plspm assert <1e-6\uff09\uff1b\u7b2c\u4e8c\u968e\u6bb5\u5169\u689d\u65b9\u7a0bM ~ X + W + z(X\u00b7W)\u3001Y ~ M + X \u7684\u4fc2\u6578**\u91cd\u751f\u6642\u5c0d statsmodels OLS \u9010\u503c assert <1e-10**\uff08\u672c\u6a94\u539f\u4ee5 np.linalg.lstsq \u8a08\u7b97\uff0c\u5169\u5957\u7368\u7acb\u5be6\u4f5c\uff09\u3002\u689d\u4ef6\u9593\u63a5\u6548\u679c = (a1 + a3\u00b7w)\u00b7b1\uff0ca3 \u70ba\u4e0d\u6a19\u6e96\u5316\u4ea4\u4e92\u4fc2\u6578\uff08\u9664\u4ee5 sd(\u4e58\u7a4d)\uff0c\u540c two-stage \u6163\u4f8b\uff09\uff1bw = \u22121/0/+1 \u5373 \u22131 SD\uff08Aiken & West 1991\uff09\u3002\u659c\u7387 a3\u00b7b1 \u6587\u737b\u4e0a\u7a31 index of moderated mediation (Hayes 2015, MBR 50(1))\u2014\u2014\u539f\u6587\u672a\u53d6\u5f97\uff0c\u672c\u5de5\u5177\u4ee5\u63cf\u8ff0\u6027\u540d\u7a31\u56de\u5831\uff0c\u4e0d\u639b\u8a72\u6a19\u7c64",
+  "values": {
+   "a1": 0.28400104010890054,
+   "a3": 0.17465090062310837,
+   "b1": 0.18562651691409762,
+   "w_main_M": -0.3138451594030335,
+   "direct_X_Y": -0.07646241348625031,
+   "sd_product": 0.9483660639448207,
+   "r2_M": 0.20350669362312046,
+   "r2_Y": 0.030523438660414626,
+   "slope_over_w": 0.032419838358577806,
+   "indirect_wm1": 0.020298285516818334,
+   "indirect_w0": 0.05271812387539614,
+   "indirect_wp1": 0.08513796223397395
   }
  },
  "pls_quadratic": {

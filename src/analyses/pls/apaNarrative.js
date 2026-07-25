@@ -234,6 +234,44 @@ export function buildNarrative(res, lang) {
     parts.push(a.mediationIntro + sentences.join(sep) + period)
   }
 
+  // 調節式中介（條件間接效果）：推論同樣需要 bootstrap。
+  // 句子只報「顯著／不顯著」與區間，不宣稱「調節式中介成立」——後者需要斜率的推論，
+  // 而斜率這個量的原始定義（Hayes 2015）本工具未取得原文，故句尾一律附上標籤保留說明。
+  if (bootOk && estimate.moderatedMediation && Array.isArray(bootstrap.conditionalIndirect)) {
+    const ciMap = new Map(bootstrap.conditionalIndirect.map((q) => [`${q.x}|${q.m}|${q.y}`, q]))
+    const sentences = estimate.moderatedMediation.effects.map((eff) => {
+      const b = ciMap.get(`${eff.x}|${eff.m}|${eff.y}`)
+      const at = (lv) => {
+        const c0 = eff.conditional.find((q) => q.level === lv)
+        const bl = b ? b.levels.find((q) => q.level === lv) : null
+        const sig = bl && Number.isFinite(bl.ciLower) && (bl.ciLower > 0 || bl.ciUpper < 0)
+        return fillTemplate(a.modmedLevel, {
+          level: lv === 0 ? a.modmedAtMean : fillTemplate(a.modmedAtSd, { s: lv > 0 ? '+1' : '−1' }),
+          est: fmtNum(c0.indirect, 2),
+          ci: bl ? fillTemplate(a.mediationCi, { lo: fmtNum(bl.ciLower, 2), hi: fmtNum(bl.ciUpper, 2) }) : '',
+          verdict: sig ? a.modmedSig : a.modmedNs,
+        })
+      }
+      const slopeClause = (eff.slopeOverW !== null && b && b.slopeOverW)
+        ? fillTemplate(a.modmedSlopeClause, {
+          est: fmtNum(eff.slopeOverW, 2),
+          ci: fillTemplate(a.mediationCi, {
+            lo: fmtNum(b.slopeOverW.ciLower, 2), hi: fmtNum(b.slopeOverW.ciUpper, 2),
+          }),
+        })
+        : a.modmedBothClause
+      return fillTemplate(a.modmedSentence, {
+        x: eff.x, m: eff.m, y: eff.y,
+        w: eff.moderatorA && eff.moderatorB
+          ? `${eff.moderatorA} / ${eff.moderatorB}`
+          : (eff.moderatorA || eff.moderatorB),
+        levels: [at(-1), at(0), at(1)].join('、'),
+        slope: slopeClause,
+      })
+    })
+    parts.push(a.modmedIntro + sentences.join(sep) + period + a.modmedTail)
+  }
+
   // ── W5／W6 敘述句（2026-07-25 P1 補齊）────────────────────────────────
   // 這些區塊各自獨立於 bootstrap：MGA 有自己的 permutation、PLSpredict 走交叉驗證、
   // IPMA／cIPMA／CTA／copula／FIMIX／POS 各有自己的推論程序。

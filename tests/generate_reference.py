@@ -1034,6 +1034,60 @@ try:
         slope_lo=float(_b2[0]) - _b_int_unstd, slope_mid=float(_b2[0]),
         slope_hi=float(_b2[0]) + _b_int_unstd)
 
+    # ── 調節式中介（moderated mediation，PROCESS Model 7 型）─────────────
+    #   X=F1(i1-3)、M=F2(i4-6)、W=C(cond1-3)、Y=y
+    #   路徑：X→M、X×W→M（a 路徑被調節）、M→Y、X→Y；引擎自動補主效果 W→M
+    #   條件間接效果(w) = (a1 + a3·w)·b1，w = −1/0/+1（分數已標準化，即 ∓1 SD）
+    #   斜率 a3·b1 在文獻上稱為 index of moderated mediation（Hayes 2015 MBR 50(1)）——
+    #   ★ 原文未取得，本工具以描述性名稱回報這個量，不逕自掛該標籤（見 provenance）。
+    _mm_cols = ["i1", "i2", "i3", "i4", "i5", "i6", "cond1", "cond2", "cond3", "y"]
+    _mm_blocks = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+    _mm_pairs = [(0, 1), (2, 1), (1, 3), (0, 3)]  # 第一階段＝主效果模型（不含交互項）
+    _mm_Z = _zsc(mainc[_mm_cols].astype(float))
+    _Wmm, _Ymm, _Lmm, _ = _pls_engine(_mm_Z.values, _mm_blocks, ["A"] * 4, _mm_pairs, "path")
+    _mmX, _mmM, _mmW, _mmY = _Ymm[:, 0], _Ymm[:, 1], _Ymm[:, 2], _Ymm[:, 3]
+    _mm_prod = _mmX * _mmW
+    _mm_sdp = float(_mm_prod.std(ddof=1))
+    _mm_zp = (_mm_prod - _mm_prod.mean()) / _mm_sdp
+    # 第二階段兩條方程（全單指標＝分數層 OLS）
+    _bM, _r2M = _ols_std([_mmX, _mmW, _mm_zp], _mmM)   # M ~ X + W + z(X·W)
+    _bY, _r2Y = _ols_std([_mmM, _mmX], _mmY)           # Y ~ M + X
+    _a1 = float(_bM[0])
+    _a3 = float(_bM[2]) / _mm_sdp                       # 交互項係數不標準化（同 two-stage 慣例）
+    _b1 = float(_bY[0])
+
+    # ★ 重生時第三方 assert：兩條第二階段方程改用 statsmodels OLS 獨立重算。
+    #   本檔原本用 np.linalg.lstsq（_ols_std），與 statsmodels 是兩套獨立實作。
+    #   這道 assert 攔的是「把哪些變項放進哪條方程」與係數擷取位置寫錯——
+    #   moderated mediation 最容易出錯的正是這裡（a 方程漏放 W 主效果、
+    #   或 b 方程誤放交互項），而不是乘積本身。
+    import statsmodels.api as _sm_mm
+    _smM = _sm_mm.OLS(_mmM, _sm_mm.add_constant(np.column_stack([_mmX, _mmW, _mm_zp]))).fit()
+    _smY = _sm_mm.OLS(_mmY, _sm_mm.add_constant(np.column_stack([_mmM, _mmX]))).fit()
+    assert abs(_a1 - float(_smM.params[1])) < 1e-10, "modmed：a1 與 statsmodels 不一致"
+    assert abs(float(_bM[1]) - float(_smM.params[2])) < 1e-10, "modmed：W→M 主效果與 statsmodels 不一致"
+    assert abs(float(_bM[2]) - float(_smM.params[3])) < 1e-10, "modmed：交互項標準化係數與 statsmodels 不一致"
+    assert abs(_b1 - float(_smY.params[1])) < 1e-10, "modmed：b1 與 statsmodels 不一致"
+    assert abs(_r2M - float(_smM.rsquared)) < 1e-10, "modmed：M 方程 R² 與 statsmodels 不一致"
+    assert abs(_r2Y - float(_smY.rsquared)) < 1e-10, "modmed：Y 方程 R² 與 statsmodels 不一致"
+
+    _cond = {
+        "indirect_wm1": (_a1 - _a3) * _b1,
+        "indirect_w0": _a1 * _b1,
+        "indirect_wp1": (_a1 + _a3) * _b1,
+    }
+    put("pls_modmed",
+        "numpy 手算調節式中介（條件間接效果）：第一階段＝主效果模型的 LV 分數（two-stage，"
+        "同 pls_mod_twostage 慣例，該組第一階段已對 plspm assert <1e-6）；第二階段兩條方程"
+        "M ~ X + W + z(X·W)、Y ~ M + X 的係數**重生時對 statsmodels OLS 逐值 assert <1e-10**"
+        "（本檔原以 np.linalg.lstsq 計算，兩套獨立實作）。條件間接效果 = (a1 + a3·w)·b1，"
+        "a3 為不標準化交互係數（除以 sd(乘積)，同 two-stage 慣例）；w = −1/0/+1 即 ∓1 SD"
+        "（Aiken & West 1991）。斜率 a3·b1 文獻上稱 index of moderated mediation "
+        "(Hayes 2015, MBR 50(1))——原文未取得，本工具以描述性名稱回報，不掛該標籤",
+        a1=_a1, a3=_a3, b1=_b1, w_main_M=float(_bM[1]), direct_X_Y=float(_bY[1]),
+        sd_product=_mm_sdp, r2_M=_r2M, r2_Y=_r2Y,
+        slope_over_w=_a3 * _b1, **_cond)
+
     # ── 二次效果（quadratic）：F1(i1-3) → Y(y)，交互項 = 分數平方 ──
     _q_cols = ["i1", "i2", "i3", "y"]
     _q_Z = _zsc(mainc[_q_cols].astype(float))

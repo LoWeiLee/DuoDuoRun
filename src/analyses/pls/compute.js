@@ -35,7 +35,9 @@ export function buildW5Options(committed) {
   return {
     mga: w5.mga && grp ? { ...grp, bootstrapN: committed.bootstrapN ?? 1000 } : null,
     micom: w5.micom && grp ? grp : null,
-    predict: w5.predict ? { k: w5.k ?? 10, seed: 42 } : null,
+    predict: w5.predict
+      ? { k: w5.k ?? 10, seed: 42, repetitions: w5.predictReps ?? 1 }
+      : null,
     ipma: w5.ipma && w5.target
       ? {
         target: w5.target,

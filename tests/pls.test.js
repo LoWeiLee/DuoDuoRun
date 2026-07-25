@@ -752,6 +752,46 @@ const MODEL2 = {
 }
 const GRP = { groupColumn: 'group2', groups: ['M', 'F'] }
 
+describe('W5：MGA × PLSc（consistent PLS）', () => {
+  // 引擎層本來就通：consistent 隨 baseOpts 一路傳進 runPLS / bootstrapPLS /
+  // 每一次 permutation 的重估。這組測試的目的是把它鎖住——真正的風險不是「跑不出來」，
+  // 而是日後有人在 mgaPLS 裡把 baseOpts 改成白名單而把 consistent 濾掉，
+  // 造成「點估計校正、推論未校正」的靜默混用。
+  const o = { ...GRP, bootstrapN: 60, permutations: 25, seed: 42 }
+
+  it('PLSc 版與一般版的點估計確實不同（反衰減有生效）', () => {
+    const plain = mgaPLS(main, MODEL2, o)
+    const plsc = mgaPLS(main, MODEL2, { ...o, consistent: true })
+    expect(plain.error).toBeUndefined()
+    expect(plsc.error).toBeUndefined()
+    expect(plsc.consistent).toBe(true)
+    expect(plain.consistent).toBe(false)
+    const diff = plain.paths.some((p, i) => Math.abs(p.group1.coef - plsc.paths[i].group1.coef) > 1e-9)
+    expect(diff, 'PLSc 開啟後群組係數應改變').toBe(true)
+  })
+
+  it('★ bootstrap SE 與 permutation 分布同樣走校正後估計（不是只有點估計被校正）', () => {
+    const plain = mgaPLS(main, MODEL2, o)
+    const plsc = mgaPLS(main, MODEL2, { ...o, consistent: true })
+    // SE 來自 bootstrapPLS：若 consistent 沒傳進去，SE 會與一般版完全相同
+    expect(plsc.paths.some((p, i) => Math.abs(p.group1.se - plain.paths[i].group1.se) > 1e-12)).toBe(true)
+    expect(plsc.paths.some((p, i) => Math.abs(p.group2.se - plain.paths[i].group2.se) > 1e-12)).toBe(true)
+    // permutation 差異分布同理
+    const dPlain = plain.paths[0].permutation.diffs
+    const dPlsc = plsc.paths[0].permutation.diffs
+    expect(dPlain.length).toBe(dPlsc.length)
+    expect(dPlain.some((v, i) => Math.abs(v - dPlsc[i]) > 1e-12)).toBe(true)
+  })
+
+  it('同種子完全可重現，且結果明確標記為 PLSc 並附解讀警告', () => {
+    const a = mgaPLS(main, MODEL2, { ...o, consistent: true })
+    const b = mgaPLS(main, MODEL2, { ...o, consistent: true })
+    expect(JSON.stringify(a.paths)).toBe(JSON.stringify(b.paths))
+    expect(a.warnings.some((w) => w.includes('PLSc'))).toBe(true)
+    expect(a.warnings.some((w) => w.includes('rho_A'))).toBe(true)
+  })
+})
+
 describe('W5：PLS-MGA', () => {
   it('同種子完全可重現；三法並列且 p 值合法', () => {
     const o = { ...GRP, bootstrapN: 60, permutations: 25, seed: 42 }
@@ -811,6 +851,164 @@ describe('W5：PLSpredict ＋ CVPAT', () => {
   it('壞 k 報錯；W4 模型被拒', () => {
     expect(plspredictPLS(main, M4, { k: 1 }).error).toBe('bad-k')
     expect(plspredictPLS(main, MOD_MODEL(), {}).error).toBe('w4-model-not-supported')
+  })
+})
+
+describe('W5：PLSpredict 多次重複（repetitions）', () => {
+  // ★ 這一層是聚合、不是新公式，所以刻意不建新的基準組，改以兩條可精確驗證的
+  //   恆等式鎖住（見 provenance 的 pls_predict 條目）。
+  const M = M4
+  const n = main.length
+  // 三組**實質不同**的分割（不是只把 fold 編號換位——那會得到同一組分割）
+  const foldPlans = [
+    Array.from({ length: n }, (_, i) => i % 5),
+    Array.from({ length: n }, (_, i) => Math.floor(i / 12) % 5),
+    Array.from({ length: n }, (_, i) => (i * 7 + 3) % 5),
+  ]
+
+  it('★ repetitions=1 與不傳 repetitions 逐值相同（既有 fixture 零回歸）', () => {
+    const a = plspredictPLS(main, M, { k: 5, seed: 7 })
+    const b = plspredictPLS(main, M, { k: 5, seed: 7, repetitions: 1 })
+    expect(a.error).toBeUndefined()
+    expect(a.repetitions).toBe(1)
+    expect(JSON.stringify(b.indicators)).toBe(JSON.stringify(a.indicators))
+    expect(JSON.stringify(b.cvpat)).toBe(JSON.stringify(a.cvpat))
+  })
+
+  it('★ 恆等式：注入 R 組分摺時，指標層逐值等於 R 次單跑的算術平均', () => {
+    const singles = foldPlans.map((f) => plspredictPLS(main, M, { k: 5, foldIndices: f }))
+    for (const s of singles) expect(s.error).toBeUndefined()
+    const multi = plspredictPLS(main, M, { k: 5, repetitions: 3, foldIndices: foldPlans })
+    expect(multi.error).toBeUndefined()
+    expect(multi.repetitions).toBe(3)
+    let maxDiff = 0
+    multi.indicators.forEach((q, i) => {
+      for (const key of ['rmse', 'mae', 'q2predict']) {
+        const want = singles.reduce((s, r) => s + r.indicators[i][key], 0) / 3
+        maxDiff = Math.max(maxDiff, Math.abs(q[key] - want))
+        const wantLm = singles.reduce((s, r) => s + r.indicators[i].lm[key], 0) / 3
+        maxDiff = Math.max(maxDiff, Math.abs(q.lm[key] - wantLm))
+      }
+    })
+    expect(maxDiff).toBeLessThan(1e-12)
+  })
+
+  it('★ 分摺確實不同（上一條恆等式才有意義）', () => {
+    const singles = foldPlans.map((f) => plspredictPLS(main, M, { k: 5, foldIndices: f }))
+    const rmses = singles.map((s) => s.indicators[0].rmse)
+    expect(new Set(rmses.map((v) => v.toFixed(10))).size).toBeGreaterThan(1)
+  })
+
+  it('CVPAT 走另一條規則：先平均逐案損失再檢定一次（不是平均 t 或 p）', () => {
+    const singles = foldPlans.map((f) => plspredictPLS(main, M, { k: 5, foldIndices: f }))
+    const multi = plspredictPLS(main, M, { k: 5, repetitions: 3, foldIndices: foldPlans })
+    const meanT = singles.reduce((s, r) => s + r.cvpat.vsLM.t, 0) / 3
+    // 若實作誤把 t 平均，這條會相等 —— 正是要擋的那個錯誤
+    expect(Math.abs(multi.cvpat.vsLM.t - meanT)).toBeGreaterThan(1e-12)
+    expect(multi.cvpat.vsLM.df).toBe(main.length - 1)
+    expect(multi.warnings.some((w) => w.includes('seminr') && w.includes('不跟隨'))).toBe(true)
+  })
+
+  it('未注入分摺時：同種子可重現、不同種子不同', () => {
+    const a = plspredictPLS(main, M, { k: 5, seed: 11, repetitions: 4 })
+    const b = plspredictPLS(main, M, { k: 5, seed: 11, repetitions: 4 })
+    const c = plspredictPLS(main, M, { k: 5, seed: 12, repetitions: 4 })
+    expect(JSON.stringify(a.indicators)).toBe(JSON.stringify(b.indicators))
+    expect(JSON.stringify(a.indicators)).not.toBe(JSON.stringify(c.indicators))
+  })
+
+  it('參數把關：壞 repetitions、注入組數與 repetitions 不符 → 明確錯誤', () => {
+    expect(plspredictPLS(main, M, { k: 5, repetitions: 0 }).error).toBe('bad-repetitions')
+    expect(plspredictPLS(main, M, { k: 5, repetitions: 2.5 }).error).toBe('bad-repetitions')
+    expect(plspredictPLS(main, M, { k: 5, repetitions: 101 }).error).toBe('bad-repetitions')
+    expect(plspredictPLS(main, M, { k: 5, repetitions: 2, foldIndices: foldPlans }).error).toBe('bad-folds')
+  })
+})
+
+describe('W4：調節式中介（條件間接效果）', () => {
+  const MM = {
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'X', indicators: ['i1', 'i2', 'i3'] },
+      { name: 'M', indicators: ['i4', 'i5', 'i6'] },
+      { name: 'W', indicators: ['cond1', 'cond2', 'cond3'] },
+      { name: 'Y', indicators: ['y'] },
+    ],
+    interactions: [{ name: 'XxW', factors: ['X', 'W'], method: 'two-stage' }],
+    paths: [
+      { from: 'X', to: 'M' }, { from: 'XxW', to: 'M' },
+      { from: 'M', to: 'Y' }, { from: 'X', to: 'Y' },
+    ],
+  }
+  const r = runPLS(main, MM)
+  const eff = () => r.moderatedMediation.effects.find((q) => q.x === 'X' && q.m === 'M' && q.y === 'Y')
+
+  it('偵測到 a 路徑被調節，並標出調節變數', () => {
+    expect(r.error).toBeUndefined()
+    const e = eff()
+    expect(e).toBeDefined()
+    expect(e.moderatorA).toBe('W')
+    expect(e.moderatorB).toBeNull()
+    expect(e.bothModerated).toBe(false)
+  })
+
+  it('★ 代數：w=0 的條件間接效果 = 一般中介的間接效果 a1·b1（與 pls_mediation 口徑相接）', () => {
+    const e = eff()
+    const a1 = r.pathCoefficients.find((q) => q.from === 'X' && q.to === 'M').coef
+    const b1 = r.pathCoefficients.find((q) => q.from === 'M' && q.to === 'Y').coef
+    expect(e.conditional.find((c) => c.level === 0).indirect).toBeCloseTo(a1 * b1, 12)
+  })
+
+  it('★ 代數：恰一段被調節 → 對 w 線性，相鄰兩點的差恰等於 slopeOverW', () => {
+    const e = eff()
+    const [lo, mid, hi] = e.conditional.map((c) => c.indirect)
+    expect(mid - lo).toBeCloseTo(e.slopeOverW, 12)
+    expect(hi - mid).toBeCloseTo(e.slopeOverW, 12)
+    const a3 = r.pathCoefficients.find((q) => q.from === 'XxW' && q.to === 'M').coef
+    const b1 = r.pathCoefficients.find((q) => q.from === 'M' && q.to === 'Y').coef
+    expect(e.slopeOverW).toBeCloseTo(a3 * b1, 12)
+  })
+
+  it('★ 兩段皆被調節 → 對 w 為二次、slopeOverW 為 null（不硬給一個數）', () => {
+    const M2 = {
+      ...MM,
+      interactions: [
+        { name: 'XxW', factors: ['X', 'W'], method: 'two-stage' },
+        { name: 'MxW', factors: ['M', 'W'], method: 'two-stage' },
+      ],
+      paths: [
+        { from: 'X', to: 'M' }, { from: 'XxW', to: 'M' },
+        { from: 'M', to: 'Y' }, { from: 'MxW', to: 'Y' }, { from: 'X', to: 'Y' },
+      ],
+    }
+    const r2 = runPLS(main, M2)
+    expect(r2.error).toBeUndefined()
+    const e = r2.moderatedMediation.effects.find((q) => q.x === 'X' && q.m === 'M' && q.y === 'Y')
+    expect(e.bothModerated).toBe(true)
+    expect(e.slopeOverW).toBeNull()
+    const [lo, mid, hi] = e.conditional.map((c) => c.indirect)
+    // 二次 → 三點不共線
+    expect(Math.abs((hi - mid) - (mid - lo))).toBeGreaterThan(1e-10)
+  })
+
+  it('沒有交互項的模型不產生條件間接效果（不無中生有）', () => {
+    expect(runPLS(main, M4).moderatedMediation).toBeNull()
+  })
+
+  it('bootstrap：每個水準與斜率都有 SE／CI／p，且同種子可重現', () => {
+    const o = { n: 80, seed: 42 }
+    const b1 = bootstrapPLS(main, MM, o)
+    const b2 = bootstrapPLS(main, MM, o)
+    expect(b1.error).toBeUndefined()
+    const ci = b1.conditionalIndirect.find((q) => q.x === 'X' && q.m === 'M' && q.y === 'Y')
+    expect(ci.levels).toHaveLength(3)
+    for (const lv of ci.levels) {
+      expect(Number.isFinite(lv.se)).toBe(true)
+      expect(lv.ciLower).toBeLessThanOrEqual(lv.ciUpper)
+      expect(lv.p).toBeGreaterThanOrEqual(0)
+    }
+    expect(Number.isFinite(ci.slopeOverW.se)).toBe(true)
+    expect(JSON.stringify(b1.conditionalIndirect)).toBe(JSON.stringify(b2.conditionalIndirect))
   })
 })
 

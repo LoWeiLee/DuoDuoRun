@@ -186,6 +186,63 @@ const W4_HOC_STATE = {
   },
 }
 
+// 調節式中介：W4 專屬（與 W5／W6 互斥），示範設定涵蓋不到 → 用合成 state 補測
+const W4_MODMED_STATE = {
+  bootstrapN: 300,
+  plsView: 'form',
+  configErrors: [],
+  lvs: [
+    { name: '滿意', indicators: ['q1', 'q2', 'q3'], mode: 'reflective' },
+    { name: '投入', indicators: ['q4'], mode: 'reflective' },
+    { name: '年資', indicators: ['tenure_years'], mode: 'reflective' },
+    { name: '績效', indicators: ['performance_score'], mode: 'reflective' },
+  ],
+  paths: [
+    { from: '滿意', to: '投入' }, { from: '滿意×年資', to: '投入' },
+    { from: '投入', to: '績效' }, { from: '滿意', to: '績效' },
+  ],
+  ints: [{ a: '滿意', b: '年資' }],
+  intMethod: 'two-stage',
+  committed: {
+    model: {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: '滿意', indicators: ['q1', 'q2', 'q3'], mode: 'reflective' },
+        { name: '投入', indicators: ['q4'], mode: 'reflective' },
+        { name: '年資', indicators: ['tenure_years'], mode: 'reflective' },
+        { name: '績效', indicators: ['performance_score'], mode: 'reflective' },
+      ],
+      interactions: [{ name: '滿意×年資', factors: ['滿意', '年資'], method: 'two-stage' }],
+      paths: [
+        { from: '滿意', to: '投入' }, { from: '滿意×年資', to: '投入' },
+        { from: '投入', to: '績效' }, { from: '滿意', to: '績效' },
+      ],
+    },
+    bootstrapN: 300,
+  },
+}
+
+describe('PLS 結果：調節式中介（條件間接效果）', () => {
+  it('條件間接效果區塊 render 不炸，且命名保留說明有出現', () => {
+    const panel = renderPanel('pls-sem', { dataset: 'employee', settings: W4_MODMED_STATE }, 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle), '條件間接效果區塊炸了').not.toBeInTheDocument()
+    expect(panel.textContent).toContain(zh.pls.result.modmedTitle)
+    // ★ 這條不是形式：命名保留（Hayes 2015 原文未取得）必須出現在使用者看得到的地方
+    expect(panel.textContent).toContain('index of moderated mediation')
+  })
+
+  it('Narrative（報告模式）含條件間接效果句，且帶標籤保留說明', () => {
+    const panel = renderPanel(
+      'pls-sem', { dataset: 'employee', settings: W4_MODMED_STATE }, 'Narrative', 'zh-TW', 'report'
+    )
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle)).not.toBeInTheDocument()
+    expect(panel.textContent).toContain('條件間接效果')
+    expect(panel.textContent).toContain('Hayes')
+  })
+})
+
 describe('PLS 畫布：W4 交互項與高階構念的顯示層', () => {
   it('交互項模型：畫布 render 不炸，且交互項構念名出現在畫布上', () => {
     const panel = renderPanel('pls-sem', { dataset: 'employee', settings: W4_MOD_STATE }, 'Result')

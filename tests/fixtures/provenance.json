@@ -417,7 +417,7 @@
   "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
   "status": "verified",
   "tier": "B",
-  "verification": "2026-07-13 R 抽驗：rhoA（1.017597／0.707796／0.888324）、一致 loadings（含 i2 = 1.151977 > 1）、校正後路徑、R² 全部與 cSEM 逐值一致；『rhoA > 1 不截斷』的行為亦確認同步。"
+  "verification": "2026-07-13 R 抽驗：rhoA（1.017597／0.707796／0.888324）、一致 loadings（含 i2 = 1.151977 > 1）、校正後路徑、R² 全部與 cSEM 逐值一致；『rhoA > 1 不截斷』的行為亦確認同步。\n★ 2026-07-25 補記**與 MGA 併用**：mgaPLS 的 consistent 選項隨 baseOpts 一路傳進 runPLS／bootstrapPLS／每一次 permutation 的重估，因此兩群的點估計、bootstrap SE、Henseler draws 與 permutation 分布**全部**走反衰減後的相關矩陣，不會出現「點估計校正、推論未校正」的混用。這是既有兩組 verified 組件（本組與 pls_mga_formulas／pls_mga_perm）的組合，不引入新公式，因此不另立基準組；改以 tests/pls.test.js 的行為測試鎖住（PLSc 版與一般版係數確實不同、同種子可重現、群組層 PLSc 警告會轉呈到 MGA 結果）。解讀上的代價已寫入 MGA 的警告：反衰減分母是**各群組各自**的 rho_A，群組小時 rho_A 不穩，跨群係數差異會同時反映信度估計的差異。"
  },
  "pls_pos": {
   "authority": "Becker, Rai, Ringle & Völckner (2013, MIS Quarterly 37(3), 665-694)。全文正文無編號方程式（完整目標函數、距離量測與演算法在線上補充 Appendix B，尚未取得），authority 以頁碼＋原句錨定：p. 676「a fitting objective criterion for PLS segmentation is to maximize the sum of the endogenous latent variables' explained variance (R²) across all groups」；同頁三項區辨特徵——(1) PLS 專屬目標準則、(2) 適用形成型測量的新距離量測、(3) 只在能改善目標時才重新指派（爬山法，故可能落入局部最優 →「repeated application with different starting partitions is advisable」）。",
@@ -438,7 +438,7 @@
   "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
   "status": "verified",
   "tier": "B",
-  "verification": "2026-07-13 R 抽驗：RMSE／MAE 的量級與 PLS-vs-LM 方向與 seminr 一致。**無法逐值比對**——k-fold 的 fold 指派為隨機，兩邊不可能相同；這是方法本身的性質，不是實作差異。 ／ 2026-07-13 Q²predict 定義補驗（Session Q1）：SmartPLS PLSpredict 官方文件明載 naive 基準＝訓練樣本的指標平均、Q²predict＝1−SSE_PLS/SSE_naive——與實作逐項一致（generate_reference 與 JS 皆以訓練摺平均為 naive、彙總全部 holdout 後取比）。"
+  "verification": "2026-07-13 R 抽驗：RMSE／MAE 的量級與 PLS-vs-LM 方向與 seminr 一致。**無法逐值比對**——k-fold 的 fold 指派為隨機，兩邊不可能相同；這是方法本身的性質，不是實作差異。 ／ 2026-07-13 Q²predict 定義補驗（Session Q1）：SmartPLS PLSpredict 官方文件明載 naive 基準＝訓練樣本的指標平均、Q²predict＝1−SSE_PLS/SSE_naive——與實作逐項一致（generate_reference 與 JS 皆以訓練摺平均為 naive、彙總全部 holdout 後取比）。\n★ 2026-07-25 新增**重複（repetitions）層**，刻意不建立新的基準組——它是聚合而非新公式，改以兩條沙盒可精確驗證的恆等式鎖住（tests/pls.test.js）：\n(a) repetitions=1 的輸出與原本的單次 k-fold **逐值相同**（本組 fixture 因此零回歸）；\n(b) 注入 R 組分摺時，指標層 RMSE／MAE／Q²predict（含 LM 基準）**逐值等於** R 次單跑的算術平均。\nCVPAT 的彙總另立規則：先把逐案損失在 R 次之間平均，再跑一次既有的成對 t 檢定（不平均 t 或 p——平均 p 值沒有統計意義）。\n★ **口徑分歧已核對完畢（2026-07-25），結論：不跟隨 seminr**。\nseminr 2.5.0 的 R/feature_plspredict.R：predict_pls 在 reps 非 NULL 時把各次的**預測值**逐格平均（apply(array, c(1,2), mean)），再由 item_metrics() 對平均後的殘差算一次 RMSE／MAE，屬「彙總預測值」口徑。但同一支函式把洗牌（order <- sample(...)）寫在重複迴圈**之外**，迴圈內 prediction_matrices() 以 cut(seq(1,n), breaks=noFolds) 決定分摺——那是決定性的，因此每次重複用完全相同的分割，reps 不會改變任何數字。Kevin 本機實測（seminr 2.5.0 / R 4.6.0、n=60、k=5）reps=1 與 reps=10 的 PLS_out_of_sample 與 LM_out_of_sample 逐位元相同，與原始碼判讀一致（兩條獨立證據）。\n⇒ (a) seminr 無法作為本層的數值基準（它產不出有差異的數字）；(b) 其口徑本身有系統性樂觀偏誤：由模糊分解 mean_r MSE_r − MSE(p̄) = mean_r mean_i (p_ri − p̄_i)² ≥ 0，先平均預測值再算指標必然給出不高於「平均各次指標」的誤差，差額恰為各次預測值之間的變異，屬集成效果而非樣本外表現（沙盒以該恆等式數值驗證，誤差 <1e-12）。本工具因此維持「平均各次指標」，此決定與依據已寫入 UI 警告、JSDoc 與 validation-report。\n核對用的 R 腳本保留於 tests/verify_plspredict_reps.R，供日後 seminr 修正 reps 後重驗。"
  },
  "pls_q2": {
   "authority": "Stone (1974)／Geisser (1974)；程序：Hair, Hult, Ringle & Sarstedt (2017) 第 6 章＋SmartPLS Blindfolding 官方文件。無在世第三方實作——SmartPLS 4 官方文件明載已移除該演算法、seminr 明確拒做（GitHub issue #156，引 Shmueli et al. 2016 Appendix C 的方法論批評）、matrixpls／semPLS 已自 CRAN 下架（2022 歸檔）",
@@ -565,5 +565,12 @@
   "status": "verified",
   "tier": "A",
   "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+ },
+ "pls_modmed": {
+  "authority": "**演算法本身為定義性合成，不是有爭議的估計量**：條件間接效果 = 條件 a 路徑 × 條件 b 路徑，a(w) = a1 + a3·w、b(w) = b1 + b3·w。其中 (i) 兩階段調節的口徑沿用本專案已 verified 的 pls_mod_twostage（SmartPLS 4 Moderation 文件：交互項＝第一階段標準化 LV 分數乘積、不標準化、自動補主效果路徑）；(ii) 調節值取 ∓1 SD 沿用 Aiken & West (1991) 的慣例，與本工具既有 simple slopes 同一組取值；(iii) 兩條第二階段方程的係數對 **statsmodels OLS** 逐值 assert。\n★ 誠實標註：本工具回報的 slopeOverW（恰一條路徑被調節時，條件間接效果對 w 的斜率，＝a3·b1 或 a1·b3）在文獻上稱為 index of moderated mediation，出處為 Hayes (2015), Multivariate Behavioral Research 50(1), 1-22。**該原文未取得**，故本工具以描述性名稱回報這個量並在 UI 註明標籤待核定，不逕自掛上該名稱，也不宣稱實作了該文的檢定程序。取得原文後應核對：(a) index 的定義是否恰為此乘積、(b) 其推論是否另有指定的 bootstrap 程序（本工具沿用主 bootstrap 設定的 percentile／BCa CI）。",
+  "note": "PLS 版的調節式中介沒有可執行的第三方對照（SmartPLS 4 授權過期；seminr 無條件間接效果輸出；R processR／PROCESS 為 OLS 版、且需 Kevin 本機 R）。因此驗證策略是「把最容易出錯的部分交給第三方，把不會出錯的部分用代數鎖死」——見 verification。範圍限制（已在程式碼與 UI 明示）：只處理兩步鏈 X→M→Y、只支援 two-stage 且恰兩個相異因子的交互項；a、b 兩條路徑同時被調節時條件間接效果對 w 是二次的，slopeOverW 回 null 而非硬給一個數。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "三層疊加：\n(1) **第三方（重生時 assert，容差 1e-10）**：第二階段兩條方程 M ~ X + W + z(X·W) 與 Y ~ M + X 的全部係數與 R²，由 statsmodels OLS 獨立重算並逐值 assert。本檔原以 np.linalg.lstsq 計算，兩者為獨立實作。這道 assert 攔的正是 moderated mediation 最容易錯的地方——「哪些變項進哪條方程」（a 方程漏放 W 主效果、b 方程誤放交互項）與係數擷取位置。\n(2) **第一階段有既有第三方錨**：第一階段＝主效果模型的 LV 分數，與 pls_mod_twostage 同一條程式路徑，該組第一階段已對 plspm assert <1e-6。\n(3) **合成層以代數斷言鎖死**（tests/pls.test.js）：條件間接效果在 w=0 必須等於一般中介的間接效果 a1·b1（與已 verified 的 pls_mediation 口徑相接）；相鄰兩個 w 的差必須恰等於 slopeOverW（線性性質）；兩條路徑同時被調節時 slopeOverW 必須為 null 且三個 w 的值不落在一條直線上。\n★ 未涵蓋：index of moderated mediation 這個**名稱**與其原始檢定程序的定義（Hayes 2015 原文未取得）。本工具因此不使用該名稱。這不影響上述數值的正確性，只影響能不能在論文裡直接沿用該術語。"
  }
 }

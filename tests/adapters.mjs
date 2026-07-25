@@ -495,6 +495,41 @@ export const ADAPTERS = {
     }
   },
   // 調節 two-stage：F1×C→Y（C→Y 主效果由引擎自動補），交互項不標準化
+  // 調節式中介（條件間接效果）：X→M→Y，a 路徑被 W 調節（PROCESS Model 7 型）
+  pls_modmed() {
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'X', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'M', indicators: ['i4', 'i5', 'i6'] },
+        { name: 'W', indicators: ['cond1', 'cond2', 'cond3'] },
+        { name: 'Y', indicators: ['y'] },
+      ],
+      interactions: [{ name: 'XxW', factors: ['X', 'W'], method: 'two-stage' }],
+      paths: [
+        { from: 'X', to: 'M' }, { from: 'XxW', to: 'M' },
+        { from: 'M', to: 'Y' }, { from: 'X', to: 'Y' },
+      ],
+    }
+    const r = plsRun(model, PLS_W3_OPT)
+    if (r.error) throw new Error(`runPLS(modmed) failed: ${r.error} — ${r.message}`)
+    const path = (a, b) => r.pathCoefficients.find((q) => q.from === a && q.to === b).coef
+    const e = r.moderatedMediation.effects.find((q) => q.x === 'X' && q.m === 'M' && q.y === 'Y')
+    const ind = (lv) => e.conditional.find((c) => c.level === lv).indirect
+    return {
+      a1: path('X', 'M'),
+      a3: path('XxW', 'M'),
+      b1: path('M', 'Y'),
+      w_main_M: path('W', 'M'), // 引擎自動補的主效果
+      direct_X_Y: path('X', 'Y'),
+      sd_product: r.interactions[0].sdProduct,
+      r2_M: r.structural.find((q) => q.lv === 'M').r2,
+      r2_Y: r.structural.find((q) => q.lv === 'Y').r2,
+      slope_over_w: e.slopeOverW,
+      indirect_wm1: ind(-1), indirect_w0: ind(0), indirect_wp1: ind(1),
+    }
+  },
+
   pls_mod_twostage() {
     const model = {
       schemaVersion: 1,

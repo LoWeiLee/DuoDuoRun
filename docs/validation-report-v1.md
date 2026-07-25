@@ -1318,3 +1318,179 @@ Efron & Tibshirani §14.3 後的再實作」，未逐式文件化，屬同一族
 順帶排除一個先前列為風險的疑慮：**reactflow 在 jsdom 確實會渲染節點內容**
 （`滿意×薪資`、`總體滿意`、`HOC 成分` 三個字串都斷言到了），
 所以畫布節點的文字內容可以放心用 jsdom 斷言，不必退回「只測不炸」。
+---
+
+## PLS 收尾（2026-07-25，Opus 5）：P1 會動統計核心的兩項 ＋ 調節式中介
+
+工單來源：`roadmap-v2.md` §2.3「會動統計核心（需 fixture 與重生）」全部三項。
+Kevin 裁決把 moderated mediation 一併納入本波（工單原註記它「其實是新功能不是殘項」）。
+
+### 〇、前置關卡：fixture 重生在沙盒可否執行
+
+三項工作的共同前提。沙盒原本只有 numpy／pandas／scipy，補裝 statsmodels、scikit-learn、
+pingouin、factor_analyzer、semopy、plspm 後，`tests/generate_reference.py` **可完整執行**，
+且輸出與現行 `reference.json` **逐位元相同**（唯一差異是本輪刻意改寫的
+`pls_bca_reference` source 描述），`datasets.json` 完全相同。重生因此是安全的。
+
+★ 沙盒**沒有 R、也沒有 root**（`apt` 需要 dpkg lock、`sudo` 被 no-new-privileges 擋下），
+所以工單 §0 指定的 PLS-SEM 開源權威代理 **seminr／cSEM 只能在 Kevin 本機跑**。
+這個限制直接決定了下面三項的溯源路線。
+
+### 一、MGA 的 PLSc 版 —— 實際是「已可用但沒鎖住」
+
+盤點結果與工單假設不同：`mgaPLS` 的 `consistent` 隨 `baseOpts` 一路傳進 `runPLS`／
+`bootstrapPLS`／**每一次 permutation 的重估**，引擎層本來就通。實測 PLSc 版與一般版的
+群組係數確實不同（F1→F2 群組 1：0.556 → 0.740）。
+
+所以本項的實際缺口是三件事，都已補上：
+
+1. **測試鎖住**（`tests/pls.test.js` 新增一個 describe，3 條）。最關鍵的一條刻意去測
+   **bootstrap SE 與 permutation 差異分布**也隨之改變——真正的風險不是「跑不出來」，
+   而是日後有人把 `baseOpts` 改成白名單、把 `consistent` 濾掉，造成「點估計校正、
+   推論未校正」的靜默混用；那種 bug 只看點估計是看不出來的。
+2. **結果明確標記**：`mgaPLS` 回傳新增 `consistent` 欄位，Result 的 MGA 表頭加註
+   「PLSc（consistent PLS）」，並把群組層的 PLSc 警告（一致 loadings > 1、校正後 |r| > 1）
+   逐條轉呈。
+3. **解讀代價寫進警告**：反衰減的分母是**各群組各自**的 rho_A，群組樣本小時 rho_A 不穩，
+   跨群係數差異會同時反映信度估計的差異——這句話會直接出現在使用者的報表上。
+
+**不新增基準組**：這是兩個各自 verified 的組件（`pls_plsc` 與 `pls_mga_formulas`／
+`pls_mga_perm`）的組合，不引入新公式。改在 `pls_plsc` 的 provenance `verification` 補記。
+
+### 二、PLSpredict 多次重複 —— 聚合層，以恆等式取代新基準組
+
+單次 k-fold 的結果會隨「這一次剛好怎麼切」而變動；重複 R 次再彙總可降低分摺噪音
+（SmartPLS 預設 10）。本工具預設仍為 1，UI 提供 1／5／10。
+
+**彙總口徑（兩個量規則不同，刻意如此）**：
+
+| 量 | 規則 |
+|---|---|
+| 指標層 RMSE／MAE／Q²predict（含 LM 基準） | 取 R 次的算術平均 |
+| CVPAT | 先把**逐案損失**在 R 次之間平均，再跑一次既有的成對 t 檢定 |
+
+CVPAT 不平均 t 或 p——平均 p 值沒有統計意義；CVPAT 的虛無假設本來就是關於平均損失差，
+對損失取平均正是「降低分摺噪音」要做的事。
+
+**溯源路線（Kevin 2026-07-25 裁決）**：這一層是聚合不是新公式，故**不建立新的基準組**，
+改以兩條沙盒可精確驗證的恆等式鎖住：
+
+- `repetitions=1` 的輸出與原本的單次 k-fold **逐值相同** → 既有 `pls_predict` fixture 零回歸；
+- 注入 R 組分摺時，指標層逐值等於 R 次單跑的算術平均（實測 **max diff = 0**）。
+
+測試另有兩條「反向」保護：一條確認三組注入的分摺**實質不同**（否則上面那條恆等式沒有意義——
+把 fold 編號換位會得到同一組分割，第一次寫測試時就踩到這個坑）；一條確認 CVPAT 的 t
+**不等於**各次 t 的平均（若實作誤把 t 平均，這條會紅燈）。
+
+★ **口徑分歧已核對完畢（2026-07-25），結論：不跟隨 seminr**。核對過程與依據見下方第六節。
+
+### 三、調節式中介（moderated mediation）—— 新方法，新基準組 `pls_modmed`
+
+範圍：兩步鏈 X → M → Y，a 路徑（X→M）與／或 b 路徑（M→Y）被 two-stage、恰兩個相異因子的
+交互項調節。條件間接效果 = (a1 + a3·w)·(b1 + b3·w)，w ∈ {−1, 0, +1}（構念分數已標準化，
+即 ∓1 SD；與本工具既有 simple slopes 同一組取值）。bootstrap CI 沿用主設定的
+percentile／BCa，不另立一套。
+
+**溯源策略：把最容易出錯的部分交給第三方，把不會出錯的部分用代數鎖死。**
+
+| 層 | 作法 |
+|---|---|
+| 第二階段兩條方程 | M ~ X + W + z(X·W) 與 Y ~ M + X 的**全部係數與 R²** 對 **statsmodels OLS** 逐值 assert（容差 1e-10，重生時執行）。本檔原以 `np.linalg.lstsq` 計算，兩者為獨立實作 |
+| 第一階段 | ＝主效果模型的 LV 分數，與 `pls_mod_twostage` 同一條程式路徑，該組第一階段已對 plspm assert <1e-6 |
+| 合成層 | 代數斷言：w=0 的條件間接效果 **必須等於**一般中介的 a1·b1（與已 verified 的 `pls_mediation` 口徑相接）；相鄰兩個 w 的差**必須恰等於** slopeOverW；兩段皆被調節時 slopeOverW 為 null 且三點不共線 |
+
+第一層 assert 攔的正是 moderated mediation 最容易錯的地方——**「哪些變項進哪條方程」**
+（a 方程漏放 W 主效果、b 方程誤放交互項）與係數擷取位置，而不是乘積本身。
+
+★ **命名的誠實標註**：恰一段被調節時，條件間接效果對 w 的斜率（a3·b1 或 a1·b3）在文獻上
+稱為 **index of moderated mediation**，出處為 Hayes (2015), *Multivariate Behavioral
+Research* 50(1), 1-22。**該原文未取得**，因此本工具：
+
+- 以描述性名稱「對調節變數的斜率」（`slopeOverW`）回報這個量；
+- 在 Result 區塊、APA 敘述句、provenance `authority` 三處都寫明「文獻上稱為 index of
+  moderated mediation，本工具未取得原文，未實作該文指定的檢定程序，引用該術語前請自行核對」；
+- `ui.smoke` 有一條測試專門斷言這句保留說明**確實出現在使用者看得到的地方**——
+  這條不是形式，它擋的是日後有人「順手把 UI 文案精簡掉」。
+
+**另一項誠實標註**：交互項本身沒有方向性，同一個交互項會同時產生「X 被 W 調節」與
+「W 被 X 調節」兩組解讀，本工具兩組都列出來（模型本身沒有指定哪一個是理論上的調節變數）。
+UI 明說「請依你的理論選讀對應的那一組，不要兩組都報」。
+
+**範圍限制（程式碼與 UI 都明示）**：只處理兩步鏈；只支援 two-stage、恰兩個相異因子的交互項
+（product-indicator／orthogonal 的係數尺度與 simple slopes 慣例不同，混用會出錯，故不納入）；
+a、b 兩段同時被調節時條件間接效果對 w 是二次的，`slopeOverW` 回 **null 而非硬給一個數**。
+
+### 四、回歸驗證
+
+- `tests/generate_reference.py` 完整重生通過，含本輪新增的 statsmodels assert；
+  `reference.json` 由 81 組增為 **82 組**。
+- 沙盒 8 個 node 環境測試檔：**全數通過**（`tests/pls.test.js` 由 155 增為 170 條）。
+- `npx eslint src tests`：0 problems。
+- `provenance.test.js` 全綠，`MAX_PENDING` 維持 **2**（新增的 `pls_modmed` 為 verified，
+  不動棘輪；這也是為什麼 PLSpredict 的重複層刻意不建新條目——若建成 pending 會直接撞棘輪）。
+
+五個 jsdom `ui.*.test.jsx` 沙盒仍跑不動。**本機全套驗收（2026-07-25，Kevin 執行）：
+13 檔全綠、1,184 過、6 跳過、零失敗**——含本輪新增的 2 條沙盒未執行過的 jsdom 測試
+（`PLS 結果：調節式中介` 的 Result 與 Narrative），兩條皆一次通過，
+其中「命名保留說明必須出現在畫面上」那條確認生效。
+
+### 五、殘留一項待核（不阻塞）
+
+`跑seminr核對.bat` 第一版靠 `where Rscript` 找 R，Kevin 本機的 R 不在 PATH 上而失敗。
+已改為四段式尋找：PATH → 登錄檔 `HKLM/HKCU\SOFTWARE\R-core\R` 的 InstallPath
+（64 與 32 位元檢視都查）→ `%ProgramFiles%\R\R-*`、`%LOCALAPPDATA%\Programs\R\R-*`、
+`C:\R\R-*` 逐一掃（取版本號最大者）→ 都找不到才給出「還沒裝 R」與「裝了但路徑特殊」
+兩種處理指引。找到後會先印出實際使用的 Rscript 路徑再執行。
+### 六、★ PLSpredict 重複口徑核對（2026-07-25）：查到的東西比預期重要
+
+原本只是要回答一個是非題：seminr 重複 k-fold 後是 (A) 平均各次指標、還是 (B) 彙總各次預測值
+再算一次指標？答案是 (B)，但過程中查到兩件更該記下來的事。
+
+**第一件：seminr 的 `reps` 實際上不生效。**
+
+Kevin 本機實測（seminr 2.5.0 / R 4.6.0、n = 60、k = 5）`reps = 1` 與 `reps = 10` 的
+`PLS_out_of_sample` 與 `LM_out_of_sample` **逐位元相同**。回頭讀原始碼
+（sem-in-r/seminr master，`R/feature_plspredict.R`）找到原因：
+
+```r
+order <- sample(nrow(model$data), nrow(model$data), replace = FALSE)   # ← 洗牌在迴圈外
+ordered_data <- model$data[order,]
+...
+for (i in 1:reps) {
+  pred_matrices <- prediction_matrices(noFolds, ordered_data, model, technique, cores)
+  ...
+}
+```
+
+而 `prediction_matrices()` 內的分摺是
+`folds <- cut(seq(1, nrow(ordered_data)), breaks = noFolds, labels = FALSE)`——**決定性的**。
+洗牌只做一次、迴圈內不再重新洗，所以每一次重複拿到的是**完全相同的分割**，
+`apply(array, c(1,2), mean)` 平均的是 R 份一模一樣的預測值。
+
+兩條獨立證據（實測 ＋ 讀原始碼）指向同一結論，因此 **seminr 無法作為這一層的數值基準**——
+它產不出有差異的數字可供比對。
+
+**第二件：seminr 意圖採用的 (B) 口徑本身有系統性樂觀偏誤。**
+
+若 `reps` 修好了，(B) 會把各次預測值先平均、再算一次 RMSE。由模糊分解
+（ambiguity decomposition）：
+
+```
+mean_r MSE_r  −  MSE(p̄)  =  mean_r mean_i (p_ri − p̄_i)²  ≥  0
+```
+
+先平均預測值再算指標，必然給出**不高於**「平均各次指標」的誤差，差額恰為各次預測值之間的
+變異。重複次數越多看起來越準——但那是**集成（ensembling）效果**，不是模型的樣本外表現。
+沙盒已用該恆等式數值驗證（誤差 < 1e-12）。
+
+**結論與處置**：本工具維持 (A)「平均各次指標」，這也是重複 k-fold 交叉驗證的標準作法。
+判讀依據已寫入三處使用者／維護者看得到的地方：`plspredictPLS` 的 JSDoc、reps > 1 時的
+結果警告、以及 `pls_predict` 的 provenance `verification`。
+
+`tests/verify_plspredict_reps.R` 保留（自我診斷式：先印出 seminr 的實際 API 與回傳結構，
+再用該版本真的有的參數呼叫），供日後 seminr 修正 `reps` 後重驗。
+雙擊用的 `跑seminr核對.bat` 因 `.gitignore` 擋 `*.bat` 不進版控，重 clone 後需重建。
+
+★ 這一節同時是 §0 規範的一個註腳：「找可執行的第三方實作」不等於「照抄它的數字」。
+第三方也可能有 bug，或採用一個**可辯論的**口徑。查核的價值在於**知道它做了什麼**，
+而不是無條件對齊。
