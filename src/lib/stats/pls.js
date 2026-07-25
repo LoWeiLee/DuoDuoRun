@@ -3047,10 +3047,18 @@ export function plspredictPLS(rows, model, options = {}) {
 
 /**
  * IPMA 重要性－績效地圖分析（Ringle & Sarstedt 2016）。
- * 指標 0–100 重標定（觀察 min/max）、非標準化權重正規化 Σw̃=1、
+ * 指標 0–100 重標定、非標準化權重正規化 Σw̃=1、
  * 非標準化路徑（0–100 分數的 OLS）、importance = 對目標的非標準化總效果。
  * 僅支援一般模型。
- * @param {object} options { target, ...runPLS options }
+ *
+ * 重標定界線：預設用**觀察 min/max**；傳入 scaleMin/scaleMax 則改用**量表理論界線**
+ * （SmartPLS 與 Ringle & Sarstedt 2016 的口徑）。
+ * ★ 兩種界線會同時改變 performance 與 importance——觀察界線下每個指標各以自己的全距
+ *   縮放，塊內相對權重與共用理論界線時不同，合成分數因而不同；importance 是這組
+ *   0–100 分數尺度上的非標準化效果，分數尺度變了係數就跟著變。兩種界線得到的是
+ *   兩張不同的 IPMA 圖，不可混著解讀。
+ *
+ * @param {object} options { target, scaleMin?, scaleMax?, ...runPLS options }
  */
 export function ipmaPLS(rows, model, options = {}) {
   const bad = rejectW4(model, 'IPMA')
@@ -3075,9 +3083,26 @@ export function ipmaPLS(rows, model, options = {}) {
   if (!ce || ce.notConverged) return { error: 'ipma-estimation-failed', message: 'IPMA：PLS 估計未收斂或退化' }
 
   const warnings = []
-  // 0–100 重標定（觀察 min/max；SmartPLS 以量表理論界線，UI 註記差異）
+  // 0–100 重標定。
+  // 預設：觀察 min/max（本工具原行為，保留以免變更 fixture 口徑）。
+  // options.scaleMin / scaleMax 給定時改用**量表理論界線**——這才是 SmartPLS 與
+  // Ringle & Sarstedt (2016) 的口徑；觀察界線會讓 performance 受樣本極值影響、
+  // 且跨樣本不可比。
+  // ★ 換界線會同時改變 performance 與 importance——觀察界線是「每個指標各用自己的
+  //   全距」縮放，理論界線是「全部共用同一個分母」，合成分數不是同一條線性變換。
+  const sMin = Number(options.scaleMin)
+  const sMax = Number(options.scaleMax)
+  const theoretical = Number.isFinite(sMin) && Number.isFinite(sMax) && sMax > sMin
+  if ((options.scaleMin !== undefined || options.scaleMax !== undefined) && !theoretical) {
+    return {
+      error: 'ipma-bad-scale',
+      message: 'IPMA 量表理論界線：scaleMin 與 scaleMax 必須都是數字，且 scaleMax > scaleMin',
+    }
+  }
   const p = spec.indicators.length
   const resc = []
+  const obsRange = []
+  let outOfBounds = 0
   for (let c = 0; c < p; c++) {
     let mn = Infinity
     let mx = -Infinity
@@ -3087,9 +3112,41 @@ export function ipmaPLS(rows, model, options = {}) {
       if (v > mx) mx = v
     }
     if (!(mx > mn)) return { error: 'ipma-degenerate', message: `指標「${spec.indicators[c]}」無變異，無法重標定` }
+    obsRange.push({ mn, mx })
+    const lo = theoretical ? sMin : mn
+    const hi = theoretical ? sMax : mx
+    if (theoretical && (mn < sMin || mx > sMax)) outOfBounds++
     const col = new Float64Array(n)
-    for (let i = 0; i < n; i++) col[i] = ((X[i][c] - mn) / (mx - mn)) * 100
+    for (let i = 0; i < n; i++) col[i] = ((X[i][c] - lo) / (hi - lo)) * 100
     resc.push(col)
+  }
+  if (theoretical) {
+    warnings.push(`IPMA 以量表理論界線 ${sMin}–${sMax} 重標定（非觀察 min/max），對齊 SmartPLS 的口徑`)
+    if (outOfBounds > 0) {
+      warnings.push(`有 ${outOfBounds} 個指標的觀察值超出所設的量表界線 ${sMin}–${sMax}，其 0–100 分數會落在 0–100 之外；請確認界線設定是否正確`)
+    }
+  }
+  // 塊內量尺一致性（**啟發式 UI 警告，不是統計量**）：
+  // 0–100 重標定假設同一構念內的指標共用同一量尺（官方 cIPMA 教程列為前提）。
+  // 門檻＝觀察全距相差 3 倍。校準說明：門檻取 1.5 時，連續型指標的純抽樣變異就會誤報
+  // （tests/fixtures/datasets.json 的 C 塊三個同尺度指標比值即為 1.53）；
+  // 真正的量尺混用（如 1–7 混 0–100）比值在 15 倍以上，取 3 可分開兩者。
+  // 代價：1–5 混 1–7（比值 1.5）抓不到——這種情況只能靠使用者自行確認。
+  const fmtB = (v) => (Number.isInteger(v) ? String(v) : v.toFixed(2))
+  for (let j = 0; j < spec.lvNames.length; j++) {
+    const b = spec.blocks[j]
+    if (!b || b.length < 2) continue
+    const widths = b.map((c) => obsRange[c].mx - obsRange[c].mn)
+    const wMin = Math.min(...widths)
+    const wMax = Math.max(...widths)
+    if (wMin > 0 && wMax / wMin >= 3) {
+      const detail = b.map((c) => `${spec.indicators[c]}（${fmtB(obsRange[c].mn)}–${fmtB(obsRange[c].mx)}）`).join('、')
+      warnings.push(
+        `構念「${spec.lvNames[j]}」的指標觀察全距相差 ${(wMax / wMin).toFixed(1)} 倍：${detail}。`
+        + `IPMA 的 0–100 重標定假設塊內指標同量尺（官方 cIPMA 教程列為未滿足即不適用）——`
+        + `若量尺本就不同，performance 不可比；若量尺相同只是樣本未覆蓋端點，建議改用「量表理論界線」設定`
+      )
+    }
   }
   // 非標準化權重正規化
   const s100 = []

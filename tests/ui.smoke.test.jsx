@@ -122,6 +122,100 @@ describe('全模組 UI 煙霧測試', () => {
 })
 
 /**
+ * W4 畫布顯示層（2026-07-25）
+ *
+ * 為什麼要另外寫：W4（交互項／高階構念）與 W5／W6 互斥——MICOM・PLSpredict・IPMA・
+ * CTA・copula・FIMIX・PLS-POS 全部 rejectW4——所以 `ANALYSIS_DEMOS['pls-sem']`
+ * 只能二選一。示範設定選了 W5／W6（覆蓋 5 個結果區塊），W4 的畫布就沒有任何煙霧涵蓋，
+ * 而畫布正是 2026-07-25 之前完全不畫交互項／高階構念的地方（`Canvas.jsx` 根本沒讀
+ * state.ints / state.hocs，路徑端點對不上 lv: 前綴就被靜默丟棄）。
+ *
+ * 這裡用合成的 state 直接把 Result 切到畫布模式（plsView: 'canvas'）render 一遍。
+ */
+const PLS_W4_BASE = {
+  bootstrapN: 500,
+  plsView: 'canvas',
+  configErrors: [],
+}
+const W4_MOD_STATE = {
+  ...PLS_W4_BASE,
+  lvs: [
+    { name: '滿意', indicators: ['q1', 'q2', 'q3'], mode: 'reflective' },
+    { name: '薪資', indicators: ['q4'], mode: 'reflective' },
+    { name: '績效', indicators: ['performance_score'], mode: 'reflective' },
+  ],
+  paths: [{ from: '滿意', to: '績效' }, { from: '滿意×薪資', to: '績效' }],
+  ints: [{ a: '滿意', b: '薪資' }],
+  intMethod: 'two-stage',
+  committed: {
+    model: {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: '滿意', indicators: ['q1', 'q2', 'q3'], mode: 'reflective' },
+        { name: '薪資', indicators: ['q4'], mode: 'reflective' },
+        { name: '績效', indicators: ['performance_score'], mode: 'reflective' },
+      ],
+      interactions: [{ name: '滿意×薪資', factors: ['滿意', '薪資'], method: 'two-stage' }],
+      paths: [{ from: '滿意', to: '績效' }, { from: '滿意×薪資', to: '績效' }],
+    },
+    bootstrapN: 500,
+  },
+}
+const W4_HOC_STATE = {
+  ...PLS_W4_BASE,
+  lvs: [
+    { name: '環境', indicators: ['q1', 'q2'], mode: 'reflective' },
+    { name: '待遇', indicators: ['q3', 'q4'], mode: 'reflective' },
+    { name: '績效', indicators: ['performance_score'], mode: 'reflective' },
+  ],
+  paths: [{ from: '總體滿意', to: '績效' }],
+  hocs: [{ name: '總體滿意', components: ['環境', '待遇'], mode: 'reflective' }],
+  hocMethod: 'disjoint',
+  committed: {
+    model: {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: '環境', indicators: ['q1', 'q2'], mode: 'reflective' },
+        { name: '待遇', indicators: ['q3', 'q4'], mode: 'reflective' },
+        { name: '績效', indicators: ['performance_score'], mode: 'reflective' },
+      ],
+      higherOrder: [{ name: '總體滿意', components: ['環境', '待遇'], mode: 'reflective', method: 'disjoint' }],
+      paths: [{ from: '總體滿意', to: '績效' }],
+    },
+    bootstrapN: 500,
+  },
+}
+
+describe('PLS 畫布：W4 交互項與高階構念的顯示層', () => {
+  it('交互項模型：畫布 render 不炸，且交互項構念名出現在畫布上', () => {
+    const panel = renderPanel('pls-sem', { dataset: 'employee', settings: W4_MOD_STATE }, 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle), '畫布在交互項模型下炸了').not.toBeInTheDocument()
+    // 修好之前：Canvas 沒讀 state.ints，這個節點不存在
+    expect(panel.textContent).toContain('滿意×薪資')
+  })
+
+  it('高階構念模型：畫布 render 不炸，HOC 與其成分標記都出現', () => {
+    const panel = renderPanel('pls-sem', { dataset: 'employee', settings: W4_HOC_STATE }, 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle), '畫布在高階構念模型下炸了').not.toBeInTheDocument()
+    expect(panel.textContent).toContain('總體滿意')
+    // 被 HOC 吸收的一階構念會標記，避免使用者以為畫布漏畫結構路徑
+    expect(panel.textContent).toContain(zh.pls.canvas.absorbedBadge)
+  })
+
+  it('表單模式（非畫布）在同一份 W4 state 下也不炸', () => {
+    const panel = renderPanel(
+      'pls-sem',
+      { dataset: 'employee', settings: { ...W4_MOD_STATE, plsView: 'form' } },
+      'Result'
+    )
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle)).not.toBeInTheDocument()
+  })
+})
+
+/**
  * 沒有示範設定的模組，煙霧測試涵蓋不到——twoWayAnova 就是漏網之魚：
  * 內建的四個資料集裡沒有任何一個同時有兩個類別因子 ＋ 一個連續依變項，
  * 所以它沒有 demo，也就沒被上面的 describe.each 掃到。

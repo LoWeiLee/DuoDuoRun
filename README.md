@@ -35,13 +35,26 @@
 
 | | |
 |---|---|
-| 基準方法組數 | **74**（`tests/fixtures/reference.json`，每組附出處與容差理由） |
-| 回歸測試 | **743 過、6 記錄性跳過**（`npm test`；含統計層、i18n 對稱性、UI 行為） |
+| 基準方法組數 | **81**（`tests/fixtures/reference.json`，每組附出處與容差理由） |
+| 公式溯源已結案 | **79 / 81**（75 verified ＋ 4 純輸入型 exempt；2 組待原始文獻，見 `tests/fixtures/provenance.json`） |
+| 回歸測試 | **1,155 過、6 記錄性跳過**（`npm test`；含統計層、i18n 對稱性、UI 行為） |
 | CI 把關 | 每次 push 跑 lint ＋ 全測試 ＋ build，任一失敗即擋下部署 |
 
 完整比對結果、已知的慣例差異（例如 Levene 檢定的 center 預設、Mann-Whitney 的 U 值慣例、CFA 的 χ² 分母慣例）與其影響評估，公開於 **[`docs/validation-report-v1.md`](docs/validation-report-v1.md)**——**包含我們自己找到並修掉的錯誤**（例如 2026-07-13 修正的 LDA 標準化係數定義、CFA 的 RMSEA 信賴區間、k-means 手肘圖的區域最佳解問題）。
 
 正確性是這個工具存在的前提，因此驗證過程與已知限制一律公開，不做選擇性呈現。使用前請一併閱讀下方的[免責聲明](#免責聲明)。
+
+### 里程碑
+
+| 時間 | 里程碑 |
+|---|---|
+| 2026-05 | 基礎統計 20 餘種分析上線；統計核心與 scipy／statsmodels／pingouin 逐欄位比對，比對固化為回歸測試 |
+| 2026-06 | 量表與多變量分析補齊（EFA／CFA／ICC／Kappa／MANOVA／LDA／集群）；NCA 必要條件分析上線 |
+| 2026-07 上旬 | **PLS-SEM 全功能上線**：拖拉式模型畫布、bootstrap（percentile／BCa）、PLSc、blindfolding Q²、PLSpredict＋CVPAT、MGA／MICOM、IPMA／cIPMA、CTA-PLS、Gaussian copula 內生性檢查、FIMIX-PLS 與 PLS-POS 分段、調節與高階構念 |
+| 2026-07 中旬 | **建立公式溯源制度**：每個統計方法必須先有可執行的第三方實作或原始論文的方程式編號才能實作，登記於 `tests/fixtures/provenance.json`，由 `provenance.test.js` 硬性把關（待審計數量是只能往下調的棘輪） |
+| 2026-07 下旬 | **既有 81 組基準全面回溯審計**：79 組結案，過程中找出並修正兩處公式偏離（CTA-PLS 的 CI 臨界值誤用 t 分配、PLS-POS 的目標函數誤用 ΣSSE）。剩 2 組（FIMIX 的參數計數、BCa 的 z₀／a 估計式）卡在原始文獻取得，狀態誠實標為未結案 |
+
+進行中與下一步（`docs/roadmap-v2.md` 為單一主工單）：效果量與 95% CI 全面補齊、資料前處理模組、PROCESS 對標的迴歸式調節／中介、檢定力分析、docx 輸出、GLM 家族、HLM。
 
 ### 即將開放
 

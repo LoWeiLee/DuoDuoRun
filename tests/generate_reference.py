@@ -900,10 +900,36 @@ try:
     _a1 = _bca_adj(float(sps.norm.ppf(0.025)))
     _a2 = _bca_adj(float(sps.norm.ppf(0.975)))
     _ci = np.quantile(_draws, [_a1, _a2])  # 線性內插 = R type 7，同 JS quantile
+
+    # ★ 重生時第三方 assert（2026-07-25）：scipy 的 BCa 內部函式 _bca_interval 是
+    #   獨立於本檔手算的第二套實作。餵**同一批 draws** 與同一筆資料，逐值比對
+    #   z₀、a、alpha_lower、alpha_upper 四個量。
+    #   界線（必須誠實說清楚）：這**不能**讓 pls_bca_reference 結案——
+    #   scipy 的實作同樣是「某人讀 Efron & Tibshirani §14.3 後的再實作」，
+    #   未逐式文件化，屬同一族公式的另一次編碼，不是權威來源（見 §0 規範）。
+    #   它能抓的是「本檔把公式打錯」，抓不到「Efron 的式子本身讀錯」。
+    #   已知未被此 assert 涵蓋的差異：並列（ties）慣例——本檔用 #{θ̂*<θ̂}/B 再夾擠到
+    #   [1/(B+1), B/(B+1)]，scipy 用 (#{<}+#{≤})/(2B) 不夾擠；統計量為連續型平均、
+    #   實測無並列，兩者恰好同值，所以這條路徑仍待原文核定。
+    from scipy.stats._resampling import _bca_interval as _scipy_bca
+    _sa1, _sa2, _sa_hat = _scipy_bca((_yv,), np.mean, axis=-1, alpha=0.025,
+                                     theta_hat_b=_draws[None, :], batch=None)
+    assert abs(_a_acc - float(np.ravel(_sa_hat)[0])) < 1e-12, \
+        "BCa 加速常數 a 與 scipy._bca_interval 不一致"
+    assert abs(_a1 - float(np.ravel(_sa1)[0])) < 1e-12, \
+        "BCa alpha_lower 與 scipy._bca_interval 不一致"
+    assert abs(_a2 - float(np.ravel(_sa2)[0])) < 1e-12, \
+        "BCa alpha_upper 與 scipy._bca_interval 不一致"
+    _sz0 = float(sps.norm.ppf(
+        (int(np.sum(_draws < _orig)) + int(np.sum(_draws <= _orig))) / (2 * _B)))
+    assert abs(_z0 - _sz0) < 1e-12, "BCa z₀ 與 scipy 的並列慣例算出的值不一致（本批資料應無並列）"
+
     put("pls_bca_reference",
         "numpy 手算 BCa（Efron 1987 JASA 82(397); Efron & Tibshirani 1993 §14.3）："
         "統計量=main.y 平均、B=999 固定 draws（rng seed 20260704）＋jackknife；"
-        "draws/jackknife 一併入 fixture 供 JS bcaInterval() 逐值比對",
+        "draws/jackknife 一併入 fixture 供 JS bcaInterval() 逐值比對。"
+        "重生時另對 scipy.stats._resampling._bca_interval 逐值 assert（z₀／a／alpha 上下界，"
+        "容差 1e-12）——非權威、不能結案，只攔『本檔公式打錯』",
         original=_orig, z0=_z0, a=_a_acc, alphaLower=_a1, alphaUpper=_a2,
         ciLower=float(_ci[0]), ciUpper=float(_ci[1]),
         draws=[float(v) for v in _draws], jackknife=[float(v) for v in _jack])

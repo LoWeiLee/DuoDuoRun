@@ -7,17 +7,17 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：P0 公式溯源審計只剩 2 組卡文獻；P1 品質殘項清完第一批；
-功能開發（P2）尚未動工。最近一次本機全套驗收：**1147 過、6 跳過、13 檔全綠**（2026-07-25）。
+**目前狀態一句話**：P0 公式溯源審計只剩 2 組卡文獻；**P1 低風險殘項已全部清完**
+（2026-07-25 第二批）；功能開發（P2）尚未動工。
+最近一次本機全套驗收：**1,155 過、6 跳過、13 檔全綠**（2026-07-25，含第二批的 3 條 W4 畫布測試）。
 
 **建議的下一步（依序）**
 
 | 順位 | 工作 | 在哪 | 為什麼是這個順序 |
 |---|---|---|---|
-| 1 | P1 剩餘的低風險項（IPMA 兩項 UI、Q² legacy 註記、W4 畫布、示範資料集、App.css／README） | §2.3 | 不動統計核心、可一個 session 清完；其中「示範資料集」會連帶擴大 `ui.smoke` 對 W5／W6 的涵蓋 |
-| 2 | `pls_bca_reference` 的 scipy 抽驗 | §2.3 | 不卡文獻、順手可做，能提前抓 BCa 實作錯誤 |
-| 3 | Wave F1 快贏包（McDonald's ω、Friedman、McNemar、專案檔存取） | §3 | P0／P1 收乾淨後的第一個功能波，全部 tier A 可達 |
-| 4 | Q2 尾巴 2 組（`pls_fimix`、`pls_bca_reference`） | §1 | **卡文獻取得**，拿到 PDF 才能做，不占 session 排程 |
+| 1 | Wave F1 快贏包（McDonald's ω、Friedman、McNemar、專案檔存取） | §3 | P0／P1 收乾淨後的第一個功能波，全部 tier A 可達 |
+| 2 | P1 剩下「會動統計核心」的兩項（PLSpredict 多次重複取平均、MGA 的 PLSc 版） | §2.3 | 需要重生 fixture，成本高於 Wave F1，且非阻塞 |
+| 3 | Q2 尾巴 2 組（`pls_fimix`、`pls_bca_reference`） | §1 | **卡文獻取得**，拿到 PDF 才能做，不占 session 排程 |
 
 **開工前必讀**：本文件 §0（品質規範，最高位階）＋ `handoff-roadmap-v1.md` §2（架構不變量）
 與 §3（沙盒作業手冊）。
@@ -142,8 +142,12 @@ Q1 的正確落點是 **10**——已於 2026-07-14 達成。`npm test` 全綠 �
 **解除封鎖的可行路徑（依成本排序）**：
 1. 館際互借／文獻傳遞（Kevin 的機構圖書館），三篇都適用，通常 1–3 個工作天
 2. Efron & Tibshirani 該書為統計系標準教科書，實體館藏取得第 14 章即可
-3. `pls_bca_reference` 可先做一道**非權威但獨立的**抽驗：沙盒 `scipy.stats.bootstrap(method='BCa')`
-   對同一批 draws 比對（見 provenance 條目 verification 末段）——不能結案，但能提前抓出實作錯誤
+3. ~~`pls_bca_reference` 的非權威獨立抽驗~~ **已於 2026-07-25 完成**：改用
+   `scipy.stats._resampling._bca_interval`（可注入既有 draws，比 `scipy.stats.bootstrap`
+   更適合逐值比對），z₀／a／alpha 上下界四個量機器精度內全中（最大差 1.7e−18），
+   並升為 `generate_reference.py` 的重生時 assert（容差 1e-12）。
+   **如預期不能結案**（scipy 是同一族公式的另一次編碼，非權威），`MAX_PENDING` 維持 2；
+   且並列（ties）慣例的差異未被此抽驗涵蓋（本批資料無並列），仍待原文核定
 4. 寫信向作者索取（Ringle／Sarstedt 團隊對 PLS 社群索取一向回覆）
 
 **Session Q2 剩餘工作**：上述 2 組銷帳後 `MAX_PENDING` 6 → **4**，Q2 才算結案。
@@ -219,23 +223,26 @@ P0 公式溯源審計全數結案。解除封鎖路徑見 §1 Session Q2 節。
 
 ### 2.3 待辦（依成本與風險分層）
 
-**不動統計核心（低風險）**
-- IPMA 量表理論界線的 UI 設定（目前用觀察 min/max，差異已在 Notes 與敘述句中註記）
-- IPMA 塊內指標量尺不一時的 UI 警告（官方 cIPMA 教程列為未滿足假設；見 formula-provenance §6）
-- blindfolding Q² 的 UI legacy 註記（SmartPLS 4 已移除、官方改推 PLSpredict/CVPAT——本工具皆已內建）
-- W4 canvas 顯示層：互動項／HOC 目前不出現在畫布（`Canvas.jsx` 完全未讀 interactions／
-  higherOrder，表單為 source of truth）
-- 示範資料集：加一個含調節／HOC／群組欄位的 PLS 示範（`src/config/demos.js`）——
-  順帶擴大 `ui.smoke` 的涵蓋（現行 PLS 示範沒有開任何 W5／W6 開關）
-- **上線前清理殘項**（原出自 `code-review-2026-05-13.md` 第四階段，該檔已於 2026-07-25 刪除；
-  逐項查核後原列 5 項只剩 2 項，其餘均已完成）：
-  - 刪 `src/App.css`（184 行，**零 import**，確認為死碼）。註：同批列的 `reference/`
-    經 Kevin 2026-07-25 裁決保留（見 §2.2）；`public/*.csv` 是活的示範資料集，不是殘留
-  - README 補「里程碑」段落（目前 README 無任何進度／里程碑敘述）
-  - ~~OG meta~~ 已完成（index.html 有 9 處 og:、含 theme-color 與 canonical）
-  - ~~PDF metadata／動態 scale~~ 已完成（`pdfExport.js` 有 `setProperties` 與動態 scale＋降階重試）
-  - ~~多 sheet 警告~~ 已完成（`fileParser.js` 的 `ignored-sheets` 警告碼）
-  - ~~i18n placeholder 不對稱~~ 已完成（`i18n.test.js` 有對稱性檢查且全綠）
+**不動統計核心（低風險）—— 2026-07-25 第二批全數交付 ✅**
+（詳見 `validation-report-v1.md`「P1 品質殘項 第二批」）
+- ✅ IPMA 量表理論界線的 UI 設定（`scaleMin`/`scaleMax`；未設定時逐值等同原行為）
+- ✅ IPMA 塊內指標量尺不一時的 UI 警告（觀察全距比值 ≥ 3；門檻校準理由見程式碼註解）
+- ✅ blindfolding Q² 的 UI legacy 註記
+- ✅ W4 canvas 顯示層（交互項／HOC 節點、HOC↔成分與因子→交互項虛線、引擎自動補的
+  主效果路徑、W4 模型改讀 `stage1` 取指標 loading）
+- ✅ 示範資料集開啟 Q²／PLSpredict／IPMA＋cIPMA／CTA-PLS；順帶修掉示範模型缺 `mode`
+  導致「載入示範即顯示設定已變更」的既有缺陷
+- ✅ 刪 `src/App.css`（零 import 死碼）
+- ✅ README 補里程碑段落；順帶更新過期的防線規模數字（74 → 81、743 → 1,155）
+- ~~OG meta／PDF metadata／多 sheet 警告／i18n placeholder~~ 先前已完成
+
+★ 本批的實質產出是**修正一處錯誤敘述**：原以為改用理論界線「只影響 performance」，
+寫成測試斷言後當場紅燈——importance 也會變（兩種界線產生的合成分數不是同一條線性變換）。
+三處說明已改，並留下斷言鎖住。
+
+★ 遺留：W4 與 W5／W6 互斥（所有 W5／W6 方法都 `rejectW4`），單一 `ANALYSIS_DEMOS`
+條目只能二選一。示範選了 W5／W6，W4 畫布改以 `ui.smoke` 內的合成 state 直接測
+（3 條新測試，**沙盒未執行過**，需本機補驗）。
 
 **會動統計核心（需 fixture 與重生）**
 - PLSpredict 多次重複取平均（SmartPLS 預設 10 reps）；MGA 的 PLSc 版
@@ -328,6 +335,13 @@ gate 判準第 3 條「Kevin 本機 lavaan 抽驗」正是 tier A 的要求。
 
 ## 版本紀錄
 
+- v2.5（2026-07-25）：P1 低風險殘項第二批全數交付（§2.3 七項）＋ `pls_bca_reference`
+  的 scipy 獨立抽驗並 assert 化。★ 過程中修正一處錯誤敘述：IPMA 改用量表理論界線
+  **同時**改變 performance 與 importance（原宣稱只影響 performance），三處說明已改並留斷言。
+  塊內量尺警告門檻由 1.5 校準為 3（1.5 對連續型指標的抽樣變異即誤報）。
+  順帶修掉示範模型缺 `mode` 欄位導致「載入示範即顯示設定已變更」的既有缺陷。
+  `MAX_PENDING` 維持 2（scipy 非權威，如預期不能結案）。
+  本機全套驗收 **1,155 過、6 跳過、13 檔全綠**（含 3 條新增的 W4 畫布測試）；eslint 0 problems。
 - v2（2026-07-13）：初版。合併 `pls-sem-w6-workplan-v1`（A–F 已交付）、
   `redteam-audit-workplan-v1`（R1–R5 已交付）、`handoff §6.8/§7`、
   `feature-priority-roadmap-v1`（20 項未做）；新增 §0 品質規範與 P0 公式溯源審計。

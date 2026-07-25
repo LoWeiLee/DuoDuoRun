@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { validatePLSModel } from '../../lib/stats/pls.js'
 import { fillTemplate } from '../../lib/format'
+import { intName } from './model'
 
 /** 手機窄幅偵測（md 斷點 = 768px）；畫布在窄幅退回表單 */
 function useIsNarrow() {
@@ -42,11 +43,6 @@ const DEFAULT_LVS = () => [
   { name: 'LV2', indicators: [], mode: 'reflective' },
 ]
 const DEFAULT_PATHS = () => [{ from: '', to: '' }]
-
-/** 交互項顯示名（同時是模型內的構念名）：A×B（×C） */
-function intName(q) {
-  return q.c ? `${q.a}×${q.b}×${q.c}` : `${q.a}×${q.b}`
-}
 
 /** 把表單草稿組成 docs/pls-model-schema.md 的模型 JSON（不含 UI 專屬欄位） */
 function buildModel(lvs, paths, ints, intMethod, hocs, hocMethod) {
@@ -295,6 +291,11 @@ function Config() {
       errors.push(c.w5NeedGroups)
     }
     if (w5.ipma && !w5.target) errors.push(c.w5NeedTarget)
+    if (w5.ipma && w5.ipmaScale === true
+        && !(Number.isFinite(Number(w5.scaleMin)) && Number.isFinite(Number(w5.scaleMax))
+             && Number(w5.scaleMax) > Number(w5.scaleMin))) {
+      errors.push(c.w5NeedScale)
+    }
     if (state.q2 === true && missing === 'pairwise') errors.push(c.missingQ2Conflict)
     if (w5.cta && ctaEligible.length === 0) errors.push(c.w5CtaNoBlock)
     if (w5.copula && curPaths.length === 0) errors.push(c.w5CopulaNoPath)
@@ -873,6 +874,37 @@ function Config() {
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>
+            )}
+            {w5.ipma && (
+              <Toggle
+                checked={w5.ipmaScale === true}
+                onChange={(v) => setW5({ ipmaScale: v })}
+                label={c.w5IpmaScaleLabel}
+                hint={c.w5IpmaScaleHint}
+              />
+            )}
+            {w5.ipma && w5.ipmaScale && (
+              <div className="pl-1 flex items-center gap-2">
+                <input
+                  type="number"
+                  step="any"
+                  aria-label={c.ariaIpmaScaleMin}
+                  placeholder={c.w5IpmaScaleMin}
+                  value={w5.scaleMin ?? ''}
+                  onChange={(e) => setW5({ scaleMin: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  className="w-full h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500"
+                />
+                <span className="text-xs text-duo-cocoa-400 shrink-0">–</span>
+                <input
+                  type="number"
+                  step="any"
+                  aria-label={c.ariaIpmaScaleMax}
+                  placeholder={c.w5IpmaScaleMax}
+                  value={w5.scaleMax ?? ''}
+                  onChange={(e) => setW5({ scaleMax: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  className="w-full h-8 px-2 text-xs rounded-lg bg-white border border-duo-cocoa-100 text-duo-cocoa-800 hover:border-duo-amber-300 focus-ring focus:border-duo-amber-500"
+                />
+              </div>
             )}
             {w5.ipma && (
               <Toggle

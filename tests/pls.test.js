@@ -839,6 +839,63 @@ describe('W5：IT 準則與 IPMA', () => {
     expect(ipmaPLS(main, M4, { target: 'F1' }).error).toBe('ipma-bad-target')
     expect(ipmaPLS(main, MOD_MODEL(), { target: 'Y' }).error).toBe('w4-model-not-supported')
   })
+
+  // ── 量表理論界線（2026-07-25）：SmartPLS 的口徑，預設仍為觀察 min/max ──
+  it('scaleMin/scaleMax：不傳時與原行為逐值相同（不改變既有 fixture 口徑）', () => {
+    const a = ipmaPLS(main, M4, { target: 'C' })
+    const b = ipmaPLS(main, M4, { target: 'C', scaleMin: undefined, scaleMax: undefined })
+    expect(b.error).toBeUndefined()
+    expect(b.targetPerformance).toBe(a.targetPerformance)
+    expect(b.constructs.map((q) => q.performance)).toEqual(a.constructs.map((q) => q.performance))
+  })
+
+  it('scaleMin/scaleMax：換界線同時改變 performance 與 importance（不是同一條線性變換）', () => {
+    const obs = ipmaPLS(main, M4, { target: 'C' })
+    const theo = ipmaPLS(main, M4, { target: 'C', scaleMin: -6, scaleMax: 6 })
+    expect(theo.error).toBeUndefined()
+    // 逐指標核對重標定公式：(x - lo) / (hi - lo) * 100
+    const ind = theo.indicators.find((q) => q.indicator === 'i1')
+    const col = main.map((row) => row.i1)
+    const want = col.reduce((s, v) => s + ((v - (-6)) / 12) * 100, 0) / col.length
+    expect(ind.performance).toBeCloseTo(want, 10)
+    // performance 必然不同（觀察範圍嚴格窄於 -6–6）
+    expect(theo.targetPerformance).not.toBeCloseTo(obs.targetPerformance, 6)
+    // ★ importance 也會變：觀察界線是「每個指標各用自己的全距」，理論界線是「共用分母」，
+    //   合成分數不是同一條線性變換 → 0–100 尺度上的非標準化效果跟著變。
+    //   （這條斷言存在的理由：本工具原本在說明文字裡宣稱 importance 不變，是錯的。）
+    const impOf = (r) => Object.fromEntries(r.constructs.map((q) => [q.lv, q.importance]))
+    const io = impOf(obs)
+    const it2 = impOf(theo)
+    expect(Object.keys(io).some((k) => Math.abs(it2[k] - io[k]) > 1e-6)).toBe(true)
+    expect(theo.warnings.some((w) => w.includes('量表理論界線'))).toBe(true)
+  })
+
+  it('scaleMin/scaleMax：只給一邊或上下限顛倒 → ipma-bad-scale', () => {
+    expect(ipmaPLS(main, M4, { target: 'C', scaleMin: 1 }).error).toBe('ipma-bad-scale')
+    expect(ipmaPLS(main, M4, { target: 'C', scaleMax: 7 }).error).toBe('ipma-bad-scale')
+    expect(ipmaPLS(main, M4, { target: 'C', scaleMin: 7, scaleMax: 1 }).error).toBe('ipma-bad-scale')
+    expect(ipmaPLS(main, M4, { target: 'C', scaleMin: 'a', scaleMax: 7 }).error).toBe('ipma-bad-scale')
+  })
+
+  it('界線過窄時警告觀察值超出範圍（0–100 分數會跑出界）', () => {
+    const r = ipmaPLS(main, M4, { target: 'C', scaleMin: -0.5, scaleMax: 0.5 })
+    expect(r.error).toBeUndefined()
+    expect(r.warnings.some((w) => w.includes('超出所設的量表界線'))).toBe(true)
+  })
+
+  // ── 塊內量尺一致性（啟發式警告；官方 cIPMA 教程列為前提假設）──
+  it('塊內指標量尺不一時警告，同量尺時不誤報', () => {
+    const clean = ipmaPLS(main, M4, { target: 'C' })
+    expect(clean.warnings.some((w) => w.includes('觀察全距相差'))).toBe(false)
+    // 把 F1 的其中一個指標放大 10 倍（模擬 1–7 混 0–100；比值 ~10，遠高於門檻 3）
+    const mixed = main.map((row) => ({ ...row, i3: row.i3 * 10 }))
+    const r = ipmaPLS(mixed, M4, { target: 'C' })
+    expect(r.error).toBeUndefined()
+    const w = r.warnings.find((x) => x.includes('觀察全距相差'))
+    expect(w).toBeDefined()
+    expect(w).toContain('F1')
+    expect(w).toContain('i3')
+  })
 })
 
 describe('W6：cIPMA（IPMA × NCA 組合）', () => {

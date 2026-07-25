@@ -11,16 +11,28 @@
 
 /**
  * PLS-SEM 示範模型（employee 資料集的 Likert 題項）：
- *   工作滿意度 (q1 工作環境, q2 同事關係, q3 主管溝通)
+ *   工作滿意度 (q1 工作環境, q2 同事關係, q3 主管溝通, q4 薪資福利)
  *     → 整體滿意 (q5) → 工作績效 (performance_score)
  * 簡單中介鏈，示範測量模型（多指標構念）與兩條結構路徑。
  * committed 直接附上（載入示範即出結果，不需再按「執行分析」）；
  * draft 快照的 JSON 需與 Config buildModel() 的輸出逐鍵一致，否則會誤報「設定已變更」。
+ *
+ * 2026-07-25 兩處修正／擴充：
+ * (a) latentVariables 補 `mode: 'reflective'`——buildModel() 一律輸出 mode 欄位，
+ *     舊的示範模型沒有這個鍵，draftSignature 比對必然不相等，載入示範後
+ *     一定顯示「設定已變更」。這是示範設定本身的缺陷，不是使用者改了什麼。
+ * (b) 開啟一組 W5／W6 開關。原示範一個都沒開，等於 ui.smoke 對 Q² 表、IPMA、
+ *     cIPMA、PLSpredict、CTA-PLS 五個結果區塊完全沒有涵蓋——這些區塊只要有一個
+ *     欄位取到 undefined 就是白畫面，而煙霧測試看不到。
+ *     選開的是「不需要額外 permutation／EM 迭代」的一組（Q² / PLSpredict k=5 /
+ *     IPMA＋cIPMA / CTA-PLS），MGA・MICOM（permutation 重）與 FIMIX・PLS-POS
+ *     （EM／爬山法重）刻意不開：示範要秒出，煙霧測試也不該因此變慢。
+ *     CTA-PLS 需要 4 個以上指標的構念 → 工作滿意度補入 q4。
  */
 const PLS_DEMO_LVS = [
-  { name: '工作滿意度', indicators: ['q1', 'q2', 'q3'] },
-  { name: '整體滿意', indicators: ['q5'] },
-  { name: '工作績效', indicators: ['performance_score'] },
+  { name: '工作滿意度', indicators: ['q1', 'q2', 'q3', 'q4'], mode: 'reflective' },
+  { name: '整體滿意', indicators: ['q5'], mode: 'reflective' },
+  { name: '工作績效', indicators: ['performance_score'], mode: 'reflective' },
 ]
 const PLS_DEMO_PATHS = [
   { from: '工作滿意度', to: '整體滿意' },
@@ -30,6 +42,21 @@ const PLS_DEMO_MODEL = {
   schemaVersion: 1,
   latentVariables: PLS_DEMO_LVS,
   paths: PLS_DEMO_PATHS,
+}
+// 鍵序必須與 Config.jsx 的 options 物件字面量一致（draftSignature 走 JSON.stringify 比對）
+const PLS_DEMO_OPTIONS = {
+  scheme: 'path',
+  consistent: false,
+  ciType: 'percentile',
+  q2: true,
+  w5: {
+    predict: true,
+    k: 5,
+    ipma: true,
+    target: '工作績效',
+    cipma: true,
+    cta: true,
+  },
 }
 
 export const ANALYSIS_DEMOS = {
@@ -163,11 +190,14 @@ export const ANALYSIS_DEMOS = {
       lvs: PLS_DEMO_LVS,
       paths: PLS_DEMO_PATHS,
       bootstrapN: 1000,
+      q2: PLS_DEMO_OPTIONS.q2,
+      w5: PLS_DEMO_OPTIONS.w5,
       configErrors: [],
       committed: {
         model: PLS_DEMO_MODEL,
         bootstrapN: 1000,
-        draft: { model: PLS_DEMO_MODEL, bootstrapN: 1000 },
+        options: PLS_DEMO_OPTIONS,
+        draft: { model: PLS_DEMO_MODEL, bootstrapN: 1000, options: PLS_DEMO_OPTIONS },
       },
     },
   },

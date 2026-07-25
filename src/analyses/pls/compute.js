@@ -37,7 +37,14 @@ export function buildW5Options(committed) {
     micom: w5.micom && grp ? grp : null,
     predict: w5.predict ? { k: w5.k ?? 10, seed: 42 } : null,
     ipma: w5.ipma && w5.target
-      ? { target: w5.target, ...(w5.cipma === true ? { cipma: true } : {}) }
+      ? {
+        target: w5.target,
+        ...(w5.cipma === true ? { cipma: true } : {}),
+        // 量表理論界線（未勾選時不傳，維持觀察 min/max 的原口徑）
+        ...(w5.ipmaScale === true && Number.isFinite(Number(w5.scaleMin)) && Number.isFinite(Number(w5.scaleMax))
+          ? { scaleMin: Number(w5.scaleMin), scaleMax: Number(w5.scaleMax) }
+          : {}),
+      }
       : null,
     // W6.3 CTA-PLS：bootstrap 次數沿用主設定（Gudergan et al. 2008 建議 ≥ 5000）
     cta: w5.cta === true ? { n: committed.bootstrapN ?? 1000, seed: 42, ciAlpha: 0.05 } : null,

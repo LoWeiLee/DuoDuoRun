@@ -594,6 +594,7 @@ function Q2Table({ q2res, r }) {
   return (
     <div>
       <Heading>{r.q2Title}</Heading>
+      <WarnBox>{r.q2LegacyNote}</WarnBox>
       <TableBox>
         <thead className="bg-duo-cream-50">
           <tr>
@@ -1096,6 +1097,11 @@ function IpmaBlock({ ipma, r }) {
   return (
     <div>
       <Heading>{fillTemplate(r.ipmaTitle, { target: ipma.target })}</Heading>
+      {ipma.warnings && ipma.warnings.length > 0 && (
+        <div>
+          {ipma.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}
+        </div>
+      )}
       <div className="flex flex-wrap gap-4 items-start">
         <div className="bg-white border border-duo-cream-200 rounded-lg p-2 shrink-0">
           <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-sm" role="img"

@@ -19,7 +19,18 @@
  *   LV→指標（measure）= 淺 cocoa 細線，跑完分析顯示 loading（mono）
  *     指標節點的 handle 必須是 target 型（先前誤設為 source，React Flow 找不到
  *     target handle 而整條邊不渲染 — 這就是「看不到指標連線」的根因）。
+ *   HOC→成分（hoc）＝ 琥珀虛線；反映型 HOC 箭頭朝成分、形成型朝 HOC
+ *   因子→交互項（int）＝ cocoa 虛線、無箭頭（表示交互項由這兩（三）個構念構成）
  * 結果覆蓋層：LV 圓內顯示 R²。
+ *
+ * W4（交互項／高階構念）顯示層 —— 表單仍是 source of truth，畫布唯讀呈現：
+ *   - 交互項節點（int:）與高階構念節點（hoc:）由 state.ints / state.hocs 推導，
+ *     不能在畫布上新增或改名（避免兩套編輯路徑各自為政）；可拖曳，座標與 LV 共用
+ *     state.positions。
+ *   - 引擎自動補的主效果路徑（meta.autoAddedPaths，如 two-stage 調節的 C→Y）
+ *     以虛線呈現並標註，避免使用者以為畫布漏畫。
+ *   - W4 模型的最終估計走分數層（指標名為 *_score），原始指標的 loading 在
+ *     estimate.stage1 —— 覆蓋層改讀 stage1，否則畫布上的指標一律沒有數字。
  * 匯出：html2canvas 匯出白底 PNG（論文用）。
  *
  * 視覺對齊 docs/mockups：暖色底、cocoa 節點框、duo.sig 語意色，不用 React Flow 預設藍。
@@ -37,6 +48,7 @@ import 'reactflow/dist/style.css'
 import html2canvas from 'html2canvas'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runPLSAnalysis } from './compute'
+import { intName, validInteractions, validHigherOrder } from './model'
 import { fmtNum, fmtSig, toneForP } from '../../lib/format'
 
 /* duo.sig 語意色（與 tailwind.config.js 一致，供 SVG/inline style 使用） */
@@ -60,6 +72,14 @@ function defaultPosFor(index) {
  * 兩個 LV 節點同尺寸（130×84），比較左上角座標等同比較中心點。
  * 水平距離較大 → 走左右（right→left / left→right）；垂直較大 → 走上下。
  */
+/** 構念節點 id → 構念名（lv: / hoc: / int: 三種前綴）；指標節點回 null */
+function constructNameOf(id) {
+  if (id.startsWith('lv:')) return id.slice(3)
+  if (id.startsWith('hoc:')) return id.slice(4)
+  if (id.startsWith('int:')) return id.slice(4)
+  return null
+}
+
 function pickPathHandles(sPos, tPos) {
   const dx = tPos.x - sPos.x
   const dy = tPos.y - sPos.y
@@ -70,7 +90,7 @@ function pickPathHandles(sPos, tPos) {
 /* ─────────────────────  自訂節點  ───────────────────── */
 
 function LvNode({ data }) {
-  const { label, r2, mode, modeBadge, selected, onRename, onOpenPanel, onDelete } = data
+  const { label, r2, mode, modeBadge, absorbedBadge, selected, onRename, onOpenPanel, onDelete } = data
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(label)
   // 名稱由外部（改名/刪除）變動時，同步草稿（render 期間調整 state，避免 effect 級聯渲染）
@@ -139,6 +159,13 @@ function LvNode({ data }) {
         </div>
       )}
 
+      {/* 被高階構念吸收的一階構念：結構路徑掛在 HOC 上，這裡標記以免誤以為畫布漏畫 */}
+      {absorbedBadge && (
+        <div style={{ marginTop: 1, fontSize: 8.5, fontWeight: 600, letterSpacing: 0.3, color: COCOA[400] }}>
+          {absorbedBadge}
+        </div>
+      )}
+
       {Number.isFinite(r2) && (
         <div style={{ marginTop: 2, fontSize: 10.5, fontFamily: 'JetBrains Mono, monospace', color: COCOA[500] }}>
           R² {fmtNum(r2, 3)}
@@ -188,7 +215,60 @@ function IndicatorNode({ data }) {
   )
 }
 
-const NODE_TYPES = { lvNode: LvNode, indicatorNode: IndicatorNode }
+/** 高階構念（唯讀顯示；在表單編輯）：琥珀虛線橢圓 */
+function HocNode({ data }) {
+  const { label, r2, badge } = data
+  return (
+    <div
+      style={{
+        position: 'relative', width: 130, height: 84, borderRadius: 44,
+        background: '#fff', border: `2px dashed ${AMBER[500]}`,
+        boxShadow: '0 1px 3px rgba(43,29,20,0.12)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 4,
+      }}
+    >
+      <Handle type="source" position={Position.Left} id="l" style={HANDLE_STYLE} isConnectable={false} />
+      <Handle type="source" position={Position.Right} id="r" style={HANDLE_STYLE} isConnectable={false} />
+      <Handle type="source" position={Position.Top} id="t" style={HANDLE_STYLE} isConnectable={false} />
+      <Handle type="source" position={Position.Bottom} id="b" style={HANDLE_STYLE} isConnectable={false} />
+      <div style={{ fontSize: 12.5, fontWeight: 600, color: COCOA[700], textAlign: 'center', lineHeight: 1.2, wordBreak: 'break-word' }}>
+        {label}
+      </div>
+      <div style={{ marginTop: 1, fontSize: 8.5, fontWeight: 600, letterSpacing: 0.4, color: AMBER[500] }}>{badge}</div>
+      {Number.isFinite(r2) && (
+        <div style={{ marginTop: 2, fontSize: 10.5, fontFamily: 'JetBrains Mono, monospace', color: COCOA[500] }}>
+          R² {fmtNum(r2, 3)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** 交互項（唯讀顯示；在表單編輯）：cocoa 虛線圓角矩形 */
+function IntNode({ data }) {
+  const { label, badge } = data
+  return (
+    <div
+      style={{
+        position: 'relative', minWidth: 96, maxWidth: 150, padding: '6px 8px', borderRadius: 10,
+        background: CREAM[50], border: `1.5px dashed ${COCOA[400]}`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        boxShadow: '0 1px 2px rgba(43,29,20,0.08)',
+      }}
+    >
+      <Handle type="source" position={Position.Left} id="l" style={HANDLE_STYLE} isConnectable={false} />
+      <Handle type="source" position={Position.Right} id="r" style={HANDLE_STYLE} isConnectable={false} />
+      <Handle type="source" position={Position.Top} id="t" style={HANDLE_STYLE} isConnectable={false} />
+      <Handle type="source" position={Position.Bottom} id="b" style={HANDLE_STYLE} isConnectable={false} />
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: COCOA[700], textAlign: 'center', lineHeight: 1.2, wordBreak: 'break-word' }}>
+        {label}
+      </div>
+      <div style={{ marginTop: 1, fontSize: 8.5, fontWeight: 600, letterSpacing: 0.4, color: COCOA[400] }}>{badge}</div>
+    </div>
+  )
+}
+
+const NODE_TYPES = { lvNode: LvNode, indicatorNode: IndicatorNode, hocNode: HocNode, intNode: IntNode }
 
 /* ─────────────────────  指標掛載小面板  ───────────────────── */
 
@@ -263,6 +343,15 @@ function CanvasInner() {
   const lvs = useMemo(() => state.lvs || [], [state.lvs])
   const paths = useMemo(() => state.paths || [], [state.paths])
   const positions = useMemo(() => state.positions || {}, [state.positions])
+  // W4：交互項與高階構念（表單為 source of truth，畫布唯讀呈現）
+  const ints = useMemo(() => validInteractions(state.ints), [state.ints])
+  const hocs = useMemo(() => validHigherOrder(state.hocs), [state.hocs])
+  const hocMethod = ['repeated', 'disjoint', 'two-stage'].includes(state.hocMethod)
+    ? state.hocMethod : 'disjoint'
+  const intMethod = ['two-stage', 'product-indicator', 'orthogonal'].includes(state.intMethod)
+    ? state.intMethod : 'two-stage'
+  // 被 HOC 吸收的一階構念：仍畫出來，但結構路徑掛在 HOC 上
+  const absorbed = useMemo(() => new Set(hocs.flatMap((h) => h.components || [])), [hocs])
 
   // 拖動中的即時座標（drag stop 才寫回共用 state）：
   // 讓邊在拖動過程即時重選最近的 handle、指標小矩形跟著 LV 走
@@ -285,15 +374,22 @@ function CanvasInner() {
   )
   const overlay = useMemo(() => {
     const r2 = {}, loading = {}, weight = {}, path = {}
+    const autoPaths = []
     if (res && !res.error && res.estimate) {
-      for (const s of res.estimate.structural) r2[s.lv] = s.r2
-      for (const q of res.estimate.outerLoadings) loading[`${q.lv}｜${q.indicator}`] = q.loading
-      for (const q of res.estimate.outerWeights) weight[`${q.lv}｜${q.indicator}`] = q.weight
+      const est = res.estimate
+      for (const s of est.structural) r2[s.lv] = s.r2
+      // W4 的最終估計在分數層（指標名為 *_score）；原始指標的 loading/weight 在 stage1。
+      // 不切到 stage1 的話，含交互項或高階構念的模型在畫布上一律沒有指標數字。
+      const outer = est.stage1 || est
+      for (const q of outer.outerLoadings) loading[`${q.lv}｜${q.indicator}`] = q.loading
+      for (const q of outer.outerWeights) weight[`${q.lv}｜${q.indicator}`] = q.weight
       const boot = res.bootstrap && !res.bootstrap.error ? res.bootstrap : null
       if (boot) for (const q of boot.paths) path[`${q.from}→${q.to}`] = { beta: q.original, p: q.p }
-      else for (const q of res.estimate.pathCoefficients) path[`${q.from}→${q.to}`] = { beta: q.coef, p: null }
+      else for (const q of est.pathCoefficients) path[`${q.from}→${q.to}`] = { beta: q.coef, p: null }
+      // 引擎自動補的主效果路徑（two-stage 調節的階層完整性要求）
+      for (const q of (est.meta?.autoAddedPaths || [])) autoPaths.push({ from: q.from, to: q.to })
     }
-    return { r2, loading, weight, path }
+    return { r2, loading, weight, path, autoPaths }
   }, [res])
 
   /* ── 模型寫回（共用 state） ── */
@@ -357,6 +453,7 @@ function CanvasInner() {
           r2: overlay.r2[f.name],
           mode: f.mode === 'formative' ? 'formative' : 'reflective',
           modeBadge: cc.modeBadge,
+          absorbedBadge: absorbed.has(f.name) ? cc.absorbedBadge : undefined,
           selected: selectedLv === f.name,
           onRename: renameLv,
           onOpenPanel: (name) => setOpenPanelLv((cur) => (cur === name ? null : name)),
@@ -383,19 +480,55 @@ function CanvasInner() {
         })
       })
     })
+    // W4：高階構念（唯讀）
+    hocs.forEach((h, hi) => {
+      const name = h.name.trim()
+      out.push({
+        id: `hoc:${name}`,
+        type: 'hocNode',
+        position: effPositions[name] || defaultPosFor(lvs.length + hi),
+        data: { label: name, r2: overlay.r2[name], badge: `HOC · ${cc.hocMethodBadge[hocMethod]}` },
+      })
+    })
+    // W4：交互項（唯讀）
+    ints.forEach((q, ii) => {
+      const name = intName(q)
+      out.push({
+        id: `int:${name}`,
+        type: 'intNode',
+        position: effPositions[name] || defaultPosFor(lvs.length + hocs.length + ii),
+        data: { label: name, badge: cc.intMethodBadge[intMethod] },
+      })
+    })
     return out
-  }, [lvs, effPositions, overlay, selectedLv, renameLv, deleteLv, labelMap, cc.modeBadge])
+  }, [lvs, hocs, ints, absorbed, hocMethod, intMethod, effPositions, overlay, selectedLv, renameLv, deleteLv,
+    labelMap, cc.modeBadge, cc.absorbedBadge, cc.hocMethodBadge, cc.intMethodBadge])
 
   const edges = useMemo(() => {
     const out = []
-    const lvIndex = new Map(lvs.map((f, i) => [f.name, i]))
-    const posFor = (name) => effPositions[name] || defaultPosFor(lvIndex.get(name) ?? 0)
-    // 結構路徑：箭頭 + β/星號；依相對位置就近選 handle（近似直線，不繞遠路）
-    paths.forEach((p) => {
-      if (!p.from || !p.to) return
-      if (!lvIndex.has(p.from) || !lvIndex.has(p.to)) return
-      const [sh, th] = pickPathHandles(posFor(p.from), posFor(p.to))
-      const info = overlay.path[`${p.from}→${p.to}`]
+    // 構念名 → React Flow 節點 id（一般 LV / 高階構念 / 交互項三種前綴共用一張表）。
+    // 舊版只認得 lv:，所以任何以交互項或高階構念為端點的路徑都被靜默丟棄。
+    const idByName = new Map()
+    const orderIndex = new Map()
+    lvs.forEach((f, i) => { idByName.set(f.name, `lv:${f.name}`); orderIndex.set(f.name, i) })
+    hocs.forEach((h, i) => {
+      const nm = h.name.trim()
+      idByName.set(nm, `hoc:${nm}`)
+      orderIndex.set(nm, lvs.length + i)
+    })
+    ints.forEach((q, i) => {
+      const nm = intName(q)
+      idByName.set(nm, `int:${nm}`)
+      orderIndex.set(nm, lvs.length + hocs.length + i)
+    })
+    const posFor = (name) => effPositions[name] || defaultPosFor(orderIndex.get(name) ?? 0)
+
+    /** 結構路徑（含引擎自動補的主效果）共用的邊構造 */
+    const pushStructural = (from, to, auto) => {
+      if (!from || !to) return
+      if (!idByName.has(from) || !idByName.has(to)) return
+      const [sh, th] = pickPathHandles(posFor(from), posFor(to))
+      const info = overlay.path[`${from}→${to}`]
       let label
       let color = COCOA[400]
       if (info && Number.isFinite(info.beta)) {
@@ -403,10 +536,11 @@ function CanvasInner() {
         color = tone === 'ok' ? SIG.ok : tone === 'bad' ? SIG.bad : COCOA[500]
         label = `${fmtNum(info.beta, 3)}${fmtSig(info.p)}`
       }
+      if (auto) label = label ? `${label} ${cc.autoPathMark}` : cc.autoPathMark
       out.push({
-        id: `path:${p.from}->${p.to}`,
-        source: `lv:${p.from}`,
-        target: `lv:${p.to}`,
+        id: `path:${from}->${to}`,
+        source: idByName.get(from),
+        target: idByName.get(to),
         sourceHandle: sh,
         targetHandle: th,
         type: 'default',
@@ -416,9 +550,61 @@ function CanvasInner() {
         labelBgStyle: { fill: CREAM[50], fillOpacity: 0.9 },
         labelBgPadding: [3, 2],
         labelBgBorderRadius: 4,
-        style: { stroke: color, strokeWidth: 1.75 },
+        style: { stroke: color, strokeWidth: 1.75, ...(auto ? { strokeDasharray: '5 3' } : {}) },
         markerEnd: { type: 'arrowclosed', color, width: 16, height: 16 },
-        data: { kind: 'path', from: p.from, to: p.to },
+        // 自動補的路徑不在表單裡，點擊刪除會刪不到東西 → 不掛 kind:'path'
+        data: auto ? { kind: 'autoPath' } : { kind: 'path', from, to },
+      })
+    }
+
+    // 結構路徑：箭頭 + β/星號；依相對位置就近選 handle（近似直線，不繞遠路）
+    const declared = new Set()
+    paths.forEach((p) => {
+      if (!p.from || !p.to) return
+      declared.add(`${p.from}→${p.to}`)
+      pushStructural(p.from, p.to, false)
+    })
+    // 引擎自動補的主效果路徑（two-stage 調節的階層完整性；meta.autoAddedPaths）
+    overlay.autoPaths.forEach((p) => {
+      if (declared.has(`${p.from}→${p.to}`)) return
+      pushStructural(p.from, p.to, true)
+    })
+    // 高階構念 → 成分構念（虛線）：反映型箭頭朝成分、形成型朝 HOC
+    hocs.forEach((h) => {
+      const nm = h.name.trim()
+      const formative = h.mode === 'formative'
+      ;(h.components || []).forEach((comp) => {
+        if (!idByName.has(comp)) return
+        const [sh, th] = pickPathHandles(posFor(nm), posFor(comp))
+        out.push({
+          id: `hoc:${nm}->${comp}`,
+          source: formative ? idByName.get(comp) : idByName.get(nm),
+          target: formative ? idByName.get(nm) : idByName.get(comp),
+          sourceHandle: formative ? th : sh,
+          targetHandle: formative ? sh : th,
+          type: 'default',
+          selectable: false,
+          style: { stroke: AMBER[500], strokeWidth: 1.25, strokeDasharray: '4 3' },
+          markerEnd: { type: 'arrowclosed', color: AMBER[500], width: 12, height: 12 },
+        })
+      })
+    })
+    // 因子 → 交互項（虛線、無箭頭）：表示交互項由這兩（三）個構念構成
+    ints.forEach((q) => {
+      const nm = intName(q)
+      ;[q.a, q.b, q.c].filter(Boolean).forEach((factor) => {
+        if (!idByName.has(factor)) return
+        const [sh, th] = pickPathHandles(posFor(factor), posFor(nm))
+        out.push({
+          id: `int:${factor}->${nm}`,
+          source: idByName.get(factor),
+          target: idByName.get(nm),
+          sourceHandle: sh,
+          targetHandle: th,
+          type: 'default',
+          selectable: false,
+          style: { stroke: COCOA[400], strokeWidth: 1, strokeDasharray: '3 3' },
+        })
       })
     })
     // 指標連線：LV → 指標，跑完顯示 loading
@@ -442,18 +628,18 @@ function CanvasInner() {
       })
     })
     return out
-  }, [paths, lvs, overlay, effPositions])
+  }, [paths, lvs, hocs, ints, overlay, effPositions, cc.autoPathMark])
 
   /* ── 互動 ── */
   const onNodeDrag = useCallback((_e, node) => {
-    if (!node.id.startsWith('lv:')) return
-    const name = node.id.slice(3)
+    const name = constructNameOf(node.id)
+    if (!name) return
     setLivePositions((prev) => ({ ...prev, [name]: { x: node.position.x, y: node.position.y } }))
   }, [])
 
   const onNodeDragStop = useCallback((_e, node) => {
-    if (!node.id.startsWith('lv:')) return
-    const name = node.id.slice(3)
+    const name = constructNameOf(node.id)
+    if (!name) return
     setLivePositions((prev) => {
       if (!(name in prev)) return prev
       const next = { ...prev }
@@ -528,7 +714,10 @@ function CanvasInner() {
     <div>
       {/* 工具列 */}
       <div className="flex items-center justify-between gap-2 mb-2 pls-export-ignore">
-        <div className="text-[11px] text-duo-cocoa-400 leading-snug">{cc.hint}</div>
+        <div className="text-[11px] text-duo-cocoa-400 leading-snug">
+          {cc.hint}
+          {(ints.length > 0 || hocs.length > 0) && <> {cc.w4Hint}</>}
+        </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button type="button" onClick={addLv} className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-duo-amber-500 text-white hover:bg-duo-amber-600 transition">
             + {t.pls.config.addLv}
@@ -590,7 +779,10 @@ function CanvasInner() {
         )}
       </div>
 
-      <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">{cc.legend}</p>
+      <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">
+        {cc.legend}
+        {(ints.length > 0 || hocs.length > 0) && <> {cc.legendW4}</>}
+      </p>
     </div>
   )
 }
