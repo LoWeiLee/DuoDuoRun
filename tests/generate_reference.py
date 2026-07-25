@@ -1669,7 +1669,9 @@ except Exception as e:
 #
 # 【信賴區間】Gudergan et al. (2008)：bias-corrected ＋ Bonferroni（區塊內）
 #   bias = mean(τ*) − τ̂ ；SE = sd(τ*, ddof=1)
-#   CI = (τ̂ − bias) ± t_{1−α/(2T), B−1} · SE     （T = 該區塊的非冗餘 tetrad 數）
+#   CI = (τ̂ − bias) ± z_{1−α/(2T)} · SE          （T = 該區塊的非冗餘 tetrad 數）
+#   —— 原文 Eq. (2)：τ̂ − b_B ± v_B^{1/2}·z_{1−α/2}，**用常態分位數 z**，非 Student t；
+#      Bonferroni 依同文 Step 5 施加於「單一測量模型內」的 tetrad 族系（α′ = α/n）。
 #   判讀：任一 CI 不含 0 → 拒絕反映型（判為形成型）。
 #   基準以固定重抽索引注入（同 pls_bca_reference 慣例），B=300、α=.05。
 try:
@@ -1733,14 +1735,14 @@ try:
             draws[r_] = [_cta_tetrad(Rb, t) for t in tets]
         bias = draws.mean(axis=0) - obs
         se = draws.std(axis=0, ddof=1)
-        tcrit = float(sps.t.ppf(1 - _CTA_ALPHA / (2 * T), _CTA_B - 1))
+        zcrit = float(sps.norm.ppf(1 - _CTA_ALPHA / (2 * T)))
         centre = obs - bias
-        lo = centre - tcrit * se
-        hi = centre + tcrit * se
+        lo = centre - zcrit * se
+        hi = centre + zcrit * se
         nonzero = (lo > 0) | (hi < 0)
         vals = {
             f"{label}_nTetrads": T,
-            f"{label}_tCrit": tcrit,
+            f"{label}_zCrit": zcrit,
             f"{label}_verdict": "formative" if nonzero.any() else "reflective",
             f"{label}_nNonVanishing": int(nonzero.sum()),
         }
@@ -1765,7 +1767,7 @@ try:
         "CTA-PLS（Gudergan et al. 2008, JBR 61(12)；tetrad 定義 Bollen & Ting 1993）："
         "非冗餘 model-implied tetrads 在標準化資料（指標相關矩陣）上手算，"
         "bias-corrected ＋ 區塊內 Bonferroni 的 bootstrap CI（B=300 固定重抽索引注入、"
-        "α=.05、t 臨界值 df=B−1）。非冗餘選取為『逐一加入指標』的確定性構造（k(k−3)/2 個，"
+        "α=.05、常態臨界值 z_{1−α/(2T)}，依原文 Eq. (2)）。非冗餘選取為『逐一加入指標』的確定性構造（k(k−3)/2 個，"
         "以 Jacobian 秩 assert 驗證極大獨立）。numpy 手算；"
         "SmartPLS 的 tetrad 選取與 CI 變體未文件化 → 待抽驗",
         **_cta_vals)
@@ -2026,14 +2028,22 @@ except Exception as e:
 #   FIMIX：軟指派（後驗機率）、目標＝混合概似
 #   POS  ：硬指派、目標＝**預測誤差**（內生構念的殘差平方和），逐案重新指派的爬山法
 #
-# 目標函數：Obj = Σ_段 Σ_內生構念 SSE（該段該方程的殘差平方和），愈小愈好。
-# 等價於最大化各段 R² 的（以段別大小加權的）總和。
+# 目標函數：Obj = Σ_段 Σ_內生構念 R²（該段該方程的解釋變異），**愈大愈好**。
+# 原文 p. 676：「a fitting objective criterion for PLS segmentation is to maximize the sum of
+# the endogenous latent variables' explained variance (R²) across all groups」。
+# ※ 這**不等價**於最小化 Σ SSE——SST 隨段別組成改變，兩者會收斂到不同分割
+#   （2026-07-25 溯源審計於本 fixture 實測：125/175 vs 195/105，還原率 0.837 vs 0.857）。
+# 無截距迴歸 → R² 用未置中 TSS（Σy²），與段別 r2_ 欄位同慣例。
 #
 # 爬山法（確定性，JS 端同規則）：
 #   起始分割固定注入 → 逐案（依索引序）試著搬到其他段（依段索引序），
 #   以充分統計量（A = Σxx'、b = Σxy、yy = Σy²、n）增量更新，
-#   取「改善最大且 > 1e-12」的搬移；同分時取段索引較小者（嚴格 > 比較）。
+#   取「ΣR² 改善最大且 > 1e-12」的搬移；同分時取段索引較小者（嚴格 > 比較）。
 #   一輪掃完沒有任何搬移即停止。段別大小下限 minSize 為硬約束。
+#
+# 實作範圍（誠實揭露，2026-07-25 溯源審計）：本實作為原文的**結構模型層簡化版**——
+#   LV 分數取自全樣本 PLS 權重、不做段別測量模型權重重估（原文區辨特徵之一），
+#   段別大小下限為本工具的穩定性約束（原文無此設定）。UI Notes 已同步揭露。
 #
 # 驗證策略同 FIMIX（無主流實作可對照）：模擬還原＋性質斷言＋JS↔numpy 逐值。
 try:
@@ -2053,6 +2063,11 @@ try:
         beta = b / A
         return yy - beta * b, beta
 
+    def _pos_r2(A, b, yy):
+        """單段的 R²（無截距 → 未置中 TSS）。"""
+        sse, _ = _pos_sse(A, b, yy)
+        return 1.0 - sse / yy if yy > 1e-12 else 0.0
+
     def _pos_hillclimb(assign0, xi, eta, K, min_size, max_pass=100):
         assign = np.asarray(assign0, dtype=int).copy()
         n = len(assign)
@@ -2063,7 +2078,7 @@ try:
             A[k], b[k], yy[k], cnt[k] = _pos_stats(idx, xi, eta)
 
         def total():
-            return sum(_pos_sse(A[k], b[k], yy[k])[0] for k in range(K))
+            return sum(_pos_r2(A[k], b[k], yy[k]) for k in range(K))
 
         obj = total()
         trace = [obj]
@@ -2075,15 +2090,15 @@ try:
                 if cnt[s] - 1 < min_size:
                     continue
                 xi2 = xi[i] ** 2; xy = xi[i] * eta[i]; y2 = eta[i] ** 2
-                sse_s_out, _ = _pos_sse(A[s] - xi2, b[s] - xy, yy[s] - y2)
-                sse_s_in, _ = _pos_sse(A[s], b[s], yy[s])
+                r2_s_out = _pos_r2(A[s] - xi2, b[s] - xy, yy[s] - y2)
+                r2_s_in = _pos_r2(A[s], b[s], yy[s])
                 best_t = -1; best_gain = 1e-12
                 for t in range(K):
                     if t == s:
                         continue
-                    sse_t_in, _ = _pos_sse(A[t], b[t], yy[t])
-                    sse_t_out, _ = _pos_sse(A[t] + xi2, b[t] + xy, yy[t] + y2)
-                    gain = (sse_s_in + sse_t_in) - (sse_s_out + sse_t_out)
+                    r2_t_in = _pos_r2(A[t], b[t], yy[t])
+                    r2_t_out = _pos_r2(A[t] + xi2, b[t] + xy, yy[t] + y2)
+                    gain = (r2_s_out + r2_t_out) - (r2_s_in + r2_t_in)   # 最大化 ΣR²
                     if gain > best_gain:          # 嚴格 > → 同分取段索引較小者
                         best_gain = gain; best_t = t
                 if best_t >= 0:
@@ -2117,13 +2132,15 @@ try:
         _as, _A, _b, _yy, _cnt, _obj, _passes, _trace, _moves = _pos_hillclimb(
             _a0, _fx_xi, _fx_eta, _K, _min_size)
 
-        # 爬山法單調性：目標函數每輪不得上升
-        assert all(_trace[i + 1] <= _trace[i] + 1e-9 for i in range(len(_trace) - 1)), \
-            f"PLS-POS 目標函數非單調遞減（K={_K}）"
+        # 爬山法單調性：目標函數（ΣR²）每輪不得下降
+        assert all(_trace[i + 1] >= _trace[i] - 1e-9 for i in range(len(_trace) - 1)), \
+            f"PLS-POS 目標函數非單調遞增（K={_K}）"
 
-        _pos_vals[f"objective_K{_K}"] = _obj
+        _sse_total = sum(_pos_sse(_A[_k], _b[_k], _yy[_k])[0] for _k in range(_K))
+        _pos_vals[f"objective_K{_K}"] = _obj                   # ΣR²（原文的目標準則）
+        _pos_vals[f"sseTotal_K{_K}"] = _sse_total
         _pos_vals[f"passes_K{_K}"] = _passes
-        _pos_vals[f"r2Overall_K{_K}"] = 1.0 - _obj / _eta_ss   # 分段後整體可解釋比例
+        _pos_vals[f"r2Overall_K{_K}"] = 1.0 - _sse_total / _eta_ss   # 分段後整體可解釋比例
         # 段別解（依段別大小遞減排序，消除 label switching；與 JS 引擎同規則）
         _ord = np.argsort(-_cnt)
         for _i, _k in enumerate(_ord):
@@ -2143,13 +2160,15 @@ try:
     # 全域（單段）基準：分段前的預測誤差，用來凸顯分段的增益
     _gA, _gb, _gyy, _gn = _pos_stats(np.arange(_pos_n), _fx_xi, _fx_eta)
     _gsse, _gbeta = _pos_sse(_gA, _gb, _gyy)
-    _pos_vals["objective_K1"] = _gsse
+    _pos_vals["objective_K1"] = 1.0 - _gsse / _gyy if _gyy > 1e-12 else 0.0   # 單段 ΣR²
+    _pos_vals["sseTotal_K1"] = _gsse
     _pos_vals["beta_K1"] = _gbeta
     _pos_vals["r2Overall_K1"] = 1.0 - _gsse / _eta_ss
 
     put("pls_pos",
-        "PLS-POS（Becker, Rai, Ringle & Völckner 2013, MISQ 37(3)）：prediction-oriented "
-        "segmentation。目標＝內生構念的殘差平方和（預測誤差），硬指派＋逐案重新指派的爬山法；"
+        "PLS-POS（Becker, Rai, Ringle & Völckner 2013, MISQ 37(3), p. 676）：prediction-oriented "
+        "segmentation。目標＝各段各內生構念的解釋變異 R² 之和（原文：maximize the sum of the "
+        "endogenous latent variables' explained variance across all groups），硬指派＋逐案重新指派的爬山法；"
         "以充分統計量（Σxx'、Σxy、Σy²、n）增量更新；同分取段索引較小者；段別大小下限為硬約束。"
         "段別依大小遞減排序以消除 label switching。起始分割固定注入（見 pls_pos_inputs）"
         "→ JS↔numpy 逐值可比。與 FIMIX 用同一組模擬資料（兩段 β = ±0.80）；"

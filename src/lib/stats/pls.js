@@ -81,7 +81,7 @@
  *   - 不收斂或退化（零變異）的重抽樣本剔除並計數（nSkipped）
  */
 import { inverse, matmul } from './matrix.js'
-import { pT, qT, qnorm, normalCdf } from './pvalue.js'
+import { pT, qnorm, normalCdf } from './pvalue.js'
 import { isMissing } from '../variableTypes.js'
 import { runNCA } from './nca.js'
 import { kolmogorovSmirnov } from './normality.js'
@@ -3290,7 +3290,9 @@ function corrMatrixOf(cols) {
  *   1. 每個 ≥4 指標的構念，在其指標相關矩陣上算 k(k−3)/2 個非冗餘 tetrad
  *   2. bootstrap（重抽個案、每次重算相關矩陣）→ tetrad 的 bias 與 SE
  *   3. bias-corrected ＋ 區塊內 Bonferroni 的 CI：
- *        CI = (τ̂ − bias) ± t_{1−α/(2T), B−1} · SE          （T = 該區塊 tetrad 數）
+ *        CI = (τ̂ − bias) ± z_{1−α/(2T)} · SE               （T = 該區塊 tetrad 數）
+ *        —— Gudergan et al. (2008) Eq. (2) 用常態分位數 z（非 Student t）；
+ *           Bonferroni 依同文 Step 5 施加於「單一測量模型內」的 tetrad 族系。
  *   4. 任一 CI 不含 0 → 判為形成型（拒絕反映型）
  *
  * 指標少於 4 個的構念**無法**做 tetrad 檢定（數學上不存在 tetrad），
@@ -3401,7 +3403,7 @@ export function ctaPLS(rows, model, options = {}) {
       for (let q = 0; q < T; q++) draws[q][b] = tetradValue(Rb, tets[q])
     }
 
-    const tCrit = qT(ciAlpha / T, B - 1)
+    const zCrit = qnorm(1 - ciAlpha / (2 * T))
     const tetrads = []
     let nNonVanishing = 0
     for (let q = 0; q < T; q++) {
@@ -3409,8 +3411,8 @@ export function ctaPLS(rows, model, options = {}) {
       const bias = meanOf(d) - obs[q]
       const se = sdOf(d)
       const centre = obs[q] - bias
-      const ciLower = centre - tCrit * se
-      const ciUpper = centre + tCrit * se
+      const ciLower = centre - zCrit * se
+      const ciUpper = centre + zCrit * se
       const nonVanishing = ciLower > 0 || ciUpper < 0
       if (nonVanishing) nNonVanishing++
       tetrads.push({
@@ -3431,7 +3433,7 @@ export function ctaPLS(rows, model, options = {}) {
       declaredMode: lv.mode,
       nIndicators: k,
       nTetrads: T,
-      tCrit,
+      zCrit,
       alphaAdjusted: ciAlpha / T,
       tetrads,
       nNonVanishing,
@@ -4239,6 +4241,17 @@ export function posPLS(rows, model, options = {}) {
     }
   }
   const sseOf = (st) => st.reduce((acc, s, j) => acc + posSolve(s.A, s.b, s.yy, eqs[j].X.length).sse, 0)
+  /**
+   * POS 的目標函數：**各段各內生構念的 R² 之和**（Becker, Rai, Ringle & Völckner 2013,
+   * MISQ 37(3), p. 676：「a fitting objective criterion for PLS segmentation is to maximize
+   * the sum of the endogenous latent variables' explained variance (R²) across all groups」）。
+   * 注意這**不等價於**最小化各段 SSE 之和——SST 隨段別組成改變，兩者會收斂到不同分割。
+   * 無截距迴歸 → R² 用未置中的 TSS（Σy²），與 segments[].equations[].r2 同慣例。
+   */
+  const r2SumOf = (st) => st.reduce((acc, s, j) => {
+    const { sse } = posSolve(s.A, s.b, s.yy, eqs[j].X.length)
+    return acc + (s.yy > 1e-12 ? 1 - sse / s.yy : 0)
+  }, 0)
 
   const maxPasses = options.maxPasses ?? 100
   let monotone = true
@@ -4249,7 +4262,7 @@ export function posPLS(rows, model, options = {}) {
     const counts = new Array(K).fill(0)
     for (let i = 0; i < n; i++) { addCase(stats[assign[i]], i, +1); counts[assign[i]]++ }
 
-    let obj = stats.reduce((a, st) => a + sseOf(st), 0)
+    let obj = stats.reduce((a, st) => a + r2SumOf(st), 0)
     let moves = 0
     let passes = 0
     for (let p = 1; p <= maxPasses; p++) {
@@ -4258,18 +4271,19 @@ export function posPLS(rows, model, options = {}) {
       for (let i = 0; i < n; i++) {
         const s = assign[i]
         if (counts[s] - 1 < minSize) continue
-        const sseSin = sseOf(stats[s])
+        const r2Sin = r2SumOf(stats[s])
         addCase(stats[s], i, -1)
-        const sseSout = sseOf(stats[s])
+        const r2Sout = r2SumOf(stats[s])
         let bestT = -1
         let bestGain = 1e-12
         for (let t = 0; t < K; t++) {
           if (t === s) continue
-          const sseTin = sseOf(stats[t])
+          const r2Tin = r2SumOf(stats[t])
           addCase(stats[t], i, +1)
-          const sseTout = sseOf(stats[t])
+          const r2Tout = r2SumOf(stats[t])
           addCase(stats[t], i, -1)
-          const gain = (sseSin + sseTin) - (sseSout + sseTout)
+          // 目標為最大化 ΣR² → gain = 搬移後 − 搬移前
+          const gain = (r2Sout + r2Tout) - (r2Sin + r2Tin)
           if (gain > bestGain) { bestGain = gain; bestT = t } // 嚴格 > → 同分取段索引較小者
         }
         if (bestT >= 0) {
@@ -4281,8 +4295,8 @@ export function posPLS(rows, model, options = {}) {
           addCase(stats[s], i, +1) // 還原
         }
       }
-      const newObj = stats.reduce((a, st) => a + sseOf(st), 0)
-      if (newObj > obj + 1e-6) monotone = false
+      const newObj = stats.reduce((a, st) => a + r2SumOf(st), 0)
+      if (newObj < obj - 1e-6) monotone = false
       obj = newObj
       if (!moved) break
     }
@@ -4320,7 +4334,7 @@ export function posPLS(rows, model, options = {}) {
         }
       }
       const sol = climb(a0)
-      if (!best || sol.obj < best.obj) best = sol
+      if (!best || sol.obj > best.obj) best = sol
     }
   }
 
@@ -4357,20 +4371,24 @@ export function posPLS(rows, model, options = {}) {
 
   const warnings = []
   if (!monotone) {
-    warnings.push('爬山法的目標函數出現上升——這在數學上不應發生，請回報此案例')
+    warnings.push('爬山法的目標函數出現下降——這在數學上不應發生，請回報此案例')
   }
   if (best.passes >= maxPasses) {
     warnings.push(`爬山法在 ${maxPasses} 輪內未停止；結果可能不是局部最優`)
   }
-  warnings.push('PLS-POS 的目標函數（預測誤差）必然隨段數增加而下降——本法自身沒有懲罰項，因此**不能用來選段數**。段數請依 FIMIX 的資訊準則、理論、或段別的可解釋性決定。')
+  warnings.push('PLS-POS 的目標函數（各段 R² 之和）必然隨段數增加而上升——本法自身沒有懲罰項，因此**不能用來選段數**。段數請依 FIMIX 的資訊準則、理論、或段別的可解釋性決定。')
+  warnings.push('本實作為 Becker et al. (2013) PLS-POS 的**結構模型層簡化版**：LV 分數取自全樣本 PLS 權重，不做段別的測量模型權重重估（原文的區辨特徵之一），因此偵測不到純測量模型層的異質性；另加了段別大小下限（原文無此設定，且原文強調能找出極小利基段）。')
 
   return {
     segments,
     assignment: best.assign.map((k) => remap[k]),
     objective: best.obj,
-    r2Overall: totalYY > 1e-12 ? 1 - best.obj / totalYY : 0,
+    sseTotal: best.stats.reduce((a, st) => a + sseOf(st), 0),
+    r2Overall: totalYY > 1e-12
+      ? 1 - best.stats.reduce((a, st) => a + sseOf(st), 0) / totalYY : 0,
     global: {
       sse: globalSse,
+      objective: r2SumOf(globalStats),
       r2: totalYY > 1e-12 ? 1 - globalSse / totalYY : 0,
       equations: eqs.map((eq, j) => {
         const { sse, beta } = posSolve(globalStats[j].A, globalStats[j].b, globalStats[j].yy, eq.X.length)

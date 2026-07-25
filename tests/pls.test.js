@@ -972,15 +972,15 @@ describe('CTA-PLS', () => {
   it('Bonferroni：α_adj = α/T，臨界值隨 T 變大而變嚴', () => {
     expect(blk.R.alphaAdjusted).toBeCloseTo(0.05 / 5, 12)
     expect(blk.M.alphaAdjusted).toBeCloseTo(0.05 / 2, 12)
-    expect(blk.R.tCrit).toBeGreaterThan(blk.M.tCrit) // T 較多 → 臨界值較大
+    expect(blk.R.zCrit).toBeGreaterThan(blk.M.zCrit) // T 較多 → 臨界值較大
   })
 
-  it('CI 為 bias-corrected：中心 = τ̂ − bias、半寬 = tCrit·se', () => {
+  it('CI 為 bias-corrected：中心 = τ̂ − bias、半寬 = zCrit·se（原文 Eq. 2 用常態分位數）', () => {
     for (const b of r.blocks) {
       for (const t of b.tetrads) {
         const centre = (t.ciLower + t.ciUpper) / 2
         expect(Math.abs(centre - (t.value - t.bias))).toBeLessThan(1e-12)
-        expect(Math.abs((t.ciUpper - t.ciLower) / 2 - b.tCrit * t.se)).toBeLessThan(1e-12)
+        expect(Math.abs((t.ciUpper - t.ciLower) / 2 - b.zCrit * t.se)).toBeLessThan(1e-12)
       }
     }
   })
@@ -1357,31 +1357,32 @@ describe('PLS-POS（prediction-oriented segmentation）', () => {
     expect(Math.max(same / truth.length, 1 - same / truth.length)).toBeGreaterThan(0.80)
   })
 
-  it('★ 分段大幅降低預測誤差（POS 的目標函數就是預測誤差）', () => {
+  it('★ 分段大幅提高目標函數 ΣR²、並降低整體預測誤差', () => {
     const r = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: INIT2 })
-    expect(r.objective).toBeLessThan(r.global.sse)
+    expect(r.objective).toBeGreaterThan(r.global.objective)   // 目標＝各段 R² 之和
+    expect(r.sseTotal).toBeLessThan(r.global.sse)
     expect(r.r2Overall).toBeGreaterThan(r.global.r2)
     // 全域 R² 很低（正負相消），分段後大幅提升
     expect(r.global.r2).toBeLessThan(0.2)
     expect(r.r2Overall).toBeGreaterThan(0.6)
   })
 
-  it('★ 爬山法的目標函數單調遞減（違反即為實作錯誤）', () => {
+  it('★ 爬山法的目標函數單調遞增（違反即為實作錯誤）', () => {
     for (const K of [2, 3]) {
       const r = posPLS(fxRows, FX_MODEL(), {
         ...OPT, segments: K, initAssignment: REF.pls_pos_inputs.values[`init_K${K}`],
       })
-      expect(r.warnings.some((w) => w.includes('目標函數出現上升'))).toBe(false)
+      expect(r.warnings.some((w) => w.includes('目標函數出現下降'))).toBe(false)
     }
   })
 
-  it('★ 目標函數必然隨段數下降 → 明確警告不可用 POS 選段數', () => {
+  it('★ 目標函數必然隨段數上升 → 明確警告不可用 POS 選段數', () => {
     const r2 = posPLS(fxRows, FX_MODEL(), { ...OPT, segments: 2, initAssignment: INIT2 })
     const r3 = posPLS(fxRows, FX_MODEL(), {
       ...OPT, segments: 3, initAssignment: REF.pls_pos_inputs.values.init_K3,
     })
-    // K=3 的 SSE 必然更小——這正是不能用 POS 選段數的原因
-    expect(r3.objective).toBeLessThan(r2.objective)
+    // K=3 的 ΣR² 必然更大——這正是不能用 POS 選段數的原因
+    expect(r3.objective).toBeGreaterThan(r2.objective)
     expect(r2.warnings.some((w) => w.includes('不能用來選段數'))).toBe(true)
   })
 

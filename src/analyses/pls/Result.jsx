@@ -1265,7 +1265,7 @@ function PosBlock({ pos, r }) {
       {/* 分段前 vs 分段後的對比 */}
       <p className="mt-2 text-[11px] text-duo-sig-ok leading-snug">
         {fillTemplate(r.posGain, {
-          g: fmtNum(pos.global.sse, 2), s: fmtNum(pos.objective, 2),
+          g: fmtNum(pos.global.sse, 2), s: fmtNum(pos.sseTotal, 2),
           gr: fmtNum(pos.global.r2, 3), sr: fmtNum(pos.r2Overall, 3),
         })}
       </p>

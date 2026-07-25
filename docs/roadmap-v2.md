@@ -77,16 +77,29 @@ MASS::lda 全項逐值含分類表）。**Session Q1 已結案。**
 Q1 的正確落點是 **10**——已於 2026-07-14 達成。`npm test` 全綠 ✅。
 下一步：Session Q2（批次 2 六組，回論文記方程式編號）。
 
-### Session Q2：批次 2 —— 無主流實作，回到論文方程式編號（6 組）
+### Session Q2：批次 2 —— 無主流實作，回到論文方程式編號（6 組）——【執行中】
 
-`pls_cta`、`pls_copula`、`pls_fimix`、`pls_pos`、`pls_cipma`、`pls_bca_reference`
+`pls_cta` ✅、`pls_copula` ✅、`pls_fimix` ⬜、`pls_pos` ✅、`pls_cipma` ✅、`pls_bca_reference` ⬜
 
 做法：逐組回到原始論文，**記下方程式編號**寫進 provenance 的 `authority`。
 重點查核各自的已知風險點（見 `formula-provenance.md` §4 批次 2 表）。
 無法用第三方驗證者，`verification` 必須寫明替代的交叉驗證方式
 （如 FIMIX 的「模擬還原＋EM 單調性＋JS↔numpy 逐值」三重策略）。
 
-**Session Q2 交付判準**：6 組全部 verified 且 authority 含方程式編號、`MAX_PENDING` 降至 3。
+**交付判準修正**：原「`MAX_PENDING` 降至 3」為算術誤植——批次 2 恰 6 組，10 − 6 = **4**；
+批次 3 實為 4 組（`pls_pairwise_wpls`、`pls_quadratic`、`pls_mod_threeway`、`pls_hoc_embedded`）
+→ 4 − 4 = 0，與 Q3 判準相容。
+
+**進度（2026-07-25）**：4 組 verified，`MAX_PENDING` 10 → **6**。
+剩 2 組**卡在文獻取得**，非技術問題：
+- `pls_fimix`：待 Hahn, Johnson, Herrmann & Huber (2002), SBR 54(3) ＋ Sarstedt, Becker,
+  Ringle & Schwaiger (2011), SBR 63(1)
+- `pls_bca_reference`：待 Efron & Tibshirani (1993)《An Introduction to the Bootstrap》第 14 章
+
+★ **本輪的實質產出是兩處公式偏離的修正**（詳見 `validation-report-v1.md` Session Q2 節「一之二」）：
+`pls_cta` 的 CI 臨界值誤用 Student t（原文 Eq. 2 為常態 z）；`pls_pos` 的目標函數誤用
+ΣSSE（原文為 ΣR²，兩者不等價，改正後段別還原率 0.837 → 0.857）。
+這證實了 §0 的判斷——手算基準的自我一致性檢查抓不到公式誤讀，只有回原文能抓到。
 
 ### Session Q3：批次 3 —— 補登記與補驗（3 組）
 

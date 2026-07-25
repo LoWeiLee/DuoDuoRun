@@ -252,11 +252,11 @@
   "verification": "2026-07-14 溯源審計（Session Q2）：(1) 逐項對 Hauff et al. (2024) 全文（OA：researchonline.jcu.edu.au/87274）——0–100 重標定分數作 NCA 輸入、實證 scope、僅直接前置構念、CE-FDH＋CR-FDH、d ≥ .1 且 p < .05、bottleneck 實際值＋未達案例 %——fixture 六項口徑逐項一致；(2) NCA 計算核心（CE-FDH ceiling／zone／CR-FDH OLS＋夾擠／permutation p）逐式重用已驗證的 nca_ce_fdh／nca_cr_fdh／nca_bottleneck 助手（R NCA 5.0.2 已逐值對過），cIPMA 新增的只有組合口徑；(3) permutation p ＝ #{d_perm ≥ d_obs}/199，與已驗 nca 條目同式；JS↔numpy 由 compare.test.js 全欄位鎖定。"
  },
  "pls_copula": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "Park & Gupta (2012, Marketing Science 31(4), 567-586)：Eq. (6) 定義 Gaussian copula 並令 P* = Φ⁻¹(U_P)、U_P = H(P_t)；Eq. (10) 為擴充迴歸 Y_t = X'_t β + P_t α + σ_ξ·ρ·P*_t + σ_ξ·√(1−ρ²)·w_2t，原文明言「Given P* as an additional regressor … consistently estimate the model using the least squares estimator」且「P* corrects for the endogeneity bias and in this respect is similar to the control function」；p. 572 註 3 明文授權以經驗分布函數（ECDF）取代核密度數值積分求 U_P（「provides comparable results to the proposed method」）；p. 572-573 因 generated-regressor 問題提出 bootstrap 標準誤。PLS-SEM 應用流程：Hult, Hair, Proksch, Sarstedt, Pinkwart & Ringle (2018, JIM 26(3), 1-21) Eq. (5) c* = Φ⁻¹(H(X₁))、Eq. (6) y = β₀ + β₁′x₁ + β₂′x₂ + β₃c₁* + ε′。",
+  "note": "本工具採 control-function 變體（Park & Gupta Eq. 10 / Hult Eq. 6），非 Park & Gupta 的聯合 ML 主法——後者只能處理單一內生迴歸元，PLS-SEM 應用一律用前者（SmartPLS 亦然）。ECDF 的並列處理（取最大秩）與 H=1 夾為 1−1e−7 不出自論文（P&G 的 H 為連續 CDF，不會恰為 1），出自 Hult 等人公開 R 程式碼 CRP_copula_code.r 的 ifelse(H.p == 1, 1 - .0000001, H.p)。KS 非常態前置把關的理論依據為 P&G 對 Eq. (10) 的識別討論：P 為常態時 P* 是 P 的線性變換，α 與 σ_ξρ 無法分別識別。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-25 溯源審計（Session Q2）：(1) Park & Gupta (2012) 原文 PDF 逐式核對——Eq. (6) 的 P* = Φ⁻¹(U_P) 與 Eq. (10) 的加項迴歸與實作同式；註 3 授權 ECDF；bootstrap SE 的理由（generated regressor 使資訊矩陣 SE 失效）與本工具以 bootstrap 取 SE／percentile CI 一致；非常態識別條件與 KS 前置把關一致。(2) Hult et al. (2018) accepted MS（White Rose eprints 142302）Eq. (5)/(6) 與四個結構方程的擴充迴歸寫法一致；2^k−1 全組合檢視（k=3 時 model 1–7）與本工具同。(3) 慣例三項（ECDF 並列取最大秩、H=1 夾 1−1e−7、copula 項為秩基底故標準化不變）已於 W6 對 Hult 公開 R 程式碼逐行核對，出處為 pls-sem.net Downloads「Gaussian Copula R Code Example - JIM Article」的 CRP_copula_code.r（2026-07-25 覆查該檔仍在線）。(4) JS↔numpy：300 組固定 bootstrap 重抽索引注入，30 欄位逐值對齊（compare.test.js）；行為測試鎖定 copulaTerm(3x+7) == copulaTerm(x) 與最大值不產生 Infinity。KS 的 p 值屬已知慣例差異，基準只鎖 D 統計量。"
  },
  "pls_copula_inputs": {
   "authority": "不適用（純輸入型 fixture）",
@@ -266,11 +266,11 @@
   "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
  },
  "pls_cta": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "Gudergan, Ringle, Wende & Will (2008, Journal of Business Research 61(12), 1238-1249)：Eq. (1) 定義 tetrad τ_1234 = σ_12σ_34 − σ_13σ_24（四個指標恰三個 tetrad）；Eq. (2) 定義偏誤校正信賴區間 τ̂ − b_B ± v_B^{1/2}·z_{1−α/2}（b_B＝bootstrap 偏誤、v_B＝bootstrap 變異數，**常態分位數 z**）；p. 1241 五步程序（Step 1 列舉全部 tetrad、Step 2 取 model-implied、Step 3 以代數替換剔除冗餘、Step 4 逐一顯著性檢定、Step 5 以 Bonferroni 處理多重檢定），Bonferroni 為 α′ = α/n、n＝該「單一測量模型」內待檢定的非冗餘 tetrad 數（引 Bollen 1990, p. 88）；bootstrap on raw data 而非常態近似（同頁，引 Davison & Hinkley 1997）。tetrad 定義與非冗餘選取的完整代數：Bollen & Ting (1993), Sociological Methodology 23, 147-175（Gudergan 全文將 Step 1–3 的細節逐處指向該文）。",
+  "note": "非冗餘 tetrad 的**選取集**只有 Bollen & Ting (1993) 有完整代數，該文尚未取得（列入待取清單）。本工具用『逐一加入指標』的確定性構造得 k(k−3)/2 個，並在基準生成端以 Jacobian 秩 assert 驗證極大獨立——數量與自由度一致、omnibus 判讀等價，但**個別 tetrad 的 CI 會隨選取集不同而不同**。SmartPLS 4 的選取集未文件化且授權已過期，無法對照。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-25 溯源審計（Session Q2）：(1) Gudergan et al. (2008) 原文 PDF 逐式核對 Eq. (1)（tetrad 定義）、Eq. (2)（bias-corrected CI）、Step 1–5 與 Bonferroni 的施加層級（單一測量模型內，與本工具的『區塊內 Bonferroni』一致）。(2) **審計發現並修正一處偏離**：原實作的 CI 半寬用 Student t（df = B−1），原文 Eq. (2) 明確為常態分位數 z_{1−α/2}；t 用 df=B−1 亦無理論依據（B 是重抽次數而非樣本數）。已改為 z_{1−α/(2T)} 並重生基準（B=300、T=5 時 CI 縮 0.64%；R 塊仍 reflective、M 塊仍 formative，判讀結論不變）。欄位 tCrit → zCrit。(3) 非冗餘選取集：Gudergan 將細節指向 Bollen & Ting (1993)，該文未取得 → 本工具的構造以 Jacobian 秩 assert 保證極大獨立（見 note 的等價性與限制）。(4) JS↔numpy：300 組固定重抽索引注入，全欄位逐值對齊（compare.test.js）；資料集設計 assert 鎖定 R 塊 reflective／M 塊 formative。"
  },
  "pls_fimix": {
   "authority": "待審計",
@@ -420,11 +420,11 @@
   "verification": "2026-07-13 R 抽驗：rhoA（1.017597／0.707796／0.888324）、一致 loadings（含 i2 = 1.151977 > 1）、校正後路徑、R² 全部與 cSEM 逐值一致；『rhoA > 1 不截斷』的行為亦確認同步。"
  },
  "pls_pos": {
-  "authority": "待審計",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算。",
-  "status": "pending",
+  "authority": "Becker, Rai, Ringle & Völckner (2013, MIS Quarterly 37(3), 665-694)。全文正文無編號方程式（完整目標函數、距離量測與演算法在線上補充 Appendix B，尚未取得），authority 以頁碼＋原句錨定：p. 676「a fitting objective criterion for PLS segmentation is to maximize the sum of the endogenous latent variables' explained variance (R²) across all groups」；同頁三項區辨特徵——(1) PLS 專屬目標準則、(2) 適用形成型測量的新距離量測、(3) 只在能改善目標時才重新指派（爬山法，故可能落入局部最優 →「repeated application with different starting partitions is advisable」）。",
+  "note": "**本實作為原文的結構模型層簡化版**，三處差異已在 UI Notes、i18n 與 generate_reference.py 明文揭露：(a) LV 分數取自全樣本 PLS 權重、不做段別測量模型權重重估——這正是原文批評 FIMIX-PLS 的第 2 項限制，也是原文的區辨特徵 (2)，故本工具偵測不到僅存在於測量模型層的異質性；(b) 未實作原文的距離量測，改為逐案窮舉評估目標改善（距離量測是原文用來『挑候選』的啟發式，窮舉在目標函數上不劣，但收斂路徑與原文不同）；(c) 段別大小下限為本工具的數值穩定性硬約束，原文無此設定且強調 POS 能找出極小利基段。Appendix B 取得後應覆核目標函數是否含加權或其他修正。",
+  "status": "verified",
   "tier": "B",
-  "verification": "待審計"
+  "verification": "2026-07-25 溯源審計（Session Q2）：(1) Becker et al. (2013) 原文 PDF 逐句核對。**審計發現並修正一處實質偏離**：原實作的目標函數為各段 SSE 之和，原文為各段 R² 之和；兩者不等價（SST 隨段別組成改變）。以 fixture 資料實測，兩個目標收斂到不同分割（125/175 vs 195/105），改用原文口徑後段別還原率由 0.8367 升至 0.8567。已改 pls.js 與 generate_reference.py 並重生 pls_pos 基準（objective 改為 ΣR²，另加 sseTotal 欄位保留預測誤差的可讀性）。(2) 交叉驗證：改碼前先以獨立的 numpy 原型（不共用本工具程式碼）算出 ΣR² 目標下的解為 195/105、ΣR²=1.5765、還原率 0.8567；重生後的 fixture 為 195/105、objective_K2=1.57649436、recovery_K2=0.85667——獨立重現。(3) 三重策略：模擬還原（兩段 β=±0.80 的已知真值，還原率 0.857）＋目標函數單調遞增（基準端 assert ＋引擎端 warnings 斷言）＋JS↔numpy 逐值（起始分割固定注入，40 欄位全對齊）。(4) 範圍限制見 note——本工具不宣稱是 PLS-POS 的完整重現。"
  },
  "pls_pos_inputs": {
   "authority": "不適用（純輸入型 fixture）",

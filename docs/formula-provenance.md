@@ -74,8 +74,10 @@
 - −2：`pls_formative`、`pls_ipma`（Kevin 本機 R 抽驗）
 - −1（2026-07-14）：`lda_group3`（MASS::lda 全項逐值一致）→ **10，Session Q1 結案**
 
-10 →（2026-07-14 溯源審計 Session Q2，批次 2：回論文記方程式編號）→
+10 →（2026-07-14／25 溯源審計 Session Q2，批次 2：回論文記方程式編號）→
 - −1（2026-07-14）：`pls_cipma`（Hauff et al. 2024 全文口徑逐項核對；OA 全文）→ **9**
+- −1（2026-07-25）：`pls_copula`（Park & Gupta 2012 Eq. (6)/(10)＋註 3；Hult 2018 Eq. (5)/(6)）→ **8**
+- −2（2026-07-25）：`pls_cta`、`pls_pos`（Kevin 提供 PDF；**兩組各修正一處公式偏離**，見下）→ **6**
 
 ## 4. 待審計清單（15 組）與審計路徑
 
@@ -153,9 +155,9 @@
 | `pls_basic` | B | ✅ | seminr 2.5.0 |
 | `pls_bca_reference` | B | ⬜ 待審計 | 待審計 |
 | `pls_cipma` | B | ✅ | Hauff et al. (2024) §3／§4.3–4.5——無編號方程式，記節號＋原式 d=C/S；NCA 核心重用已驗 nca_* 助手 |
-| `pls_copula` | B | ⬜ 待審計 | 待審計 |
+| `pls_copula` | B | ✅ | Park & Gupta (2012) Eq. (6)(10)＋p. 572 註 3（ECDF 授權）；Hult et al. (2018) Eq. (5)(6) |
 | `pls_copula_inputs` | I | — | 不適用（純輸入型 fixture） |
-| `pls_cta` | B | ⬜ 待審計 | 待審計 |
+| `pls_cta` | B | ✅ | Gudergan et al. (2008) Eq. (1)(2)＋Step 1–5；選取集代數指向 Bollen & Ting (1993)（未取得，見 note） |
 | `pls_fimix` | B | ⬜ 待審計 | 待審計 |
 | `pls_fimix_inputs` | I | — | 不適用（純輸入型 fixture） |
 | `pls_fit` | B | ✅ | cSEM 0.6.1；Henseler et al. (2014) ORM 17(2)；Dijkstra & He… |
@@ -177,7 +179,7 @@
 | `pls_mod_twostage` | B | ✅ | seminr 2.5.0；Chin et al. (2003)；SmartPLS 4 Moderation 文件 |
 | `pls_pairwise_wpls` | B | ⬜ 待審計 | 待審計 |
 | `pls_plsc` | B | ✅ | cSEM 0.6.1 |
-| `pls_pos` | B | ⬜ 待審計 | 待審計 |
+| `pls_pos` | B | ✅ | Becker et al. (2013) p. 676（正文無編號式；Appendix B 未取得）；本工具為結構模型層簡化版，範圍限制見 provenance note |
 | `pls_pos_inputs` | I | — | 不適用（純輸入型 fixture） |
 | `pls_predict` | B | ✅ | seminr 2.5.0；Shmueli et al. (2016, 2019) |
 | `pls_q2` | B | ✅ | Hair et al. (2017) 第 6 章＋SmartPLS Blindfolding 官方文件（程序四要點）；無在世第三方實作 |

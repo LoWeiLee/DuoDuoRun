@@ -807,6 +807,7 @@ export const ADAPTERS = {
       })
       if (r.error) throw new Error(`posPLS(K=${K}) failed: ${r.error} — ${r.message}`)
       out[`objective_K${K}`] = r.objective
+      out[`sseTotal_K${K}`] = r.sseTotal
       out[`passes_K${K}`] = r.passes
       out[`r2Overall_K${K}`] = r.r2Overall
       r.segments.forEach((sg, i) => {
@@ -822,7 +823,8 @@ export const ADAPTERS = {
         for (let i = 0; i < truth.length; i++) if (r.assignment[i] === truth[i]) same++
         out.recovery_K2 = Math.max(same / truth.length, 1 - same / truth.length)
         out.moves_K2 = r.moves
-        out.objective_K1 = r.global.sse
+        out.objective_K1 = r.global.objective
+        out.sseTotal_K1 = r.global.sse
         out.beta_K1 = r.global.equations[0].coefficients[0].coef
         out.r2Overall_K1 = r.global.r2
       }
@@ -933,7 +935,7 @@ export const ADAPTERS = {
     for (const blk of r.blocks) {
       const lb = blk.lv
       out[`${lb}_nTetrads`] = blk.nTetrads
-      out[`${lb}_tCrit`] = blk.tCrit
+      out[`${lb}_zCrit`] = blk.zCrit
       out[`${lb}_verdict`] = blk.verdict
       out[`${lb}_nNonVanishing`] = blk.nNonVanishing
       blk.tetrads.forEach((t, q) => {

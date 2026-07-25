@@ -1047,3 +1047,64 @@ a11y/errorCodes/i18n 11）。reference.json 全量重生零數值漂移（僅 pl
 | 組 | 路線 | 證據 |
 |---|---|---|
 | `pls_cipma` | Hauff et al. (2024) OA 全文（researchonline.jcu.edu.au/87274，出版社版式）逐項口徑核對 | 全文無編號方程式 → authority 記節號＋原式：§3 d=C/S、必要性判準 d≥.1 且 p<.05＋理論支持；§4.3 IPMA 0–100 重標定分數為 NCA 輸入；§4.4 實證 scope、僅直接前置構念、CE-FDH bottleneck（實際值／百分位雙格式）；§4.5 目標水準讀未達案例 %（Fig. 4 即 Y=80）。fixture 六項口徑逐項一致；NCA 計算核心逐式重用已驗 nca_*（R NCA 5.0.2）；permutation p 同式 #{d_perm≥d_obs}/199。→ verified，棘輪 **9** |
+| `pls_copula` | Park & Gupta (2012) 原文 PDF＋Hult et al. (2018) accepted MS | P&G Eq. (6) 定義 Gaussian copula 與 P* = Φ⁻¹(U_P)、U_P = H(P_t)；Eq. (10) 為加項迴歸並明言「Given P* as an additional regressor … least squares」「similar to the control function」；**p. 572 註 3 明文授權以 ECDF 取代核密度數值積分**（「provides comparable results」）；bootstrap SE 的理由為 generated-regressor 使資訊矩陣 SE 失效；非常態識別條件（P 為常態時 P* 是 P 的線性變換，α 與 σ_ξρ 不可分別識別）＝本工具 KS 前置把關的依據。Hult Eq. (5)/(6) 與四個結構方程寫法一致、2^k−1 全組合同。並列取最大秩與 H=1 夾 1−1e−7 不出自論文，出自 Hult 公開碼 CRP_copula_code.r（2026-07-25 覆查仍在線）。→ verified，棘輪 **8** |
+| `pls_cta` | Gudergan et al. (2008) 原文 PDF | Eq. (1) tetrad 定義、Eq. (2) bias-corrected CI、Step 1–5、Bonferroni α′=α/n 施加於單一測量模型內——與本工具的區塊內 Bonferroni 一致。**發現並修正一處偏離**（見下「一之二」）。選取集代數指向 Bollen & Ting (1993)，該文未取得 → 本工具構造以 Jacobian 秩 assert 保證極大獨立，限制已入 provenance note。→ verified，棘輪 **7** |
+| `pls_pos` | Becker et al. (2013) 原文 PDF | 正文無編號方程式（完整演算法在線上 Appendix B，未取得）；p. 676 原句錨定目標準則與三項區辨特徵。**發現並修正一處實質偏離**（見下「一之二」）。本工具定位為結構模型層簡化版，三處範圍限制已在 UI Notes／i18n／generate_reference.py／provenance note 四處揭露。→ verified，棘輪 **6** |
+
+### 一之二、本輪抓到的兩處公式偏離（審計的實質產出）
+
+溯源審計的目的不是補文件，是抓「兩邊編碼同一個猜測」抓不到的公式誤讀。本輪抓到兩個：
+
+**(1) `pls_cta` 的 CI 臨界值用錯分布家族。** 原實作半寬為 Student t（df = B−1）；
+Gudergan et al. (2008) Eq. (2) 為 τ̂ − b_B ± v_B^{1/2}·**z**_{1−α/2}，用常態分位數。
+t 取 df = B−1 亦無理論依據——B 是 bootstrap 重抽次數，不是樣本數，自由度不該隨 B 走。
+已改為 z_{1−α/(2T)}，欄位 `tCrit` → `zCrit`。影響：B=300、T=5 時 CI 縮 0.64%（原為偏保守）；
+R 塊仍判 reflective、M 塊仍判 formative，**判讀結論不變**。
+
+**(2) `pls_pos` 的目標函數用錯。** 原實作為「各段 SSE 之和，最小化」；
+Becker et al. (2013) p. 676 為「各段各內生構念的 R² 之和，最大化」
+（原句：maximize the sum of the endogenous latent variables' explained variance (R²) across all groups）。
+兩者**不等價**——SST 隨段別組成改變，不是差一個常數。實測於 fixture 資料：
+分割由 125/175 變為 195/105，段別還原率由 0.8367 升至 **0.8567**（真值為兩段 β = ±0.80）。
+已改 `pls.js` 與 `generate_reference.py`，`objective` 改為 ΣR²、另加 `sseTotal` 欄位保留預測誤差可讀性；
+UI 的「不能用 POS 選段數」警告方向由「必然下降」改為「必然上升」（結論不變：無懲罰項）。
+**交叉驗證**：改碼前先以獨立 numpy 原型（不共用本工具程式碼）求解 ΣR² 目標，得 195/105、
+ΣR² = 1.5765、還原率 0.8567；重生後 fixture 為 195/105、`objective_K2` = 1.57649436、
+`recovery_K2` = 0.856667——獨立重現。
+
+**同時記錄的範圍限制（`pls_pos`，非缺陷但必須誠實揭露）**：本工具實作的是 Becker 原法的
+**結構模型層簡化版**——(a) LV 分數取自全樣本 PLS 權重、不做段別測量模型權重重估（這正是原文
+批評 FIMIX-PLS 的第 2 項限制、也是原文的區辨特徵之一，故偵測不到僅存在於測量模型層的異質性）；
+(b) 未實作原文的距離量測，改為逐案窮舉評估目標改善（距離量測是原文用來挑候選的啟發式）；
+(c) 段別大小下限為本工具的數值穩定性約束，原文無此設定且強調能找出極小利基段。
+Appendix B 取得後應覆核目標函數是否另含加權或修正。
+
+### 二、回歸驗證與沙盒限制
+
+`reference.json` 全量重生（11.1 秒）：**僅 `pls_cta`、`pls_pos` 兩組變動**，其餘 79 組零漂移
+（含重生時的兩道第三方 assert：plspm gof、statsmodels 恆等式）。變動明細——
+`pls_cta`：`*_tCrit` → `*_zCrit`、各 tetrad 的 `ciLower`／`ciUpper`（判讀欄位 verdict／
+nNonVanishing 不變）；`pls_pos`：`objective_*` 改為 ΣR² 口徑、新增 `sseTotal_*` 三鍵、
+段別解與 recovery 依新分割更新。
+
+沙盒可跑的測試**全綠：979 過、6 記錄性跳過**
+（compare 795＋6 skipped、provenance 7、pls 150、nca 16、a11y/errorCodes/i18n 11）。
+較 Q1 的 976 多 3 筆＝`pls_pos` 新增的三個 `sseTotal_*` 比對鍵。
+
+**本機補跑（2026-07-25，Kevin 執行）**：五個 `ui.*.test.jsx` 全數通過——
+ui.smoke 133、ui.modal 8、ui.transformDialog 6、ui.errorBoundary 5、ui.toast 5。
+**完整套件合計 1136 過、6 記錄性跳過、零失敗。**
+
+★ **沙盒限制（記錄在案）**：五個 `ui.*.test.jsx` 用 jsdom 環境，在本沙盒**卡在環境初始化**、
+無法完成——以一個只斷言 `typeof document` 的最小探針檔驗證過，同樣卡住，
+故確認為環境層問題，與本次改動無關。Session Q1 的「976 過」同樣未含 UI 測試
+（7＋792＋166＋11 = 976，恰為非 jsdom 檔）。已補 `跑UI測試.bat`／`只跑UI煙霧測試.bat`
+（雙擊執行，被 .gitignore 擋、不進 repo），供本機補驗。
+
+**兩則本機執行的操作教訓（給後續 session）**：
+1. **cmd 沒有 `tee`**。用 `> 檔名` 導向會讓黑視窗全程空白，Kevin 無從判斷是跑完還是卡住。
+   要即時顯示又要存檔，走 `powershell -NoProfile -Command "... | Tee-Object -FilePath '...'"`。
+2. **Tee-Object 預設寫 UTF-16LE**。回傳的 log 在 Linux 端看起來像「每個字元中間有空格」的亂碼，
+   需 `iconv -f UTF-16LE` 才讀得到。下次在 Tee-Object 後加 `-Encoding UTF8`。
+3. `ui.smoke` **並不慢**（本機 4.11 秒、133 項）。先前整套跑的 log 缺 ui.smoke 與總結區塊，
+   是 log 在 vitest 收尾前被取走，**不是**效能或掛起問題——不要再據此推論它是瓶頸。
