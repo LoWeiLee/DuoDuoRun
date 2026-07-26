@@ -487,7 +487,7 @@
   }
  },
  "pls_plsc": {
-  "source": "numpy \u624b\u7b97 consistent PLS\uff08Dijkstra & Henseler 2015, Psychometrika 80(2) eq.12 \u8207 MIS Quarterly 39(2)\uff09\uff1arho_A \u53cd\u8870\u6e1b\u69cb\u5ff5\u76f8\u95dc \u2192 OLS \u8def\u5f91\uff1b\u4e00\u81f4 loadings = \u221ac\u00b2\u00b7\u0175\uff1b\u5e95\u5c64\u6b0a\u91cd\u4f86\u81ea\u8207 plspm \u4ea4\u53c9\u9a57\u8b49\u904e\u7684 numpy PLS\uff08path scheme\uff09",
+  "source": "numpy \u624b\u7b97 consistent PLS\uff08Dijkstra & Henseler 2015, MIS Quarterly 39(2)\uff09\uff1arho_A \u53cd\u8870\u6e1b\u69cb\u5ff5\u76f8\u95dc \u2192 OLS \u8def\u5f91\uff1b\u4e00\u81f4 loadings = \u221ac\u00b2\u00b7\u0175\uff1b\u5e95\u5c64\u6b0a\u91cd\u4f86\u81ea\u8207 plspm \u4ea4\u53c9\u9a57\u8b49\u904e\u7684 numpy PLS\uff08path scheme\uff09",
   "values": {
    "rhoA_F1": 1.0175965789991341,
    "rhoA_F2": 0.7077956400778731,

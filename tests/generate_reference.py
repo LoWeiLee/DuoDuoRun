@@ -481,7 +481,7 @@ except Exception as e:
 #   （由 Kevin 本機 R seminr 抽驗複核，見 roadmap W1 驗證基準。）
 #
 # plspm 不提供的量以 numpy 依公式手算：
-#   rho_A  — Dijkstra & Henseler (2015), Psychometrika 80(2), eq. (12)，
+#   rho_A  — Dijkstra & Henseler (2015), MIS Quarterly 39(2), 297-316（方程式編號待原文核定），
 #            權重先正規化使 w'Sw=1（LV 分數單位變異）
 #   rho_c  — Jöreskog (1971) composite reliability
 #   AVE    — Fornell & Larcker (1981)
@@ -586,8 +586,8 @@ except Exception as e:
 #       — plspm Mode B（形成型 / regression weights）＋ numpy 手算外部 VIF
 #         （指標相關矩陣反矩陣對角線；Hair et al. 2017 形成型評估程序）
 #   pls_plsc
-#       — consistent PLS：Dijkstra & Henseler (2015), Psychometrika 80(2) eq.(12)
-#         與 MIS Quarterly 39(2)；rho_A 校正構念相關 + 一致 loadings（numpy 手算）
+#       — consistent PLS：Dijkstra & Henseler (2015), MIS Quarterly 39(2), 297-316
+#         rho_A 校正構念相關 + 一致 loadings（numpy 手算）
 #   pls_fit
 #       — SRMR：Henseler et al. (2014), Organizational Research Methods 17(2)
 #         d_ULS / d_G：Dijkstra & Henseler (2015), MIS Quarterly 39(2)
@@ -780,7 +780,7 @@ try:
     _pc_Y = float(_Rc[1, 3])
     _lamc_flat = np.concatenate(_lamc)
     put("pls_plsc",
-        "numpy 手算 consistent PLS（Dijkstra & Henseler 2015, Psychometrika 80(2) eq.12 與 "
+        "numpy 手算 consistent PLS（Dijkstra & Henseler 2015, "
         "MIS Quarterly 39(2)）：rho_A 反衰減構念相關 → OLS 路徑；一致 loadings = √c²·ŵ；"
         "底層權重來自與 plspm 交叉驗證過的 numpy PLS（path scheme）",
         rhoA_F1=_rhoA[0], rhoA_F2=_rhoA[1], rhoA_C=_rhoA[2],

@@ -3298,7 +3298,7 @@ Gaussian copula（Park & Gupta, 2012；PLS-SEM 流程依 Hult et al., 2018）用
       schemeNames: { path: 'path', factorial: 'factorial', centroid: 'centroid' },
       ciNames: { percentile: 'percentile', bca: 'BCa' },
       measurement:
-        "反映型測量模型方面，各構念之 Cronbach's α 介於 {alphaRange}、組合信度 CR 介於 {crRange}、" +
+        "反映型測量模型方面，各構念之 Cronbach's α（標準化 α）介於 {alphaRange}、組合信度 CR 介於 {crRange}、" +
         '平均萃取變異量 AVE 介於 {aveRange}，{measVerdict}',
       measOk: '信度與收斂效度皆達建議門檻（CR ≥ .70、AVE ≥ .50）。',
       measBad: '部分構念未達建議門檻（CR ≥ .70、AVE ≥ .50），解讀時應留意。',

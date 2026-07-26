@@ -1812,3 +1812,52 @@ describe('pairwise deletion ＋ WPLS（相關矩陣驅動）', () => {
     expect(r.meta.n).toBe(60)
   })
 })
+
+describe('測量模型資料品質警訊（階段 A 紅隊 R3／R4）', () => {
+  // 造一組「反向題未反向計分」的資料：每個構念的第二題方向相反
+  const flipped = (flip) => {
+    let s = 12345
+    const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff }
+    const e = () => (rnd() * 2 - 1) * 0.5
+    const rows = []
+    for (let i = 0; i < 80; i++) {
+      const f1 = rnd() * 2 - 1
+      const f2 = 0.4 * f1 + rnd() * 2 - 1
+      const g = flip ? -1 : 1
+      rows.push({
+        i1: f1 + e(), i2: g * f1 + e(), i3: f1 + e(),
+        i4: f2 + e(), i5: g * f2 + e(), i6: f2 + e(),
+      })
+    }
+    return rows
+  }
+
+  it('區塊內平均相關不為正時，HTMT 回傳 null（不輸出「通過」的數值）', () => {
+    const r = runPLS(flipped(true), MODEL, {})
+    expect(r.error).toBeUndefined()
+    // 兩個區塊的區塊內平均相關皆為負 → 分母的幾何平均雖為實數，仍必須回報不適用
+    expect(r.htmt.matrix[0][1]).toBeNull()
+    expect(r.htmt.matrix[1][0]).toBeNull()
+  })
+
+  it('正負混雜的負荷量與非正的區塊內相關各發一條警告', () => {
+    const w = runPLS(flipped(true), MODEL, {}).meta.warnings.join('｜')
+    expect(w).toMatch(/正負混雜/)
+    expect(w).toMatch(/反向計分/)
+    expect(w).toMatch(/區塊內平均指標相關不為正/)
+  })
+
+  it('正常資料不觸發這兩條警告，且 HTMT 有值', () => {
+    const r = runPLS(flipped(false), MODEL, {})
+    expect(r.error).toBeUndefined()
+    expect(Number.isFinite(r.htmt.matrix[0][1])).toBe(true)
+    const w = r.meta.warnings.join('｜')
+    expect(w).not.toMatch(/正負混雜/)
+    expect(w).not.toMatch(/區塊內平均指標相關不為正/)
+  })
+
+  it('既有基準組（pls_basic）的 HTMT 不受守衛影響', () => {
+    const r = runPLS(main, MODEL, {})
+    expect(r.htmt.matrix[0][1]).toBeCloseTo(REF.pls_basic.values.htmt_F1F2, 10)
+  })
+})

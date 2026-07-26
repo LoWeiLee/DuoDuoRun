@@ -38,11 +38,13 @@
  *   - 內部 VIF：前置 LV 相關矩陣反矩陣的對角線
  *   - 外部 VIF（形成型指標共線性；Hair et al. 2017 評估程序）：
  *     區塊指標相關矩陣反矩陣的對角線
- *   - Cronbach's α（標準化）、rho_A（Dijkstra & Henseler 2015, Psychometrika 80(2) 式 12）、
+ *   - Cronbach's α（標準化）、rho_A（Dijkstra & Henseler 2015, MIS Quarterly 39(2), 297-316；
+ *     方程式編號待原文核定——原文未取得）、
  *     rho_c / CR（Jöreskog 1971）、AVE（Fornell & Larcker 1981）——僅反映型構念；
  *     形成型構念不定義信度/收斂效度（回傳 null，報表以權重檢定＋外部 VIF 取代）
  *   - HTMT（Henseler, Ringle & Sarstedt 2015, JAMS 43）：僅反映型多指標構念的配對
- *   - PLSc（consistent PLS；Dijkstra & Henseler 2015, Psychometrika 80(2) 與 MISQ 39(2)）：
+ *   - PLSc（consistent PLS；Dijkstra & Henseler 2015, MISQ 39(2), 297-316；
+ *     另見同年 CSDA 81, 10-23）：
  *     options.consistent=true 時，(1) 一致 loadings λ̂ = √c²·ŵ，
  *     c² = ŵ'(S−diagS)ŵ / ŵ'(ŵŵ'−diag ŵŵ')ŵ（ŵ 已滿足 ŵ'Sŵ=1）；
  *     (2) 反映型構念間相關以 √rho_A 反衰減 r_c = r/√(ρ_A^a·ρ_A^b)；
@@ -951,6 +953,9 @@ function htmtMatrix(blocks, eligible, indCorr, L, blockedPairs = null) {
     for (let b = 0; b < L; b++) {
       if (a === b) continue
       if (monoMean[a] === null || monoMean[b] === null) continue
+      // 區塊內平均相關 ≤ 0（常見於反向題未反向計分）：分母的幾何平均雖可能為實數，
+      // 但 HTMT 的異質／單質比在此不可詮釋 → 與其他不合格配對一致回傳 null（階段 A 紅隊 R3）
+      if (!(monoMean[a] > 0) || !(monoMean[b] > 0)) continue
       if (blockedPairs && (blockedPairs.has(`${a}|${b}`) || blockedPairs.has(`${b}|${a}`))) continue
       let s = 0
       for (const g of blocks[a]) for (const h of blocks[b]) s += indCorr[g][h]
@@ -1783,6 +1788,24 @@ function reportFromStage(stage, ctx) {
 
   const htmtEligible = spec.blocks.map((b, j) => spec.modes[j] === 'A' && b.length >= 2)
   const htmt = htmtMatrix(spec.blocks, htmtEligible, indCorr, L, ctx.htmtBlocked || null)
+
+  // 測量模型的資料品質警訊（階段 A 紅隊 R3／R4）——最常見原因是反向題未事先反向計分。
+  // PLS 的符號不確定性是「整個構念一起翻轉」，區塊內正負混雜不屬於符號不確定性。
+  for (let j = 0; j < L; j++) {
+    if (spec.modes[j] !== 'A' || spec.blocks[j].length < 2) continue
+    const lam = effLoadingsByLV[j]
+    if (lam.some((v) => v > 0) && lam.some((v) => v < 0)) {
+      warnings.push(`構念「${spec.lvNames[j]}」的指標負荷量正負混雜——PLS 的符號不確定性是整個構念一起翻轉，區塊內混雜通常代表反向題未事先反向計分；請先反向計分再重跑`)
+    }
+    const bIdx = spec.blocks[j]
+    let monoSum = 0
+    for (let a = 0; a < bIdx.length; a++) {
+      for (let c = a + 1; c < bIdx.length; c++) monoSum += indCorr[bIdx[a]][bIdx[c]]
+    }
+    if (!(monoSum > 0)) {
+      warnings.push(`構念「${spec.lvNames[j]}」的區塊內平均指標相關不為正，信度（α／rho_A／CR／AVE）與 HTMT 在此不可詮釋；涉及該構念的 HTMT 配對已回報為不適用`)
+    }
+  }
 
   // Model fit（多階段最終模型不報 fit：分數層級的殘差矩陣不具標準詮釋）
   let fit = null

@@ -3240,7 +3240,7 @@ Three boundaries:
       schemeNames: { path: 'path', factorial: 'factorial', centroid: 'centroid' },
       ciNames: { percentile: 'percentile', bca: 'BCa' },
       measurement:
-        "For the reflective measurement model, Cronbach's α ranged {alphaRange}, composite reliability (CR) ranged {crRange}, " +
+        "For the reflective measurement model, standardized Cronbach's α ranged {alphaRange}, composite reliability (CR) ranged {crRange}, " +
         'and average variance extracted (AVE) ranged {aveRange}; {measVerdict}',
       measOk: 'reliability and convergent validity met the recommended thresholds (CR ≥ .70, AVE ≥ .50).',
       measBad: 'some constructs fell short of the recommended thresholds (CR ≥ .70, AVE ≥ .50), which should be borne in mind.',
