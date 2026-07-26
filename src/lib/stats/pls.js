@@ -972,10 +972,17 @@ function htmtMatrix(blocks, eligible, indCorr, L, blockedPairs = null) {
 /**
  * Dijkstra & Henseler (2015) 一致化校正。
  * 僅校正「反映型多指標」構念；形成型與單指標構念的衰減係數視為 1。
+ *
+ * ★ 區塊相關矩陣一律取自 `spec.corrMatrix`（存在時），與引擎其他每一處一致。
+ *   2026-07-26 階段 A 紅隊（L4）修正：原實作從 `cols` 重算，pairwise／WPLS 下欄位是
+ *   補值（NaN→0，＝原尺度均值補值）或未加權標準化的，導致 rho_A、c²、一致 loadings 與
+ *   反衰減後的構念相關全部算在錯的矩陣上（實測 rho_A 低估 0.09–0.15，跨過 .70 判準）。
+ *   完整資料時 `spec.corrMatrix` 為 undefined，回到欄位相關 → 逐位元不變。
  * @returns { rhoA:number[], loadingsByLV:number[][], lvCorr:number[][], warnings:string[] }
  */
 function plscAdjust(spec, cols, weights, rawLoadingsByLV, lvCorr) {
   const { blocks, modes, lvNames } = spec
+  const Rspec = spec.corrMatrix // pairwise／WPLS 時為該模式的相關矩陣；完整資料為 undefined
   const L = blocks.length
   const warnings = []
   const rhoA = new Array(L).fill(1)
@@ -985,7 +992,9 @@ function plscAdjust(spec, cols, weights, rawLoadingsByLV, lvCorr) {
   for (let j = 0; j < L; j++) {
     const b = blocks[j]
     if (modes[j] === 'B' || b.length < 2) continue
-    const S = b.map((a) => b.map((c) => (a === c ? 1 : corrOf(cols[a], cols[c]))))
+    const S = b.map((a) => b.map((c) => (
+      a === c ? 1 : (Rspec ? Rspec[a][c] : corrOf(cols[a], cols[c]))
+    )))
     const w = Array.from(weights[j]) // 已滿足 w'Sw = 1（單位變異分數）
     let num = 0, den = 0, ww = 0
     for (let a = 0; a < b.length; a++) {
@@ -1754,10 +1763,17 @@ function reportFromStage(stage, ctx) {
       })
     }
   }
+  // cross-loading = corr(z_h, y_j) = Σ_g w_jg·R[h][g]（封閉式，與 loadings 同一條路）。
+  // 2026-07-26 階段 A 紅隊（L3）：原實作用 corr(欄位, 分數)，pairwise／WPLS 下算在補值資料上；
+  // 改為一律由 indCorr 導出（完整資料時 indCorr 即欄位相關矩陣 → 逐位元不變）。
   for (let a = 0; a < p; a++) {
     const ownLv = spec.lvNames[spec.blocks.findIndex((b) => b.includes(a))]
     const values = {}
-    for (let j = 0; j < L; j++) values[spec.lvNames[j]] = corrOf(cols[a], scores[j])
+    for (let j = 0; j < L; j++) {
+      let v = 0
+      for (let g = 0; g < spec.blocks[j].length; g++) v += weights[j][g] * indCorr[a][spec.blocks[j][g]]
+      values[spec.lvNames[j]] = v
+    }
     crossLoadings.push({ indicator: spec.indicators[a], ownLv, values })
   }
 

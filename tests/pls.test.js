@@ -1861,3 +1861,139 @@ describe('測量模型資料品質警訊（階段 A 紅隊 R3／R4）', () => {
     expect(r.htmt.matrix[0][1]).toBeCloseTo(REF.pls_basic.values.htmt_F1F2, 10)
   })
 })
+
+describe('PLSc × pairwise／WPLS：一致化必須走迭代所用的 R（階段 A 紅隊 L4）', () => {
+  const PW = D.pw
+  const cols = PW.cols
+  const pwRows = main.map((row, i) => {
+    const o = {}
+    cols.forEach((c, j) => { o[c] = PW.mask[i][j] ? null : row[c] })
+    return o
+  })
+  const BLOCKS = [[0, 1, 2], [3, 4, 5]]
+
+  /** pairwise-complete 相關矩陣（測試端獨立實作，不呼叫引擎內部） */
+  const pairwiseR = () => {
+    const p = cols.length
+    const R = Array.from({ length: p }, () => new Array(p).fill(1))
+    for (let a = 0; a < p; a++) {
+      for (let b = a + 1; b < p; b++) {
+        const xs = []
+        const ys = []
+        for (let i = 0; i < main.length; i++) {
+          if (PW.mask[i][a] || PW.mask[i][b]) continue
+          xs.push(main[i][cols[a]]); ys.push(main[i][cols[b]])
+        }
+        const mx = xs.reduce((s, v) => s + v, 0) / xs.length
+        const my = ys.reduce((s, v) => s + v, 0) / ys.length
+        let sxy = 0, sxx = 0, syy = 0
+        for (let i = 0; i < xs.length; i++) {
+          const dx = xs[i] - mx, dy = ys[i] - my
+          sxy += dx * dy; sxx += dx * dx; syy += dy * dy
+        }
+        R[a][b] = R[b][a] = sxy / Math.sqrt(sxx * syy)
+      }
+    }
+    return R
+  }
+
+  /** 加權相關矩陣（測試端獨立實作） */
+  const weightedR = () => {
+    const p = cols.length
+    const w = PW.w
+    const sw = w.reduce((s, v) => s + v, 0)
+    const mu = cols.map((c) => main.reduce((s, r, i) => s + w[i] * r[c], 0) / sw)
+    const cov = Array.from({ length: p }, () => new Array(p).fill(0))
+    for (let a = 0; a < p; a++) {
+      for (let b = 0; b < p; b++) {
+        let s = 0
+        for (let i = 0; i < main.length; i++) s += w[i] * (main[i][cols[a]] - mu[a]) * (main[i][cols[b]] - mu[b])
+        cov[a][b] = s / sw
+      }
+    }
+    return cov.map((row, a) => row.map((v, b) => (a === b ? 1 : v / Math.sqrt(cov[a][a] * cov[b][b]))))
+  }
+
+  /** rho_A = (w'w)²·[w'(S−diagS)w] / [w'(ww'−diag ww')w]，w 已滿足 w'Sw=1 */
+  const rhoAFrom = (R, block, w) => {
+    const k = block.length
+    let wSw = 0
+    for (let a = 0; a < k; a++) for (let b = 0; b < k; b++) wSw += w[a] * R[block[a]][block[b]] * w[b]
+    const wn = w.map((v) => v / Math.sqrt(wSw))
+    let ww = 0, num = 0, den = 0
+    for (let a = 0; a < k; a++) {
+      ww += wn[a] * wn[a]
+      for (let b = 0; b < k; b++) {
+        if (a === b) continue
+        num += wn[a] * R[block[a]][block[b]] * wn[b]
+        den += wn[a] * wn[a] * wn[b] * wn[b]
+      }
+    }
+    return (ww * ww * num) / den
+  }
+
+  const M1 = clone(MODEL)
+
+  it('★ pairwise：引擎的 rho_A 等於由 pairwise-complete R 手算的值（不是由補值欄位）', () => {
+    const r = runPLS(pwRows, M1, { missing: 'pairwise', consistent: true })
+    expect(r.error).toBeUndefined()
+    const R = pairwiseR()
+    const wByLv = [0, 1].map((j) => BLOCKS[j].map((h) =>
+      r.outerWeights.find((q) => q.indicator === cols[h]).weight))
+    expect(r.plsc.rhoA.F1).toBeCloseTo(rhoAFrom(R, BLOCKS[0], wByLv[0]), 10)
+    expect(r.plsc.rhoA.F2).toBeCloseTo(rhoAFrom(R, BLOCKS[1], wByLv[1]), 10)
+  })
+
+  it('★ WPLS：引擎的 rho_A 等於由加權 R 手算的值（不是由未加權欄位）', () => {
+    const r = runPLS(main, M1, { weights: PW.w, consistent: true })
+    expect(r.error).toBeUndefined()
+    const R = weightedR()
+    const wByLv = [0, 1].map((j) => BLOCKS[j].map((h) =>
+      r.outerWeights.find((q) => q.indicator === cols[h]).weight))
+    expect(r.plsc.rhoA.F1).toBeCloseTo(rhoAFrom(R, BLOCKS[0], wByLv[0]), 10)
+    expect(r.plsc.rhoA.F2).toBeCloseTo(rhoAFrom(R, BLOCKS[1], wByLv[1]), 10)
+  })
+
+  it('★ 修正前後的差距是實質的（低估 rho_A 會讓 .70 判準翻面）', () => {
+    const r = runPLS(pwRows, M1, { missing: 'pairwise', consistent: true })
+    // 舊行為（由補值欄位算）在本資料上給出 F2 rho_A ≈ 0.646（未達 .70），
+    // 正確值 ≈ 0.798（達標）。這條鎖住「不會再退回未達標的那一側」。
+    expect(r.plsc.rhoA.F2).toBeGreaterThan(0.75)
+  })
+
+  it('cross-loadings 由 R 導出：pairwise 下等於 Σ_g w_jg·R[h][g]', () => {
+    const r = runPLS(pwRows, M1, { missing: 'pairwise' })
+    expect(r.error).toBeUndefined()
+    const R = pairwiseR()
+    const wByLv = [0, 1].map((jj) => BLOCKS[jj].map((h) =>
+      r.outerWeights.find((q) => q.indicator === cols[h]).weight))
+    for (let h = 0; h < cols.length; h++) {
+      const row = r.crossLoadings.find((q) => q.indicator === cols[h])
+      for (const [j, lv] of [[0, 'F1'], [1, 'F2']]) {
+        let v = 0
+        for (let g = 0; g < BLOCKS[j].length; g++) v += wByLv[j][g] * R[h][BLOCKS[j][g]]
+        expect(row.values[lv]).toBeCloseTo(v, 10)
+      }
+    }
+  })
+
+  it('完整資料零回歸：cross-loadings 仍等於指標與構念分數的相關', () => {
+    const r = runPLS(main, MODEL, {})
+    const nm = r.scores.lvNames
+    const y = nm.map((_, j) => r.scores.data[j])
+    const corr = (x, z) => {
+      const n = x.length
+      const mx = x.reduce((s, v) => s + v, 0) / n
+      const mz = z.reduce((s, v) => s + v, 0) / n
+      let sxy = 0, sxx = 0, szz = 0
+      for (let i = 0; i < n; i++) { const a = x[i] - mx, b = z[i] - mz; sxy += a * b; sxx += a * a; szz += b * b }
+      return sxy / Math.sqrt(sxx * szz)
+    }
+    for (const q of r.crossLoadings) {
+      const x = main.map((row) => row[q.indicator])
+      for (let j = 0; j < nm.length; j++) {
+        expect(q.values[nm[j]]).toBeCloseTo(corr(x, y[j]), 8)
+      }
+    }
+  })
+})

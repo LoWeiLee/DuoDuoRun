@@ -823,6 +823,43 @@ export const ADAPTERS = {
 
     return out
   },
+  // PLSc × pairwise／WPLS（2026-07-26 階段 A 紅隊 L4）：一致化的區塊相關子矩陣必須取自
+  // 迭代所用的 R（pairwise-complete 或加權相關），不是由補值／未加權欄位重算。
+  pls_plsc_pw() {
+    const PW = D.pw
+    const cols = PW.cols
+    const M1 = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+        { name: 'F2', indicators: ['i4', 'i5', 'i6'] },
+      ],
+      paths: [{ from: 'F1', to: 'F2' }],
+    }
+    const pick = (r, out, prefix) => {
+      const ld = Object.fromEntries(r.outerLoadings.map((q) => [q.indicator, q.loading]))
+      out[`${prefix}rhoA_F1`] = r.plsc.rhoA.F1
+      out[`${prefix}rhoA_F2`] = r.plsc.rhoA.F2
+      for (const c of cols) out[`${prefix}cloading_${c}`] = ld[c]
+      const nm = r.latentCorrelations.lvNames
+      out[`${prefix}corr_F1_F2`] = r.latentCorrelations.matrix[nm.indexOf('F1')][nm.indexOf('F2')]
+      out[`${prefix}path_F1_F2`] = r.pathCoefficients.find((q) => q.from === 'F1' && q.to === 'F2').coef
+      out[`${prefix}r2_F2`] = r.structural.find((q) => q.lv === 'F2').r2
+    }
+    const out = {}
+    const pwRows = main.map((row, i) => {
+      const o = {}
+      cols.forEach((c, j) => { o[c] = PW.mask[i][j] ? null : row[c] })
+      return o
+    })
+    const rPw = runPLS(pwRows, M1, { ...PLS_W3_OPT, missing: 'pairwise', consistent: true })
+    if (rPw.error) throw new Error(`PLSc×pairwise runPLS failed: ${rPw.error} — ${rPw.message}`)
+    pick(rPw, out, 'pw_')
+    const rW = runPLS(main, M1, { ...PLS_W3_OPT, weights: PW.w, consistent: true })
+    if (rW.error) throw new Error(`PLSc×WPLS runPLS failed: ${rW.error} — ${rW.message}`)
+    pick(rW, out, 'w_')
+    return out
+  },
   pls_pos() {
     const PI = REF.pls_pos_inputs.values
     const cols = ['fx1', 'fx2', 'fx3', 'fy1', 'fy2', 'fy3']

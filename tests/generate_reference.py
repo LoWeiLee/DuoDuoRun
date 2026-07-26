@@ -2446,6 +2446,73 @@ except Exception as e:
     put("pls_pairwise_wpls", f"pairwise/WPLS baseline FAILED: {e}")
 # --- pairwise deletion ＋ WPLS 基準區塊 迄 -------------------------------------
 
+# --- PLSc × pairwise／WPLS 基準區塊（2026-07-26 階段 A 紅隊 L4）--------------
+# 為什麼要有這一組：原實作的 plscAdjust 從「欄位」重算區塊相關矩陣，pairwise／WPLS 下
+# 欄位是補值（NaN→0）或未加權標準化的，導致 rho_A／c²／一致 loadings／反衰減後構念相關
+# 全部算在錯的矩陣上（實測 rho_A 低估 0.09–0.15，跨過 .70 判準；路徑高估約 18%）。
+# 這個洞之所以活下來，正是因為沒有任何基準組涵蓋「PLSc × pairwise／WPLS」這個組合。
+# 溯源路線：無第三方實作可對（cSEM 的 PLSc 不支援 pairwise／抽樣權重）→ tier B，
+# 以「PLSc 的 S 必等於迭代所用的 R」這條**結構性恆等式**作為重生時 assert。
+try:
+    def _plsc_from_R(R, blocks, W):
+        """回傳 (rhoA[], 一致 loadings[][], 反衰減後 LV 相關)。S 一律取自傳入的 R。"""
+        L = len(blocks)
+        rho = [1.0] * L
+        q = [1.0] * L
+        clam = []
+        for j, bj in enumerate(blocks):
+            w = W[j]
+            S = R[np.ix_(bj, bj)]
+            if len(bj) < 2:
+                clam.append(np.array([1.0])); continue
+            S0 = S - np.diag(np.diag(S))
+            W0 = np.outer(w, w) - np.diag(w ** 2)
+            c2 = float((w @ S0 @ w) / (w @ W0 @ w))
+            clam.append(w * math.sqrt(c2))
+            rho[j] = float((w @ w) ** 2 * c2)
+            q[j] = math.sqrt(rho[j])
+        Rlv = np.eye(L)
+        for a in range(L):
+            for b in range(L):
+                if a != b:
+                    Rlv[a, b] = float(W[a] @ R[np.ix_(blocks[a], blocks[b])] @ W[b]) / (q[a] * q[b])
+        return rho, clam, Rlv
+
+    _plscpw = {}
+    for _pre, _Rm in (("pw_", _R_pw), ("w_", _R_w)):
+        _Wm, _ = _pls_engine_from_corr(_Rm, _pw_blocks, ["A"] * 2, _pw_pairs, "path")
+        _rho, _clam, _RlvC = _plsc_from_R(_Rm, _pw_blocks, _Wm)
+        # ★ 結構性 assert：PLSc 的區塊相關子矩陣必須逐位元等於迭代所用的 R 的子矩陣。
+        #   後人若把 plscAdjust 改回「由欄位重算」，這條就會紅燈。
+        for _j, _bj in enumerate(_pw_blocks):
+            _Ssub = _Rm[np.ix_(_bj, _bj)]
+            _rho_chk = float((_Wm[_j] @ _Wm[_j]) ** 2
+                             * ((_Wm[_j] @ (_Ssub - np.diag(np.diag(_Ssub))) @ _Wm[_j])
+                                / (_Wm[_j] @ (np.outer(_Wm[_j], _Wm[_j])
+                                              - np.diag(_Wm[_j] ** 2)) @ _Wm[_j])))
+            assert abs(_rho_chk - _rho[_j]) < 1e-12, \
+                f"PLSc 的 S 未取自迭代所用的 R（{_pre}區塊 {_j}，差 {abs(_rho_chk - _rho[_j]):.3e}）"
+        _plscpw[f"{_pre}rhoA_F1"] = _rho[0]
+        _plscpw[f"{_pre}rhoA_F2"] = _rho[1]
+        for _j, _bj in enumerate(_pw_blocks):
+            for _hh, _h in enumerate(_bj):
+                _plscpw[f"{_pre}cloading_{_pw_cols[_h]}"] = float(_clam[_j][_hh])
+        _plscpw[f"{_pre}corr_F1_F2"] = float(_RlvC[0, 1])
+        _plscpw[f"{_pre}path_F1_F2"] = float(_RlvC[0, 1])
+        _plscpw[f"{_pre}r2_F2"] = float(_RlvC[0, 1] ** 2)
+
+    put("pls_plsc_pw",
+        "numpy 手算 consistent PLS × pairwise／WPLS（Dijkstra & Henseler 2015, MIS Quarterly 39(2), "
+        "297-316）：一致化的區塊相關子矩陣**取自迭代所用的 R**（pairwise-complete 或加權相關），"
+        "不是由補值／未加權欄位重算。底層權重來自與 pandas／statsmodels 對過的相關矩陣驅動引擎"
+        "（見 pls_pairwise_wpls）。★ 重生時結構性 assert：由 R 的子矩陣重算 rho_A 必須逐位元"
+        "（1e-12）等於本組值——後人若把 plscAdjust 改回由欄位重算就會紅燈。"
+        "無第三方可對：cSEM 的 PLSc 不支援 pairwise deletion 與抽樣權重。",
+        **_plscpw)
+except Exception as e:
+    put("pls_plsc_pw", f"PLSc pairwise/WPLS baseline FAILED: {e}")
+# --- PLSc × pairwise／WPLS 基準區塊 迄 ---------------------------------------
+
 
 
 

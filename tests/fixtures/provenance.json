@@ -572,5 +572,12 @@
   "status": "verified",
   "tier": "B",
   "verification": "三層疊加：\n(1) **第三方（重生時 assert，容差 1e-10）**：第二階段兩條方程 M ~ X + W + z(X·W) 與 Y ~ M + X 的全部係數與 R²，由 statsmodels OLS 獨立重算並逐值 assert。本檔原以 np.linalg.lstsq 計算，兩者為獨立實作。這道 assert 攔的正是 moderated mediation 最容易錯的地方——「哪些變項進哪條方程」（a 方程漏放 W 主效果、b 方程誤放交互項）與係數擷取位置。\n(2) **第一階段有既有第三方錨**：第一階段＝主效果模型的 LV 分數，與 pls_mod_twostage 同一條程式路徑，該組第一階段已對 plspm assert <1e-6。\n(3) **合成層以代數斷言鎖死**（tests/pls.test.js）：條件間接效果在 w=0 必須等於一般中介的間接效果 a1·b1（與已 verified 的 pls_mediation 口徑相接）；相鄰兩個 w 的差必須恰等於 slopeOverW（線性性質）；兩條路徑同時被調節時 slopeOverW 必須為 null 且三個 w 的值不落在一條直線上。\n★ 未涵蓋：index of moderated mediation 這個**名稱**與其原始檢定程序的定義（Hayes 2015 原文未取得）。本工具因此不使用該名稱。這不影響上述數值的正確性，只影響能不能在論文裡直接沿用該術語。"
+ },
+ "pls_plsc_pw": {
+  "authority": "Dijkstra & Henseler (2015), MIS Quarterly 39(2), 297-316（PLSc 的 rho_A 與一致化係數 c²；方程式編號待原文核定——原文未取得）。底層權重來自「相關矩陣驅動」的 Lohmöller 迭代，其 pairwise-complete 相關已對 pandas DataFrame.corr()、加權相關已對 statsmodels DescrStatsW 與 numpy.cov(aweights) 逐值（見 pls_pairwise_wpls 的重生時 assert，皆 <1e-12）。★ 無第三方可對 PLSc 本身在此組合下的值：cSEM 的 PLSc 不支援 pairwise deletion 與抽樣權重。",
+  "note": "2026-07-26 階段 A 紅隊（L4）新增。設立理由：原 plscAdjust 從**欄位**重算區塊相關矩陣，而 pairwise／WPLS 下欄位是補值（NaN→0，＝原尺度均值補值）或未加權標準化的，導致 rho_A／c²／一致 loadings／反衰減後構念相關全部算在錯的矩陣上（實測 rho_A 低估 0.09–0.15，跨過 .70 判準；path F1→F2 由 0.4252 誤為 0.5026，高估約 18%）。這個缺陷之所以能存活，正是因為**沒有任何基準組涵蓋「PLSc × pairwise／WPLS」這個組合**——本組就是補這個洞。完整資料時 spec.corrMatrix 為 undefined、走原路徑，故 pls_plsc 零回歸。方法文件見 docs/methods/pls-plsc.md 與 docs/methods/pls-pairwise-wpls.md。",
+  "status": "verified",
+  "tier": "B",
+  "verification": "(1) ★ 重生時**結構性 assert**（generate_reference.py，容差 1e-12）：由迭代所用 R 的區塊子矩陣重算 rho_A，必須逐位元等於本組值——後人若把 plscAdjust 改回「由欄位重算」就會紅燈。這是本組真正的防線，比數值比對更能鎖住該類缺陷。\n(2) JS↔numpy 22 欄位逐值（compare.test.js）。\n(3) 修正前後的差異已量化並記入 validation-report「階段 A」節（rho_A 低估 0.09–0.15、路徑高估 18%）。\n★ 尚未驗證：PLSc 在 pairwise-complete 相關矩陣上的**統計性質**（該矩陣可能非正定，本資料集實測最小特徵值為正，見 pls_pairwise_wpls 的 pw_minEig）；以及 rho_A 反衰減在加權樣本下的推論性質——兩者皆無文獻可依，原文亦未取得。"
  }
 }

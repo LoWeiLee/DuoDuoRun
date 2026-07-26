@@ -29069,6 +29069,33 @@
    "full_weight_i6": 0.31260639434383153
   }
  },
+ "pls_plsc_pw": {
+  "source": "numpy \u624b\u7b97 consistent PLS \u00d7 pairwise\uff0fWPLS\uff08Dijkstra & Henseler 2015, MIS Quarterly 39(2), 297-316\uff09\uff1a\u4e00\u81f4\u5316\u7684\u5340\u584a\u76f8\u95dc\u5b50\u77e9\u9663**\u53d6\u81ea\u8fed\u4ee3\u6240\u7528\u7684 R**\uff08pairwise-complete \u6216\u52a0\u6b0a\u76f8\u95dc\uff09\uff0c\u4e0d\u662f\u7531\u88dc\u503c\uff0f\u672a\u52a0\u6b0a\u6b04\u4f4d\u91cd\u7b97\u3002\u5e95\u5c64\u6b0a\u91cd\u4f86\u81ea\u8207 pandas\uff0fstatsmodels \u5c0d\u904e\u7684\u76f8\u95dc\u77e9\u9663\u9a45\u52d5\u5f15\u64ce\uff08\u898b pls_pairwise_wpls\uff09\u3002\u2605 \u91cd\u751f\u6642\u7d50\u69cb\u6027 assert\uff1a\u7531 R \u7684\u5b50\u77e9\u9663\u91cd\u7b97 rho_A \u5fc5\u9808\u9010\u4f4d\u5143\uff081e-12\uff09\u7b49\u65bc\u672c\u7d44\u503c\u2014\u2014\u5f8c\u4eba\u82e5\u628a plscAdjust \u6539\u56de\u7531\u6b04\u4f4d\u91cd\u7b97\u5c31\u6703\u7d05\u71c8\u3002\u7121\u7b2c\u4e09\u65b9\u53ef\u5c0d\uff1acSEM \u7684 PLSc \u4e0d\u652f\u63f4 pairwise deletion \u8207\u62bd\u6a23\u6b0a\u91cd\u3002",
+  "values": {
+   "pw_rhoA_F1": 0.794469419212704,
+   "pw_rhoA_F2": 0.7979214098288678,
+   "pw_cloading_i1": 0.5765865601062362,
+   "pw_cloading_i2": 0.8964851357039129,
+   "pw_cloading_i3": 0.6442469270203315,
+   "pw_cloading_i4": 0.9098118167549005,
+   "pw_cloading_i5": 0.6724391367662915,
+   "pw_cloading_i6": 0.38449121892103494,
+   "pw_corr_F1_F2": 0.425243829982454,
+   "pw_path_F1_F2": 0.425243829982454,
+   "pw_r2_F2": 0.18083231493814628,
+   "w_rhoA_F1": 0.8657791027960153,
+   "w_rhoA_F2": 0.7734672032301824,
+   "w_cloading_i1": 0.16552608804655208,
+   "w_cloading_i2": 0.9293909531024627,
+   "w_cloading_i3": 0.8090694544347129,
+   "w_cloading_i4": 0.7376128938234665,
+   "w_cloading_i5": 0.8167229970119095,
+   "w_cloading_i6": 0.5675822088041347,
+   "w_corr_F1_F2": 0.3160068772571701,
+   "w_path_F1_F2": 0.3160068772571701,
+   "w_r2_F2": 0.09986034647382816
+  }
+ },
  "cluster_kmeans_k3": {
   "source": "sklearn.KMeans(k=3, k-means++, n_init=50) on z-scored(ddof=1) x1,x2,x3\uff1bsilhouette \u7531 sklearn.metrics.silhouette_score\uff08\u6b50\u6c0f\uff09\u8a08\u7b97\u3002\u6a19\u7c64\u4ee5\u300c\u9996\u6b21\u51fa\u73fe\u9806\u5e8f\u300d\u6b63\u898f\u5316\u5f8c\u9010\u503c\u6bd4\u5c0d\uff08\u5206\u5272\u76f8\u540c\u5373\u5b8c\u5168\u76f8\u7b49\uff0cARI=1\uff09",
   "values": {
