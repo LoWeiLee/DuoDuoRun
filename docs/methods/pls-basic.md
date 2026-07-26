@@ -233,6 +233,8 @@ $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a
 
 **tier / status**：tier **B** / **verified**（`provenance.json`）
 
+★ `provenance.json` 的本組三個欄位已於 2026-07-26 精確化（Kevin 核定）：原 `note` 稱「fixture 值為 numpy 手算」不精確、原 `authority` 漏列實際產生 fixture 的 plspm 0.5.7。現行欄位已區分「plspm 產生」與「numpy 手算」兩類量，並收錄本次紅隊的三道驗證。
+
 **對照過的第三方**
 
 | 第三方 | 涵蓋範圍 | 結果 |
@@ -314,7 +316,7 @@ $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a
 
 ### R2（L1＋L3｜已核定並修正）rho_A 的引用出處誤植
 
-`provenance.json`、`pls.js` 檔頭與 `generate_reference.py` 均將 rho_A 記為
+`pls.js` 檔頭、`generate_reference.py` 與 `reference.json` 均將 rho_A 記為
 **「Dijkstra & Henseler 2015, *Psychometrika* 80(2) 式 12」**。經 2026-07-26 查核：
 
 - Dijkstra & Henseler (2015) 有兩篇：*Computational Statistics & Data Analysis*, 81, 10–23；以及 *MIS Quarterly*, 39(2), 297–316。**沒有 Psychometrika 80(2) 這一篇。**

@@ -231,11 +231,11 @@
   "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
  },
  "pls_basic": {
-  "authority": "seminr 2.5.0",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+  "authority": "plspm 0.5.7（fixture 的 loadings／weights／path／R²／LV 相關／cross-loadings 產生來源，PATH scheme、逐欄 z-score、tol=1e-12）；seminr 2.5.0（2026-07-13 本機 R 抽驗，第二證人，Hair 團隊實作）。plspm 未提供、以 numpy 依公式手算者：alphaStd（標準化 α，相關矩陣版）、rho_A（Dijkstra & Henseler 2015, MIS Quarterly 39(2), 297-316；方程式編號待原文核定）、rho_c（Jöreskog 1971, Psychometrika 36(2)）、AVE（Fornell & Larcker 1981, JMR 18(1)）、HTMT（Henseler, Ringle & Sarstedt 2015, JAMS 43(1)）——這五項皆已對 seminr 逐值核對。",
+  "note": "2026-07-26 階段 A 紅隊修正本欄的一處不精確敘述：原 note 稱「fixture 值為 numpy 手算」，實際上 loadings／weights／path／R²／adjR²／LV 相關／cross-loadings 出自 plspm 0.5.7，只有上列五項信效度量為 numpy 手算；原 authority 亦漏列實際產生 fixture 的 plspm。★ 慣例差異：權重以 w'Sw=1 正規化（樣本單位變異）後才與 plspm 比對（plspm 原生為母體單位變異）；本組回報的 α 為**標準化 α**（相關矩陣版），與 SPSS 預設的原始分數 α 在題目變異數不等時數值不同。方法文件見 `docs/methods/pls-basic.md`。",
   "status": "verified",
   "tier": "B",
-  "verification": "2026-07-13 R 抽驗：M1 核心的 loadings／weights／path／R²／adjR²／alpha／rhoA／rhoC／AVE／HTMT／LV 相關全部與 seminr 逐值一致（小數 6 位）。見 validation-report「R 抽驗銷帳（Session A）」一之表。"
+  "verification": "2026-07-13 R 抽驗：M1 核心的 loadings／weights／path／R²／adjR²／alpha／rhoA／rhoC／AVE／HTMT／LV 相關全部與 seminr 逐值一致（小數 6 位）。見 validation-report「R 抽驗銷帳（Session A）」一之表。\n★ 2026-07-26 階段 A 紅隊（見 `docs/methods/pls-basic.md` 第 8 節）補三道：\n(1) 標準化 α 的兩種寫法代數等價性驗證（k/(k−1)·(1−k/ΣS) ≡ k·r̄/(1+(k−1)r̄)，實測差 0 / 1.11e−16）；\n(2) **第四次獨立編碼**——依方法文件第 3 節的文字描述（不看 pls.js）以 numpy 重寫整條 Lohmöller 迭代，對本組 28 個純量欄位比對，最大絕對差 7.15e−8（量級與 plspm 迭代容差相符）。意義：文件所載公式即產生基準值的公式，兩者無漂移；\n(3) 邊界條件：兩區塊的區塊內平均相關同為負時，HTMT 原會輸出「通過」的數值（Kevin 裁決修正為 null ＋警告，pls.js:956-958／1792-1808，新增 4 條行為測試）。\n★ 仍未驗證：七篇方法出處**原文全部未取得**，本組的 verified 建立在「plspm 與 seminr 兩個獨立第三方數值全中」，不是「公式對過原文式號」；跨實作的收斂準則定義比較亦未查核。"
  },
  "pls_bca_reference": {
   "authority": "待審計【卡文獻取得，非技術問題】。已鎖定的權威來源：Efron & Tibshirani (1993),《An Introduction to the Bootstrap》第 14.3 節（BCa 的 z₀ 與加速常數 a 的估計式）；原始出處 Efron (1987), JASA 82(397), 171-185「Better Bootstrap Confidence Intervals」。待核兩個風險點：z₀ = Φ⁻¹(#{θ̂*_b < θ̂}/B) 的並列與端點夾擠慣例、a = Σ(θ̄_(·)−θ̂_(i))³ / (6[Σ(θ̄_(·)−θ̂_(i))²]^{3/2}) 的 jackknife 定義與符號方向。",
