@@ -1858,6 +1858,19 @@ function Result() {
       {boot && boot.error && (
         <WarnBox>{fillTemplate(r.bootstrapUnavailable, { message: boot.message || boot.error })}</WarnBox>
       )}
+      {/* 剔除比例偏高的警示（階段 A 紅隊 R10）：數量本來就顯示在路徑表上方，
+          但比例偏高代表模型可能有問題，需要主動提醒，並說明 df 隨之改變 */}
+      {bootOk && boot.nSkipped > 0 && boot.nSkipped / boot.nRequested > 0.05 && (
+        <WarnBox>
+          {fillTemplate(r.bootstrapHighSkip, {
+            nSkipped: fmtInt(boot.nSkipped),
+            nRequested: fmtInt(boot.nRequested),
+            nValid: fmtInt(boot.nValid),
+            df: fmtInt(boot.nValid - 1),
+            pct: ((boot.nSkipped / boot.nRequested) * 100).toFixed(1),
+          })}
+        </WarnBox>
+      )}
 
       <StatCards items={cards} />
 

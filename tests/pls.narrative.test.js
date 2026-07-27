@@ -287,3 +287,65 @@ describe('APA 敘述句：W5／W6 區塊', () => {
     }
   })
 })
+
+describe('APA 敘述句：資料處理揭露（階段 A 紅隊 R12）', () => {
+  /** 只組 intro 句需要的最小結果物件 */
+  const res = (metaOverride) => ({
+    estimate: {
+      meta: {
+        n: 60, nRows: 60, nDropped: 0, missing: 'casewise', weighted: false,
+        scheme: 'path', consistent: false, warnings: [],
+        ...metaOverride,
+      },
+      lvNames: [], outerLoadings: [], reliability: [], structural: [],
+      pathCoefficients: [], htmt: { lvNames: [], matrix: [] }, fit: null, gof: null,
+    },
+    bootstrap: null,
+  })
+  const first = (r, lang) => String(buildNarrative(r, lang)).split('\n')[0]
+
+  it('完整資料：不出現任何缺失值或加權片語', () => {
+    for (const lang of ['zh-TW', 'en']) {
+      const t = first(res({}), lang)
+      expect(t).not.toMatch(/deletion|缺失值|加權|sampling weights/)
+    }
+  })
+
+  it('casewise 有剔除：句子寫出剔除筆數與原始樣本數', () => {
+    const zh = first(res({ n: 29, nDropped: 31 }), 'zh-TW')
+    expect(zh).toContain('31')
+    expect(zh).toContain('60')
+    expect(zh).toMatch(/listwise deletion/)
+    const en = first(res({ n: 29, nDropped: 31 }), 'en')
+    expect(en).toMatch(/31 cases/)
+    expect(en).toMatch(/listwise deletion/)
+  })
+
+  it('pairwise：句子寫出 pairwise deletion 而非只給 N', () => {
+    expect(first(res({ missing: 'pairwise' }), 'zh-TW')).toContain('pairwise deletion')
+    expect(first(res({ missing: 'pairwise' }), 'en')).toMatch(/pairwise deletion/)
+  })
+
+  it('均值補值：句子寫出以平均數取代', () => {
+    expect(first(res({ missing: 'mean' }), 'zh-TW')).toContain('平均數取代')
+    expect(first(res({ missing: 'mean' }), 'en')).toMatch(/item means/)
+  })
+
+  it('★ WPLS：句子必須同時寫出加權估計與「推論仍未加權」的限制', () => {
+    const zh = first(res({ weighted: true }), 'zh-TW')
+    expect(zh).toContain('抽樣權重')
+    expect(zh).toContain('未加權')
+    const en = first(res({ weighted: true }), 'en')
+    expect(en).toMatch(/sampling weights/)
+    expect(en).toMatch(/unweighted/)
+  })
+
+  it('缺失值處理與加權可同時出現，且不留未填模板', () => {
+    for (const lang of ['zh-TW', 'en']) {
+      const t = first(res({ n: 29, nDropped: 31, weighted: true }), lang)
+      expect(t).not.toMatch(/\{[a-zA-Z]+\}/)
+      expect(t).not.toContain('undefined')
+      expect(t).not.toContain('NaN')
+    }
+  })
+})

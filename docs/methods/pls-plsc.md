@@ -62,7 +62,7 @@ $$r^{c}_{ab}=\frac{r_{ab}}{q_a\,q_b}\quad(a\neq b),\qquad r^{c}_{aa}=1$$
 
 ★ 這與 `pls-reliability-validity.md` §3.2 的 $\rho_A$ **是同一個量**——那裡由 `blockReliability`
 直接算，這裡由 $c^2$ 導出。兩條路徑代數等價（$\rho_A=(\hat{\mathbf{w}}'\hat{\mathbf{w}})^2\cdot c^2$ 展開即得），
-這也是 `pls.js:1787–1793` 之所以能「$\alpha$ 與 $\rho_A$ 本身不因 PLSc 而變」的原因。
+這也是 `pls.js:1804–1810` 之所以能「$\alpha$ 與 $\rho_A$ 本身不因 PLSc 而變」的原因。
 
 ### 3.3 ★ 區塊相關矩陣的來源（本組的關鍵口徑）
 
@@ -97,11 +97,11 @@ WPLS 下欄位是未加權標準化的，兩者的欄位相關**都不等於**�
 | 外部 weights | ❌ 不變 | — |
 | 構念相關 / Fornell-Larcker 非對角 | ✅ 反衰減後 | `pls.js:1022` |
 | 路徑係數 / $R^2$ / $f^2$ / 內部 VIF | ✅（全部改用校正後相關矩陣重解） | `pls.js:1226–1231` |
-| CR (rho_c) / AVE | ✅ 改用一致 loadings | `pls.js:1787–1793` |
-| Cronbach's α / $\rho_A$ | ❌ 本身不變 | `pls.js:1787` |
-| HTMT | ❌ 走原始指標相關 | `pls.js:1805–1806` |
-| Model fit | ✅ 用一致 loadings 與校正後構念相關 | `pls.js:1826–1848` |
-| bootstrap | ✅ 每次重抽都含校正（consistent bootstrapping） | `pls.js:2393–2674` |
+| CR (rho_c) / AVE | ✅ 改用一致 loadings | `pls.js:1804–1810` |
+| Cronbach's α / $\rho_A$ | ❌ 本身不變 | `pls.js:1804` |
+| HTMT | ❌ 走原始指標相關 | `pls.js:1822–1823` |
+| Model fit | ✅ 用一致 loadings 與校正後構念相關 | `pls.js:1877–1865` |
+| bootstrap | ✅ 每次重抽都含校正（consistent bootstrapping） | `pls.js:2412–2693` |
 
 ## 4. 假設前提與本工具的檢核方式
 
@@ -110,11 +110,11 @@ WPLS 下欄位是未加權標準化的，兩者的欄位相關**都不等於**�
 | 反映型（共同因素）測量 | 只校正 `mode='reflective'` 且 $k\ge2$ 的區塊 | 形成型與單指標的衰減係數視為 1（不校正） | `pls.js:993` |
 | 不與調節／高階構念併用 | 建模階段檢查 | **硬擋** `plsc-w4-not-supported` | `pls.js:1350–1355` |
 | $c^2>0$ | 逐構念檢查 | 該構念退回未校正＋警告 | `pls.js:1008–1010` |
-| 校正後矩陣正定 | Model fit 階段檢查 | $d_G$／NFI 回 `null`＋警告 | `pls.js:1843–1845` |
+| 校正後矩陣正定 | Model fit 階段檢查 | $d_G$／NFI 回 `null`＋警告 | `pls.js:1877–1862` |
 | 信度足夠使 $\rho_A$ 穩定 | **不檢核** | 無警告（見第 6 節） | — |
 | 其餘 | 同 `pls-basic.md` §4 | | |
 
-★ blindfolding Q² 一律以 composite 估計計算（`consistent: false` 強制覆寫，`pls.js:2253`）——
+★ blindfolding Q² 一律以 composite 估計計算（`consistent: false` 強制覆寫，`pls.js:2272`）——
 Q² 是預測導向指標，用校正後的「真值」算預測誤差沒有意義。
 
 ## 5. 參考文獻
@@ -182,9 +182,9 @@ $\rho_A$ 的式號在文獻與第三方文件中說法不一（seminr 說明文�
 | 外部負荷量（PLSc 開啟時） | 3.1 $\hat\lambda=c\hat w$ | `pls.js:1014` |
 | rho_A（PLSc 區塊） | 3.2 | `pls.js:1015` |
 | 構念相關矩陣 | 3.2 $r^c$ | `pls.js:1022` |
-| Fornell-Larcker 非對角 | 3.2 | `pls.js:1798–1803` |
-| Fornell-Larcker 對角（$\sqrt{\text{AVE}}$） | 3.5（改用一致 loadings） | `pls.js:1787–1793` |
-| CR / AVE | 3.5 | `pls.js:1787–1793` |
+| Fornell-Larcker 非對角 | 3.2 | `pls.js:1815–1820` |
+| Fornell-Larcker 對角（$\sqrt{\text{AVE}}$） | 3.5（改用一致 loadings） | `pls.js:1804–1810` |
+| CR / AVE | 3.5 | `pls.js:1804–1810` |
 | 路徑係數 / $R^2$ / $f^2$ / 內部 VIF | 3.5（校正後矩陣重解） | `pls.js:1226–1231` |
 | 設定行的「PLSc 已啟用」標記 | — | `zh-TW.js` 的 `pls.result.plscTag` |
 | 三種警告 | 3.4 | `pls.js:1008–1010`、`1017–1019`、`1023–1031` |

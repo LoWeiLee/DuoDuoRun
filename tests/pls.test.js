@@ -1997,3 +1997,57 @@ describe('PLSc × pairwise／WPLS：一致化必須走迭代所用的 R（階段
     }
   })
 })
+
+describe('階段 A 紅隊 R7／R12：錯誤訊息指名構念、敘述句揭露資料處理', () => {
+  it('R7：形成型區塊完全共線 → 專屬錯誤碼並指名構念與指標', () => {
+    let s = 5
+    const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff }
+    const rows = []
+    for (let i = 0; i < 60; i++) {
+      const a = rnd() * 10, b = rnd() * 10
+      rows.push({ x1: a, x2: b, x3: 2 * a + 3 * b, y: 0.5 * a + rnd() }) // x3 = 2·x1 + 3·x2
+    }
+    const M = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: '數位治理能力', indicators: ['x1', 'x2', 'x3'], mode: 'formative' },
+        { name: 'Y', indicators: ['y'] },
+      ],
+      paths: [{ from: '數位治理能力', to: 'Y' }],
+    }
+    const r = runPLS(rows, M, {})
+    expect(r.error).toBe('formative-block-singular')
+    expect(r.message).toContain('數位治理能力')   // 指名構念
+    expect(r.message).toContain('x1')             // 指名指標
+    expect(r.message).toContain('x3')
+  })
+
+  it('R7：正常的形成型模型不受前置檢查影響', () => {
+    const r = runPLS(main, FORMATIVE, {})
+    expect(r.error).toBeUndefined()
+    expect(r.outerWeights.length).toBe(4)
+  })
+
+  it('R12：meta 揭露缺失值處理與是否加權', () => {
+    const PW = D.pw
+    const pwRows = main.map((row, i) => {
+      const o = { ...row }
+      PW.cols.forEach((c, j) => { if (PW.mask[i][j]) o[c] = null })
+      return o
+    })
+    const full = runPLS(main, MODEL, {})
+    expect(full.meta.missing).toBe('casewise')
+    expect(full.meta.nDropped).toBe(0)
+    expect(full.meta.weighted).toBe(false)
+
+    const cw = runPLS(pwRows, MODEL, {})
+    expect(cw.meta.nDropped).toBeGreaterThan(0)
+    expect(cw.meta.nRows).toBe(main.length)
+
+    const pw = runPLS(pwRows, MODEL, { missing: 'pairwise' })
+    expect(pw.meta.missing).toBe('pairwise')
+
+    const wp = runPLS(main, MODEL, { weights: PW.w })
+    expect(wp.meta.weighted).toBe(true)
+  })
+})

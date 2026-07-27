@@ -37,7 +37,7 @@
 |---|---|
 | 基準方法組數 | **83**（`tests/fixtures/reference.json`，每組附出處與容差理由） |
 | 公式溯源已結案 | **81 / 83**（77 verified ＋ 4 純輸入型 exempt；2 組待原始文獻，見 `tests/fixtures/provenance.json`） |
-| 回歸測試 | **1,215 過、6 記錄性跳過**（`npm test`；含統計層、i18n 對稱性、UI 行為） |
+| 回歸測試 | **1,224 過、6 記錄性跳過**（`npm test`；含統計層、i18n 對稱性、UI 行為） |
 | CI 把關 | 每次 push 跑 lint ＋ 全測試 ＋ build，任一失敗即擋下部署 |
 
 完整比對結果、已知的慣例差異（例如 Levene 檢定的 center 預設、Mann-Whitney 的 U 值慣例、CFA 的 χ² 分母慣例）與其影響評估，公開於 **[`docs/validation-report-v1.md`](docs/validation-report-v1.md)**——**包含我們自己找到並修掉的錯誤**（例如 2026-07-13 修正的 LDA 標準化係數定義、CFA 的 RMSEA 信賴區間、k-means 手肘圖的區域最佳解問題）。

@@ -2934,6 +2934,7 @@ export default {
       structuralTitle: 'Structural model — path coefficients (bootstrap inference)',
       bootstrapMeta: 'bootstrap {nValid} / {nRequested} valid resamples (seed = {seed}, {ciType} 95% CI, construct-level sign correction)',
       bootstrapUnavailable: 'Bootstrap failed; only point estimates are shown: {message}',
+      bootstrapHighSkip: '{nSkipped} of {nRequested} bootstrap resamples ({pct}%) were dropped because they failed to converge or degenerated; inference is actually based on {nValid} resamples, and the df for the p-values is {df}. A high drop rate usually signals near-collinearity, insufficient sample size, or a problematic measurement model — interpret the SEs and confidence intervals with caution.',
       r2Title: 'Structural model — explained variance',
       effectsTitle: 'Structural model — effect sizes f² & collinearity VIF',
       f2Note: 'f² conventions (Cohen, 1988): .02 small, .15 medium, .35 large. VIF: < 3.3 good (green), 3.3 – 5 caution (yellow), ≥ 5 collinearity concern (red).',
@@ -3232,10 +3233,14 @@ Three boundaries:
     },
     apa: {
       intro:
-        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; {scheme} weighting scheme{plsc}; N = {n}), ' +
+        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; {scheme} weighting scheme{plsc}; N = {n}{data}){weighted}, ' +
         'with inference based on {nValid} bootstrap resamples ({ciType} 95% confidence intervals).',
       introNoBoot:
-        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; {scheme} weighting scheme{plsc}; N = {n}).',
+        'The research model was tested with partial least squares structural equation modeling (PLS-SEM; {scheme} weighting scheme{plsc}; N = {n}{data}){weighted}.',
+      dataCasewise: '; {nDropped} cases with missing values were removed by listwise deletion, from an original sample of {nRows}',
+      dataPairwise: '; missing values were handled by pairwise deletion, so each cell of the correlation matrix uses only the cases observed on that pair',
+      dataMean: '; missing values were replaced by item means',
+      dataWeighted: ', estimated with sampling weights (inference is still based on unweighted resampling)',
       plscClause: ', consistent PLS (PLSc)',
       schemeNames: { path: 'path', factorial: 'factorial', centroid: 'centroid' },
       ciNames: { percentile: 'percentile', bca: 'BCa' },

@@ -1448,6 +1448,23 @@ function estimateStage(pool, n, modelS, plan, allowShared) {
     spec.corrMatrix = wc.R
   }
 
+  // 形成型（Mode B）區塊可逆性前置檢查（2026-07-26 階段 A 紅隊 R7）。
+  // Mode B 的外部權重為 S_bb⁻¹·r，區塊指標完全共線時反矩陣不存在，迭代會回傳 null，
+  // 呼叫端只能給出籠統的「數值退化」訊息。這裡先驗一次，以便指名構念與指標。
+  {
+    const Rchk = spec.corrMatrix ?? corrMatrixOf(std.cols)
+    for (let j = 0; j < spec.blocks.length; j++) {
+      const b = spec.blocks[j]
+      if (spec.modes[j] !== 'B' || b.length < 2) continue
+      const Sb = b.map((a) => b.map((c) => Rchk[a][c]))
+      if (!inverse(Sb)) {
+        return {
+          error: 'formative-block-singular',
+          message: `形成型構念「${spec.lvNames[j]}」的指標相關矩陣不可逆——指標（${b.map((h) => spec.indicators[h]).join('、')}）之間完全共線或線性相依，Mode B 的迴歸權重無法計算。請刪除重複／可由其他指標線性組成的指標，或把該構念改為反映型`,
+        }
+      }
+    }
+  }
   const ce = coreEstimates(std.cols, n, spec)
   if (!ce) {
     return { error: 'estimation-failed', message: 'PLS 迭代過程出現數值退化（零變異 LV 分數或奇異矩陣），請檢查指標間是否極度共線' }
@@ -1868,6 +1885,7 @@ function reportFromStage(stage, ctx) {
     meta: {
       schemaVersion: PLS_SCHEMA_VERSION,
       n, nRows: ctx.nRows, nDropped: ctx.nDropped, missing: spec.missing,
+      weighted: ctx.weighted === true, // WPLS：供 APA 敘述句揭露（階段 A 紅隊 R12）
       scheme: spec.scheme, consistent: spec.consistent,
       tolerance: spec.tolerance, maxIterations: spec.maxIterations,
       iterations: est.iterations, converged: est.converged,
@@ -2196,6 +2214,7 @@ export function runPLS(rows, model, options = {}) {
   const report = reportFromStage(exec.final, {
     nRows: rows.length,
     nDropped,
+    weighted: Boolean(plan.rowWeights),
     warnings: baseWarnings,
     htmtBlocked: exec.htmtBlockedIdx,
     skipFit: exec.stage1 !== null,

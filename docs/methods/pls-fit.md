@@ -113,10 +113,10 @@ $0-\ln|\mathbf{S}|+\operatorname{tr}(\mathbf{S})-p$；$\mathbf{S}$ 是相關矩�
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| $\mathbf{S}$ 正定（$d_G$／NFI 需要 $\mathbf{S}^{-1/2}$） | 特徵值全 > 1e−10 | 四指標全部**不計算**＋警告（明指 repeated-indicators 模型屬預期情況） | `pls.js:1839–1848` |
+| $\mathbf{S}$ 正定（$d_G$／NFI 需要 $\mathbf{S}^{-1/2}$） | 特徵值全 > 1e−10 | 四指標全部**不計算**＋警告（明指 repeated-indicators 模型屬預期情況） | `pls.js:1856–1865` |
 | $\hat{\boldsymbol{\Sigma}}$ 正定 | $\mathbf{M}$ 的特徵值全 > 1e−12 | $d_G$／NFI 回 `null`＋警告（PLSc 一致 loadings > 1 時可能發生） | `pls.js:1112`、`1814–1816` |
 | 遞迴結構模型（path tracing 需要拓撲順序） | 建模階段的 Kahn 排序 | **硬擋**（見 `pls-basic.md` §4） | `pls.js:422–451` |
-| 多階段模型（調節／高階）不報 fit | `ctx.skipFit` | 最終階段不計算，改由 `stage1` 子報表提供 | `pls.js:1826`；`runPLS` 的 `skipFit: exec.stage1 !== null` |
+| 多階段模型（調節／高階）不報 fit | `ctx.skipFit` | 最終階段不計算，改由 `stage1` 子報表提供 | `pls.js:1877`；`runPLS` 的 `skipFit: exec.stage1 !== null` |
 | $\hat{\boldsymbol{\Sigma}}$ 的分布假設 | **不適用** | 這四個指標沒有抽樣分布檢定；SmartPLS 的做法是 bootstrap 分位數（本工具**未實作**） | 見第 6 節 |
 
 ★ **為什麼多階段模型不報 fit**：two-stage 的最終模型以第一階段的構念分數為單指標，
@@ -184,8 +184,8 @@ $0-\ln|\mathbf{S}|+\operatorname{tr}(\mathbf{S})-p$；$\mathbf{S}$ 是相關矩�
 | d_ULS（飽和／估計） | 3.3 | `pls.js:1095` |
 | d_G（飽和／估計） | 3.3 | `pls.js:1120` |
 | NFI（飽和／估計） | 3.3 | `pls.js:1123` |
-| GoF 列 | 見 `pls-gof.md` | `pls.js:1853–1864` |
-| 兩條不可計算警告 | 3.4 / §4 | `pls.js:1839–1848` |
+| GoF 列 | 見 `pls-gof.md` | `pls.js:1870–1881` |
+| 兩條不可計算警告 | 3.4 / §4 | `pls.js:1856–1865` |
 | 表下註記（含 d_G 底數說明） | 3.4 慣例 1 | `zh-TW.js` 的 `pls.result.fitNote` |
 
 **孤兒欄位檢查**：適配表的四列 × 兩欄全部對應 §3.3；GoF 列屬另一份文件。未發現孤兒欄位。

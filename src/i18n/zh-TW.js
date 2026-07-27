@@ -2992,6 +2992,7 @@ export default {
       structuralTitle: '結構模型 — 路徑係數（bootstrap 推論）',
       bootstrapMeta: 'bootstrap {nValid} / {nRequested} 次有效重抽（seed = {seed}、{ciType} 95% CI、construct-level 符號校正）',
       bootstrapUnavailable: 'Bootstrap 失敗，以下僅顯示點估計：{message}',
+      bootstrapHighSkip: '本次 bootstrap 有 {nSkipped} / {nRequested} 次重抽（{pct}%）因不收斂或退化被剔除，推論實際基於 {nValid} 次，p 值的自由度亦隨之為 {df}。剔除比例偏高通常代表模型接近共線、樣本量不足或測量模型有問題，SE 與信賴區間請謹慎解讀。',
       r2Title: '結構模型 — 解釋力',
       effectsTitle: '結構模型 — 效果量 f² 與共線性 VIF',
       f2Note: 'f² 慣例（Cohen, 1988）：.02 小、.15 中、.35 大。VIF：< 3.3 佳（綠）、3.3 – 5 注意（黃）、≥ 5 共線性疑慮（紅）。',
@@ -3290,10 +3291,14 @@ Gaussian copula（Park & Gupta, 2012；PLS-SEM 流程依 Hult et al., 2018）用
     },
     apa: {
       intro:
-        '本研究以偏最小平方法結構方程模型（PLS-SEM；{scheme} weighting scheme{plsc}）檢驗研究模型（N = {n}），' +
+        '本研究以偏最小平方法結構方程模型（PLS-SEM；{scheme} weighting scheme{plsc}）檢驗研究模型（N = {n}{data}）{weighted}，' +
         '並以 bootstrap 重抽 {nValid} 次（{ciType} 95% 信賴區間）進行推論。',
       introNoBoot:
-        '本研究以偏最小平方法結構方程模型（PLS-SEM；{scheme} weighting scheme{plsc}）檢驗研究模型（N = {n}）。',
+        '本研究以偏最小平方法結構方程模型（PLS-SEM；{scheme} weighting scheme{plsc}）檢驗研究模型（N = {n}{data}）{weighted}。',
+      dataCasewise: '；listwise deletion 剔除 {nDropped} 筆含缺失值之樣本，原始樣本 {nRows} 筆',
+      dataPairwise: '；缺失值採 pairwise deletion，相關矩陣的每一格僅使用該配對同時可觀察之樣本',
+      dataMean: '；缺失值以各題平均數取代',
+      dataWeighted: '，且以抽樣權重加權估計（統計推論仍以未加權重抽建立）',
       plscClause: '、consistent PLS（PLSc）校正',
       schemeNames: { path: 'path', factorial: 'factorial', centroid: 'centroid' },
       ciNames: { percentile: 'percentile', bca: 'BCa' },

@@ -46,6 +46,19 @@ export function buildNarrative(res, lang) {
   const schemeName = a.schemeNames[estimate.meta.scheme] || estimate.meta.scheme
   const plscClause = estimate.meta.consistent ? a.plscClause : ''
 
+  // 缺失值處理與抽樣權重的揭露（2026-07-26 階段 A 紅隊 R12）。
+  // 未揭露時 N 會被誤讀為「資料沒有缺失」，加權估計也不會出現在方法陳述裡。
+  const meta = estimate.meta
+  let dataClause = ''
+  if (meta.missing === 'pairwise') {
+    dataClause = a.dataPairwise
+  } else if (meta.missing === 'mean') {
+    dataClause = a.dataMean
+  } else if (Number.isFinite(meta.nDropped) && meta.nDropped > 0) {
+    dataClause = fillTemplate(a.dataCasewise, { nDropped: meta.nDropped, nRows: meta.nRows })
+  }
+  const weightClause = meta.weighted ? a.dataWeighted : ''
+
   const parts = []
   parts.push(
     bootOk
@@ -55,8 +68,13 @@ export function buildNarrative(res, lang) {
           scheme: schemeName,
           plsc: plscClause,
           ciType: a.ciNames[bootstrap.ciType] || bootstrap.ciType,
+          data: dataClause,
+          weighted: weightClause,
         })
-      : fillTemplate(a.introNoBoot, { n: estimate.meta.n, scheme: schemeName, plsc: plscClause })
+      : fillTemplate(a.introNoBoot, {
+          n: estimate.meta.n, scheme: schemeName, plsc: plscClause,
+          data: dataClause, weighted: weightClause,
+        })
   )
 
   // 測量模型（反映型多指標構念；單指標與形成型另計）

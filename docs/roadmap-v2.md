@@ -10,10 +10,11 @@
 **目前狀態一句話**：PLS 的**功能面已收尾**（P1 殘項全清、三項會動統計核心的都交付），
 但**溯源面沒有全部結案**——82 組基準中 2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。
 功能開發（階段 B）尚未動工。
-最近一次本機全套驗收：**1,184 過、6 跳過、13 檔全綠**（2026-07-25）。
+最近一次本機全套驗收：**1,224 過、6 跳過、13 檔全綠**（2026-07-26，階段 A / A1 收尾後）。
 
 **★ 現在的下一步：階段 A 的 A2**（Kevin 2026-07-25 裁決；2026-07-26 開工）。
-**A1 已全數交付（10 / 10）**，模板規格定案、紅隊 R2–R12 十二項中九項已修、三項待裁決（見 §6.6）。
+**A1 已全數交付（10 / 10）**，模板規格定案，紅隊 **R2–R12 十二項全部處置完畢**（見 §6.6）；
+唯一未結案的是「bootstrap 的 $p$ 值口徑未對 seminr 核對」，卡本機 R。
 基準組 82 → **83**（新增 `pls_plsc_pw`）。下一步接 **A2：PLS 調節／高階／中介**（10 個方法群）。
 不要跳過它直接做 Wave F1——階段 A 的目的正是先確認「已經做好的東西是否可信」，
 再往上疊新功能。
@@ -539,12 +540,12 @@ Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn�
 | R4 | A1 | `pls_basic`（負荷量） | L2 | 區塊內正負混雜的負荷量不觸發任何警告（`loadingStatus` 取絕對值）。符號不確定性是**整個構念**翻轉，區塊內混雜是資料錯誤，不是符號不確定性 | 引擎層加警告，指名構念與「反向題未事先反向計分」 | ✅ 核定並已執行。`pls.js:1792–1808` |
 | R5 | A1 | `pls_basic`（APA 敘述句） | L2 | 敘述句未載明 α 為**標準化 α**（相關矩陣版），讀者拿 SPSS 報表（原始分數 α）對照會對不上 | 中英敘述句各補一處 | ✅ 核定並已執行。`zh-TW.js:3301`、`en.js:3243`。★ 動到 `src/i18n/**` → 需 Kevin 本機補跑 jsdom |
 | **R6** | A1 | `pls_plsc` | **L4** | ★ **真 bug**：`plscAdjust` 從欄位重算區塊相關矩陣，pairwise／WPLS 下欄位是補值（NaN→0）或未加權的 → rho_A、c²、一致 loadings、反衰減後構念相關全錯。實測 rho_A 低估 0.09–0.15（**跨過 .70 判準**）、path 0.4252 誤為 0.5026（高估 18%）。可達性：兩者皆 UI 選項、無守衛、無警告 | 改走 `spec.corrMatrix`；新增基準組 `pls_plsc_pw` ＋ 重生時**結構性 assert**（PLSc 的 S 必等於迭代所用的 R）＋ 5 條行為測試 | ✅ 核定並已執行（2026-07-26）。完整資料逐位元不變（`pls_plsc` 零回歸） |
-| R7 | A1 | `pls_formative` | L2／L3 | Mode B 區塊奇異時錯誤訊息（`estimation-failed`，「數值退化…極度共線」）方向正確但**未指名構念與指標** | `estimateCoreFromCorr` 改回傳結構化失敗原因（帶構念索引），`estimateStage` 據以組訊息。需改動回傳契約（`object｜null`）故列 L3 | ⬜ **待裁決** |
+| R7 | A1 | `pls_formative` | L2 | Mode B 區塊奇異時錯誤訊息（`estimation-failed`）方向正確但**未指名構念與指標** | Kevin 裁決採「在 `estimateStage` 做前置檢查」：進迭代前逐區塊驗反矩陣，失敗回專屬錯誤碼 `formative-block-singular` 並指名構念與全部指標；**不動 `estimateCoreFromCorr` 的回傳契約** | ✅ 核定並已執行（2026-07-26）。`pls.js:1451–1467`，＋2 條行為測試 |
 | R8 | A1 | `pls_fit` | L1 | SRMR 的分母慣例（$p(p+1)/2$ vs $p(p-1)/2$）與 NFI 的虛無模型定義**從未書面化**。實算：改分母後飽和 SRMR 0.0976 → 0.1079，**跨過 .10 紅燈** | 寫入 `pls-fit.md` §3.4 與第 6 節（含「反推而非原文核定」的誠實標註） | ✅ 已補（L1 當場修） |
 | R9 | A1 | `pls_gof` | L1 | communality 的兩種平均方式在「反映型區塊等寬」時同值，M4 恰好等寬 → **此慣例未被基準覆蓋** | 書面記錄；不為一個不建議使用的指標新增 fixture | ✅ 已記錄 |
-| R10 | A1 | `pls-bootstrap` | L2 | `nSkipped`（被剔除的重抽次數）引擎有算、**報表不顯示**。實測 B=800 時剔除 1 次；模型接近共線時比例可能很高，使用者看不出 CI 基於多少次重抽 | `nSkipped>0` 時表下加註記；比例 >5% 升為警告 | ⬜ **待裁決** |
+| R10 | A1 | `pls-bootstrap` | L2 | ★ **原判讀有誤**：實查 UI 後發現 `nValid / nRequested` 早已顯示在路徑表設定行與統計卡。真正缺的是**比例偏高時沒有警示**，也沒說明 $df=B'-1$ 隨之改變 | 剔除比例 > 5% 時顯示警告（含剔除數／百分比／有效重抽數／df／可能成因）；數量的常態顯示維持原樣 | ✅ 核定並已執行。`Result.jsx` 的 `bootstrapHighSkip`，i18n 中英各一 |
 | R11 | A1 | `pls_pairwise_wpls` | L1 | `pw_minPairs`／`pw_minEig` 兩欄在 adapters 直接從 fixture 讀回 → `compare.test.js` 比的是「fixture vs fixture」，59 欄實際只有 57 欄被覆蓋 | 書面記錄；真正覆蓋需引擎回傳診斷欄位（功能變更，不屬階段 A） | ✅ 已記錄 |
-| R12 | A1 | `pls_pairwise_wpls` | L2 | APA 敘述句未揭露**缺失值處理方式**與**是否使用抽樣權重**。pairwise 下 N 是未剔除的列數，讀者會以為沒有缺失值 | `intro` 句加條件片語（casewise 剔除筆數／pairwise 最少配對數／加權估計聲明），中英各一處 | ⬜ **待裁決** |
+| R12 | A1 | `pls_pairwise_wpls` | L2 | APA 敘述句未揭露**缺失值處理方式**與**是否使用抽樣權重**。pairwise 下 N 是未剔除的列數，讀者會以為沒有缺失值 | `intro`／`introNoBoot` 加 `{data}`／`{weighted}` 兩個插槽，四種情境（完整／casewise 有剔除／pairwise／WPLS）中英各一；WPLS 片語含「推論仍以未加權重抽建立」。引擎 `meta` 新增 `weighted` 欄位 | ✅ 核定並已執行。`apaNarrative.js`＋`pls.js:1888`，＋6 條敘述句測試 |
 | — | A1 | `pls-bootstrap` | — | bootstrap 的 $p$ 值口徑（$t$ 分布、$df=B'-1$）**未對 seminr／SmartPLS 核對** | 需本機 R 抽驗 | ⬜ **卡本機資源**，併入 §2.3 清單 |
 
 ### 6.7 完成判準（全部達成才算階段 A 結案）
