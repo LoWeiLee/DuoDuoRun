@@ -44,7 +44,7 @@ $\hat\theta_{(i)}$ 為留一（leave-one-out）估計、$\Phi$ 為標準常態 C
 
 $$\hat z_0=\Phi^{-1}\!\left(\ \text{clamp}\!\left[\frac{\#\{\hat\theta^*_b<\hat\theta\}}{B},\ \frac{1}{B+1},\ \frac{B}{B+1}\right]\right)$$
 
-→ `src/lib/stats/pls.js:2391–2376`（計數 `2353–2354`、夾擠 `2356`、$\Phi^{-1}$ `2357`）
+→ `src/lib/stats/pls.js:2452–2437`（計數 `2353–2354`、夾擠 `2356`、$\Phi^{-1}$ `2357`）
 
 ★ **兩個慣例選擇（都待原文核定）**：
 
@@ -60,10 +60,10 @@ $$\hat a=\frac{\sum_{i=1}^{n}\left(\bar\theta_{(\cdot)}-\hat\theta_{(i)}\right)^
 
 其中 $\bar\theta_{(\cdot)}$ 為 jackknife 估計的平均。
 
-→ `pls.js:2396–2386`（平均 `2359`、二階與三階和 `2360–2366`、組裝 `2367`）
+→ `pls.js:2457–2447`（平均 `2359`、二階與三階和 `2360–2366`、組裝 `2367`）
 
-退化保護：分母的二階和 $\le 10^{-24}$ 時 $a=0$（`pls.js:2386`）；
-jackknife 少於 3 筆時 $a=0$（`pls.js:2396`）。
+退化保護：分母的二階和 $\le 10^{-24}$ 時 $a=0$（`pls.js:2447`）；
+jackknife 少於 3 筆時 $a=0$（`pls.js:2457`）。
 
 ★ **待原文核定的兩點**：分母的 $3/2$ 次方，以及 jackknife 偏差項的**符號方向**
 （$\bar\theta_{(\cdot)}-\hat\theta_{(i)}$ 或 $\hat\theta_{(i)}-\bar\theta_{(\cdot)}$——
@@ -79,26 +79,26 @@ $$\text{CI}_{\text{BCa}}=\left[\ Q(\alpha_1),\ Q(\alpha_2)\ \right]$$
 
 $Q(\cdot)$ 為 R type 7 線性內插分位數（同 `pls-bootstrap.md` §3.4）。
 
-→ `pls.js:2388–2393`（$\alpha_{\text{adj}}$）、`2375–2376`（兩個端點）、`2377`（取分位數）
+→ `pls.js:2449–2454`（$\alpha_{\text{adj}}$）、`2375–2376`（兩個端點）、`2377`（取分位數）
 
 退化保護：$|1-\hat a(\hat z_0+z)|\le10^{-12}$ 時直接回 1 或 0（依 $\hat z_0+z$ 的正負），
-即區間端點取到分布的極值（`pls.js:2391`）。
+即區間端點取到分布的極值（`pls.js:2452`）。
 
 ### 3.4 在引擎裡的成本
 
 BCa 開啟時，除了 $B$ 次重抽，還要跑 **$n$ 次 leave-one-out 全管線重估**
 （含多階段的 HOC／調節、PLSc 校正）。
 
-→ `pls.js:2523–2545`（jackknife 迴圈）
+→ `pls.js:2584–2606`（jackknife 迴圈）
 
 ## 4. 假設前提與本工具的檢核方式
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| 有效 jackknife ≥ 3 | 計數 | `bca-failed`，訊息建議改用 percentile | `pls.js:2541–2543` |
-| $a$ 的分母非退化 | 二階和 > 1e−24 | $a=0$（退化為 BC，只做偏誤校正） | `pls.js:2386` |
-| $\alpha_{\text{adj}}$ 的分母非退化 | $\lvert\text{denom}\rvert>10^{-12}$ | 端點取分布極值 | `pls.js:2390–2392` |
-| $z_0$ 的 $\Phi^{-1}$ 有限 | 比例夾擠 | 恆有限 | `pls.js:2375` |
+| 有效 jackknife ≥ 3 | 計數 | `bca-failed`，訊息建議改用 percentile | `pls.js:2611–2604` |
+| $a$ 的分母非退化 | 二階和 > 1e−24 | $a=0$（退化為 BC，只做偏誤校正） | `pls.js:2447` |
+| $\alpha_{\text{adj}}$ 的分母非退化 | $\lvert\text{denom}\rvert>10^{-12}$ | 端點取分布極值 | `pls.js:2451–2453` |
+| $z_0$ 的 $\Phi^{-1}$ 有限 | 比例夾擠 | 恆有限 | `pls.js:2436` |
 | 樣本量足以讓 $a$ 穩定 | **不檢核** | 無警告（見第 6 節） | — |
 | 統計量無並列 | **不檢核** | 無警告；並列慣例本身待原文核定 | — |
 
@@ -165,10 +165,10 @@ R type 7 分位數，對六欄比對，**最大絕對差 0.0（逐位元相同�
 
 | UI 欄位 | 對應公式 | 程式碼 |
 |---|---|---|
-| 95% CI 下界（ciType = bca） | 3.3 $Q(\alpha_1)$ | `pls.js:2396` |
-| 95% CI 上界（ciType = bca） | 3.3 $Q(\alpha_2)$ | `pls.js:2396` |
-| 有效 jackknife 次數 `nJackknife` | 3.4 | `pls.js:2527`、`2538` |
-| `bca-failed` 錯誤 | §4 | `pls.js:2541–2543` |
+| 95% CI 下界（ciType = bca） | 3.3 $Q(\alpha_1)$ | `pls.js:2457` |
+| 95% CI 上界（ciType = bca） | 3.3 $Q(\alpha_2)$ | `pls.js:2457` |
+| 有效 jackknife 次數 `nJackknife` | 3.4 | `pls.js:2588`、`2538` |
+| `bca-failed` 錯誤 | §4 | `pls.js:2611–2604` |
 
 ★ **$z_0$ 與 $a$ 本身不在報表上**。它們是中間量，只在基準組與 `bcaInterval()` 的回傳值裡。
 這是刻意的（一般使用者不需要看），但也意味著**使用者無法從 UI 判斷校正幅度有多大**。

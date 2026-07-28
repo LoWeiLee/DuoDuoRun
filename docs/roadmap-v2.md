@@ -10,12 +10,13 @@
 **目前狀態一句話**：PLS 的**功能面已收尾**（P1 殘項全清、三項會動統計核心的都交付），
 但**溯源面沒有全部結案**——82 組基準中 2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。
 功能開發（階段 B）尚未動工。
-最近一次本機全套驗收：**1,224 過、6 跳過、13 檔全綠**（2026-07-26，階段 A / A1 收尾後）。
+最近一次本機全套驗收：**1,237 過、6 跳過、13 檔全綠**（2026-07-26，階段 A / A2 收尾後）。
 
-**★ 現在的下一步：階段 A 的 A2**（Kevin 2026-07-25 裁決；2026-07-26 開工）。
-**A1 已全數交付（10 / 10）**，模板規格定案，紅隊 **R2–R12 十二項全部處置完畢**（見 §6.6）；
+**★ 現在的下一步：階段 A 的 A3**（Kevin 2026-07-25 裁決；2026-07-26 開工）。
+**A1 與 A2 皆已全數交付（各 10 / 10，共 20 份方法文件）**，模板規格定案。
+紅隊累計 **23 項（R2–R23）全部處置完畢**——A1 的 R2–R12、A2 的 R13–R23 皆已修或已記錄。
 唯一未結案的是「bootstrap 的 $p$ 值口徑未對 seminr 核對」，卡本機 R。
-基準組 82 → **83**（新增 `pls_plsc_pw`）。下一步接 **A2：PLS 調節／高階／中介**（10 個方法群）。
+基準組 82 → **83**。下一步接 **A3：PLS 進階分析（W5／W6）**（10 個方法群）。
 不要跳過它直接做 Wave F1——階段 A 的目的正是先確認「已經做好的東西是否可信」，
 再往上疊新功能。
 
@@ -504,11 +505,33 @@ L3／L4 一律同步記入本節 6.6 的「紅隊待辦」表（含 Kevin 的裁
 Fornell-Larcker／HTMT）、`pls_fit`＋`pls_gof`、bootstrap（percentile／`pls_bca_reference`）、
 `pls_q2`、`pls_pairwise_wpls`
 
-**A2 — PLS 調節／高階／中介（tier B 密集）** ⬜
-`pls_mediation`、`pls_mod_twostage`、`pls_mod_pi`、`pls_mod_ortho`、`pls_quadratic`、
-`pls_mod_threeway`、`pls_hoc_repeated`、`pls_hoc_disjoint`、`pls_hoc_embedded`、`pls_modmed`
+**A2 — PLS 調節／高階／中介（tier B 密集）** ✅ **完成（10 / 10，2026-07-26）**
+`pls-mediation`、`pls-moderation-twostage`、`pls-moderation-product-indicator`、
+`pls-moderation-orthogonal`、`pls-quadratic`、`pls-moderation-threeway`、
+`pls-hoc-repeated`、`pls-hoc-disjoint`、`pls-hoc-embedded`、`pls-moderated-mediation`。
+十組獨立重寫全數通過（最大差 4.4e−16）。紅隊開出 11 項，8 項已修／已記錄、3 項待裁決。
+★ 本批最重要的一項是 **R13：A1 自己引入的假陽性**（交互構念的乘積指標被誤判為「反向題未反向計分」）——
+說明「加警告」也需要跨情境驗證，不能只在原始情境測過就算數。
 
-**A3 — PLS 進階分析（W5／W6，tier B 密集）** ⬜
+**A3 — PLS 進階分析（W5／W6，tier B 密集）** 🔄 **已開工（0 / 10 交付，3 組已完成獨立重寫驗證）**
+★ **A3 的規模明顯大於前兩批**：基準欄位數 A1 約 120、A2 約 80，**A3 超過 350**
+（`pls_fimix` 71 欄、`pls_cta` 50 欄、`pls_predict` 49 欄、`pls_pos` 39 欄、`pls_copula` 30 欄），
+且含 EM 迭代（FIMIX）、爬山法（POS）、k-fold 交叉驗證（PLSpredict）、bootstrap tetrad（CTA）
+等需要完整重寫演算法的項目。建議**單獨一個 session 執行**，不與其他工作混排。
+
+2026-07-26 已完成的獨立重寫驗證（可直接沿用，不需重跑）：
+
+| 組 | 欄位 | 最大絕對差 |
+|---|---|---|
+| `pls_mga_formulas` | 11 | 2.78e−17 |
+| `pls_mga_perm` | 3（含 40 組 permDiffs 逐值） | 3.33e−16 |
+| `pls_itcriteria` | 12 | **0.0** |
+
+待驗證：`pls_micom`、`pls_predict`、`pls_ipma`、`pls_cipma`、`pls_cta`、`pls_copula`、
+`pls_fimix`、`pls_pos`（後四組需重寫 bootstrap tetrad／copula 迴圈／EM／爬山法）。
+
+★ **`pls_fimix` 維持 pending**：Kevin 2026-07-26 再次確認 Hahn et al. (2002) 與 
+Sarstedt et al. (2011) 仍取不到，A3 的文件將據實標註「取得管道已窮盡」，不以替代驗證充當結案。
 `pls_mga_formulas`＋`pls_mga_perm`、`pls_micom`、`pls_predict`（含多次重複）、
 `pls_itcriteria`、`pls_ipma`、`pls_cipma`、`pls_cta`、`pls_copula`、`pls_fimix`、`pls_pos`
 
@@ -547,6 +570,17 @@ Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn�
 | R11 | A1 | `pls_pairwise_wpls` | L1 | `pw_minPairs`／`pw_minEig` 兩欄在 adapters 直接從 fixture 讀回 → `compare.test.js` 比的是「fixture vs fixture」，59 欄實際只有 57 欄被覆蓋 | 書面記錄；真正覆蓋需引擎回傳診斷欄位（功能變更，不屬階段 A） | ✅ 已記錄 |
 | R12 | A1 | `pls_pairwise_wpls` | L2 | APA 敘述句未揭露**缺失值處理方式**與**是否使用抽樣權重**。pairwise 下 N 是未剔除的列數，讀者會以為沒有缺失值 | `intro`／`introNoBoot` 加 `{data}`／`{weighted}` 兩個插槽，四種情境（完整／casewise 有剔除／pairwise／WPLS）中英各一；WPLS 片語含「推論仍以未加權重抽建立」。引擎 `meta` 新增 `weighted` 欄位 | ✅ 核定並已執行。`apaNarrative.js`＋`pls.js:1888`，＋6 條敘述句測試 |
 | — | A1 | `pls-bootstrap` | — | bootstrap 的 $p$ 值口徑（$t$ 分布、$df=B'-1$）**未對 seminr／SmartPLS 核對** | 需本機 R 抽驗 | ⬜ **卡本機資源**，併入 §2.3 清單 |
+| **R13** | A2 | `pls_mod_pi`／`pls_mod_ortho` | **L2** | ★ **A1 自己引入的假陽性**：A1 的 R4 警告在交互構念上誤報。乘積指標的 loading 正負混雜是正常性質（實測 9 個 loading 中有一個 −0.047），卻每次都跳「常見原因為反向題未事先反向計分」 | `reportFromStage` 的資料品質警訊迴圈排除交互構念（`ctx.interactionLVs`） | ✅ 已修（L2 當場修）＋3 條測試，含「一般構念的未反向計分仍須被抓到」 |
+| R14 | A2 | `pls_mod_pi` | L2 | 交互構念進信效度表並亮紅燈（實測 AVE = 0.286、rho_A = 0.419），但乘積指標的收斂效度門檻本來就不適用 | 信效度表對交互構念單列、照列數字但不判紅綠、不計入列首燈號，名稱後標「（交互構念）」 | ✅ 核定並已執行（2026-07-26） |
+| R15 | A2 | `pls_hoc_repeated`／`pls_gof` | L3 | repeated HOC 下 model fit 因矩陣奇異不計算（有警告），**但 GoF 照算**，且 communality 把重複掛載的指標算兩次（實測 **0.472 vs 同資料非 HOC 的 0.258**） | `fit === null` 時 GoF 一併回 `null` | ✅ 核定並已執行＋2 條測試 |
+| R16 | A2 | `pls_mediation` | L2 | VAF 會跑出 $[0,1]$（實測直接與間接反號時 **−222%**）；無 direct path 時恆為 100%（模型設定的套套邏輯） | 兩種情形下 VAF 欄顯示「—」＋滑鼠提示說明原因；引擎回傳值不變 | ✅ 核定並已執行＋1 條測試 |
+| R17 | A2 | 三種調節法 | L1 | 同資料同規格下交互係數為 **+0.147／−0.195／+0.335**，**連正負號都不同**（量尺可換算，符號不同是方法差異） | 書面記錄；提醒「方法選擇應在看結果之前由理論決定」屬教學文字，併入未來 Notes 修訂 | ✅ 已記錄 |
+| R18 | A2 | `pls_quadratic` | L1 | 二次項的正負 ≠ 曲線走向（實測 $b_q=+0.051$ 但三個水準斜率為 −0.226／−0.123／−0.021，全段皆負） | 寫入 §2 常見誤用；工具本來就同時回報條件斜率，資訊是齊的 | ✅ 已記錄 |
+| R20 | A2 | `pls_hoc_disjoint` | L1 | HOC→HOC 的路徑改寫（笛卡兒積展開）分支**未被基準覆蓋**（基準模型只有一個 HOC） | 書面記錄；HOC 功能擴充時應優先補該情境的基準 | ✅ 已記錄 |
+| R23 | A2 | `pls_modmed` | L1 | 同一個交互項產生兩筆條件間接效果（X↔W 對稱），數值正確但可能造成困惑 | 書面記錄；要區分理論上的自變數需使用者宣告，屬功能擴充 | ✅ 已記錄 |
+| **R19** | A2 | `pls_mod_threeway` | L2 | **三向交互的階層完整性不檢核**。只宣告三向項而不宣告 3 個兩向項時照跑照出數字，而該係數**無法解釋**（吸收了本該由兩向項承擔的變異），報表完全看不出來 | `buildPlan` 檢查相異因子數 ≥ 3 的交互項，逐一比對其全部二元子集；缺少時**指名缺了哪幾個**並警告，不擋 | ✅ 核定並已執行（2026-07-26）。`pls.js:1373–1396`＋3 條測試（含「二次效果不得誤觸發」） |
+| **R21** | A2 | `pls_hoc_embedded` | L2 | embedded 法在模型語法中的值是 `'two-stage'`；寫 `'embedded'` 會被擋，訊息雖列出三個合法值但**沒說明「你要的 embedded 就是 two-stage」** | 驗證器接受 `'embedded'` 並正規化為 `'two-stage'`，錯誤訊息一併列出別名 | ✅ 核定並已執行。`pls.js:311–316`＋2 條測試（兩種寫法逐值等價） |
+| **R22** | A2 | `pls_modmed` | L2 | 不符範圍限制（非兩步鏈／非 two-stage 交互／調節變數在鏈上）時 `moderatedMediation` **靜默為 null**，UI 無表也無訊息，使用者以為功能不支援 | 依情形分兩種訊息：沒有可用交互項時**指名實際估計法**；有可用交互項時列出三個可能原因 | ✅ 核定並已執行。`pls.js:2281–2300`＋2 條測試 |
 
 ### 6.7 完成判準（全部達成才算階段 A 結案）
 
@@ -566,6 +600,9 @@ Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn�
 - ★ **凡涉及「使用者實際會看到什麼」的檢查項（錯誤訊息、警告文字、燈號），一律必須實跑，
   不接受讀碼推論。** A1 的 R7 就是讀碼推出「錯誤訊息歸因錯誤」，實測後證明推論本身是錯的
   （實際訊息正確，只是沒指名構念）。成本很低，一段 node 腳本即可。
+- ★ **行號重驗要用「內容錨定法」，不要用「分段位移法」。** A2 踩過的坑：位移規則會讓
+  **範圍引用的起點被單一引用的規則二次替換**（`1930–1951` 先產生，接著 `1930→1939` 又改掉起點）。
+  正確做法是對每處引用印出當前檔案的實際內容與文件語境，逐條比對後用佔位符一次性替換。
 - ★ **每批交付前必須跑一次行號重驗，且要放在所有程式碼修改之後。** A1 十份文件共 238 處
   `pls.js` 行號引用；修完該批的 L3／L4 後 `pls.js` 增加 16 行，當場失效 94 處。
   做法：對每處引用取出當前檔案的實際內容，比對是否仍指向預期片段，不符者用錨定字串重新定位。

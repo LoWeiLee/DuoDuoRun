@@ -47,7 +47,7 @@ PLSc 回答的是：**如果把測量誤差造成的衰減除掉，路徑係數�
 
 $$c^2=\frac{\hat{\mathbf{w}}'\big(\mathbf{S}-\operatorname{diag}\mathbf{S}\big)\hat{\mathbf{w}}}{\hat{\mathbf{w}}'\big(\hat{\mathbf{w}}\hat{\mathbf{w}}'-\operatorname{diag}(\hat{\mathbf{w}}\hat{\mathbf{w}}')\big)\hat{\mathbf{w}}},\qquad \hat{\boldsymbol{\lambda}}=c\cdot\hat{\mathbf{w}}$$
 
-→ `src/lib/stats/pls.js:998–1014`（$c^2$ 於 `1012`，一致 loadings 於 `1014`）
+→ `src/lib/stats/pls.js:1002–1018`（$c^2$ 於 `1012`，一致 loadings 於 `1014`）
 
 直覺：分子是區塊內**非對角**的加權共變異（＝共同因素該解釋的部分），分母是同一組權重下的
 「若全由單一因素驅動」應有的量。兩者的比值就是衰減倍率的平方。
@@ -58,18 +58,18 @@ $$\rho_{A,j}=(\hat{\mathbf{w}}'\hat{\mathbf{w}})^2\cdot c^2,\qquad q_j=\sqrt{\rh
 
 $$r^{c}_{ab}=\frac{r_{ab}}{q_a\,q_b}\quad(a\neq b),\qquad r^{c}_{aa}=1$$
 
-→ `pls.js:1015`（$\rho_A$）、`1022`（反衰減後的構念相關矩陣）
+→ `pls.js:1019`（$\rho_A$）、`1022`（反衰減後的構念相關矩陣）
 
 ★ 這與 `pls-reliability-validity.md` §3.2 的 $\rho_A$ **是同一個量**——那裡由 `blockReliability`
 直接算，這裡由 $c^2$ 導出。兩條路徑代數等價（$\rho_A=(\hat{\mathbf{w}}'\hat{\mathbf{w}})^2\cdot c^2$ 展開即得），
-這也是 `pls.js:1804–1810` 之所以能「$\alpha$ 與 $\rho_A$ 本身不因 PLSc 而變」的原因。
+這也是 `pls.js:1834–1840` 之所以能「$\alpha$ 與 $\rho_A$ 本身不因 PLSc 而變」的原因。
 
 ### 3.3 ★ 區塊相關矩陣的來源（本組的關鍵口徑）
 
 $\mathbf{S}$ **一律取自迭代所用的相關矩陣** `spec.corrMatrix`（存在時），只有完整資料
 （`spec.corrMatrix` 為 `undefined`）才回到欄位相關。
 
-→ `pls.js:985`（取得）、`995–997`（使用）
+→ `pls.js:989`（取得）、`995–997`（使用）
 
 為什麼要特別寫一節：pairwise deletion 下欄位是補值過的（NaN→0，＝原尺度均值補值）、
 WPLS 下欄位是未加權標準化的，兩者的欄位相關**都不等於**該模式真正的相關矩陣。
@@ -84,7 +84,7 @@ WPLS 下欄位是未加權標準化的，兩者的欄位相關**都不等於**�
 | 任一一致 loading 的 $|\hat\lambda|>1$ | 逐項檢查 | **警告不截斷** |
 | 任一 $|r^{c}_{ab}|>1$ | 逐對檢查 | **警告不截斷**，並提示校正後矩陣可能非正定 |
 
-→ `pls.js:1008–1010`（$c^2$ 退化）、`1017–1019`（loading > 1）、`1023–1031`（相關 > 1）
+→ `pls.js:1012–1014`（$c^2$ 退化）、`1017–1019`（loading > 1）、`1023–1031`（相關 > 1）
 
 ★ 「不截斷」是刻意的：$|\hat\lambda|>1$ 或 $|r^c|>1$ 是「資料不支持這個共同因素模型」的訊號，
 截斷成 1 會讓報表看起來正常。對齊 cSEM 的慣例。
@@ -93,28 +93,28 @@ WPLS 下欄位是未加權標準化的，兩者的欄位相關**都不等於**�
 
 | 量 | 是否改用校正值 | 位置 |
 |---|---|---|
-| 外部 loadings | ✅ 一致 loadings | `pls.js:1014` |
+| 外部 loadings | ✅ 一致 loadings | `pls.js:1018` |
 | 外部 weights | ❌ 不變 | — |
-| 構念相關 / Fornell-Larcker 非對角 | ✅ 反衰減後 | `pls.js:1022` |
-| 路徑係數 / $R^2$ / $f^2$ / 內部 VIF | ✅（全部改用校正後相關矩陣重解） | `pls.js:1226–1231` |
-| CR (rho_c) / AVE | ✅ 改用一致 loadings | `pls.js:1804–1810` |
-| Cronbach's α / $\rho_A$ | ❌ 本身不變 | `pls.js:1804` |
-| HTMT | ❌ 走原始指標相關 | `pls.js:1822–1823` |
-| Model fit | ✅ 用一致 loadings 與校正後構念相關 | `pls.js:1877–1865` |
-| bootstrap | ✅ 每次重抽都含校正（consistent bootstrapping） | `pls.js:2412–2693` |
+| 構念相關 / Fornell-Larcker 非對角 | ✅ 反衰減後 | `pls.js:1026` |
+| 路徑係數 / $R^2$ / $f^2$ / 內部 VIF | ✅（全部改用校正後相關矩陣重解） | `pls.js:1230–1235` |
+| CR (rho_c) / AVE | ✅ 改用一致 loadings | `pls.js:1834–1840` |
+| Cronbach's α / $\rho_A$ | ❌ 本身不變 | `pls.js:1834` |
+| HTMT | ❌ 走原始指標相關 | `pls.js:1852–1853` |
+| Model fit | ✅ 用一致 loadings 與校正後構念相關 | `pls.js:1910–1900` |
+| bootstrap | ✅ 每次重抽都含校正（consistent bootstrapping） | `pls.js:2473–2754` |
 
 ## 4. 假設前提與本工具的檢核方式
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| 反映型（共同因素）測量 | 只校正 `mode='reflective'` 且 $k\ge2$ 的區塊 | 形成型與單指標的衰減係數視為 1（不校正） | `pls.js:993` |
-| 不與調節／高階構念併用 | 建模階段檢查 | **硬擋** `plsc-w4-not-supported` | `pls.js:1350–1355` |
-| $c^2>0$ | 逐構念檢查 | 該構念退回未校正＋警告 | `pls.js:1008–1010` |
-| 校正後矩陣正定 | Model fit 階段檢查 | $d_G$／NFI 回 `null`＋警告 | `pls.js:1877–1862` |
+| 反映型（共同因素）測量 | 只校正 `mode='reflective'` 且 $k\ge2$ 的區塊 | 形成型與單指標的衰減係數視為 1（不校正） | `pls.js:997` |
+| 不與調節／高階構念併用 | 建模階段檢查 | **硬擋** `plsc-w4-not-supported` | `pls.js:1354–1359` |
+| $c^2>0$ | 逐構念檢查 | 該構念退回未校正＋警告 | `pls.js:1012–1014` |
+| 校正後矩陣正定 | Model fit 階段檢查 | $d_G$／NFI 回 `null`＋警告 | `pls.js:1910–1897` |
 | 信度足夠使 $\rho_A$ 穩定 | **不檢核** | 無警告（見第 6 節） | — |
 | 其餘 | 同 `pls-basic.md` §4 | | |
 
-★ blindfolding Q² 一律以 composite 估計計算（`consistent: false` 強制覆寫，`pls.js:2272`）——
+★ blindfolding Q² 一律以 composite 估計計算（`consistent: false` 強制覆寫，`pls.js:2333`）——
 Q² 是預測導向指標，用校正後的「真值」算預測誤差沒有意義。
 
 ## 5. 參考文獻
@@ -179,15 +179,15 @@ $\rho_A$ 的式號在文獻與第三方文件中說法不一（seminr 說明文�
 
 | UI 欄位 | 對應公式 | 程式碼 |
 |---|---|---|
-| 外部負荷量（PLSc 開啟時） | 3.1 $\hat\lambda=c\hat w$ | `pls.js:1014` |
-| rho_A（PLSc 區塊） | 3.2 | `pls.js:1015` |
-| 構念相關矩陣 | 3.2 $r^c$ | `pls.js:1022` |
-| Fornell-Larcker 非對角 | 3.2 | `pls.js:1815–1820` |
-| Fornell-Larcker 對角（$\sqrt{\text{AVE}}$） | 3.5（改用一致 loadings） | `pls.js:1804–1810` |
-| CR / AVE | 3.5 | `pls.js:1804–1810` |
-| 路徑係數 / $R^2$ / $f^2$ / 內部 VIF | 3.5（校正後矩陣重解） | `pls.js:1226–1231` |
+| 外部負荷量（PLSc 開啟時） | 3.1 $\hat\lambda=c\hat w$ | `pls.js:1018` |
+| rho_A（PLSc 區塊） | 3.2 | `pls.js:1019` |
+| 構念相關矩陣 | 3.2 $r^c$ | `pls.js:1026` |
+| Fornell-Larcker 非對角 | 3.2 | `pls.js:1845–1850` |
+| Fornell-Larcker 對角（$\sqrt{\text{AVE}}$） | 3.5（改用一致 loadings） | `pls.js:1834–1840` |
+| CR / AVE | 3.5 | `pls.js:1834–1840` |
+| 路徑係數 / $R^2$ / $f^2$ / 內部 VIF | 3.5（校正後矩陣重解） | `pls.js:1230–1235` |
 | 設定行的「PLSc 已啟用」標記 | — | `zh-TW.js` 的 `pls.result.plscTag` |
-| 三種警告 | 3.4 | `pls.js:1008–1010`、`1017–1019`、`1023–1031` |
+| 三種警告 | 3.4 | `pls.js:1012–1014`、`1017–1019`、`1023–1031` |
 
 **孤兒欄位檢查**：`report.plsc.rhoA` 是 PLSc 專屬的唯一額外欄位，對應 §3.2。未發現孤兒欄位。
 
@@ -208,7 +208,7 @@ $\rho_A$ 的式號在文獻與第三方文件中說法不一（seminr 說明文�
 
 ### ★ R6（L4，已修）PLSc 與 pairwise／WPLS 併用時，一致化走錯相關矩陣
 
-**位置**：`pls.js:995`（`plscAdjust`），修正前為
+**位置**：`pls.js:999`（`plscAdjust`），修正前為
 
 ```js
 const S = b.map((a) => b.map((c) => (a === c ? 1 : corrOf(cols[a], cols[c]))))
@@ -216,7 +216,7 @@ const S = b.map((a) => b.map((c) => (a === c ? 1 : corrOf(cols[a], cols[c]))))
 
 它從**欄位**重算區塊相關矩陣。但 pairwise 模式下欄位是補值的（NaN→0），WPLS 模式下是未加權的，
 真正的相關矩陣在 `spec.corrMatrix`。引擎其他每一處都走 `spec.corrMatrix`
-（`pls.js:810`、`1197`、`1737–1740`），**只有 `plscAdjust` 漏了**。
+（`pls.js:814`、`1197`、`1737–1740`），**只有 `plscAdjust` 漏了**。
 
 **數值後果**（既有 `pw` 遮罩資料，缺失率約 11.4%）：
 
@@ -235,7 +235,7 @@ PLSc 把構念相關除以 $q_aq_b$ 反衰減，分母被低估 → 路徑高估
 
 **處置（Kevin 2026-07-26 核定，已執行）**
 
-1. `plscAdjust` 改走 `spec.corrMatrix`（`pls.js:985`、`995–997`）。完整資料時 `spec.corrMatrix`
+1. `plscAdjust` 改走 `spec.corrMatrix`（`pls.js:989`、`995–997`）。完整資料時 `spec.corrMatrix`
    為 `undefined`，回到欄位相關 → **`pls_plsc` 基準組與既有測試逐位元不變**。
 2. 新增基準組 **`pls_plsc_pw`**（22 欄），並在 `generate_reference.py` 下**結構性 assert**：
    由迭代所用 $\mathbf{R}$ 的區塊子矩陣重算 $\rho_A$ 必須逐位元（1e−12）等於本組值——

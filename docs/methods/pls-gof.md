@@ -42,7 +42,7 @@ $$\overline{\text{communality}}=\operatorname{mean}\left\{\lambda_h^2\ :\ h\in B
 
 $$\overline{R^2}=\operatorname{mean}\left\{R^2_j\ :\ j\ \text{為內生構念}\right\}$$
 
-→ `src/lib/stats/pls.js:1870–1881`（communality 蒐集 `1855–1859`、兩個平均 `1861–1862`、開根號 `1863`）
+→ `src/lib/stats/pls.js:1905–1920`（communality 蒐集 `1855–1859`、兩個平均 `1861–1862`、開根號 `1863`）
 
 ### 3.1 兩個納入範圍的慣例（本工具的選擇）
 
@@ -61,15 +61,15 @@ $$\overline{R^2}=\operatorname{mean}\left\{R^2_j\ :\ j\ \text{為內生構念}\r
 | $\overline{\text{communality}}\le0$ 或 $\overline{R^2}\le0$ | `gof = null`（避免開負根號） |
 | 多階段模型（調節／高階構念） | 不計算（與 model fit 同一個 `skipFit` 旗標） |
 
-→ `pls.js:1871`（`skipFit` 與內生構念檢查）、`1860`、`1863`；UI 只在 `Number.isFinite(gof)` 時顯示該列（`Result.jsx:577`）
+→ `pls.js:1906`（`skipFit` 與內生構念檢查）、`1860`、`1863`；UI 只在 `Number.isFinite(gof)` 時顯示該列（`Result.jsx:577`）
 
 ## 4. 假設前提與本工具的檢核方式
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| 至少一個內生構念 | `sm.structural.length > 0` | 不輸出 GoF 列 | `pls.js:1871` |
-| 至少一個反映型多指標構念 | communality 集合非空 | 不輸出 GoF 列 | `pls.js:1877` |
-| 兩個平均皆為正 | 明確檢查 | 不輸出 GoF 列 | `pls.js:1880` |
+| 至少一個內生構念 | `sm.structural.length > 0` | 不輸出 GoF 列 | `pls.js:1906` |
+| 至少一個反映型多指標構念 | communality 集合非空 | 不輸出 GoF 列 | `pls.js:1910` |
+| 兩個平均皆為正 | 明確檢查 | 不輸出 GoF 列 | `pls.js:1915` |
 | **GoF 有統計意義** | ✗ **無法檢核** | 以 UI 註記聲明不建議使用 | `zh-TW.js` 的 `fitNote` |
 
 ★ 最後一列不是玩笑：這個指標的問題不在實作，而在**它本身沒有推論基礎**。
@@ -135,7 +135,7 @@ $$\overline{R^2}=\operatorname{mean}\left\{R^2_j\ :\ j\ \text{為內生構念}\r
 
 | UI 欄位 | 對應公式 | 程式碼 |
 |---|---|---|
-| 適配表的「GoF」列（只在估計模型欄顯示，飽和欄為「—」） | 3 | `pls.js:1880`；`Result.jsx:577–582` |
+| 適配表的「GoF」列（只在估計模型欄顯示，飽和欄為「—」） | 3 | `pls.js:1915`；`Result.jsx:577–582` |
 | 表下註記末句「官方文件明載不建議作為適配指標」 | §2 | `zh-TW.js` 的 `pls.result.fitNote` |
 
 ★ `meanCommunality` 與 `meanR2` 兩個中間量**在基準組裡有、但 UI 不顯示**。

@@ -69,7 +69,7 @@ PLS-SEM 同時處理兩件事：
 
 $$z_{ih} = \frac{x_{ih}-\bar{x}_h}{s_h},\qquad s_h=\sqrt{\tfrac{1}{n-1}\textstyle\sum_i (x_{ih}-\bar{x}_h)^2}$$
 
-→ `src/lib/stats/pls.js:1259–1301`（`standardizeColArrays`）
+→ `src/lib/stats/pls.js:1263–1305`（`standardizeColArrays`）
 
 ★ **慣例說明**：ddof 取 1 或 0 **不影響任何回報的統計量**。本引擎所有統計量都由相關矩陣 $\mathbf{R}$ 推導（見 3.3），而相關係數是尺度不變量。ddof 只影響構念分數的絕對尺度（供 IPMA／預測等下游使用）。
 
@@ -81,11 +81,11 @@ $$\operatorname{Var}(y_j)=\mathbf{w}_j'\mathbf{R}_{jj}\mathbf{w}_j,\qquad
 \operatorname{corr}(y_j,y_k)=\mathbf{w}_j'\mathbf{R}_{jk}\mathbf{w}_k,\qquad
 \operatorname{corr}(z_h,y_k)=\textstyle\sum_{g\in B_k} w_{kg}R_{hg}$$
 
-→ `src/lib/stats/pls.js:657–799`（`estimateCoreFromCorr`），設計說明見 `handoff-roadmap-v1.md §6.7`
+→ `src/lib/stats/pls.js:661–803`（`estimateCoreFromCorr`），設計說明見 `handoff-roadmap-v1.md §6.7`
 
 **步驟**
 
-**(0) 初始化**：$\mathbf{w}_j \leftarrow \mathbf{1}$，再依 (4) 縮放。→ `pls.js:709–711`
+**(0) 初始化**：$\mathbf{w}_j \leftarrow \mathbf{1}$，再依 (4) 縮放。→ `pls.js:713–715`
 
 **(1) 內部權重** $e_{jk}$，依 weighting scheme：
 
@@ -95,7 +95,7 @@ $$\operatorname{Var}(y_j)=\mathbf{w}_j'\mathbf{R}_{jj}\mathbf{w}_j,\qquad
 | `factorial` | $\operatorname{corr}(y_j,y_k)$ | $\operatorname{corr}(y_j,y_k)$ |
 | `centroid` | $\operatorname{sign}\operatorname{corr}(y_j,y_k)$ | $\operatorname{sign}\operatorname{corr}(y_j,y_k)$ |
 
-→ `pls.js:719–751`。`centroid` 的符號函數在相關恰為 0 時取 $+1$（`e >= 0 ? 1 : -1`，`pls.js:747`）。
+→ `pls.js:723–755`。`centroid` 的符號函數在相關恰為 0 時取 $+1$（`e >= 0 ? 1 : -1`，`pls.js:751`）。
 
 **(2) 內部代理**：$Z_j=\sum_k e_{jk}y_k$
 
@@ -104,31 +104,31 @@ $$\operatorname{Var}(y_j)=\mathbf{w}_j'\mathbf{R}_{jj}\mathbf{w}_j,\qquad
 - Mode A（反映型，correlation weights）：$w_{jh}\ \propto\ \operatorname{cov}(z_h,Z_j)$
 - Mode B（形成型，regression weights）：$\mathbf{w}_j\ \propto\ \mathbf{S}_j^{-1}\,\operatorname{cov}(\mathbf{z}_{B_j},Z_j)$
 
-→ `pls.js:753–777`（Mode B 的 $\mathbf{S}_j^{-1}$ 在迴圈外預算，`pls.js:661–672`）
+→ `pls.js:757–781`（Mode B 的 $\mathbf{S}_j^{-1}$ 在迴圈外預算，`pls.js:665–676`）
 
 ★ **一處刻意的簡化**：原始演算法 Mode A 用 $\operatorname{corr}(z_h,Z_j)$，本實作用 $\operatorname{cov}(z_h,Z_j)$。因為 $\operatorname{sd}(Z_j)$ 對整個區塊是同一個純量，而權重隨後被 (4) 縮放成單位變異，該因子完全相消，兩者結果逐位相同。少一次開根號。
 
-**(4) 正規化**：$\mathbf{w}_j \leftarrow \mathbf{w}_j/\sqrt{\mathbf{w}_j'\mathbf{R}_{jj}\mathbf{w}_j}$，使 $\operatorname{Var}(y_j)=1$。→ `pls.js:700–707`
+**(4) 正規化**：$\mathbf{w}_j \leftarrow \mathbf{w}_j/\sqrt{\mathbf{w}_j'\mathbf{R}_{jj}\mathbf{w}_j}$，使 $\operatorname{Var}(y_j)=1$。→ `pls.js:704–711`
 
-**(5) 收斂**：$\max_{j,h}|w_{jh}^{(t)}-w_{jh}^{(t-1)}|<\text{tol}$，預設 tol $=10^{-7}$、上限 300 次。→ `pls.js:779–789`；預設值 `pls.js:1180–1181`、`1392–1393`
+**(5) 收斂**：$\max_{j,h}|w_{jh}^{(t)}-w_{jh}^{(t-1)}|<\text{tol}$，預設 tol $=10^{-7}$、上限 300 次。→ `pls.js:783–793`；預設值 `pls.js:1184–1185`、`1392–1393`
 
 ★ **慣例分歧**：收斂準則的**定義形式**（絕對最大變化／平方和／相對變化）各實作不同。本工具採「外部權重的最大絕對變化」，數值與上限對齊 SmartPLS 4 的預設（stop criterion $10^{-7}$／300 次）。與 cSEM、seminr 的準則定義是否逐項相同——**未查核**，見第 6 節。
 
-**(6) 符號定向**：若 $\sum_{h\in B_j}\operatorname{corr}(z_h,y_j)<0$ 則整個區塊的權重變號（dominant orientation）。→ `pls.js:791–796`
+**(6) 符號定向**：若 $\sum_{h\in B_j}\operatorname{corr}(z_h,y_j)<0$ 則整個區塊的權重變號（dominant orientation）。→ `pls.js:795–800`
 
 ★ 這是**區塊層級**的翻轉。PLS 的符號不確定性是「整個構念可以同時翻轉」，**不是**「個別指標的正負無所謂」——區塊內出現正負混雜的負荷量是資料問題，不是符號不確定性。
 
-**(7) 構念分數**：$y_{ij}=\sum_{h\in B_j}w_{jh}z_{ih}$。→ `pls.js:824–838`
+**(7) 構念分數**：$y_{ij}=\sum_{h\in B_j}w_{jh}z_{ih}$。→ `pls.js:828–842`
 
 ### 3.4 測量模型量
 
-$$\lambda_{jh}=\operatorname{corr}(z_h,y_j)=\textstyle\sum_{g\in B_j}w_{jg}R_{hg} \qquad \text{→ } \texttt{pls.js:1198–1204}$$
+$$\lambda_{jh}=\operatorname{corr}(z_h,y_j)=\textstyle\sum_{g\in B_j}w_{jg}R_{hg} \qquad \text{→ } \texttt{pls.js:1202–1208}$$
 
-$$r(y_a,y_b)=\mathbf{w}_a'\mathbf{R}_{ab}\mathbf{w}_b \qquad \text{→ } \texttt{pls.js:1205–1222}$$
+$$r(y_a,y_b)=\mathbf{w}_a'\mathbf{R}_{ab}\mathbf{w}_b \qquad \text{→ } \texttt{pls.js:1209–1226}$$
 
-**cross-loadings**：每個指標對**所有**構念分數的相關（此處走分數而非 $\mathbf{R}$）。→ `pls.js:1783–1796–1779`
+**cross-loadings**：每個指標對**所有**構念分數的相關（此處走分數而非 $\mathbf{R}$）。→ `pls.js:1813–1826–1779`
 
-**外部 VIF**（形成型多指標區塊）：$\operatorname{VIF}_h=[\mathbf{S}_j^{-1}]_{hh}$。→ `pls.js:1758–1764`
+**外部 VIF**（形成型多指標區塊）：$\operatorname{VIF}_h=[\mathbf{S}_j^{-1}]_{hh}$。→ `pls.js:1788–1794`
 
 ### 3.5 結構模型
 
@@ -141,10 +141,10 @@ R^2_{\text{adj}}=1-\frac{(1-R^2_j)(n-1)}{n-k-1}$$
 $$f^2_{(m)}=\frac{R^2_{\text{full}}-R^2_{\text{-}m}}{1-R^2_{\text{full}}}\ \text{(Cohen 1988)},\qquad
 \operatorname{VIF}^{\text{inner}}_m=[\mathbf{R}_{PP}^{-1}]_{mm}$$
 
-→ `pls.js:843–903`（迴歸 846–856；adj$R^2$ 866；內部 VIF 867–876；$f^2$ 890–897）
+→ `pls.js:847–907`（迴歸 846–856；adj$R^2$ 866；內部 VIF 867–876；$f^2$ 890–897）
 
 ★ $R^2=\boldsymbol{\beta}'\mathbf{r}$ 只在**標準化**變數下成立；本引擎的構念分數為單位變異，成立。
-★ $f^2$ 的分母當 $1-R^2_{\text{full}}\le 10^{-12}$ 時回傳 `null`（不輸出無意義的巨大值）。`pls.js:894–895`
+★ $f^2$ 的分母當 $1-R^2_{\text{full}}\le 10^{-12}$ 時回傳 `null`（不輸出無意義的巨大值）。`pls.js:898–899`
 
 ### 3.6 信度與效度（僅反映型多指標構念）
 
@@ -152,7 +152,7 @@ $$f^2_{(m)}=\frac{R^2_{\text{full}}-R^2_{\text{-}m}}{1-R^2_{\text{full}}}\ \text
 
 $$\alpha=\frac{k}{k-1}\left(1-\frac{k}{\sum_{a}\sum_{b}S_{ab}}\right)\ \equiv\ \frac{k\bar{r}}{1+(k-1)\bar{r}}$$
 
-→ `pls.js:911–914`。兩式代數等價（本次已符號驗證，見第 8 節）。
+→ `pls.js:915–918`。兩式代數等價（本次已符號驗證，見第 8 節）。
 
 ★ **慣例分歧（重要）**：本工具報的是**標準化 α**（以相關矩陣計算），因為 PLS 對標準化資料運算。SPSS 的 `Reliability` 預設輸出的是**原始分數 α**（以共變異數矩陣計算），題目變異數不等時**兩者數值不同**。這是預期差異，不是錯誤。
 
@@ -160,23 +160,23 @@ $$\alpha=\frac{k}{k-1}\left(1-\frac{k}{\sum_{a}\sum_{b}S_{ab}}\right)\ \equiv\ \
 
 $$\rho_A=(\hat{\mathbf{w}}'\hat{\mathbf{w}})^2\cdot\frac{\hat{\mathbf{w}}'\big(\mathbf{S}-\operatorname{diag}\mathbf{S}\big)\hat{\mathbf{w}}}{\hat{\mathbf{w}}'\big(\hat{\mathbf{w}}\hat{\mathbf{w}}'-\operatorname{diag}(\hat{\mathbf{w}}\hat{\mathbf{w}}')\big)\hat{\mathbf{w}}}$$
 
-→ `pls.js:915–929`
+→ `pls.js:919–933`
 
 **組合信度 rho_c**（Jöreskog 1971）與 **AVE**（Fornell & Larcker 1981）：
 
 $$\rho_c=\frac{(\sum\lambda)^2}{(\sum\lambda)^2+\sum(1-\lambda^2)},\qquad \text{AVE}=\frac{1}{k}\sum\lambda^2$$
 
-→ `pls.js:930–936`
+→ `pls.js:934–940`
 
-**Fornell-Larcker**：對角線 $\sqrt{\text{AVE}}$、非對角線構念相關。→ `pls.js:1815–1820`
+**Fornell-Larcker**：對角線 $\sqrt{\text{AVE}}$、非對角線構念相關。→ `pls.js:1845–1850`
 
 **HTMT**（Henseler, Ringle & Sarstedt 2015）：
 
 $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a}\cdot\bar{r}^{\text{mono}}_{b}}}$$
 
-分子為兩區塊間全部指標配對的平均相關，分母為兩區塊各自區塊內平均相關的幾何平均。→ `pls.js:942–968`
+分子為兩區塊間全部指標配對的平均相關，分母為兩區塊各自區塊內平均相關的幾何平均。→ `pls.js:946–972`
 
-★ **單指標構念的慣例**：$k=1$ 時 $\alpha=\rho_A=\rho_c=\text{AVE}=1$（`pls.js:908`），與 SmartPLS 一致；但 UI 顯示為「—」而非 1.000，避免讀者誤以為單題構念信度完美。HTMT 的單指標配對回傳 `null`。
+★ **單指標構念的慣例**：$k=1$ 時 $\alpha=\rho_A=\rho_c=\text{AVE}=1$（`pls.js:912`），與 SmartPLS 一致；但 UI 顯示為「—」而非 1.000，避免讀者誤以為單題構念信度完美。HTMT 的單指標配對回傳 `null`。
 
 ---
 
@@ -186,19 +186,19 @@ $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| 結構模型為遞迴（無環） | Kahn 拓撲排序 | **硬擋**，回傳 `invalid-model`，訊息點名循環路徑 | `pls.js:422–451` |
-| 無自環 | 逐路徑檢查 | **硬擋** | `pls.js:409` |
-| 樣本量下限 | $n<5$ | **硬擋**，`too-few-cases` | `pls.js:2193` |
-| 樣本量充足性 | $n<30$ | 警告文字（不擋） | `pls.js:2207` |
-| 指標非零變異 | 標準化時檢查 $s_h>0$ | **硬擋**，指名零變異欄位 | `pls.js:1295`、`1274` |
-| 形成型指標不高度共線 | 外部 VIF | 報表燈號：< 3.3 綠、< 5 黃、≥ 5 紅（不擋） | `pls.js:1758–1764`；`Result.jsx:110–115` |
-| 前置構念不高度共線 | 內部 VIF | 同上 | `pls.js:867–876` |
-| 迭代收斂 | 300 次內未達 tol | **硬擋**，`not-converged`，明示「不回傳半成品」 | `pls.js:1473` |
+| 結構模型為遞迴（無環） | Kahn 拓撲排序 | **硬擋**，回傳 `invalid-model`，訊息點名循環路徑 | `pls.js:426–455` |
+| 無自環 | 逐路徑檢查 | **硬擋** | `pls.js:413` |
+| 樣本量下限 | $n<5$ | **硬擋**，`too-few-cases` | `pls.js:2253` |
+| 樣本量充足性 | $n<30$ | 警告文字（不擋） | `pls.js:2245` |
+| 指標非零變異 | 標準化時檢查 $s_h>0$ | **硬擋**，指名零變異欄位 | `pls.js:1299`、`1274` |
+| 形成型指標不高度共線 | 外部 VIF | 報表燈號：< 3.3 綠、< 5 黃、≥ 5 紅（不擋） | `pls.js:1788–1794`；`Result.jsx:110–115` |
+| 前置構念不高度共線 | 內部 VIF | 同上 | `pls.js:871–880` |
+| 迭代收斂 | 300 次內未達 tol | **硬擋**，`not-converged`，明示「不回傳半成品」 | `pls.js:1503` |
 | 測量模式指定正確（反映／形成） | 不自動檢核 | 另由 CTA-PLS 模組以資料檢驗（`pls-cta.md`） | — |
 | 指標為連續或近似連續 | **不檢核** | 無警告 | — |
-| 推論不需常態假設 | 以 bootstrap 取代 | 不適用 | `pls.js:2412–` |
+| 推論不需常態假設 | 以 bootstrap 取代 | 不適用 | `pls.js:2473–` |
 
-★ **缺失值**：預設 casewise deletion（整列剔除並回報剔除筆數，`pls.js:2208`）；另支援 pairwise 與均值補值。pairwise 的溯源另見 `pls-pairwise-wpls.md`。
+★ **缺失值**：預設 casewise deletion（整列剔除並回報剔除筆數，`pls.js:2246`）；另支援 pairwise 與均值補值。pairwise 的溯源另見 `pls-pairwise-wpls.md`。
 
 ---
 
@@ -267,27 +267,27 @@ $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a
 
 | UI 欄位 | 對應公式 | 程式碼 |
 |---|---|---|
-| 外部負荷量 Loading | 3.4 $\lambda_{jh}$ | `pls.js:1774` |
-| 外部權重 Weight | 3.3 (4) 正規化後的 $w_{jh}$ | `pls.js:1778` |
-| 外部 VIF | 3.4 $[\mathbf{S}_j^{-1}]_{hh}$ | `pls.js:1758–1764` |
-| Cross-loadings | 3.4（走分數） | `pls.js:1783–1796–1779` |
-| Cronbach's α | 3.6 標準化 α | `pls.js:911–914` |
-| rho_A | 3.6 | `pls.js:915–929` |
-| CR (rho_c) | 3.6 | `pls.js:934` |
-| AVE | 3.6 | `pls.js:935` |
-| Fornell-Larcker 對角線 | $\sqrt{\text{AVE}}$ | `pls.js:1815–1820` |
+| 外部負荷量 Loading | 3.4 $\lambda_{jh}$ | `pls.js:1804` |
+| 外部權重 Weight | 3.3 (4) 正規化後的 $w_{jh}$ | `pls.js:1808` |
+| 外部 VIF | 3.4 $[\mathbf{S}_j^{-1}]_{hh}$ | `pls.js:1788–1794` |
+| Cross-loadings | 3.4（走分數） | `pls.js:1813–1826–1779` |
+| Cronbach's α | 3.6 標準化 α | `pls.js:915–918` |
+| rho_A | 3.6 | `pls.js:919–933` |
+| CR (rho_c) | 3.6 | `pls.js:938` |
+| AVE | 3.6 | `pls.js:939` |
+| Fornell-Larcker 對角線 | $\sqrt{\text{AVE}}$ | `pls.js:1845–1850` |
 | Fornell-Larcker 非對角線 | 3.4 $r(y_a,y_b)$ | 同上 |
-| HTMT | 3.6 | `pls.js:942–968` |
-| 路徑係數 | 3.5 $\boldsymbol{\beta}$ | `pls.js:853` |
-| $R^2$ | 3.5 | `pls.js:854` |
-| 調整後 $R^2$ | 3.5 | `pls.js:866` |
-| $f^2$ | 3.5 | `pls.js:890–897` |
-| 內部 VIF | 3.5 | `pls.js:867–876` |
-| 構念分數 | 3.3 (7) | `pls.js:824–838` |
-| 迭代次數／收斂狀態 | 3.3 (5) | `pls.js:1891` |
-| weighting scheme／tolerance／maxIterations | 3.3 | `pls.js:1889–1890` |
+| HTMT | 3.6 | `pls.js:946–972` |
+| 路徑係數 | 3.5 $\boldsymbol{\beta}$ | `pls.js:857` |
+| $R^2$ | 3.5 | `pls.js:858` |
+| 調整後 $R^2$ | 3.5 | `pls.js:870` |
+| $f^2$ | 3.5 | `pls.js:894–901` |
+| 內部 VIF | 3.5 | `pls.js:871–880` |
+| 構念分數 | 3.3 (7) | `pls.js:828–842` |
+| 迭代次數／收斂狀態 | 3.3 (5) | `pls.js:1930` |
+| weighting scheme／tolerance／maxIterations | 3.3 | `pls.js:1928–1929` |
 
-**孤兒欄位檢查**：本次逐欄比對 `reportFromStage` 的回傳物件（`pls.js:1886–1911`），未發現無公式對應的欄位。`itCriteria`（AIC／AICc／BIC／HQ）雖在同一函式內計算（`pls.js:878–889`），但屬 `pls_itcriteria` 的職責，於該文件說明。
+**孤兒欄位檢查**：本次逐欄比對 `reportFromStage` 的回傳物件（`pls.js:1925–1950`），未發現無公式對應的欄位。`itCriteria`（AIC／AICc／BIC／HQ）雖在同一函式內計算（`pls.js:882–893`），但屬 `pls_itcriteria` 的職責，於該文件說明。
 
 ---
 
@@ -310,7 +310,7 @@ $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a
 
 第 3 節每一條公式都已回到程式碼定位（行號見各式後方），符號與運算順序逐項相符。另外做了兩件超出「對照」的事：
 
-- **代數等價驗證**：`pls.js:914` 的 $\frac{k}{k-1}(1-\frac{k}{\sum S})$ 與教科書式 $\frac{k\bar r}{1+(k-1)\bar r}$ 代數等價（$\sum S = k+k(k-1)\bar r$ 代入即得）；數值上差 0.00e+00 / 1.11e−16。
+- **代數等價驗證**：`pls.js:918` 的 $\frac{k}{k-1}(1-\frac{k}{\sum S})$ 與教科書式 $\frac{k\bar r}{1+(k-1)\bar r}$ 代數等價（$\sum S = k+k(k-1)\bar r$ 代入即得）；數值上差 0.00e+00 / 1.11e−16。
 - **獨立重寫**：依第 3 節的**文字描述**（不看 `pls.js`）以 numpy 重寫整條 Lohmöller 迭代，對 `pls_basic` 的 28 個純量欄位比對，**最大絕對差 7.15e−8**（迭代 17 次收斂；殘差量級與 plspm 的迭代容差相符）。
   ⇒ 意義：這證明**第 3 節寫的公式，確實就是產生基準值的那組公式**——文件與實作之間沒有漂移。
 
@@ -324,14 +324,14 @@ $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a
 - 推測誤植來源：Dijkstra & Schermelleh-Engel (2014), *Psychometrika*, 79(4)（不同共同作者、不同年份）。
 - **「式 12」的編號無法核實**（MISQ 原文未取得）；seminr 文件另有指向「equation 3」的說法。
 
-出現位置共 5 處：`pls.js:41`、`pls.js:46`、`generate_reference.py:484`、`:589`、`:783`，以及 `reference.json:490`（`pls_plsc` 的 `source` 字串）。
+出現位置共 5 處：`pls.js:45`、`pls.js:50`、`generate_reference.py:484`、`:589`、`:783`，以及 `reference.json:490`（`pls_plsc` 的 `source` 字串）。
 
 **處置（Kevin 2026-07-26 核定，已執行）**：卷期改為 *MIS Quarterly*, 39(2), 297–316，式號刪除並改標「方程式編號待原文核定」。
-`pls.js:41`／`:45`、`generate_reference.py:484`／`:589`／`:783` 已改（L1）；`reference.json` 的 `pls_plsc` source 字串經**完整重生** fixture 更新（L3 核定）——重生後 diff 只有該一行，82 組數值與 `datasets.json` 逐位元相同。
+`pls.js:45`／`:45`、`generate_reference.py:484`／`:589`／`:783` 已改（L1）；`reference.json` 的 `pls_plsc` source 字串經**完整重生** fixture 更新（L3 核定）——重生後 diff 只有該一行，82 組數值與 `datasets.json` 逐位元相同。
 
 ### R3（L3｜已核定並修正）區塊內平均相關為負時，HTMT 輸出可通過的數值
 
-`pls.js:963–964` 的分母為 $\sqrt{\bar r^{\text{mono}}_a\cdot\bar r^{\text{mono}}_b}$。當**兩個**區塊的區塊內平均相關**都是負的**時，乘積為正、開根號有實數解，函式回傳一個有限數值；`Number.isFinite(denom) && denom > 0` 的守衛擋不住這條路徑。（只有**一個**區塊為負時，開根號得 NaN，守衛正確回傳 `null`。）
+`pls.js:967–968` 的分母為 $\sqrt{\bar r^{\text{mono}}_a\cdot\bar r^{\text{mono}}_b}$。當**兩個**區塊的區塊內平均相關**都是負的**時，乘積為正、開根號有實數解，函式回傳一個有限數值；`Number.isFinite(denom) && denom > 0` 的守衛擋不住這條路徑。（只有**一個**區塊為負時，開根號得 NaN，守衛正確回傳 `null`。）
 
 **實測**（沙盒，n=80 合成資料，每個構念含一題未反向計分）：
 
@@ -345,14 +345,14 @@ warnings = []           ← 完全沒有警告
 使用者看到的是「兩紅四綠、零警告」，而真正的診斷（有題目沒反向計分）沒有任何地方講出來。
 
 **處置（Kevin 2026-07-26 核定，已執行）**：$\bar r^{\text{mono}}\le 0$ 時 HTMT 回傳 `null`（與其他不合格配對一致），並在引擎層加一條警告說明原因。
-→ `pls.js:956–958`（守衛）、`pls.js:1825–1841`（警告）。既有 fixture 無此情境，重生後數值零變動；新增 4 條行為測試（`tests/pls.test.js` 末節），其中一條鎖住 `pls_basic` 的 HTMT 不受守衛影響。
+→ `pls.js:960–962`（守衛）、`pls.js:1860–1876`（警告）。既有 fixture 無此情境，重生後數值零變動；新增 4 條行為測試（`tests/pls.test.js` 末節），其中一條鎖住 `pls_basic` 的 HTMT 不受守衛影響。
 
 ### R4（L2｜已核定並修正）未反向計分無任何偵測
 
 `loadingStatus`（`Result.jsx:102–108`）以 `Math.abs(l)` 判燈號。這對「整個構念翻轉」是正確的（符號不確定性確實是區塊層級），但對「**區塊內正負混雜**」就過寬——後者不是符號不確定性，是資料錯誤。
 
 **處置（Kevin 2026-07-26 核定，已執行）**：任一反映型區塊內同時存在正負負荷量時，發出警告指名構念與「反向題未事先反向計分」這個最常見原因。不動任何數值。
-→ `pls.js:1825–1832`。與 R3 在同一個迴圈內實作（同一病灶的兩面）。
+→ `pls.js:1860–1867`。與 R3 在同一個迴圈內實作（同一病灶的兩面）。
 
 ### R5（L2｜已核定並修正）APA 敘述句的宣稱範圍
 

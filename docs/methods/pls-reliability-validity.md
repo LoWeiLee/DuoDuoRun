@@ -50,7 +50,7 @@ $\mathbf{w}$ 為外部權重，$\boldsymbol{\lambda}$ 為外部負荷量，$\bar
 
 $$\alpha=\frac{k}{k-1}\left(1-\frac{k}{\sum_a\sum_b S_{ab}}\right)\ \equiv\ \frac{k\bar r}{1+(k-1)\bar r}$$
 
-→ `src/lib/stats/pls.js:911–914`（實作為左式）。兩式代數等價（代入 $\sum\sum S=k+k(k-1)\bar r$ 即得），
+→ `src/lib/stats/pls.js:915–918`（實作為左式）。兩式代數等價（代入 $\sum\sum S=k+k(k-1)\bar r$ 即得），
 已於階段 A 符號與數值雙重驗證（見第 8 節 R1）。
 
 ★ **慣例分歧（最容易對不上的一項）**：本工具報的是**標準化 α**（以相關矩陣計算），
@@ -64,7 +64,7 @@ $\hat{\mathbf{w}}$ 先正規化使 $\hat{\mathbf{w}}'\mathbf{S}\hat{\mathbf{w}}=
 
 $$\rho_A=(\hat{\mathbf{w}}'\hat{\mathbf{w}})^2\cdot\frac{\hat{\mathbf{w}}'\big(\mathbf{S}-\operatorname{diag}\mathbf{S}\big)\hat{\mathbf{w}}}{\hat{\mathbf{w}}'\big(\hat{\mathbf{w}}\hat{\mathbf{w}}'-\operatorname{diag}(\hat{\mathbf{w}}\hat{\mathbf{w}}')\big)\hat{\mathbf{w}}}$$
 
-→ `pls.js:915–929`（正規化 `916`、分子分母 `919–926`、組裝 `929`）
+→ `pls.js:919–933`（正規化 `916`、分子分母 `919–926`、組裝 `929`）
 
 $\rho_A$ 是唯一同時用到**權重**與**相關矩陣**的信度指標——這是它「介於 α 與 CR 之間」的來源。
 它也是 PLSc 反衰減的分母（見 `pls-plsc.md` §3.2；兩處代數等價）。
@@ -73,18 +73,18 @@ $\rho_A$ 是唯一同時用到**權重**與**相關矩陣**的信度指標——
 
 $$\rho_c=\frac{\left(\sum_h\lambda_h\right)^2}{\left(\sum_h\lambda_h\right)^2+\sum_h(1-\lambda_h^2)}$$
 
-→ `pls.js:934`。分母第二項 $\sum(1-\lambda^2)$ 是誤差變異之和（在標準化尺度下）。
+→ `pls.js:938`。分母第二項 $\sum(1-\lambda^2)$ 是誤差變異之和（在標準化尺度下）。
 
 ### 3.4 AVE 與 Fornell-Larcker
 
 $$\text{AVE}_j=\frac{1}{k}\sum_h\lambda_h^2$$
 
-→ `pls.js:935`
+→ `pls.js:939`
 
 Fornell-Larcker 判準：矩陣**對角線放 $\sqrt{\text{AVE}_j}$、非對角線放構念相關**，
 要求每個構念的 $\sqrt{\text{AVE}}$ 大於它與任何其他構念的相關。
 
-→ `pls.js:1815–1820`（形成型構念的對角線為 `null`）
+→ `pls.js:1845–1850`（形成型構念的對角線為 `null`）
 
 ### 3.5 HTMT（異質-單質比）
 
@@ -93,7 +93,7 @@ $$\text{HTMT}_{ab}=\frac{\bar r^{\text{hetero}}_{ab}}{\sqrt{\bar r^{\text{mono}}
 - 分子 $\bar r^{\text{hetero}}_{ab}$：兩區塊**之間**全部 $k_a\times k_b$ 個指標配對的平均相關
 - 分母：兩區塊各自**內部** $\binom{k}{2}$ 個配對平均相關的**幾何平均**
 
-→ `pls.js:942–968`（單質平均 `943–950`、異質平均 `959–962`、比值 `963–964`）
+→ `pls.js:946–972`（單質平均 `943–950`、異質平均 `959–962`、比值 `963–964`）
 
 判準：< .85（保守）或 < .90（寬鬆）。本工具 UI 用 .85（`Result.jsx:396`）。
 
@@ -102,8 +102,8 @@ $$\text{HTMT}_{ab}=\frac{\bar r^{\text{hetero}}_{ab}}{\sqrt{\bar r^{\text{mono}}
 當**兩個**區塊的 $\bar r^{\text{mono}}$ 都是負的時，分母的乘積為正、開根號有實數解，
 HTMT 會算出一個看似正常（甚至「通過」）的數值。這在數學上成立、在統計上無意義。
 
-現行行為：$\bar r^{\text{mono}}\le 0$ 時 **HTMT 回傳 `null`**（`pls.js:956–958`），
-並在引擎層發出兩條警告（`pls.js:1825–1841`）：
+現行行為：$\bar r^{\text{mono}}\le 0$ 時 **HTMT 回傳 `null`**（`pls.js:960–962`），
+並在引擎層發出兩條警告（`pls.js:1860–1876`）：
 
 1. 區塊內負荷量正負混雜 →「常見原因為反向題未事先反向計分」
 2. 區塊內平均指標相關不為正 →「信度與 HTMT 在此不可詮釋」
@@ -128,9 +128,9 @@ HTMT 會算出一個看似正常（甚至「通過」）的數值。這在數學
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| 反映型測量 | 依 `mode` 分流 | 形成型全部回 `null`，UI 顯示「—」 | `pls.js:1797–1813` |
-| $k\ge2$ | 單指標區塊直接回 1 | UI 顯示「—」（不顯示 1.000） | `pls.js:908`；`Result.jsx:1818` |
-| 區塊內平均相關為正 | 逐區塊檢查（2026-07-26 新增） | HTMT 回 `null` ＋ 兩條警告 | `pls.js:956–958`、`1792–1808` |
+| 反映型測量 | 依 `mode` 分流 | 形成型全部回 `null`，UI 顯示「—」 | `pls.js:1827–1843` |
+| $k\ge2$ | 單指標區塊直接回 1 | UI 顯示「—」（不顯示 1.000） | `pls.js:912`；`Result.jsx:1818` |
+| 區塊內平均相關為正 | 逐區塊檢查（2026-07-26 新增） | HTMT 回 `null` ＋ 兩條警告 | `pls.js:960–962`、`1792–1808` |
 | α 的 tau-equivalence | **不檢核** | 無警告——這是 α 作為下界的已知限制，以三指標並列處理 | — |
 | $\rho_A$ 的估計穩定性 | **不檢核** | 無警告（小樣本時 $\rho_A$ 可 > 1，PLSc 側會警告） | — |
 | HTMT 的推論（bootstrap CI 上界 < 1） | **未實作** | 只給點估計與門檻燈號 | 見第 6 節 |
@@ -192,22 +192,22 @@ HTMT 會算出一個看似正常（甚至「通過」）的數值。這在數學
 4. **$\bar r^{\text{mono}}\le0$ 以外的病態情形未系統性測試**：例如區塊內有一對指標相關為 1
    （重複題）時，$\mathbf{S}$ 奇異但 $\bar r$ 為正，α 與 CR 仍會算出數字。無測試覆蓋。
 5. **pairwise deletion 下的信效度沒有統計理論支持**：$\mathbf{R}$ 的各格來自不同子樣本，
-   α／$\rho_A$／CR 的抽樣性質未知。工具會警告矩陣非半正定（`pls.js:1437–1439`），
+   α／$\rho_A$／CR 的抽樣性質未知。工具會警告矩陣非半正定（`pls.js:1467–1469`），
    但**不會**警告「信度指標在此的解讀有限」。
 
 ## 7. 報表欄位對照
 
 | UI 欄位 | 對應公式 | 程式碼 |
 |---|---|---|
-| Cronbach's α | 3.1 | `pls.js:914` |
-| rho_A | 3.2 | `pls.js:929` |
-| CR | 3.3 | `pls.js:934`（PLSc 時 `1787`） |
-| AVE | 3.4 | `pls.js:935`（PLSc 時 `1788`） |
-| Fornell-Larcker 對角線 | 3.4 $\sqrt{\text{AVE}}$ | `pls.js:1815–1820` |
+| Cronbach's α | 3.1 | `pls.js:918` |
+| rho_A | 3.2 | `pls.js:933` |
+| CR | 3.3 | `pls.js:938`（PLSc 時 `1787`） |
+| AVE | 3.4 | `pls.js:939`（PLSc 時 `1788`） |
+| Fornell-Larcker 對角線 | 3.4 $\sqrt{\text{AVE}}$ | `pls.js:1845–1850` |
 | Fornell-Larcker 非對角線 | 構念相關（見 `pls-basic.md` §3.4） | 同上 |
-| HTMT | 3.5 | `pls.js:963–964` |
+| HTMT | 3.5 | `pls.js:967–968` |
 | 列首燈號（四項全過） | 3.7 | `Result.jsx:294–297` |
-| 兩條資料品質警告 | 3.6 | `pls.js:1825–1841` |
+| 兩條資料品質警告 | 3.6 | `pls.js:1860–1876` |
 
 **孤兒欄位檢查**：信效度表與 HTMT 表的每一欄都有對應公式。`reliability[].mode` 是分流標記，
 非統計量。未發現孤兒欄位。
@@ -229,7 +229,7 @@ HTMT 會算出一個看似正常（甚至「通過」）的數值。這在數學
 
 ### R1（通過）逐式核對、代數等價與獨立重寫
 
-- **代數等價**：`pls.js:914` 的 $\frac{k}{k-1}(1-\frac{k}{\sum S})$ 與教科書式 $\frac{k\bar r}{1+(k-1)\bar r}$
+- **代數等價**：`pls.js:918` 的 $\frac{k}{k-1}(1-\frac{k}{\sum S})$ 與教科書式 $\frac{k\bar r}{1+(k-1)\bar r}$
   符號展開等價，數值差 0.0 / 1.11e−16。
 - **獨立重寫**：依第 3 節文字規格以 numpy 重算五個量，對 `pls_basic` 與 `pls_pairwise_wpls`
   共 19 個信效度欄位比對，**最大絕對差 3.3e−16**。

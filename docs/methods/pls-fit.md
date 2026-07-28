@@ -52,7 +52,7 @@ PLS-SEM 的估計目標是最大化內生構念的被解釋變異，**不是**�
 
 $$\hat\Sigma_{ik}=\begin{cases}1 & i=k\\ \lambda_i\lambda_k & o(i)=o(k)\ (i\neq k)\\ \lambda_i\,R^{lv}_{o(i)o(k)}\,\lambda_k & o(i)\neq o(k)\end{cases}$$
 
-→ `src/lib/stats/pls.js:1076–1084`
+→ `src/lib/stats/pls.js:1080–1088`
 
 ★ 對角線**固定為 1**（不是 $\lambda_i^2$）。這是 composite 模型的慣例：
 指標的變異被完全解釋（誤差併入權重），所以殘差矩陣的對角線恆為 0。
@@ -64,8 +64,8 @@ $$\hat\Sigma_{ik}=\begin{cases}1 & i=k\\ \lambda_i\lambda_k & o(i)=o(k)\ (i\neq 
 
 $$R^{lv}_{jk}=\begin{cases}r_{jk}\ (\text{樣本值}) & j\ \text{為外生構念}\\[2pt] \sum_{q}\beta_{jq}\,R^{lv}_{P_q k} & j\ \text{為內生構念}\end{cases}$$
 
-→ `pls.js:1038–1064`（`impliedLvCorr`）。拓撲順序由 `buildSpec` 的 Kahn 排序提供，
-FIFO 保證外生構念全部排在內生之前（`pls.js:1049–1051` 的註解）。
+→ `pls.js:1042–1068`（`impliedLvCorr`）。拓撲順序由 `buildSpec` 的 Kahn 排序提供，
+FIFO 保證外生構念全部排在內生之前（`pls.js:1053–1055` 的註解）。
 
 ### 3.3 四個指標
 
@@ -73,7 +73,7 @@ FIFO 保證外生構念全部排在內生之前（`pls.js:1049–1051` 的註解
 
 $$\text{SRMR}=\sqrt{\frac{\sum_{i\le k}D_{ik}^2}{p(p+1)/2}},\qquad d_{ULS}=\tfrac12\lVert\mathbf{D}\rVert_F^2=\tfrac12\sum_{i}\sum_{k}D_{ik}^2$$
 
-→ `pls.js:1094`（SRMR）、`1095`（d_ULS）
+→ `pls.js:1098`（SRMR）、`1095`（d_ULS）
 
 令 $\nu_1,\dots,\nu_p$ 為 $\mathbf{S}^{-1}\hat{\boldsymbol{\Sigma}}$ 的特徵值（實作上取
 $\mathbf{M}=\mathbf{S}^{-1/2}\hat{\boldsymbol{\Sigma}}\mathbf{S}^{-1/2}$ 的特徵值，兩者相同但 $\mathbf{M}$ 對稱、數值穩定）：
@@ -84,7 +84,7 @@ $$F_{ML}=\ln|\hat{\boldsymbol{\Sigma}}|-\ln|\mathbf{S}|+\operatorname{tr}(\mathb
 
 $$F_{\text{null}}=-\ln|\mathbf{S}|,\qquad \text{NFI}=1-\frac{F_{ML}}{F_{\text{null}}}$$
 
-→ `pls.js:1098–1123`（$\mathbf{S}^{-1/2}$ 於 `1101–1109`、$\mathbf{M}$ 於 `1110`、
+→ `pls.js:1102–1127`（$\mathbf{S}^{-1/2}$ 於 `1101–1109`、$\mathbf{M}$ 於 `1110`、
 $d_G$ 於 `1120`、$F_{\text{null}}$ 於 `1121–1122`、NFI 於 `1123`）
 
 ★ $F_{\text{null}}$ 的推導：虛無模型 $\boldsymbol{\Sigma}=\mathbf{I}$ 代入 $F_{ML}$ 得
@@ -113,10 +113,10 @@ $0-\ln|\mathbf{S}|+\operatorname{tr}(\mathbf{S})-p$；$\mathbf{S}$ 是相關矩�
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| $\mathbf{S}$ 正定（$d_G$／NFI 需要 $\mathbf{S}^{-1/2}$） | 特徵值全 > 1e−10 | 四指標全部**不計算**＋警告（明指 repeated-indicators 模型屬預期情況） | `pls.js:1856–1865` |
-| $\hat{\boldsymbol{\Sigma}}$ 正定 | $\mathbf{M}$ 的特徵值全 > 1e−12 | $d_G$／NFI 回 `null`＋警告（PLSc 一致 loadings > 1 時可能發生） | `pls.js:1112`、`1814–1816` |
-| 遞迴結構模型（path tracing 需要拓撲順序） | 建模階段的 Kahn 排序 | **硬擋**（見 `pls-basic.md` §4） | `pls.js:422–451` |
-| 多階段模型（調節／高階）不報 fit | `ctx.skipFit` | 最終階段不計算，改由 `stage1` 子報表提供 | `pls.js:1877`；`runPLS` 的 `skipFit: exec.stage1 !== null` |
+| $\mathbf{S}$ 正定（$d_G$／NFI 需要 $\mathbf{S}^{-1/2}$） | 特徵值全 > 1e−10 | 四指標全部**不計算**＋警告（明指 repeated-indicators 模型屬預期情況） | `pls.js:1891–1900` |
+| $\hat{\boldsymbol{\Sigma}}$ 正定 | $\mathbf{M}$ 的特徵值全 > 1e−12 | $d_G$／NFI 回 `null`＋警告（PLSc 一致 loadings > 1 時可能發生） | `pls.js:1116`、`1814–1816` |
+| 遞迴結構模型（path tracing 需要拓撲順序） | 建模階段的 Kahn 排序 | **硬擋**（見 `pls-basic.md` §4） | `pls.js:426–455` |
+| 多階段模型（調節／高階）不報 fit | `ctx.skipFit` | 最終階段不計算，改由 `stage1` 子報表提供 | `pls.js:1910`；`runPLS` 的 `skipFit: exec.stage1 !== null` |
 | $\hat{\boldsymbol{\Sigma}}$ 的分布假設 | **不適用** | 這四個指標沒有抽樣分布檢定；SmartPLS 的做法是 bootstrap 分位數（本工具**未實作**） | 見第 6 節 |
 
 ★ **為什麼多階段模型不報 fit**：two-stage 的最終模型以第一階段的構念分數為單指標，
@@ -174,18 +174,18 @@ $0-\ln|\mathbf{S}|+\operatorname{tr}(\mathbf{S})-p$；$\mathbf{S}$ 是相關矩�
    bootstrap 分布比較（HI95／HI99）。本工具**只給點估計**，這是功能缺口。
 6. **邊界條件未系統性測試**：$\mathbf{S}$ 接近奇異（非 repeated-indicators 的其他成因）、
    $p$ 很大時 $\mathbf{S}^{-1/2}$ 的數值誤差累積——皆無測試覆蓋。
-7. **`jacobiEigen` 的 80 次 sweep 上限**（`pls.js:154`）在極端矩陣上是否足夠收斂，未驗證。
+7. **`jacobiEigen` 的 80 次 sweep 上限**（`pls.js:158`）在極端矩陣上是否足夠收斂，未驗證。
 
 ## 7. 報表欄位對照
 
 | UI 欄位 | 對應公式 | 程式碼 |
 |---|---|---|
-| SRMR（飽和／估計） | 3.3 | `pls.js:1094` |
-| d_ULS（飽和／估計） | 3.3 | `pls.js:1095` |
-| d_G（飽和／估計） | 3.3 | `pls.js:1120` |
-| NFI（飽和／估計） | 3.3 | `pls.js:1123` |
-| GoF 列 | 見 `pls-gof.md` | `pls.js:1870–1881` |
-| 兩條不可計算警告 | 3.4 / §4 | `pls.js:1856–1865` |
+| SRMR（飽和／估計） | 3.3 | `pls.js:1098` |
+| d_ULS（飽和／估計） | 3.3 | `pls.js:1099` |
+| d_G（飽和／估計） | 3.3 | `pls.js:1124` |
+| NFI（飽和／估計） | 3.3 | `pls.js:1127` |
+| GoF 列 | 見 `pls-gof.md` | `pls.js:1905–1920` |
+| 兩條不可計算警告 | 3.4 / §4 | `pls.js:1891–1900` |
 | 表下註記（含 d_G 底數說明） | 3.4 慣例 1 | `zh-TW.js` 的 `pls.result.fitNote` |
 
 **孤兒欄位檢查**：適配表的四列 × 兩欄全部對應 §3.3；GoF 列屬另一份文件。未發現孤兒欄位。
@@ -209,8 +209,8 @@ $0-\ln|\mathbf{S}|+\operatorname{tr}(\mathbf{S})-p$；$\mathbf{S}$ 是相關矩�
 
 - **$F_{ML}$ 的特徵值形式**：驗證 $\ln|\hat\Sigma|-\ln|\mathbf{S}|=\sum\ln\nu_i$ 且
   $\operatorname{tr}(\mathbf{S}\hat\Sigma^{-1})=\operatorname{tr}(\mathbf{M}^{-1})=\sum 1/\nu_i$，
-  故 `pls.js:1118` 的 `fMl += lg + 1/v - 1` 與 §3.3 的閉合式一致。
-- **$F_{\text{null}}=-\ln|\mathbf{S}|$ 的推導**：見 §3.3 末，程式碼 `pls.js:1121–1122` 相符。
+  故 `pls.js:1122` 的 `fMl += lg + 1/v - 1` 與 §3.3 的閉合式一致。
+- **$F_{\text{null}}=-\ln|\mathbf{S}|$ 的推導**：見 §3.3 末，程式碼 `pls.js:1125–1126` 相符。
 - **獨立重寫**：依第 3 節文字規格以 numpy 重算 $\hat{\boldsymbol{\Sigma}}$、path tracing、
   四個指標（飽和與估計各一組），對 8 欄比對，**最大絕對差 2.2e−15**。
 

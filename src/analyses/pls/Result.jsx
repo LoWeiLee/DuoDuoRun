@@ -262,7 +262,7 @@ function FormativeWeightsTable({ rows, weightMap, loadingByKey, bootOk, r, label
   )
 }
 
-function ReliabilityTable({ rows, kByLv, r }) {
+function ReliabilityTable({ rows, kByLv, intLvs, r }) {
   const c = r.cols
   return (
     <div>
@@ -280,6 +280,20 @@ function ReliabilityTable({ rows, kByLv, r }) {
         <tbody>
           {rows.map((q) => {
             const single = (kByLv.get(q.lv) || 0) < 2
+            // R14（階段 A / A2）：交互構念的指標是乘積項，AVE／信度不適用一般門檻，
+            // 照亮紅燈會誤導判讀 → 數字照列（透明），但不判紅綠、不進列首燈號
+            const isInt = intLvs && intLvs.has(q.lv)
+            if (isInt) {
+              return (
+                <tr key={q.lv}>
+                  <Td align="left" mono={false} bold>{q.lv}<span className="ml-1 text-[10px] font-normal text-duo-cocoa-400">{r.interactionTag}</span></Td>
+                  <Td>{fmtNum(q.alpha, 3)}</Td>
+                  <Td>{fmtNum(q.rhoA, 3)}</Td>
+                  <Td>{fmtNum(q.rhoC, 3)}</Td>
+                  <Td>{fmtNum(q.ave, 3)}</Td>
+                </tr>
+              )
+            }
             if (single) {
               return (
                 <tr key={q.lv}>
@@ -783,6 +797,18 @@ function InteractionBlock({ estimate, boot, bootOk, r }) {
 }
 
 /** 中介：直接／特定間接／間接總和／總效果 分解表（bootstrap CI） */
+/**
+ * VAF 不適用的兩種情形（階段 A / A2 紅隊 R16）；回傳說明字串或 null（null = 可正常顯示）。
+ *   1. 沒有直接效果 → VAF 恆為 100%，是模型設定的套套邏輯，不是實證發現
+ *   2. 直接與間接效果反號 → VAF 落在 [0,1] 之外（實測可達 −222%），判讀門檻失效
+ */
+function vafNote(eff, r) {
+  if (eff.vaf === null || !Number.isFinite(eff.vaf)) return r ? r.vafNaLabel : '—'
+  if (eff.direct === null) return r ? r.vafNoDirect : '—'
+  if (eff.direct * eff.totalIndirect < 0) return r ? r.vafOpposite : '—'
+  return null
+}
+
 function MediationTable({ estimate, boot, bootOk, r }) {
   const c = r.cols
   const indMap = new Map()
@@ -861,7 +887,9 @@ function MediationTable({ estimate, boot, bootOk, r }) {
                 <Td align="left" mono={false}>{r.totalIndirectLabel}</Td>
                 <Td>{fmtNum(eff.totalIndirect, 3)}</Td>
                 {bootOk && bootCells(tiMap.get(key))}
-                <Td>{eff.vaf === null ? '—' : `${fmtNum(eff.vaf * 100, 1)}%`}</Td>
+                <Td title={vafNote(eff, r) || undefined}>
+                  {vafNote(eff, r) ? '—' : `${fmtNum(eff.vaf * 100, 1)}%`}
+                </Td>
               </tr>
             )
             rows.push(
@@ -1822,6 +1850,8 @@ function Result() {
   const reflectiveLoadings = meas.outerLoadings.filter((q) => lvModes[q.lv] !== 'formative')
   const formativeWeights = meas.outerWeights.filter((q) => lvModes[q.lv] === 'formative')
   const reflectiveReliability = meas.reliability.filter((q) => q.mode !== 'formative')
+  // 交互構念名稱（R14／R16 的呈現層判斷用）
+  const intLvs = new Set((estimate.interactions || []).map((q) => q.name))
 
   const lastStructural = estimate.structural[estimate.structural.length - 1]
 
@@ -1907,7 +1937,7 @@ function Result() {
         />
       )}
       {reflectiveReliability.length > 0 && (
-        <ReliabilityTable rows={reflectiveReliability} kByLv={kByLv} r={r} />
+        <ReliabilityTable rows={reflectiveReliability} kByLv={kByLv} intLvs={intLvs} r={r} />
       )}
       <FornellLarckerTable estimate={meas} r={r} />
       <HtmtTable estimate={meas} r={r} />

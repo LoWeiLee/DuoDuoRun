@@ -2051,3 +2051,199 @@ describe('階段 A 紅隊 R7／R12：錯誤訊息指名構念、敘述句揭露�
     expect(wp.meta.weighted).toBe(true)
   })
 })
+
+describe('A2 紅隊 R13：交互構念不套用「負荷量正負混雜」警訊', () => {
+  const M = (method) => ({
+    schemaVersion: 1,
+    latentVariables: [
+      { name: 'F1', indicators: ['i1', 'i2', 'i3'] },
+      { name: 'C', indicators: ['cond1', 'cond2', 'cond3'] },
+      { name: 'Y', indicators: ['y'] },
+    ],
+    interactions: [{ name: 'F1xC', factors: ['F1', 'C'], method }],
+    paths: [{ from: 'F1xC', to: 'Y' }],
+  })
+
+  it('★ product-indicator：乘積指標的 loading 正負混雜屬正常，不得誤報', () => {
+    const r = runPLS(main, M('product-indicator'), {})
+    expect(r.error).toBeUndefined()
+    const lo = r.outerLoadings.filter((q) => q.lv === 'F1xC').map((q) => q.loading)
+    // 前提：這批乘積指標確實有正有負（否則本測試沒有鑑別力）
+    expect(lo.some((v) => v > 0) && lo.some((v) => v < 0)).toBe(true)
+    expect(r.meta.warnings.some((w) => w.includes('正負混雜'))).toBe(false)
+  })
+
+  it('orthogonalizing 同樣不得誤報', () => {
+    const r = runPLS(main, M('orthogonal'), {})
+    expect(r.error).toBeUndefined()
+    expect(r.meta.warnings.some((w) => w.includes('正負混雜'))).toBe(false)
+  })
+
+  it('★ 一般構念的未反向計分仍必須被抓到（不可因 R13 而失效）', () => {
+    let s = 12345
+    const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff }
+    const e = () => (rnd() * 2 - 1) * 0.5
+    const rows = []
+    for (let i = 0; i < 80; i++) {
+      const f = rnd() * 2 - 1
+      const g = 0.4 * f + rnd() * 2 - 1
+      rows.push({ a1: f + e(), a2: -f + e(), a3: f + e(), b1: g + e(), b2: g + e(), b3: g + e() })
+    }
+    const r = runPLS(rows, {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'A', indicators: ['a1', 'a2', 'a3'] },
+        { name: 'B', indicators: ['b1', 'b2', 'b3'] },
+      ],
+      paths: [{ from: 'A', to: 'B' }],
+    }, {})
+    expect(r.meta.warnings.some((w) => w.includes('正負混雜'))).toBe(true)
+  })
+})
+
+describe('A2 紅隊 R15／R16：GoF 的 fit 守衛與 VAF 的不適用情形', () => {
+  const LVx = (n, i) => ({ name: n, indicators: i, mode: 'reflective' })
+  const L4 = [LVx('F1', ['i1', 'i2', 'i3']), LVx('F2', ['i4', 'i5', 'i6']),
+    LVx('C', ['cond1', 'cond2', 'cond3']), LVx('Y', ['y'])]
+
+  it('★ R15：repeated HOC 下 model fit 算不出來時，GoF 一併不計算', () => {
+    const r = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4,
+      higherOrder: [{ name: 'G', components: ['F1', 'F2'], mode: 'reflective', method: 'repeated' }],
+      paths: [{ from: 'G', to: 'C' }, { from: 'C', to: 'Y' }],
+    }, {})
+    expect(r.error).toBeUndefined()
+    expect(r.fit).toBeNull()
+    expect(r.gof).toBeNull() // 修正前為 0.472（communality 把重複掛載的指標算兩次）
+    expect(r.meta.warnings.some((w) => w.includes('重複掛載'))).toBe(true)
+  })
+
+  it('一般模型的 GoF 不受守衛影響', () => {
+    const r = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4,
+      paths: [{ from: 'F1', to: 'F2' }, { from: 'F1', to: 'C' },
+        { from: 'F2', to: 'C' }, { from: 'F2', to: 'Y' }],
+    }, {})
+    expect(r.fit).not.toBeNull()
+    expect(r.gof).toBeCloseTo(REF.pls_gof.values.gof, 6)
+  })
+
+  it('★ R16：VAF 的兩種不適用情形確實會出現（呈現層據此標記為不適用）', () => {
+    // (1) 無 direct path → VAF 恆為 1（三構念鏈，避免孤立 LV）
+    const noDirect = runPLS(main, {
+      schemaVersion: 1,
+      latentVariables: [LVx('F1', ['i1', 'i2', 'i3']), LVx('F2', ['i4', 'i5', 'i6']), LVx('Y', ['y'])],
+      paths: [{ from: 'F1', to: 'F2' }, { from: 'F2', to: 'Y' }],
+    }, {})
+    expect(noDirect.error).toBeUndefined()
+    const e1 = noDirect.mediation.effects.find((e) => e.from === 'F1' && e.to === 'Y')
+    expect(e1.direct).toBeNull()
+    expect(e1.vaf).toBeCloseTo(1, 12)
+
+    // (2) 直接與間接反號 → VAF 落在 [0,1] 之外
+    const oppo = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4,
+      interactions: [{ name: 'F1xC', factors: ['F1', 'C'], method: 'two-stage' }],
+      paths: [{ from: 'F1', to: 'F2' }, { from: 'F1xC', to: 'F2' },
+        { from: 'F2', to: 'Y' }, { from: 'F1', to: 'Y' }],
+    }, {})
+    const e2 = oppo.mediation.effects.find((e) => e.from === 'F1' && e.to === 'Y')
+    expect(e2.direct * e2.totalIndirect).toBeLessThan(0)
+    expect(e2.vaf < 0 || e2.vaf > 1).toBe(true)
+  })
+})
+
+describe('A2 待裁決三項：R19 階層完整性／R21 embedded 別名／R22 靜默無輸出', () => {
+  const LVy = (n, i) => ({ name: n, indicators: i, mode: 'reflective' })
+  const L4y = [LVy('F1', ['i1', 'i2', 'i3']), LVy('F2', ['i4', 'i5', 'i6']),
+    LVy('C', ['cond1', 'cond2', 'cond3']), LVy('Y', ['y'])]
+
+  it('★ R19：只宣告三向項時警告，並指名缺少的低階交互項', () => {
+    const r = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4y,
+      interactions: [{ name: 'F1xCxF2', factors: ['F1', 'C', 'F2'], method: 'two-stage' }],
+      paths: [{ from: 'F1xCxF2', to: 'Y' }],
+    }, {})
+    expect(r.error).toBeUndefined()
+    const w = r.meta.warnings.find((q) => q.includes('低階交互項'))
+    expect(w).toBeTruthy()
+    expect(w).toContain('F1 × C')
+    expect(w).toContain('F1 × F2')
+    expect(w).toContain('C × F2')
+    expect(w).toContain('無法解釋')
+  })
+
+  it('R19：階層完整（3 兩向＋1 三向）時不警告', () => {
+    const r = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4y,
+      interactions: [
+        { name: 'F1xC', factors: ['F1', 'C'], method: 'two-stage' },
+        { name: 'F1xF2', factors: ['F1', 'F2'], method: 'two-stage' },
+        { name: 'CxF2', factors: ['C', 'F2'], method: 'two-stage' },
+        { name: 'F1xCxF2', factors: ['F1', 'C', 'F2'], method: 'two-stage' },
+      ],
+      paths: [{ from: 'F1xC', to: 'Y' }, { from: 'F1xF2', to: 'Y' },
+        { from: 'CxF2', to: 'Y' }, { from: 'F1xCxF2', to: 'Y' }],
+    }, {})
+    expect(r.error).toBeUndefined()
+    expect(r.meta.warnings.some((q) => q.includes('低階交互項'))).toBe(false)
+  })
+
+  it('R19：二次效果（同構念兩次）不觸發階層警告', () => {
+    const r = runPLS(main, {
+      schemaVersion: 1,
+      latentVariables: [LVy('F1', ['i1', 'i2', 'i3']), LVy('Y', ['y'])],
+      interactions: [{ name: 'F1sq', factors: ['F1', 'F1'], method: 'two-stage' }],
+      paths: [{ from: 'F1sq', to: 'Y' }],
+    }, {})
+    expect(r.meta.warnings.some((q) => q.includes('低階交互項'))).toBe(false)
+  })
+
+  it("★ R21：HOC 的 method 接受 'embedded' 作為 'two-stage' 的別名", () => {
+    const mk = (method) => ({
+      schemaVersion: 1, latentVariables: L4y,
+      higherOrder: [{ name: 'G', components: ['F1', 'F2'], mode: 'reflective', method }],
+      paths: [{ from: 'G', to: 'C' }, { from: 'C', to: 'Y' }],
+    })
+    const a = runPLS(main, mk('embedded'), {})
+    const b = runPLS(main, mk('two-stage'), {})
+    expect(a.error).toBeUndefined()
+    // 兩種寫法必須逐值等價
+    expect(a.pathCoefficients[0].coef).toBeCloseTo(b.pathCoefficients[0].coef, 12)
+    expect(a.meta.stages).toEqual(b.meta.stages)
+  })
+
+  it("R21：壞值的錯誤訊息列出 'embedded' 別名", () => {
+    const r = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4y,
+      higherOrder: [{ name: 'G', components: ['F1', 'F2'], mode: 'reflective', method: 'bogus' }],
+      paths: [{ from: 'G', to: 'C' }, { from: 'C', to: 'Y' }],
+    }, {})
+    expect(r.error).toBe('invalid-model')
+    expect(r.message).toContain("'embedded'")
+  })
+
+  it('★ R22：交互項非 two-stage 時，說明為什麼沒有條件間接效果', () => {
+    const r = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4y,
+      interactions: [{ name: 'F1xC', factors: ['F1', 'C'], method: 'product-indicator' }],
+      paths: [{ from: 'F1', to: 'F2' }, { from: 'F1xC', to: 'F2' },
+        { from: 'F2', to: 'Y' }, { from: 'F1', to: 'Y' }],
+    }, {})
+    expect(r.moderatedMediation).toBeNull()
+    const w = r.meta.warnings.find((q) => q.includes('條件間接效果'))
+    expect(w).toBeTruthy()
+    expect(w).toContain('product-indicator')
+  })
+
+  it('R22：正常的 two-stage 調節式中介不觸發該警告', () => {
+    const r = runPLS(main, {
+      schemaVersion: 1, latentVariables: L4y,
+      interactions: [{ name: 'F1xC', factors: ['F1', 'C'], method: 'two-stage' }],
+      paths: [{ from: 'F1', to: 'F2' }, { from: 'F1xC', to: 'F2' },
+        { from: 'F2', to: 'Y' }, { from: 'F1', to: 'Y' }],
+    }, {})
+    expect(r.moderatedMediation).not.toBeNull()
+    expect(r.meta.warnings.some((q) => q.includes('未產生條件間接效果'))).toBe(false)
+  })
+})

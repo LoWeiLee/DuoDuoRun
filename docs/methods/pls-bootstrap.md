@@ -39,7 +39,7 @@ PLS-SEM 的估計是一連串迭代與迴歸，路徑係數沒有封閉形式的
 對 $b=1,\dots,B$（預設 $B=5000$）：從 $n$ 筆資料**放回抽樣** $n$ 筆，重跑整條估計管線
 （含重新標準化、多階段的 HOC／調節、PLSc 開啟時的一致化校正），得到參數估計 $\hat\theta^*_b$。
 
-→ `src/lib/stats/pls.js:2500–2512`（重抽迴圈）、`2445–2470`（單次估計的攤平）
+→ `src/lib/stats/pls.js:2561–2573`（重抽迴圈）、`2445–2470`（單次估計的攤平）
 
 PRNG 為 **Mulberry32**（確定性），種子預設 42 → **同種子逐位元可重現**。
 
@@ -51,7 +51,7 @@ PLS 的每個構念可以整體翻轉而不改變適配（見 `pls-basic.md` §3
 本工具的做法：以**原始估計的 loadings** 為錨（anchor），若重抽的某構念 loadings 與錨的內積為負，
 就翻轉該構念的 loadings、weights 與所有觸及它的路徑。
 
-→ `pls.js:2434–2436`（建立錨）、`2445–2470`（逐階段套用 `flip`）
+→ `pls.js:2495–2497`（建立錨）、`2445–2470`（逐階段套用 `flip`）
 
 `options.signCorrection`：`'construct'`（預設）／`'none'`。
 
@@ -63,7 +63,7 @@ $$p=2\cdot\Pr\left(T_{df}>|t|\right),\qquad df=B'-1$$
 
 其中 $B'$ 為**有效**重抽數（`nValid`）。
 
-→ `pls.js:2548`（SE）、`2530`（t）、`2531`（p）
+→ `pls.js:2609`（SE）、`2530`（t）、`2531`（p）
 
 ### 3.4 percentile 信賴區間
 
@@ -72,7 +72,7 @@ $$\text{CI}=\left[\ Q\!\left(\tfrac{\alpha}{2}\right),\ Q\!\left(1-\tfrac{\alpha
 $Q(\cdot)$ 為經驗分位數，採**線性內插（R type 7）**：$h=(B'-1)p$，
 $Q=x_{\lfloor h\rfloor}+(h-\lfloor h\rfloor)\left(x_{\lceil h\rceil}-x_{\lfloor h\rfloor}\right)$。
 
-→ `pls.js:2559–2560`；分位數函式在 `pls.js:141–151`
+→ `pls.js:2620–2621`；分位數函式在 `pls.js:145–155`
 
 BCa 為另一種 CI，見 `pls-bca.md`。`options.ciType`：`'percentile'`（預設）／`'bca'`。
 
@@ -80,9 +80,9 @@ BCa 為另一種 CI，見 `pls-bca.md`。`options.ciType`：`'percentile'`（預
 
 | 情形 | 行為 | 位置 |
 |---|---|---|
-| 某次重抽不收斂或退化（零變異欄、奇異矩陣） | **剔除該次**並計入 `nSkipped` | `pls.js:2503` |
-| 有效重抽 < 10 | 回傳 `bootstrap-failed` | `pls.js:2515–2517` |
-| BCa 的有效 jackknife < 3 | 回傳 `bca-failed`，建議改用 percentile | `pls.js:2541–2543` |
+| 某次重抽不收斂或退化（零變異欄、奇異矩陣） | **剔除該次**並計入 `nSkipped` | `pls.js:2564` |
+| 有效重抽 < 10 | 回傳 `bootstrap-failed` | `pls.js:2576–2578` |
+| BCa 的有效 jackknife < 3 | 回傳 `bca-failed`，建議改用 percentile | `pls.js:2611–2604` |
 
 ★ 實測：本工具的 M1 模型跑 $B=800$、種子 7 時 `nSkipped = 1`（0.125%）。
 這代表 $df$ 是 798 而非 799——影響極小，但**使用者需要知道有樣本被剔除**（見第 6 節）。
@@ -94,29 +94,29 @@ BCa 為另一種 CI，見 `pls-bca.md`。`options.ciType`：`'percentile'`（預
 
 | 量 | 逐次的計算式 | 位置 |
 |---|---|---|
-| specific indirect | 鏈上路徑係數的乘積 | `pls.js:2583–2591` |
-| total indirect | 各鏈乘積之和 | `pls.js:2595–2601` |
-| total effect | direct ＋ 各鏈乘積之和 | `pls.js:2602–2611` |
-| simple slope | $\beta_{iv}+m\cdot\beta_{int}$（二次效果為 $\beta_{iv}+2x\beta_{q}$） | `pls.js:2625–2634` |
-| 條件間接效果 | $\left(a_1+a_3w\right)\left(b_1+b_3w\right)$ | `pls.js:2647–2670` |
+| specific indirect | 鏈上路徑係數的乘積 | `pls.js:2644–2652` |
+| total indirect | 各鏈乘積之和 | `pls.js:2656–2662` |
+| total effect | direct ＋ 各鏈乘積之和 | `pls.js:2663–2672` |
+| simple slope | $\beta_{iv}+m\cdot\beta_{int}$（二次效果為 $\beta_{iv}+2x\beta_{q}$） | `pls.js:2686–2695` |
+| 條件間接效果 | $\left(a_1+a_3w\right)\left(b_1+b_3w\right)$ | `pls.js:2708–2731` |
 
 ★ 這是刻意的設計：若各量獨立重抽，中介效果的 CI 與其組成路徑的 CI 會不相容。
 
 ### 3.7 WPLS 下的限制
 
 抽樣權重（WPLS）**只影響相關矩陣的計算**，bootstrap 仍以**未加權**方式放回抽樣。
-UI 警告已明寫此事（`pls.js:2210`）。理由：加權重抽的設計 SmartPLS 未文件化。
+UI 警告已明寫此事（`pls.js:2270`）。理由：加權重抽的設計 SmartPLS 未文件化。
 
 ## 4. 假設前提與本工具的檢核方式
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
 | 樣本為 i.i.d.（放回抽樣的基礎） | **不檢核** | 無警告——巢狀／時間序列資料的 bootstrap 需要不同設計，本工具不支援 | — |
-| 原始估計可收斂 | 先跑一次 `runPLS` | 直接回傳該錯誤，不進重抽 | `pls.js:2423–2404` |
-| 有效重抽足夠 | `nValid >= 10` | `bootstrap-failed` | `pls.js:2515–2517` |
-| 樣本量 | $n<30$ 警告、$n<5$ 擋 | 見 `pls-basic.md` §4 | `pls.js:2207`、`2159` |
-| $\text{SE}>0$ | 檢查後才算 $t$ | $t$ 與 $p$ 回 `null` | `pls.js:2549` |
-| `ciType` 合法 | 白名單 | `ci-type-not-supported` | `pls.js:2418–2420` |
+| 原始估計可收斂 | 先跑一次 `runPLS` | 直接回傳該錯誤，不進重抽 | `pls.js:2484–2465` |
+| 有效重抽足夠 | `nValid >= 10` | `bootstrap-failed` | `pls.js:2576–2578` |
+| 樣本量 | $n<30$ 警告、$n<5$ 擋 | 見 `pls-basic.md` §4 | `pls.js:2245`、`2159` |
+| $\text{SE}>0$ | 檢查後才算 $t$ | $t$ 與 $p$ 回 `null` | `pls.js:2610` |
+| `ciType` 合法 | 白名單 | `ci-type-not-supported` | `pls.js:2479–2481` |
 
 ## 5. 參考文獻
 
@@ -172,7 +172,7 @@ UI 警告已明寫此事（`pls.js:2210`）。理由：加權重抽的設計 Sma
    「不校正時 SE 會被高估多少」。
 5. **i.i.d. 假設不檢核**（§4 第一列）。巢狀資料（學生在班級內）用一般 bootstrap 會低估 SE，
    工具不會提醒。
-6. **`nValid < 10` 的門檻**（`pls.js:2515`）沒有文獻依據，是實作上的下限保護。
+6. **`nValid < 10` 的門檻**（`pls.js:2576`）沒有文獻依據，是實作上的下限保護。
 
 ## 7. 報表欄位對照
 
@@ -180,17 +180,17 @@ UI 警告已明寫此事（`pls.js:2210`）。理由：加權重抽的設計 Sma
 |---|---|---|
 | 設定行「bootstrap N / M 次有效重抽」 | 3.5 | `zh-TW.js` 的 `pls.result.bootstrapMeta` |
 | 剔除比例 > 5% 的警示 | 3.5 | `Result.jsx` 的 `bootstrapHighSkip` |
-| 原始估計 original | 全樣本估計（非 bootstrap 量） | `pls.js:2423` |
-| bootstrap 平均 mean | draws 的算術平均 | `pls.js:2547` |
-| SE | 3.3 | `pls.js:2548` |
-| t 值 | 3.3 | `pls.js:2549` |
-| p 值 | 3.3 | `pls.js:2550` |
-| 95% CI 下界／上界（percentile） | 3.4 | `pls.js:2559–2560` |
-| 95% CI（BCa） | 見 `pls-bca.md` | `pls.js:2554–2556` |
-| 中介效果表（specific／total indirect／total） | 3.6 | `pls.js:2583–2611` |
-| simple slopes 表 | 3.6 | `pls.js:2625–2634` |
-| 條件間接效果表 | 3.6 | `pls.js:2647–2670` |
-| 形成型權重的檢定欄 | 3.3／3.4（套用於 `weights`） | `pls.js:2685–2688` |
+| 原始估計 original | 全樣本估計（非 bootstrap 量） | `pls.js:2484` |
+| bootstrap 平均 mean | draws 的算術平均 | `pls.js:2608` |
+| SE | 3.3 | `pls.js:2609` |
+| t 值 | 3.3 | `pls.js:2610` |
+| p 值 | 3.3 | `pls.js:2611` |
+| 95% CI 下界／上界（percentile） | 3.4 | `pls.js:2620–2621` |
+| 95% CI（BCa） | 見 `pls-bca.md` | `pls.js:2615–2617` |
+| 中介效果表（specific／total indirect／total） | 3.6 | `pls.js:2644–2672` |
+| simple slopes 表 | 3.6 | `pls.js:2686–2695` |
+| 條件間接效果表 | 3.6 | `pls.js:2708–2731` |
+| 形成型權重的檢定欄 | 3.3／3.4（套用於 `weights`） | `pls.js:2746–2749` |
 
 **孤兒欄位檢查**：回傳物件的 `nRequested`／`nValid`／`nSkipped`／`seed`／`signCorrection`／`ciType`
 是**設定與診斷欄位**（非統計量）。`nValid` / `nRequested` 顯示於路徑表上方的設定行與頂部統計卡；

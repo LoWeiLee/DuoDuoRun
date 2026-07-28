@@ -61,13 +61,13 @@ $$R_{ab}=\frac{\sum_{i\in O_{ab}}(x_{ia}-\bar x_a^{(ab)})(x_{ib}-\bar x_b^{(ab)}
 其中 $O_{ab}=\{i: x_{ia}\text{ 與 }x_{ib}\text{ 皆可觀察}\}$，$\bar x_a^{(ab)}$ 為**只用 $O_{ab}$ 算的**平均。
 對角線為 1。
 
-→ `src/lib/stats/pls.js:539–570`（配對計數 `547–553`、配對內平均 `555`、相關 `556–566`）
+→ `src/lib/stats/pls.js:543–574`（配對計數 `547–553`、配對內平均 `555`、相關 `556–566`）
 
 ★ 兩個要點：
 
 1. **平均是配對特有的**（不是各欄的整體平均）。這是 pairwise-complete 的定義，
    也是它與「先各欄均值補值再算相關」的關鍵差別。
-2. $|O_{ab}|<3$ 或該配對上任一欄零變異 → 該格為 `NaN`（`pls.js:554`），呼叫端據以報錯。
+2. $|O_{ab}|<3$ 或該配對上任一欄零變異 → 該格為 `NaN`（`pls.js:558`），呼叫端據以報錯。
 
 ### 3.2 加權相關矩陣（WPLS）
 
@@ -75,13 +75,13 @@ $$\mu_j=\frac{\sum_i w_i x_{ij}}{\sum_i w_i},\qquad \operatorname{cov}_{ab}=\fra
 
 $$R_{ab}=\frac{\operatorname{cov}_{ab}}{\sqrt{\operatorname{cov}_{aa}\cdot\operatorname{cov}_{bb}}}$$
 
-→ `pls.js:578–608`（$\sum w$ `581–582`、$\mu$ `583–588`、共變異 `589–598`、相關 `600–606`）
+→ `pls.js:582–612`（$\sum w$ `581–582`、$\mu$ `583–588`、共變異 `589–598`、相關 `600–606`）
 
 ★ **分母是 $\sum w_i$（不是 $\sum w_i-1$）**——這是「可靠度權重」慣例。
 因為相關是尺度不變量，**ddof 取 0 或 1 得到同一個相關矩陣**（實測差 < 1e−15），
 所以這裡不存在 ddof 慣例分歧的風險。**權重同乘一個常數不改變結果**（有行為測試鎖住）。
 
-零變異欄（$\operatorname{cov}_{jj}\le0$）→ 回傳 `zeroVarIndex`（`pls.js:599`）。
+零變異欄（$\operatorname{cov}_{jj}\le0$）→ 回傳 `zeroVarIndex`（`pls.js:603`）。
 
 ### 3.3 為什麼只換 $\mathbf{R}$ 就夠
 
@@ -92,7 +92,7 @@ $$\operatorname{Var}(y_j)=\mathbf{w}_j'\mathbf{R}_{jj}\mathbf{w}_j,\quad \operat
 所以整條迭代（Mode A／B、三種 scheme）、loadings、構念相關、信效度、HTMT、
 外部 VIF、model fit **全部只需要換掉 $\mathbf{R}$**。
 
-→ `pls.js:1436–1442`（pairwise 掛入）、`1450–1456`（WPLS 掛入）、`810`（迭代取用）、
+→ `pls.js:1466–1472`（pairwise 掛入）、`1450–1456`（WPLS 掛入）、`810`（迭代取用）、
 `1197`（loadings／構念相關取用）、`1737–1740`（信效度／HTMT／外部 VIF／fit 取用）、
 `985`（★ PLSc 取用——2026-07-26 修正，見 `pls-plsc.md` §8 R6）
 
@@ -102,19 +102,19 @@ $$\operatorname{Var}(y_j)=\mathbf{w}_j'\mathbf{R}_{jj}\mathbf{w}_j,\quad \operat
 
 | 模式 | 標準化怎麼做 | 位置 |
 |---|---|---|
-| pairwise | 平均／標準差**只用該欄的可觀察值**；`NaN` 標準化後填 **0**（＝原尺度的均值補值） | `pls.js:1259–1301` 的 `pairwise` 分支 |
+| pairwise | 平均／標準差**只用該欄的可觀察值**；`NaN` 標準化後填 **0**（＝原尺度的均值補值） | `pls.js:1263–1305` 的 `pairwise` 分支 |
 | WPLS | 加權平均／加權標準差 | 同上的 `rowWeights` 分支 |
 
 ★ **後果**：$\mathbf{R}$ 與樣本共變異不一致，所以**分數的 sd 未必恰為 1**。
 這是刻意的——分數只供 IPMA／預測／分段等下游使用，統計量一律走 $\mathbf{R}$。
-UI 警告已明寫此事（`pls.js:1442`）。
+UI 警告已明寫此事（`pls.js:1472`）。
 
 ### 3.5 WPLS 的推論限制
 
 抽樣權重**只影響 $\mathbf{R}$**。bootstrap 仍以**未加權**方式放回抽樣。
 UI 警告明寫：「加權重抽的設計未在 SmartPLS 文件化，本工具不擅自實作」。
 
-→ `pls.js:2210`
+→ `pls.js:2270`
 
 ### 3.6 pairwise 的非正定警告
 
@@ -124,7 +124,7 @@ pairwise 相關矩陣的各格來自不同子樣本，**可能非半正定**。
 > pairwise 相關矩陣非半正定（最小特徵值 …）——不同的相關係數來自不同的子樣本，彼此可能不相容。
 > 信效度與 model fit 指標在此情形下可能落在合理範圍外，請謹慎解讀；缺失比例高時建議改用 casewise 或先做多重插補
 
-→ `pls.js:1439–1441`
+→ `pls.js:1469–1471`
 
 本資料集（MCAR 遮罩約 11.4%）實測最小特徵值為**正**（`pls_pairwise_wpls.pw_minEig`），
 所以**這條警告路徑在基準組上沒有被觸發**。
@@ -133,16 +133,16 @@ pairwise 相關矩陣的各格來自不同子樣本，**可能非半正定**。
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| 每個配對至少 3 筆共同可觀察 | `pairwiseCorrMatrix` 回 `NaN` | **硬擋** `pairwise-too-sparse`，**指名兩個指標** | `pls.js:554`、`1434–1442` |
-| pairwise $\mathbf{R}$ 半正定 | 最小特徵值檢查 | 警告（不擋） | `pls.js:1439–1441` |
-| 不與 blindfolding 併用 | `blindfoldPLS` 入口檢查 | **硬擋** `blindfold-pairwise-conflict` | `pls.js:2255–2260` |
-| 權重為有效非負數 | 逐列檢查 | **硬擋** `wpls-bad-weights`，**指名列號** | `pls.js:2165–2178` |
-| 權重總和 > 0 | 檢查 | **硬擋** | `pls.js:2182` |
-| 加權後無零變異欄 | `weightedCorrMatrix` 回 `zeroVarIndex` | **硬擋** `zero-variance`，指名指標 | `pls.js:599`、`1452–1454` |
+| 每個配對至少 3 筆共同可觀察 | `pairwiseCorrMatrix` 回 `NaN` | **硬擋** `pairwise-too-sparse`，**指名兩個指標** | `pls.js:558`、`1434–1442` |
+| pairwise $\mathbf{R}$ 半正定 | 最小特徵值檢查 | 警告（不擋） | `pls.js:1469–1471` |
+| 不與 blindfolding 併用 | `blindfoldPLS` 入口檢查 | **硬擋** `blindfold-pairwise-conflict` | `pls.js:2316–2321` |
+| 權重為有效非負數 | 逐列檢查 | **硬擋** `wpls-bad-weights`，**指名列號** | `pls.js:2203–2217` |
+| 權重總和 > 0 | 檢查 | **硬擋** | `pls.js:2221` |
+| 加權後無零變異欄 | `weightedCorrMatrix` 回 `zeroVarIndex` | **硬擋** `zero-variance`，指名指標 | `pls.js:603`、`1452–1454` |
 | 缺失機制為 MCAR | **不檢核** | 無警告（見第 6 節） | — |
 | 權重的來源合理 | **不檢核** | 無警告 | — |
 
-★ 權重為 0 的列會被計數並在警告中告知「$k$ 筆權重為 0 的資料列實質不參與估計」（`pls.js:2210`）。
+★ 權重為 0 的列會被計數並在警告中告知「$k$ 筆權重為 0 的資料列實質不參與估計」（`pls.js:2270`）。
 
 ## 5. 參考文獻
 
@@ -218,12 +218,12 @@ pairwise 相關矩陣的各格來自不同子樣本，**可能非半正定**。
 | UI 欄位／行為 | 對應公式 | 程式碼 |
 |---|---|---|
 | 所有測量與結構統計量（在兩種模式下） | 3.3（換 $\mathbf{R}$，其餘不變） | 見 `pls-basic.md` §7 |
-| 構念分數 | 3.4 | `pls.js:1259–1301` |
-| pairwise 說明警告（含最少配對數） | 3.1 / 3.4 | `pls.js:1442` |
-| pairwise 非正定警告（含最小特徵值） | 3.6 | `pls.js:1439–1441` |
-| WPLS 警告（含權重 0 的列數與推論限制） | 3.5 | `pls.js:2210` |
-| 缺失值處理選項（casewise／pairwise／mean） | §4 | `pls.js:508–530` |
-| 抽樣權重欄位選擇 | 3.2 | `pls.js:2155–2184`（`resolveRowWeights`） |
+| 構念分數 | 3.4 | `pls.js:1263–1305` |
+| pairwise 說明警告（含最少配對數） | 3.1 / 3.4 | `pls.js:1472` |
+| pairwise 非正定警告（含最小特徵值） | 3.6 | `pls.js:1469–1471` |
+| WPLS 警告（含權重 0 的列數與推論限制） | 3.5 | `pls.js:2270` |
+| 缺失值處理選項（casewise／pairwise／mean） | §4 | `pls.js:512–534` |
+| 抽樣權重欄位選擇 | 3.2 | `pls.js:2194–2223`（`resolveRowWeights`） |
 | 設定說明文字 | §2、§3.5 | `zh-TW.js` 的 `pls.config.wplsHint` |
 
 **孤兒欄位檢查**：兩種模式不新增報表欄位（只改變既有欄位的計算基礎），故無孤兒欄位。
@@ -286,7 +286,7 @@ APA 敘述句（`zh-TW.js` 的 `pls.apa.intro`）寫出 weighting scheme、$N$�
 ★ WPLS 的片語**刻意把「推論仍以未加權重抽建立」寫進句子**——這是 §3.5 的實質限制，
 使用者複製敘述句投稿時必須一併揭露。
 
-**引擎配合的一處改動**：`meta` 新增 `weighted` 布林欄位（`pls.js:1888`），
+**引擎配合的一處改動**：`meta` 新增 `weighted` 布林欄位（`pls.js:1927`），
 由 `runPLS` 依 `plan.rowWeights` 帶入。原本 `meta` 沒有任何欄位能判斷是否加權。
 另補 6 條敘述句行為測試（`tests/pls.narrative.test.js`），含「同時有剔除與加權時不留未填模板」。
 

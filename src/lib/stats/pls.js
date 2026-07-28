@@ -308,9 +308,13 @@ export function validatePLSModel(model, allowSharedIndicators = false) {
         if (mode !== 'reflective' && mode !== 'formative') {
           errors.push(`高階構念「${h.name}」的 mode 必須是 'reflective' 或 'formative'，收到「${h.mode}」`)
         }
-        const method = h.method ?? 'repeated'
+        // 'embedded' 是 'two-stage' 的別名（2026-07-26 階段 A / A2 紅隊 R21）：
+        // 文獻、程式碼註解與方法文件都稱它 embedded two-stage，但原本的語法值只接受 'two-stage'，
+        // 使用者照文件寫 'embedded' 會撞牆。這裡接受並正規化，兩種寫法等價。
+        const rawMethod = h.method ?? 'repeated'
+        const method = rawMethod === 'embedded' ? 'two-stage' : rawMethod
         if (method !== 'repeated' && method !== 'two-stage' && method !== 'disjoint') {
-          errors.push(`高階構念「${h.name}」的 method 必須是 'repeated'、'two-stage' 或 'disjoint'，收到「${h.method}」`)
+          errors.push(`高階構念「${h.name}」的 method 必須是 'repeated'、'two-stage'（別名 'embedded'）或 'disjoint'，收到「${h.method}」`)
         }
         hocMethods.add(method)
         if (compOk) {
@@ -319,7 +323,7 @@ export function validatePLSModel(model, allowSharedIndicators = false) {
         }
       }
       if (hocMethods.size > 1) {
-        errors.push('多個高階構念的 method 必須一致（repeated / two-stage / disjoint 擇一）')
+        errors.push("多個高階構念的 method 必須一致（repeated / two-stage（別名 'embedded'）/ disjoint 擇一）")
       }
     }
   }
@@ -1369,6 +1373,31 @@ function buildPlan(model, options) {
     }
   }
   const fullPaths = [...m.paths.map((q) => ({ from: q.from, to: q.to })), ...autoAddedPaths]
+
+  // 階層完整性檢查（2026-07-26 階段 A / A2 紅隊 R19）。
+  // 三向以上的交互項，其解釋前提是模型同時含全部低階項；缺了低階項時三向係數**無法解釋**
+  //（它會吸收本該由低階項承擔的變異），而這件事在報表上完全看不出來。
+  // 引擎只自動補「主效果」，低階交互項要使用者自己宣告 → 這裡檢查並警告（不擋，使用者可能有理由）。
+  const hierarchyWarnings = []
+  {
+    const factorKey = (fs) => [...fs].sort().join('×')
+    const declared = new Set(ints.map((it) => factorKey(it.factors)))
+    for (const it of ints) {
+      const fs = [...new Set(it.factors)]
+      if (fs.length < 3) continue // 兩因子交互的低階項就是主效果，已自動補
+      const missing = []
+      for (let a = 0; a < fs.length; a++) {
+        for (let b = a + 1; b < fs.length; b++) {
+          if (!declared.has(factorKey([fs[a], fs[b]]))) missing.push(`${fs[a]} × ${fs[b]}`)
+        }
+      }
+      if (missing.length > 0) {
+        hierarchyWarnings.push(`交互項「${it.name}」有 ${fs.length} 個因子，但模型缺少下列低階交互項：${missing.join('、')}。`
+          + '階層不完整時高階交互係數會吸收低階項的變異，**無法解釋**（Aiken & West 1991 的規格要求）；'
+          + '若無特殊理由，請補上全部低階交互項後重跑')
+      }
+    }
+  }
   const baseIndicators = []
   const seen = new Set()
   for (const lv of m.latentVariables) {
@@ -1385,6 +1414,7 @@ function buildPlan(model, options) {
     hasStages: (hocs.length > 0 && hocs[0].method !== 'repeated')
       || (ints.length > 0 && ints[0].method === 'two-stage'),
     autoAddedPaths,
+    hierarchyWarnings,
     fullPaths,
     baseIndicators,
     scheme,
@@ -1824,8 +1854,12 @@ function reportFromStage(stage, ctx) {
 
   // 測量模型的資料品質警訊（階段 A 紅隊 R3／R4）——最常見原因是反向題未事先反向計分。
   // PLS 的符號不確定性是「整個構念一起翻轉」，區塊內正負混雜不屬於符號不確定性。
+  // ★ 2026-07-26 階段 A / A2 紅隊 R13：**交互構念除外**。product-indicator／orthogonalizing
+  //   的交互構念指標是兩組指標的配對乘積（正交化法還先取殘差），loading 正負混雜是這類指標
+  //   的正常性質，不是反向計分問題——A1 的 R4 警告在此為假陽性。
   for (let j = 0; j < L; j++) {
     if (spec.modes[j] !== 'A' || spec.blocks[j].length < 2) continue
+    if (ctx.interactionLVs && ctx.interactionLVs.has(spec.lvNames[j])) continue
     const lam = effLoadingsByLV[j]
     if (lam.some((v) => v > 0) && lam.some((v) => v < 0)) {
       warnings.push(`構念「${spec.lvNames[j]}」的指標負荷量正負混雜——PLS 的符號不確定性是整個構念一起翻轉，區塊內混雜通常代表反向題未事先反向計分；請先反向計分再重跑`)
@@ -1867,8 +1901,12 @@ function reportFromStage(stage, ctx) {
 
   // GoF index（Tenenhaus et al. 2005；官方文件不建議作為適配指標，報表附註記）：
   // sqrt(mean communality × mean R²)——communality 限反映型多指標區塊、R² 取全部內生構念
+  // ★ 2026-07-26 階段 A / A2 紅隊 R15：model fit 算不出來時 GoF 一併不計算。
+  //   repeated indicators 高階構念即屬此情形——HOC 區塊與其低階構念共用同一批指標，
+  //   communality 平均把重複掛載的 loading 算了兩次，GoF 系統性偏高
+  //   （實測同資料 0.472 vs 非 HOC 模型的 0.258）。GoF 本就不建議使用，沒有保留錯值的理由。
   let gof = null
-  if (!ctx.skipFit && sm.structural.length > 0) {
+  if (!ctx.skipFit && fit !== null && sm.structural.length > 0) {
     const comm = []
     for (let j = 0; j < L; j++) {
       if (spec.modes[j] !== 'A' || spec.blocks[j].length < 2) continue
@@ -2206,6 +2244,7 @@ export function runPLS(rows, model, options = {}) {
   const baseWarnings = []
   if (n < 30) baseWarnings.push(`樣本數偏低（n = ${n}），PLS 估計與 bootstrap 推論的穩定性有限`)
   if (nDropped > 0) baseWarnings.push(`casewise deletion 剔除 ${nDropped} 筆含缺失值的資料列`)
+  if (plan.hierarchyWarnings?.length) baseWarnings.push(...plan.hierarchyWarnings) // R19
   if (plan.rowWeights) {
     baseWarnings.push(`WPLS（加權 PLS）：相關矩陣以抽樣權重加權計算；${n - plan.nPositiveWeights} 筆權重為 0 的資料列實質不參與估計。推論（bootstrap）仍以未加權方式重抽——加權重抽的設計未在 SmartPLS 文件化，本工具不擅自實作`)
   }
@@ -2215,6 +2254,7 @@ export function runPLS(rows, model, options = {}) {
     nRows: rows.length,
     nDropped,
     weighted: Boolean(plan.rowWeights),
+    interactionLVs: new Set(plan.ints.map((q) => q.name)), // R13：交互構念不套用資料品質警訊
     warnings: baseWarnings,
     htmtBlocked: exec.htmtBlockedIdx,
     skipFit: exec.stage1 !== null,
@@ -2237,6 +2277,27 @@ export function runPLS(rows, model, options = {}) {
   if (exec.derived) report.derived = exec.derived
   report.mediation = buildMediationReport(report.pathCoefficients, plan)
   report.moderatedMediation = buildModeratedMediationReport(report.pathCoefficients, plan)
+
+  // R22（2026-07-26 階段 A / A2 紅隊）：不符範圍限制時原本靜默無輸出，
+  // 使用者會以為「工具不支援這個功能」而不是「你的規格不符合條件」。這裡指出是哪一條限制。
+  if (plan.ints.length > 0 && report.moderatedMediation === null
+      && report.mediation && report.mediation.effects.length > 0) {
+    const usable = plan.ints.filter((it) => it.method === 'two-stage'
+      && it.factors.length === 2 && it.factors[0] !== it.factors[1])
+    if (usable.length === 0) {
+      const why = plan.ints.some((it) => it.method !== 'two-stage')
+        ? `交互項的估計法為「${plan.interactionMethod}」`
+        : '沒有「恰兩個相異因子」的交互項（二次效果與三向以上不適用）'
+      report.meta.warnings.push(`模型含交互項與中介鏈，但未產生條件間接效果（調節式中介）：${why}。`
+        + '條件間接效果目前只支援 two-stage 且恰兩個相異因子的交互項——其他估計法的係數尺度與'
+        + '簡單斜率慣例不同，混用會造成口徑不一致，故不輸出')
+    } else {
+      report.meta.warnings.push('模型含 two-stage 交互項與中介鏈，但未產生條件間接效果（調節式中介）：'
+        + '可能原因為(1) 沒有任何一條 X→M 或 M→Y 路徑被交互項調節；'
+        + '(2) 中介鏈長超過兩步（目前只支援 X→M→Y）；'
+        + '(3) 調節變數本身就是鏈上的 M 或 Y（此時條件間接效果的解讀會退化，故略過不報）')
+    }
+  }
 
   return report
 }

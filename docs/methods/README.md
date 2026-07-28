@@ -35,7 +35,7 @@
 | 批次 | 範圍 | 狀態 |
 |---|---|---|
 | **A1** | PLS 測量與估計核心 | ✅ **完成（10 / 10）** |
-| A2 | PLS 調節／高階／中介 | 未開始 |
+| **A2** | PLS 調節／高階／中介 | ✅ **完成（10 / 10）** |
 | A3 | PLS 進階分析（W5／W6） | 未開始 |
 | A4 | NCA／LDA／CFA／EFA | 未開始 |
 | A5 | 推論統計與無母數 | 未開始 |
@@ -83,6 +83,43 @@
 ★ 另一條教訓：**R7 與 R10 的第一次判讀都是讀程式碼推論出來的，實測後都證明過度指控**
 （R7 的錯誤訊息其實歸因正確、R10 的數量其實早已顯示）。兩份文件都完整保留了兩次判讀，
 並把「涉及使用者看得到什麼的檢查一律實跑」寫進 `roadmap-v2.md §6.8`。
+
+## A2 — PLS 調節／高階／中介
+
+| 文件 | 方法 | 基準組 | tier / status |
+|---|---|---|---|
+| [pls-mediation.md](pls-mediation.md) | 中介效果分解（直接／特定間接／總效果／VAF） | `pls_mediation` | **A** / verified |
+| [pls-moderation-twostage.md](pls-moderation-twostage.md) | 調節：two-stage 法（**預設**；二次與三向共用同一路徑） | `pls_mod_twostage` | B / verified |
+| [pls-moderation-product-indicator.md](pls-moderation-product-indicator.md) | 調節：product indicator 法 | `pls_mod_pi` | B / verified |
+| [pls-moderation-orthogonal.md](pls-moderation-orthogonal.md) | 調節：orthogonalizing 法（正交化） | `pls_mod_ortho` | B / verified |
+| [pls-quadratic.md](pls-quadratic.md) | 二次效果（self-moderation） | `pls_quadratic` | B / verified |
+| [pls-moderation-threeway.md](pls-moderation-threeway.md) | 三向交互（階層完整規格） | `pls_mod_threeway` | B / verified |
+| [pls-hoc-repeated.md](pls-hoc-repeated.md) | 高階構念：repeated indicators | `pls_hoc_repeated` | **A** / verified |
+| [pls-hoc-disjoint.md](pls-hoc-disjoint.md) | 高階構念：disjoint two-stage（**官方首選**） | `pls_hoc_disjoint` | B / verified |
+| [pls-hoc-embedded.md](pls-hoc-embedded.md) | 高階構念：embedded two-stage | `pls_hoc_embedded` | B / verified |
+| [pls-moderated-mediation.md](pls-moderated-mediation.md) | 調節式中介（條件間接效果） | `pls_modmed` | B / verified |
+
+### A2 的紅隊結果摘要
+
+10 份文件跑完八條紅隊檢查表，開出 11 項，**當日全部處置完畢**。
+★ **本批的實質發現全部來自「實跑」，不是讀碼**：
+
+| 編號 | 級別 | 內容 | 狀態 |
+|---|---|---|---|
+| R13 | L2 | ★ **A1 自己引入的假陽性**：交互構念的乘積指標 loading 正負混雜是正常性質，A1 的 R4 警告卻誤報「反向題未反向計分」 | ✅ 已修（排除交互構念）＋3 條測試（含「一般構念仍須被抓到」） |
+| R14 | L2 | 交互構念在信效度表亮紅燈（實測 AVE = 0.286、rho_A = 0.419），但乘積指標的門檻本來就不適用 | ✅ 已修（單列、不判紅綠、標註「（交互構念）」） |
+| R15 | L3 | repeated HOC 下 model fit 因矩陣奇異不計算，**但 GoF 照算**且 communality 重複計入（實測 0.472 vs 非 HOC 的 0.258） | ✅ 已修（跟進 fit 的守衛）＋2 條測試 |
+| R16 | L2 | 中介 VAF 會跑出 [0,1]（實測 **−222%**）；無 direct path 時恆為 100%（套套邏輯） | ✅ 已修（逐列標記不適用＋滑鼠提示） |
+| R17 | L1 | 三種調節法的交互係數**連正負號都可能不同**（+0.147／−0.195／+0.335） | ✅ 已記錄 |
+| R18 | L1 | 二次項的正負 ≠ 曲線走向（實測 $b_q>0$ 但三個水準斜率全負） | ✅ 已記錄 |
+| R20 | L1 | HOC→HOC 的笛卡兒積展開分支未被基準覆蓋 | ✅ 已記錄 |
+| R23 | L1 | 同一個交互項會產生兩筆條件間接效果（數值正確、對稱性使然） | ✅ 已記錄 |
+| R19 | L2 | 三向交互的**階層完整性不檢核**——只宣告三向項而不宣告兩向項時照跑，但係數無法解釋 | ✅ 已修（檢查全部二元子集、指名缺項、不擋）＋3 條測試 |
+| R21 | L2 | embedded 法在模型語法中叫 `'two-stage'`，寫 `'embedded'` 會撞牆且訊息不說明 | ✅ 已修（接受 `'embedded'` 別名並正規化）＋2 條測試 |
+| R22 | L2 | 調節式中介不符範圍限制時**靜默無輸出**，使用者以為功能不支援 | ✅ 已修（依情形分兩種訊息、指名估計法）＋2 條測試 |
+
+★ R13 是本批最值得記的一項：**A1 的修正在 A2 被驗出有假陽性**。
+這說明「加警告」本身也需要跨情境驗證，不能只在原始情境測過就算數。
 
 ## 側欄模組 → 方法對照
 

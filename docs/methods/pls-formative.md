@@ -48,27 +48,27 @@ $$\mathbf{w}_j \ \propto\ \mathbf{S}_j^{-1}\,\operatorname{cov}(\mathbf{z}_{B_j}
 
 再依 `pls-basic.md` §3.3 (4) 縮放使 $\operatorname{Var}(y_j)=1$。
 
-→ `src/lib/stats/pls.js:753–777`（Mode B 分支在 `763–772`）；$\mathbf{S}_j^{-1}$ 在迭代迴圈**外**預先計算（`pls.js:661–672`），因為 $\mathbf{S}_j$ 在迭代間不變
+→ `src/lib/stats/pls.js:757–781`（Mode B 分支在 `763–772`）；$\mathbf{S}_j^{-1}$ 在迭代迴圈**外**預先計算（`pls.js:665–676`），因為 $\mathbf{S}_j$ 在迭代間不變
 
 這就是「把內部代理 $Z_j$ 對區塊指標做多元迴歸」——所以叫 regression weights。
 對照 Mode A 是 $\mathbf{w}_j \propto \operatorname{cov}(\mathbf{z}_{B_j}, Z_j)$（correlation weights），
 差別只在有沒有乘上 $\mathbf{S}_j^{-1}$（＝有沒有把指標間的相關「除掉」）。
 
 ★ **$k=1$ 時 Mode A ≡ Mode B**：單指標區塊的 $\mathbf{S}_j=[1]$，反矩陣為 1。程式碼的條件是
-`modes[j] === 'B' && b.length >= 2`（`pls.js:765`），單指標形成型走 Mode A 分支——數學上等價，不是特例處理。
+`modes[j] === 'B' && b.length >= 2`（`pls.js:769`），單指標形成型走 Mode A 分支——數學上等價，不是特例處理。
 
 ### 3.2 外部負荷量（形成型也會報）
 
 $$\lambda_{jh}=\operatorname{corr}(z_h,y_j)=\textstyle\sum_{g\in B_j}w_{jg}R_{hg}$$
 
-→ `pls.js:1191–1234`（`coreEstimates`）。形成型構念的 loading 不用來判斷收斂效度，
+→ `pls.js:1195–1238`（`coreEstimates`）。形成型構念的 loading 不用來判斷收斂效度，
 而是作為「權重不顯著時的備援判準」（Hair et al. 的形成型評估程序）。
 
 ### 3.3 外部 VIF（形成型指標共線性）
 
 $$\operatorname{VIF}_h=\left[\mathbf{S}_j^{-1}\right]_{hh}$$
 
-→ `pls.js:1758–1764`。只對**形成型多指標**區塊計算（其餘回傳 `null`）。
+→ `pls.js:1788–1794`。只對**形成型多指標**區塊計算（其餘回傳 `null`）。
 
 ★ **慣例分歧（門檻）**：本工具的燈號用 **< 3.3 綠／< 5 黃／≥ 5 紅**（`Result.jsx:110–115`）。
 Hair 等人在 PLS-SEM 脈絡建議 3.3，一般迴歸文獻常見 5 或 10。三個門檻都在文獻裡有人用，
@@ -85,21 +85,21 @@ Hair 等人在 PLS-SEM 脈絡建議 3.3，一般迴歸文獻常見 5 或 10。�
 | Fornell-Larcker 對角線 | `null` | $\sqrt{\text{AVE}}$ 不存在 |
 | HTMT 涉及該構念的配對 | `null` | 分母的單質相關無意義 |
 
-→ `pls.js:1797–1813`（信效度）、`1796–1801`（Fornell-Larcker）、`942–968`（HTMT 的 `eligible` 過濾）
+→ `pls.js:1827–1843`（信效度）、`1796–1801`（Fornell-Larcker）、`942–968`（HTMT 的 `eligible` 過濾）
 
 ## 4. 假設前提與本工具的檢核方式
 
 | 前提 | 本工具怎麼檢核 | 違反時的行為 | 位置 |
 |---|---|---|---|
-| 指標不完全共線（$\mathbf{S}_j$ 可逆） | **前置檢查**：進迭代前逐區塊驗反矩陣 | **硬擋** `formative-block-singular`，**指名構念與全部指標** | `pls.js:1451–1467` |
-| 指標不高度共線 | 外部 VIF | 燈號（不擋） | `pls.js:1758–1764` |
-| 權重的統計顯著性 | bootstrap（見 `pls-bootstrap.md`） | 報表列 SE／t／p／CI | `pls.js:2412–2693` |
+| 指標不完全共線（$\mathbf{S}_j$ 可逆） | **前置檢查**：進迭代前逐區塊驗反矩陣 | **硬擋** `formative-block-singular`，**指名構念與全部指標** | `pls.js:1481–1497` |
+| 指標不高度共線 | 外部 VIF | 燈號（不擋） | `pls.js:1788–1794` |
+| 權重的統計顯著性 | bootstrap（見 `pls-bootstrap.md`） | 報表列 SE／t／p／CI | `pls.js:2473–2754` |
 | 測量模式指定正確 | 不自動檢核 | 另由 CTA-PLS 以資料檢驗 | 見 `pls-cta.md` |
 | 其餘（遞迴、樣本量、零變異） | 同 `pls-basic.md` §4 | | |
 
 ★ **完全共線時的行為（2026-07-26 起）**：前置檢查會先攔下並**指名構念與指標**
 （`formative-block-singular`）。若走到迭代內部才失敗（例如 LV 分數零變異、前置構念相關矩陣奇異），
-仍回傳較籠統的 `estimation-failed`（`pls.js:1469–1472`）。
+仍回傳較籠統的 `estimation-failed`（`pls.js:1499–1502`）。
 
 ## 5. 參考文獻
 
@@ -156,11 +156,11 @@ Hair 等人在 PLS-SEM 脈絡建議 3.3，一般迴歸文獻常見 5 或 10。�
 
 | UI 欄位 | 對應公式 | 程式碼 |
 |---|---|---|
-| 外部權重 Weight | 3.1 | `pls.js:1783–1796` 附近的 `outerWeights` 組裝 |
-| 外部 VIF | 3.3 | `pls.js:1758–1764` |
-| 外部負荷量（備援欄） | 3.2 | `pls.js:1191–1234` |
-| 權重的 SE／t／p／CI | 見 `pls-bootstrap.md` | `pls.js:2412–2693` |
-| α／rho_A／CR／AVE | 3.4（一律 `null`，UI 顯示「—」） | `pls.js:1797–1813` |
+| 外部權重 Weight | 3.1 | `pls.js:1813–1826` 附近的 `outerWeights` 組裝 |
+| 外部 VIF | 3.3 | `pls.js:1788–1794` |
+| 外部負荷量（備援欄） | 3.2 | `pls.js:1195–1238` |
+| 權重的 SE／t／p／CI | 見 `pls-bootstrap.md` | `pls.js:2473–2754` |
+| α／rho_A／CR／AVE | 3.4（一律 `null`，UI 顯示「—」） | `pls.js:1827–1843` |
 
 **孤兒欄位檢查**：形成型權重表的每一欄都有對應公式，未發現孤兒欄位。
 
@@ -193,7 +193,7 @@ Hair 等人在 PLS-SEM 脈絡建議 3.3，一般迴歸文獻常見 5 或 10。�
 ★ **這一條同時是本批的一則方法論教訓，故完整保留兩次判讀。**
 
 **紅隊第一次判讀（讀碼推得，錯誤）**：`estimateCoreFromCorr` 在 Mode B 區塊的 $\mathbf{S}_j$
-不可逆時回傳 `null`（`pls.js:670`），推斷呼叫端會翻譯成 `not-converged`，屬歸因錯誤。
+不可逆時回傳 `null`（`pls.js:674`），推斷呼叫端會翻譯成 `not-converged`，屬歸因錯誤。
 
 **實測結果（正確）**：建構 $x_3 = 2x_1 + 3x_2$ 的完全共線資料實跑，得到的是
 
@@ -203,7 +203,7 @@ message = PLS 迭代過程出現數值退化（零變異 LV 分數或奇異矩�
 ```
 
 路徑是 `estimateCore → coreEstimates` 回傳 `null` → `estimateStage` 的 `estimation-failed`
-（`pls.js:1469–1472`），**不是** `not-converged`（後者只在 `ce.notConverged` 時觸發）。
+（`pls.js:1499–1502`），**不是** `not-converged`（後者只在 `ce.notConverged` 時觸發）。
 歸因方向正確、訊息也點到共線，我第一次的判讀是錯的。
 
 **真正剩下的缺口（弱化後）**：訊息**沒有指出是哪個構念、哪幾個指標**共線。
@@ -220,7 +220,7 @@ message = 形成型構念「數位治理能力」的指標相關矩陣不可逆�
           或把該構念改為反映型
 ```
 
-→ `pls.js:1451–1467`。**不動 `estimateCoreFromCorr` 的回傳契約**（仍為 `object | null`），
+→ `pls.js:1481–1497`。**不動 `estimateCoreFromCorr` 的回傳契約**（仍為 `object | null`），
 所以風險低；代價是多一次區塊反矩陣計算（區塊尺寸小，可忽略）。
 新增 2 條行為測試：完全共線資料觸發專屬錯誤碼並含構念名與指標名；正常形成型模型不受影響。
 
