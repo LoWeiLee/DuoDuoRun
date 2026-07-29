@@ -369,8 +369,9 @@ describe('PLS 結果：R30–R32', () => {
     expect(panel).toBeTruthy()
     expect(screen.queryByText(zh.errors.boundaryTitle)).not.toBeInTheDocument()
     expect(panel.textContent).toContain('整體判讀')
-    // 示範資料實測為 low（2 個內生指標中 1 個優於 LM，恰好半數 → 少數）
-    expect(panel.textContent).toContain(zh.pls.result.predictVerdict.low)
+    // tpb 示範資料實測為 medium（6 個內生指標中 5 個 PLS RMSE 優於 LM → 多數）；
+    // 2026-07-29 PLS 示範由 employee 改指 tpb 時同步更新此斷言
+    expect(panel.textContent).toContain(zh.pls.result.predictVerdict.medium)
     for (const k of ['high', 'medium', 'low', 'none']) {
       expect(typeof zh.pls.result.predictVerdict[k], `predictVerdict.${k} 缺譯`).toBe('string')
     }
