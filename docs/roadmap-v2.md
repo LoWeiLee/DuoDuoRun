@@ -25,6 +25,8 @@
 **A3c 範圍（4 份，最貴的一批）**：`pls-cta`（bootstrap tetrad，50 欄）、`pls-copula`（30 欄）、
 `pls-fimix`（EM，71 欄，**維持 pending**）、`pls-pos`（爬山法，39 欄）。
 四組都要重寫完整演算法，成本明顯高於 A3a／A3b，建議**單獨一個 session**。
+⇒ **完整交接規格見 §6.5 的「★ A3c 交接規格」**（範圍表、開工順序、三條檢查習慣、
+獨立重寫的作業方式、收尾清單）。開工前先讀 §0 → §6.5 該節 → `handoff-roadmap-v1.md` §2–§3。
 
 ★ **A3a／A3b 累積出來的兩條檢查習慣，直接沿用到 A3c**：
 
@@ -577,13 +579,64 @@ APA 敘述句只做**三級**。處置時把判準抽成匯出純函式 `plspred
 （NCA 側 $\#/P$、MGA／MICOM 側 $(\#+1)/(P+1)$）。各自有依據，改任一側都會動到已對過第三方的基準，
 故本批只做書面處置，是否統一留給階段 B。
 
-**A3c 待辦（4 份）**：`pls_cta`、`pls_copula`、`pls_fimix`、`pls_pos`
-（需重寫 bootstrap tetrad／copula 迴圈／EM／爬山法）。
+#### ★ A3c 交接規格（4 份，本階段最貴的一批）
 
-★ **`pls_fimix` 維持 pending**：Kevin 2026-07-26 再次確認 Hahn et al. (2002) 與 
-Sarstedt et al. (2011) 仍取不到，A3 的文件將據實標註「取得管道已窮盡」，不以替代驗證充當結案。
-`pls_mga_formulas`＋`pls_mga_perm`、`pls_micom`、`pls_predict`（含多次重複）、
-`pls_itcriteria`、`pls_ipma`、`pls_cipma`、`pls_cta`、`pls_copula`、`pls_fimix`、`pls_pos`
+**範圍與規模**（欄位數為 `reference.json` 的實際欄位）：
+
+| 文件 | 基準組 | 欄位 | status | 重寫要重現的演算法 |
+|---|---|---|---|---|
+| `pls-cta.md` | `pls_cta` | 50 | verified | bootstrap tetrad（含非冗餘 tetrad 選取集、Bonferroni） |
+| `pls-copula.md` | `pls_copula`＋`pls_copula_inputs`(I) | 30＋1 | verified | Gaussian copula 迴圈（ECDF → $\Phi^{-1}$ → 加入結構迴歸）＋KS 前提檢定 |
+| `pls-fimix.md` | `pls_fimix`＋`pls_fimix_inputs`(I) | 71＋3 | ★ **pending** | EM（E 步後驗屬段機率、M 步加權 OLS）＋多起點＋8 個資訊準則＋EN |
+| `pls-pos.md` | `pls_pos`＋`pls_pos_inputs`(I) | 39＋2 | verified | 爬山法（逐案試搬、只接受提高 ΣR² 的搬移）＋多起始分割 |
+
+★ **`pls_fimix` 維持 pending**：Kevin 2026-07-26 再次確認 Hahn et al. (2002) 與
+Sarstedt et al. (2011) 仍取不到。文件據實標註「取得管道已窮盡」，**不以替代驗證充當結案**；
+現行三重替代驗證（模擬還原＋EM 單調性＋JS↔numpy 逐值）要在第 6 節寫清楚它鎖得住什麼、鎖不住什麼。
+
+**開工順序建議**：`pls-copula`（最單純）→ `pls-pos` → `pls-cta` → `pls-fimix`（最貴，且 pending 要多寫）。
+
+**三條檢查習慣（A3a／A3b 累積，直接照做）**
+
+1. **寫第 7 節前先跑** `grep -rn "<欄位名>" src/ | grep -v src/lib/stats/`。
+   A3a 6 項發現裡 4 項、A3b 3 項裡 2 項都是這樣抓到的：引擎算了、回傳了、
+   `compare.test.js` 也逐值比對了，**但沒有任何 UI 元件讀它**。
+2. **把第 2／3 節裡每一句「本工具會…」當成待驗證的斷言**。A3b 的 R32 就是這樣抓到的：
+   說明文字寫四級判讀、實作只做三級——**不是有沒有，是級數不符**。
+3. **涉及使用者看得到什麼的檢查一律實跑**，一段 node 腳本即可（見 §6.8 第一條）。
+
+**獨立重寫的作業方式**（A3a／A3b 實證可行）
+
+- PLS 核心依 `docs/methods/pls-basic.md` §3.2–3.5 的**文字規格**以 numpy 重寫
+  （約 70 行：標準化 → 相關矩陣 → Lohmöller 迭代 → 符號定向 → 分數／loadings／結構係數）
+- ★ **重寫腳本刻意不入庫**（Kevin 2026-07-29 裁決）。重寫的目的是驗證「文件第 3 節的文字
+  是否構成充分且正確的規格」——**每次重寫都是一次獨立檢驗，沿用舊腳本反而弱化這個作用**。
+  70 行的成本遠低於它擋掉的風險（A1 的 R6、Session Q2 的 `pls_cta`／`pls_pos` 都是這樣抓到的）
+- 沙盒 `pip install scipy statsmodels scikit-learn pingouin factor_analyzer semopy plspm --break-system-packages`
+- 注入型 fixture（`*_inputs`，tier I）就是為了讓兩套實作跑同一批隨機輸入——**A3c 四組都有**，
+  重寫時務必注入而不是自己生
+- ★ **重寫結果要寫進 `validation-report-v1.md`**，只寫在本檔表格裡等於沒有證據
+  （A3a 因此重做了 2026-07-26 宣稱已完成的三組）
+
+**jsdom 與 CI**
+
+- 沙盒跑不動 jsdom，但**跑得動引擎**。UI 測試若選了特定資料子集（某兩群、某組指標、某個示範設定），
+  **先在沙盒把該子集餵給引擎跑一次**確認產得出要斷言的欄位
+- **CI 會跑全部 13 檔且失敗擋部署**（§8.2）——jsdom 測試寫壞＝GitHub Pages 停更
+
+**收尾清單**（照 A3a／A3b 的做法）
+
+1. 行號重驗（內容錨定法，**放在所有程式碼修改之後**）
+2. `docs/methods/README.md` 索引 ＋ A3c 紅隊摘要
+3. 本檔 §6.5 勾選、§6.6 待辦表（紅隊編號接 **R33**）與功能擴充表（接 **E16**）、版本紀錄
+4. `validation-report-v1.md` 新增 A3c 節
+5. 沙盒 8 檔 ＋ `npm run lint` ＋ `npx vite build`（看 `transformed` 行即可，lightningcss 是沙盒環境問題）
+6. 列出需 Kevin 本機補跑的項目
+
+★ **A3c 交付後 A3 即完成 10 / 10**，接著是 A4（NCA／LDA／CFA／EFA）。
+階段 A 全部結案還要 §6.7 的七條判準，其中**第 5 條（`docs.coverage.test.js` 防漂移測試）
+與第 7 條（§8 休眠快照）目前都還沒動工**——排 A4 之前先確認要不要提前做第 5 條，
+因為它會擋住「新增方法忘了寫文件」，越早裝上越有用。
 
 **A4 — 其餘 tier B ＋ 慣例分歧多者** ⬜
 `nca_ce_fdh`、`nca_cr_fdh`、`nca_bottleneck`、`lda_group3`、CFA（`cfa_2factor`／
