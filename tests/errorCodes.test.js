@@ -35,7 +35,13 @@ function collectCodes(dir) {
       if (!/\.(js|jsx)$/.test(name)) continue
       const src = fs.readFileSync(p, 'utf8')
       // 只收「error: 'code'」後面沒有緊接 message: 的
-      for (const m of src.matchAll(/error:\s*'([A-Za-z][\w-]*)'(\s*,\s*message\s*:)?/g)) {
+      //
+      // ★ 2026-07-29 紅隊 R41（階段 A / A4）：原正規式為 /'([A-Za-z][\w-]*)'/ ——
+      //   只收 [A-Za-z][\w-]* 形狀的代碼，**含其他字元的錯誤碼會被靜默略過**。
+      //   nca.js 的 'need-n>=5'（含 > 與 =）就是這樣從這道防線底下溜過去的：
+      //   它在兩份 i18n 都沒有字串，使用者螢幕上直接看到 `need-n>=5`，而本測試一路全綠。
+      //   改為收任何非空、不含引號的字串，讓防線覆蓋所有形狀的代碼。
+      for (const m of src.matchAll(/error:\s*'([^'\n]+)'(\s*,\s*message\s*:)?/g)) {
         if (!m[2]) codes.add(m[1])
       }
     }

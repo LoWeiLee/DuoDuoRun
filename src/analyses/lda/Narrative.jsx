@@ -61,7 +61,11 @@ function buildNarrative(result, dataset, lang) {
   }
 
   const tpl = sig ? t.lda.apa.sentence : t.lda.apa.sentenceNs
-  return fillTemplate(tpl, data)
+  // ★ 2026-07-29 紅隊 R38-e（比照 A1 的 R12）：敘述句補揭露 listwise 剔除
+  const dropped = result.nDropped > 0
+    ? fillTemplate(t.lda.apa.droppedClause, { dropped: result.nDropped, total: result.nTotal })
+    : ''
+  return dropped + fillTemplate(tpl, data)
 }
 
 function Narrative() {

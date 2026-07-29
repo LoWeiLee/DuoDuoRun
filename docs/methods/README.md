@@ -37,7 +37,7 @@
 | **A1** | PLS 測量與估計核心 | ✅ **完成（10 / 10）** |
 | **A2** | PLS 調節／高階／中介 | ✅ **完成（10 / 10）** |
 | **A3** | PLS 進階分析（W5／W6） | ✅ **完成（10 / 10，2026-07-29）** |
-| A4 | NCA／LDA／CFA／EFA | 未開始 |
+| **A4** | **NCA／LDA／CFA／EFA** | ✅ **完成（7 / 7，2026-07-29）** |
 | A5 | 推論統計與無母數 | 未開始 |
 | A6 | 敘述／相關／迴歸／量表／多變量 | 未開始 |
 
@@ -219,6 +219,77 @@ Sarstedt et al. (2011)、Ramaswamy et al. (1993) 三筆原文皆未取得，
 $N_k$ 與 EN 的定義**無法核定**。`pls-fimix.md` 第 6 節逐條寫明了現行三重替代驗證
 **鎖得住什麼、鎖不住什麼**，並記下一條未執行的路徑：以 R `flexmix`
 在「無截距＋本工具的 LV 分數」設定下對照 EM 本身。
+
+## A4 — NCA／LDA／CFA／EFA ✅ 完成（7 / 7，2026-07-29）
+
+★ **這是階段 A 第一批離開 PLS 的文件。** 與 A1–A3 最大的差別是**溯源結構相反**：
+PLS 側 26 組是 tier B（沒有第三方數值來源），A4 的 11 組裡 **7 組是 tier A**
+（`factor_analyzer`／`semopy`／`scipy` 直接產生基準）。
+⇒ 紅隊的主戰場也跟著移動——本批 **13 項發現裡沒有一項是公式錯誤**，
+全部落在**呈現層、可見性與慣例揭露**。
+
+| 文件 | 方法 | 基準組 | tier / status |
+|---|---|---|---|
+| [nca-ce-fdh.md](nca-ce-fdh.md) | NCA 的 CE-FDH 階梯天花板線（scope、peers、效果量 $d$） | `nca_ce_fdh` | B / verified |
+| [nca-cr-fdh.md](nca-cr-fdh.md) | NCA 的 CR-FDH 線性天花板線（peers 上的 OLS、夾擠面積、準確度） | `nca_cr_fdh` | B / verified |
+| [nca-bottleneck.md](nca-bottleneck.md) | NCA 瓶頸表（逐 Y 水準反查所需 X、NN 語意） | `nca_bottleneck` | B / verified |
+| [nca-permutation.md](nca-permutation.md) | NCA 的 permutation 顯著性檢定與**整體判準** | `nca_bottleneck.p_ce` | B / verified |
+| [lda.md](lda.md) | 線性判別分析（判別函數、三種係數、分類、Box's M） | `lda_group3` | B / verified |
+| [cfa.md](cfa.md) | 驗證性因素分析（ML 估計、適配指標、RMSEA CI） | `cfa_2factor`、`cfa_2factor_loadings`、`cfa_noncentral_chi2`、`cfa_rmsea_ci` | **A** / verified |
+| [efa.md](efa.md) | 探索性因素分析（主成分萃取、KMO／Bartlett、varimax） | `efa_pca_none`、`efa_pca_varimax`、`efa_pca_varimax_k3` | **A** / verified |
+
+### A4 的獨立重寫結果
+
+每一支都依文件第 3 節的**文字規格**重寫一次，且刻意換一條路線：
+
+| 方法 | 重寫路線 | 最大絕對差 |
+|---|---|---|
+| NCA | ceiling zone 改**400 萬點網格數值積分**、bottleneck 改數值反查 | 3.695e−5（＝網格解析度；$d$ 差 1.055e−8，peers／bottleneck／$p$ **逐值零差異**） |
+| LDA | 改用 **sklearn `LinearDiscriminantAnalysis`**（真第三方）取判別方向，再依 SPSS 慣例換算 | **1.288e−14**；★ sklearn 自己的 `predict` 準確率與 fixture 逐位元相同 |
+| CFA | 改用 **scipy `L-BFGS-B`** 重求 $F_{ML}$ 極小（引擎用自寫 BFGS＋中央差分梯度） | 與引擎差 6.4e−8；與 semopy 的差恰為 $N$ vs $N-1$ 慣例（比值 60/59） |
+| EFA | numpy 主成分＋自寫 varimax | **4.998e−9** |
+
+★ **重寫本身也交出了一個發現**：EFA 第一次重寫**漏掉 Kaiser normalization**，
+$k=3$ 的負荷立刻差 3.136e−2；補上後降到 5e−9。規格文字**確實寫了**這一步，
+是重寫者漏讀——這是規格充分性的**正面**證據，也說明這一步的量級不容忽略。
+
+### A4 的紅隊結果摘要
+
+7 份文件跑完八條紅隊檢查表，開出 **13 項**（R37–R49），Kevin 裁決後**全部處置完畢**（10 修、3 書面記錄；R47 的回傳契約部分留階段 B 並加現況鎖）。
+
+| 編號 | 方法 | 級別 | 內容 | 狀態 |
+|---|---|---|---|---|
+| **R40-i** | EFA | **L3** | ★ **完全共線時亮綠燈**：$\|\mathbf R\|=0$ 時回 `{chi2: Infinity, p: 0}`，UI 印「—」與「< .001」⇒ 報表說「球形檢定顯著，適合做因素分析」。且 KMO 回 `null` ⇒ **整張卡片靜默消失** | ✅ Kevin 核定並已執行（`singular` 旗標＋`unavailable` 原因＋警告框） |
+| **R40-h** | EFA | **L3** | ★ **零變異欄靜默放行**：Bartlett 的 df 虛胖、KMO `perVar` 出現 null，且該欄可能拿到 **loading 1.000 / $h^2$ 1.000**——看起來是全套最好的題目 | ✅ Kevin 核定並已執行（硬擋＋指名變項，比照 A1 的 R7） |
+| **R41** | 全工具 | **L2** | ★ `errorCodes.test.js` 的正規式只收 `[A-Za-z][\w-]*` 形狀的代碼 ⇒ **16 個含 `>`／`=` 的錯誤碼從防線底下溜過**，兩份 i18n 全缺字串，觸發時使用者看到裸代碼 | ✅ 正規式放寬＋16 條訊息中英補齊 |
+| **R42** | NCA | **L2** | ★ 整體判準是 $p<.05$ **且** $d\ge.1$ 的**複合口徑**，UI 完全不說；且在三處各實作一次。實測 272 組配對中 **2 組真的踩到** | ✅ Kevin 核定並已執行（抽成 `ncaVerdict` 單一純函式＋四情境說明） |
+| **R43** | NCA | **L2** | ★ APA 句直述「X 是 Y 的必要條件」，「必要非充分」只在 teaching mode 出現——而 APA 句才是被貼進論文的那一段 | ✅ Kevin 核定並已執行（句尾補限制子句，`sentenceNs` 不掛） |
+| **R44** | NCA | **L3** | ★ `reference.json` 三組 source 與 `generate_reference.py` 註解停在「**待**本機 R 抽驗」，而該抽驗 2026-07-13 已完成且零差異 | ✅ Kevin 核定並已執行（比照 R36-d 完整重生；83 組 values **逐位元不變**） |
+| **R39-a／b** | CFA | L2 | 未收斂與 SE 不可得時，Result 有徽章但 **APA 敘述句照常輸出一整段不可靠的數字** | ✅ 已修（句首插入警語，中英各二） |
+| **R38-a** | LDA | L2 | 未標準化典型係數是孤兒——而標準化係數的說明**正是拿它下定義的** | ✅ 已修（新增專屬表） |
+| **R38-b／c／e** | LDA | L2 | 符號任意性未說明；事前機率慣例（比例 vs SPSS 等機率）未揭露；listwise 剔除未揭露 | ✅ 已修（三條註記＋摘要行與 APA 句） |
+| **R37-a／b／e** | NCA | L2 | `need-n>=5` 顯示裸代碼；listwise 剔除未揭露；permutation 次數／種子／分母慣例未揭露 | ✅ 已修 |
+| **R40-a～e** | EFA | L1／L2 | 四處硬編中文（英文 APA 句會混入中文）；MSA 與 $\|\mathbf R\|$ 是孤兒；$k<2$ 時不轉軸完全靜默；區塊註解誤寫「pair-wise listwise」 | ✅ 已修 |
+| R45／R46 | LDA／CFA | L1 | `structureCoefficientsTotal`、`chi2Null`／`dfNull`／`fitFunction` 是孤兒欄位 | ✅ Kevin 裁決：**書面記錄**（並列易誤用／屬中介量） |
+| **R47** | NCA | **L2** | ★ CR-FDH 的 `intercept`／`slope` 零 UI；`cr_fdh.bottleneck` **實測與 CE 版逐字元相同**；瓶頸表未說明讀的是哪一條 ceiling（改用 CR 線差最大 **11.61**，30%／40% 方向相反） | ✅ Kevin 裁決「修呈現層、回傳契約留階段 B」並已執行：新增 Ceiling 方程式欄＋瓶頸表來源說明（含量化）；複本欄位留階段 B，本批加現況鎖 |
+| R48／R49 | LDA／測試 | L1 | Box's M 的 $p\le.001$ 門檻三處各實作一次（同值，且已寫在使用者可見文字裡）；`docs.coverage.test.js` 的寬鬆比對把散文中的 `manova` 誤判為已涵蓋 | ✅ 書面記錄（R49 已同步修正棘輪為真實值 36） |
+
+★ **本批的共同結構**：**沒有一項是公式錯誤。** 13 項裡，
+6 項是「算了、比對了、但使用者看不到」（孤兒欄位），
+4 項是「工具做了某個決定卻不說」（複合判準、事前機率、符號慣例、$\chi^2$ 慣例），
+2 項是「該擋沒擋，而且擋不住的後果會偽裝成好結果」（R40-h／R40-i），
+1 項是防線本身的縫（R41）。
+⇒ 與 A3c 的結論一致：`provenance.test.js` 管登記、`compare.test.js` 管數值、
+`docs.coverage.test.js` 管有沒有人說得清——**仍然沒有一道管「使用者看到的是不是同一件事」**。
+
+★ **本批最值得帶進 A5／A6 的兩條**：
+
+1. ★ **「該擋沒擋」比「擋錯」危險**：R40-h 與 R40-i 的共同點是，
+   **失敗的情境會偽裝成成功的報表**——完全共線亮綠燈、死題目拿滿分負荷。
+   ⇒ 每一支方法都要問一次：**這個方法失敗時，報表看起來會不會像成功？**
+2. ★ **防線的漏收比防線不存在更難發現**：R41 的 16 個錯誤碼在 `errorCodes.test.js`
+   上線後**一路全綠**，因為正規式根本沒收到它們。
+   ⇒ 新增或依賴任何「掃描式」測試時，先確認它掃到的**母體**是對的。
 
 ## 側欄模組 → 方法對照
 

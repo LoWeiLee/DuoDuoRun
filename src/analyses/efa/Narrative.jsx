@@ -17,11 +17,13 @@ function kmoInterpKey(kmo) {
 
 function buildNarrative(result, lang) {
   const t = getStrings(lang)
-  const ki = result.kmo ? kmoInterpKey(result.kmo.overall) : null
+  // ★ 2026-07-29 R40-i：kmo 改回傳 { unavailable } 物件，不再是 null
+  const kmoOk = !!result.kmo && !result.kmo.unavailable
+  const ki = kmoOk ? kmoInterpKey(result.kmo.overall) : null
   const kmoInterp = ki ? t.efa.result.kmoInterp[ki] : '—'
-  const kmoVal = result.kmo ? fmtNum(result.kmo.overall, 3) : '—'
+  const kmoVal = kmoOk ? fmtNum(result.kmo.overall, 3) : '—'
   const cumPct = result.varianceExplained.cumulative[result.nFactors - 1]
-  const suitable = result.kmo && result.kmo.overall >= 0.6 && result.bartlett.p < 0.05
+  const suitable = kmoOk && result.kmo.overall >= 0.6 && result.bartlett.p < 0.05
   if (suitable) {
     return fillTemplate(t.efa.apa.sentence, {
       p: result.p,
@@ -39,7 +41,7 @@ function buildNarrative(result, lang) {
     p: result.p,
     kmo: kmoVal,
     kmoInterp,
-    suitWord: lang === 'zh-TW' ? '不佳' : 'poor',
+    suitWord: t.efa.apa.suitWordPoor,
   })
 }
 
@@ -49,7 +51,10 @@ function Narrative() {
   const result = useMemo(() => (dataset ? runEFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || t.errors.stats[result.error] || result.error}</div>
+    const msg = result.error === 'zero-variance-vars'
+      ? fillTemplate(t.efa.config['zero-variance-vars'], { vars: (result.vars || []).join('、') })
+      : t.efa.config[result.error] || t.errors.stats[result.error] || result.error
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const zhText = buildNarrative(result, 'zh-TW')
   const enText = buildNarrative(result, 'en')

@@ -1605,9 +1605,13 @@ except Exception as e:
 
 # --- NCA（必要條件分析）基準區塊 起 ------------------------------------------
 # Dul (2016) ORM 19(1):10–52；統計檢定 Dul, van der Laan & Kuik (2020) ORM。
-# 沙盒無 R NCA 套件 → 依封閉式定義以 numpy 手算作引擎交叉驗證基準；
+# 沙盒無 R NCA 套件 → 依封閉式定義以 numpy 手算產生基準；
 # CE-FDH 為封閉式階梯，CR-FDH 為過 ceiling 點 OLS＋scope 夾擠，permutation 用固定 draws。
-# 慣例對齊（scope 用實證 min/max、CE-FDH 階梯上方空白）待 Kevin 本機 R NCA::nca 抽驗。
+# ★ 2026-07-29 紅隊 R44（階段 A / A4）：本區塊註解原寫「慣例對齊待 Kevin 本機 R NCA::nca 抽驗」，
+#   但該抽驗已於 2026-07-13 完成（R NCA 5.0.2，Session A）——scope、CE-FDH 空白區與 d、
+#   peers 座標、CR-FDH 截距與斜率、逐水準 bottleneck 與 NN 語意全部逐值一致，零差異，
+#   provenance.json 亦已據此記載。註解與三組 source 字串停在舊狀態會讓讀者以為 NCA 尚未被第三方驗過。
+#   （同型前例：A3c 的 R34-a 程式碼註解停在舊口徑、R36-d source 字串有事實錯誤。）
 _nx = np.asarray(datasets["nca"]["x"], float)
 _ny = np.asarray(datasets["nca"]["y"], float)
 _nperms = [np.asarray(p) for p in datasets["nca"]["perms"]]
@@ -1675,17 +1679,19 @@ _p_ce = _cnt / len(_nperms)
 
 put("nca_ce_fdh",
     "Dul (2016) NCA CE-FDH：scope 用實證 min/max、ceiling(x)=max{y:x_i≤x} 階梯、"
-    "空白區/scope=d。numpy 封閉式手算，待 Kevin 本機 R NCA::nca(ceiling='ce_fdh') 抽驗",
+    "空白區/scope=d。numpy 封閉式手算，已於 2026-07-13 與 R NCA 5.0.2 逐值抽驗"
+    "（scope 3501.5488、CE 空白區 835.0134、d 0.2384697、peers 8 全數一致，零差異）",
     xmin=_xmin, xmax=_xmax, ymin=_ymin, ymax=_ymax, scope=_S,
     n_peers=len(_rx), ceiling_zone=_C, d=_d,
     peers_x=_rx.tolist(), peers_y=_ry.tolist())
 put("nca_cr_fdh",
     "Dul (2016) NCA CR-FDH：過 CE-FDH ceiling 點 OLS 得線性 ceiling，"
-    "scope 內夾擠上方空白/scope=d。待 Kevin 本機 R NCA::nca(ceiling='cr_fdh') 抽驗",
+    "scope 內夾擠上方空白/scope=d。已於 2026-07-13 與 R NCA 5.0.2 逐值抽驗"
+    "（截距與斜率一致，零差異）",
     intercept=_a, slope=_b, ceiling_zone=_Ccr, d=_Ccr / _S)
 put("nca_bottleneck",
     "Dul (2016) NCA bottleneck（CE-FDH）：各 Y 水準（%）反讀 ceiling 所需 X 實際值。"
-    "待 Kevin 本機 R NCA::bottleneck 抽驗",
+    "已於 2026-07-13 與 R NCA 5.0.2 逐值抽驗（逐水準所需 X 與 NN 語意一致，零差異）",
     x_required=_bx, p_ce=_p_ce)
 # --- NCA 基準區塊 迄 ---------------------------------------------------------
 

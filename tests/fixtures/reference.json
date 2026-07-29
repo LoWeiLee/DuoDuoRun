@@ -4871,7 +4871,7 @@
   }
  },
  "nca_ce_fdh": {
-  "source": "Dul (2016) NCA CE-FDH\uff1ascope \u7528\u5be6\u8b49 min/max\u3001ceiling(x)=max{y:x_i\u2264x} \u968e\u68af\u3001\u7a7a\u767d\u5340/scope=d\u3002numpy \u5c01\u9589\u5f0f\u624b\u7b97\uff0c\u5f85 Kevin \u672c\u6a5f R NCA::nca(ceiling='ce_fdh') \u62bd\u9a57",
+  "source": "Dul (2016) NCA CE-FDH\uff1ascope \u7528\u5be6\u8b49 min/max\u3001ceiling(x)=max{y:x_i\u2264x} \u968e\u68af\u3001\u7a7a\u767d\u5340/scope=d\u3002numpy \u5c01\u9589\u5f0f\u624b\u7b97\uff0c\u5df2\u65bc 2026-07-13 \u8207 R NCA 5.0.2 \u9010\u503c\u62bd\u9a57\uff08scope 3501.5488\u3001CE \u7a7a\u767d\u5340 835.0134\u3001d 0.2384697\u3001peers 8 \u5168\u6578\u4e00\u81f4\uff0c\u96f6\u5dee\u7570\uff09",
   "values": {
    "xmin": 12.9495,
    "xmax": 86.334,
@@ -4904,7 +4904,7 @@
   }
  },
  "nca_cr_fdh": {
-  "source": "Dul (2016) NCA CR-FDH\uff1a\u904e CE-FDH ceiling \u9ede OLS \u5f97\u7dda\u6027 ceiling\uff0cscope \u5167\u593e\u64e0\u4e0a\u65b9\u7a7a\u767d/scope=d\u3002\u5f85 Kevin \u672c\u6a5f R NCA::nca(ceiling='cr_fdh') \u62bd\u9a57",
+  "source": "Dul (2016) NCA CR-FDH\uff1a\u904e CE-FDH ceiling \u9ede OLS \u5f97\u7dda\u6027 ceiling\uff0cscope \u5167\u593e\u64e0\u4e0a\u65b9\u7a7a\u767d/scope=d\u3002\u5df2\u65bc 2026-07-13 \u8207 R NCA 5.0.2 \u9010\u503c\u62bd\u9a57\uff08\u622a\u8ddd\u8207\u659c\u7387\u4e00\u81f4\uff0c\u96f6\u5dee\u7570\uff09",
   "values": {
    "intercept": 13.142063688454602,
    "slope": 0.5161235442093068,
@@ -4913,7 +4913,7 @@
   }
  },
  "nca_bottleneck": {
-  "source": "Dul (2016) NCA bottleneck\uff08CE-FDH\uff09\uff1a\u5404 Y \u6c34\u6e96\uff08%\uff09\u53cd\u8b80 ceiling \u6240\u9700 X \u5be6\u969b\u503c\u3002\u5f85 Kevin \u672c\u6a5f R NCA::bottleneck \u62bd\u9a57",
+  "source": "Dul (2016) NCA bottleneck\uff08CE-FDH\uff09\uff1a\u5404 Y \u6c34\u6e96\uff08%\uff09\u53cd\u8b80 ceiling \u6240\u9700 X \u5be6\u969b\u503c\u3002\u5df2\u65bc 2026-07-13 \u8207 R NCA 5.0.2 \u9010\u503c\u62bd\u9a57\uff08\u9010\u6c34\u6e96\u6240\u9700 X \u8207 NN \u8a9e\u610f\u4e00\u81f4\uff0c\u96f6\u5dee\u7570\uff09",
   "values": {
    "x_required": [
     12.9495,

@@ -70,6 +70,12 @@ function SummaryLine({ result, t }) {
   return (
     <div className="bg-white border border-duo-cream-200 rounded-lg px-3 py-2 text-xs text-duo-cocoa-700 font-mono">
       N = {result.n} &nbsp;·&nbsp; k = {result.k} ({r.groups}) &nbsp;·&nbsp; p = {result.p} ({r.predictors}) &nbsp;·&nbsp; {r.functions}: {result.functions.length}
+      {/* ★ R38-e：修復前只印剔除後的 N，缺失值處理完全不揭露 */}
+      {result.nDropped > 0 && (
+        <span className="text-duo-sig-warn">
+          {' '}&nbsp;·&nbsp; {fillTemplate(r.droppedNote, { dropped: result.nDropped, total: result.nTotal })}
+        </span>
+      )}
     </div>
   )
 }
@@ -162,6 +168,46 @@ function StandardizedTable({ result, t, labelMap }) {
         </table>
       </div>
       <p className="text-[11px] text-duo-cocoa-400 mt-2">{r.stdCoefHint}</p>
+    </div>
+  )
+}
+
+/* ─────────────────────────  Unstandardized coefficients  ───────────────────────── */
+
+/* ★ 2026-07-29 紅隊 R38-a：未標準化典型判別函數係數。
+   修復前這一組有 fixture（lda_group3.unstandardizedCoefficients）、有 compare.test.js 逐值比對，
+   卻沒有任何 UI 元件讀它 —— 而標準化係數的說明文字（stdCoefHint）正是拿它來下定義的。
+   它也是唯一能讓使用者自己算出判別分數的係數（比照 A3b 的 R30）。 */
+function UnstandardizedTable({ result, t, labelMap }) {
+  const r = t.lda.result
+  return (
+    <div>
+      <Heading>{r.unstdCoefTitle}</Heading>
+      <div className="overflow-x-auto bg-white border border-duo-cream-200 rounded-lg">
+        <table className="w-full text-xs">
+          <thead className="bg-duo-cream-50">
+            <tr>
+              <Th align="left">{r.cols.predictor}</Th>
+              {result.functions.map((fn) => (
+                <Th key={fn.index}>F{fn.index}</Th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {result.predictors.map((col, i) => (
+              <tr key={col}>
+                <Td align="left" mono={false} bold>{labelMap[col] || col}</Td>
+                {result.functions.map((fn) => (
+                  <Td key={fn.index}>{fmtNum(fn.unstandardizedCoefficients[i], 4)}</Td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">{r.unstdCoefHint}</p>
+      {/* ★ R38-b：判別函數的符號完全任意（特徵向量的符號不定），修復前 UI 隻字未提 */}
+      <p className="text-[11px] text-duo-cocoa-400 mt-1 leading-snug">{r.signNote}</p>
     </div>
   )
 }
@@ -310,6 +356,10 @@ function ClassificationTable({ result, t, valueLabels, lang }) {
         </table>
       </div>
       <p className="text-[11px] text-duo-cocoa-400 mt-2">{r.classifyHint}</p>
+      {/* ★ R38-c（Kevin 2026-07-29 裁決）：事前機率的慣例分歧。
+          本工具用比例事前 π_g = n_g/N（＝ R MASS::lda 的預設，也是基準的來源），
+          SPSS 預設為等機率事前 —— 兩者會給出不同的分類表與準確率。 */}
+      <p className="text-[11px] text-duo-cocoa-400 mt-1">{r.priorNote}</p>
     </div>
   )
 }
@@ -464,6 +514,7 @@ function Result() {
       />
 
       <FunctionsTable result={result} t={t} />
+      <UnstandardizedTable result={result} t={t} labelMap={labelMap} />
       <StandardizedTable result={result} t={t} labelMap={labelMap} />
       <StructureTable result={result} t={t} labelMap={labelMap} />
       <CentroidsTable result={result} t={t} valueLabels={valueLabels} lang={lang} />

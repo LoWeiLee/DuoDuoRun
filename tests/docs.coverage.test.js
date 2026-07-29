@@ -41,15 +41,25 @@ const METHODS_DIR = path.join(HERE, '..', 'docs', 'methods')
 /**
  * 未被任何方法文件第 6 節引用的基準組數上限（棘輪，只能往下調）。
  *
- * 2026-07-29（A3c 交付後）實際值 44：
- *   A1–A3 的 PLS 側 39 組已全數涵蓋（含本日補列的兩組 scheme）。
- *   剩下的 44 組全部落在尚未動工的 A4／A5／A6：
- *     A4（12）nca_*3、cfa_*4、efa_*3、lda_group3、cluster_*2 ※cluster 屬 A6
- *     A5／A6（32）t 檢定、ANOVA 家族、無母數、相關、迴歸、量表、多變量、敘述統計
+ * 2026-07-29（A4 交付後）實際值 **36**（前值 44，A3c 交付後）：
+ *   · PLS 側 36 組（A1–A3）全數涵蓋
+ *   · ★ A4 新涵蓋 11 組：nca_ce_fdh／nca_cr_fdh／nca_bottleneck、lda_group3、
+ *     cfa_2factor／cfa_2factor_loadings／cfa_noncentral_chi2／cfa_rmsea_ci、
+ *     efa_pca_none／efa_pca_varimax／efa_pca_varimax_k3
+ *   · 剩下的 36 組全部落在尚未動工的 A5／A6（t 檢定、ANOVA 家族、無母數、相關、
+ *     迴歸、量表、多變量、集群、敘述統計）
  *
  * ★ 寫完一批就把這個數字改成新的實際值——它是階段 A 的進度計。
+ *
+ * ★ 2026-07-29 紅隊 R49（階段 A / A4）：下方 `mentions()` 是**寬鬆比對**——
+ *   只要基準鍵當作獨立字詞出現在第 6 節的任何地方（含散文與程式碼片段）就算涵蓋。
+ *   A4 撰寫時實際踩到：`lda.md` 第 6 節寫「base R 的 manova() 給出的 Wilks Λ 亦同」，
+ *   結果 `manova` 這一組（屬 A6、尚未寫文件）被**誤判為已涵蓋**，未涵蓋數少算 1。
+ *   已把該處改寫為大寫 MANOVA 規避。⇒ **A5／A6 撰寫時要留意**：
+ *   第 6 節提到別組方法的套件名或函式名時，避免寫成與基準鍵完全相同的小寫字串。
+ *   （收緊為「只認 `reference.json → \`key\`` 宣告式」需回頭改 30 份 A1–A3 文件，本批不做。）
  */
-const MAX_UNDOCUMENTED = 44
+const MAX_UNDOCUMENTED = 36
 
 /** 取出一份方法文件的第 6 節（到第 7 節為止）。 */
 function sectionSix(text) {

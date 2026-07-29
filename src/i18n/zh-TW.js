@@ -818,6 +818,11 @@ export default {
       groups: '組', predictors: '個預測變項', functions: '判別函數數', cases: '筆資料',
       functionsTitle: '判別函數總表',
       functionsHint: '可保留的判別函數最多為 min(k − 1, p) 個；Wilks Λ 與 χ² 為「從第 j 個函數起」之累積檢定（達 .05 表示該函數仍承載顯著訊息）。',
+      unstdCoefTitle: '未標準化典型係數（Unstandardized canonical coefficients）',
+      unstdCoefHint: '縮放使 wᵀ S_p w = 1，與 SPSS 的「未標準化典型判別函數係數」同定義。判別分數即由此係數計算：s = Σ b_j (x_j − x̄_j)，其中 x̄ 為全樣本平均。因為保留原始量尺，**不可**拿它跨變項比較重要性（那要看下方的標準化係數）。',
+      signNote: '符號慣例：判別函數是特徵向量，其正負號在數學上完全任意 —— 整個函數（係數、結構係數、群組重心）同時反號並不改變任何結論。本工具取「該函數內絕對值最大的未標準化係數為正」；SPSS／R MASS 的符號可能與此相反，對照時請看相對關係而非絕對正負。',
+      droppedNote: '已剔除 {dropped} 筆（原始 {total} 筆，listwise）',
+      priorNote: '事前機率慣例：本工具採比例事前 π_g = n_g / N（與 R MASS::lda 預設相同，本工具的基準即由它產生）。SPSS 的預設為等機率事前（各組 1/k），在組別人數不均時會給出不同的分類表與準確率 —— 與 SPSS 對照時請先確認這一項設定。',
       stdCoefTitle: '標準化典型係數（Standardized canonical coefficients）',
       stdCoefHint: '＝未標準化係數（縮放使 wᵀ S_p w = 1）× 該預測變項的組內合併標準差，與 SPSS 的「標準化典型判別函數係數」同定義。已消去原始量尺，故絕對值可跨變項比較相對重要性。淡色 < 0.32（弱），中色 0.32–0.55（中），暖色 ≥ 0.55（強）。',
       structureTitle: '結構矩陣（Structure matrix）',
@@ -913,6 +918,7 @@ export default {
       boxOk: " Box's M 檢定 χ²({df}) = {chi2}, p = {pStr}，未違反共變數矩陣同質假設。",
       boxBad: " Box's M 檢定 χ²({df}) = {chi2}, p = {pStr}，違反共變數矩陣同質假設。",
       boxNotApplicable: " Box's M 無法計算。",
+      droppedClause: '（分析前以 listwise 剔除 {dropped} 筆含缺失值的資料，原始樣本 {total} 筆。）',
       copyHint: '一鍵複製 APA 敘述',
     },
   },
@@ -1099,6 +1105,8 @@ export default {
         '本研究以驗證性因素分析（CFA, ML 估計）檢驗 {m} 因子結構（{factorList}），共 {p} 個指標、N = {n}。' +
         '模型適配如下：χ²({df}) = {chi2}, p = {pStr}；CFI = {cfi}；TLI = {tli}；RMSEA = {rmsea}（90% CI {rmseaCi}）；SRMR = {srmr}。' +
         '整體而言，模型適配程度為「{overall}」。',
+      notConvergedCaveat: '【警告：本模型的 ML 疊代未收斂，以下所有估計值與適配指標都不可靠，不應直接引用。】',
+      noSeCaveat: '【注意：本模型的標準誤無法由數值 Hessian 估得（Hessian 非正定或反矩陣失敗），故負荷量的顯著性檢定不可得。】',
       copyHint: '一鍵複製 APA 敘述',
     },
     interp: {
@@ -2137,6 +2145,28 @@ export default {
       'var1-equals-var2': '兩個變數不能選同一欄。',
       'group-empty': '至少有一組完全沒有有效資料。',
       'need-arrays': '輸入格式不正確（預期為數值陣列）。',
+      // ★ 2026-07-29 紅隊 R37-a：修復前 nca.js 回傳的 'need-n>=5' 在兩份 i18n 都沒有對應字串，
+      //   Result.jsx 的三段 fallback 最後落到 `|| result.error`，使用者螢幕上直接看到 need-n>=5。
+      'need-n>=5': '有效樣本數不足（剔除缺失值後少於 5 筆），無法估計 ceiling line。',
+      // ★ 2026-07-29 紅隊 R41（階段 A / A4）：以下 13 個錯誤碼**全部含 `>` 或 `=`**，
+      //   因此一直被 errorCodes.test.js 的舊正規式（[A-Za-z][\w-]*）靜默略過，
+      //   在兩份 i18n 都沒有字串 —— 觸發時使用者螢幕上直接看到程式碼。
+      //   把正規式放寬後一次浮現，於同日補齊（跨 A4 的四個方法，屬 A5／A6 範圍的提前修正）。
+      'each-group-needs-n>=2': '至少有一組的有效樣本少於 2 筆，無法計算組內變異。',
+      'need-n>=2-non-zero-diffs': '成對差值中非零的筆數少於 2 筆，無法進行檢定（Wilcoxon 會剔除差值為 0 的配對）。',
+      'need-n>=4': '有效樣本少於 4 筆，無法計算此統計量。',
+      'need-n>=2': '有效樣本少於 2 筆，無法計算變異數。',
+      'need-n>=3': '有效樣本少於 3 筆，無法估計迴歸模型。',
+      'need-N>k': '有效樣本數必須大於組數，否則沒有剩餘自由度可估計誤差。',
+      'need->=2-groups': '分組變項至少需要 2 組才能比較。',
+      'need->=3-groups': '此方法至少需要 3 組。',
+      'need->=2-items': '至少需要 2 個題目才能計算內部一致性。',
+      'need->=3-cases': '至少需要 3 筆完整資料才能計算內部一致性。',
+      'need->=2-vars': '至少需要 2 個變數。',
+      'need->=2-categories': '此變項至少需要 2 個類別。',
+      'need->=2x2': '交叉表至少需要 2 列 × 2 欄。',
+      'factorA-needs->=2-levels': '因子 A 至少需要 2 個水準。',
+      'factorB-needs->=2-levels': '因子 B 至少需要 2 個水準。',
       'paired-arrays-must-match-length': '成對資料的兩欄長度不一致，無法配對。',
       'mu0-must-be-finite-number': '檢定值必須是有限的數字。',
       'sample-size-out-of-range': '樣本數超出此方法可處理的範圍。',
@@ -2646,6 +2676,7 @@ export default {
       selectVarsTitle: '選擇要分析的變數',
       selectVarsHint: '至少 3 個數值變數（連續或順序）；建議 ≥ 5 個以呈現結構',
       needAtLeastThree: '請至少勾選 3 個變數',
+      'zero-variance-vars': '以下變項完全沒有變異（所有值都相同），無法進入因素分析：{vars}。請取消勾選後再試。',
       nFactorsTitle: '因子數',
       nFactorsHint: '留空 → Kaiser 規則（特徵值 > 1）；填入正整數 → 強制使用該數',
       rotationTitle: '轉軸方法',
@@ -2677,11 +2708,26 @@ export default {
         variable: '變數',
         h2: 'h²',
         communalities: '共同性',
+        msa: 'MSA',
+        msaVerdict: '判讀',
       },
       kmoInterp: {
         unacceptable: '不可接受', miserable: '極差', mediocre: '尚可', middling: '中等',
         meritorious: '優良', marvelous: '極佳',
       },
+      kmoUnavailable: {
+        'too-few-vars': '變項少於 3 個，KMO 無定義',
+        singular: '相關矩陣為奇異矩陣（變項間完全共線），KMO 無法計算',
+      },
+      msaTitle: '逐變項取樣適切性（MSA / anti-image）',
+      msaHint: 'MSA 為單一變項版的 KMO，用來判斷「該刪哪一題」：< 0.5 建議優先考慮移除，移除後其餘變項的 MSA 與整體 KMO 通常會上升。與 SPSS 的 anti-image correlation matrix 對角線同定義。',
+      detR: '|R| = {det}（趨近 0 代表變項間近乎完全共線）',
+      singularWarn: '警告：相關矩陣的行列式為 0 —— 變項之間完全共線（例如某一題是其他題的線性組合，或重複勾選了同一題的不同編碼）。此時 Bartlett 的 χ² 發散、KMO 無法計算，因子解也不唯一。請先移除重複或線性相依的變項。',
+      bartlettSingular: '無法判定：|R| = 0，χ² 發散（變項完全共線）',
+      keptHint: 'amber 底色 = 採用的因子（{k} 個）',
+      rotatedTag: '（Varimax 轉軸後）',
+      rotationSkipped: '你選了 Varimax，但因子數為 1 —— 單一因子沒有可轉軸的平面，故本次未轉軸，下表為未轉軸的主成分負荷。',
+      loadingColorHint: '負荷量顏色：淡色 < 0.32（建議移除）→ 深色 0.32–0.55 → 暖色 ≥ 0.55（解釋力強）',
       decisionRule: '採用 {k} 個因子（{strategy}）',
       strategyKaiser: 'Kaiser：特徵值 > 1',
       strategyUser: '使用者指定',
@@ -2736,6 +2782,7 @@ export default {
         '採 Kaiser 規則保留 {k} 個因子，累積解釋變異 {cumPct}%。',
       sentenceUnsuit:
         '對 {p} 個變數的 KMO = {kmo}（{kmoInterp}），EFA 適合度{suitWord}。',
+      suitWordPoor: '不佳',
       copyHint: '一鍵複製 APA 敘述',
     },
     interp: {
@@ -3478,9 +3525,21 @@ Gaussian copula（Park & Gupta, 2012；PLS-SEM 流程依 Hult et al., 2018）用
       readingTitle: '解讀',
       nn: 'NN',
       nnHint: 'NN（Not Necessary）= 該 Y 水準所需的 X 已在最小值之下，X 在此水準非為瓶頸。所需 X 隨 Y 水準單調非遞減。',
+      droppedNote: '已剔除 {dropped} 筆（原始 {total} 筆，listwise）',
+      // ★ 2026-07-29 紅隊 R47：CE-FDH 是階梯函數，沒有封閉式方程式可印
+      ceilingStep: '階梯函數（無線性式）',
+      bottleneckSource: '本表的讀值一律錨定於 CE-FDH 階梯（NCA 的慣例是以實際 ceiling 反查）。★ 改以上表的 CR-FDH 線性 ceiling 反查會得到不同的所需 X——本示範資料實測逐水準最大差 11.61（X 全距 73.4，約 16%），30% 與 40% 兩個水準的方向甚至相反。要引用瓶頸值時請一併說明採用的是 CE-FDH。',
+      permNote: '顯著性以 permutation 檢定近似：重排 {perms} 次（固定亂數種子，結果可重現），p = #{d* ≥ d} / P，分母不做 +1 修正（沿用 R NCA 套件的口徑）。因此 p 的解析度下限為 {minP}，報表印出的 p = .000 應讀作「小於此值」而非恰為 0。',
+      // ★ 2026-07-29 紅隊 R42：複合判準是本工具口徑，必須寫明是哪一項沒過
+      verdictNote: '整體判讀：{verdict}必要條件。本工具的判準需兩項同時成立——permutation p < {alpha}，且 CE-FDH 效果量 d ≥ {dMin}。{reason}（★ 這是本工具的複合口徑：p 來自 Dul, van der Laan & Kuik (2020) 的顯著性檢定，d ≥ {dMin} 來自 Dul (2016) 的效果量基準，兩篇原文都沒有把它們合併成單一門檻。合併的理由是避免「統計上不像隨機、但空白區小到沒有實務意義」被判為支持。）',
+      verdictBoth: '本次兩項皆通過。',
+      verdictNeither: '本次兩項皆未通過。',
+      verdictPOnly: '★ 本次效果量已達標，但 permutation p 未達顯著。',
+      verdictDOnly: '★ 本次 p 已達顯著，但效果量未達 d ≥ {dMin} 的實務門檻——判為不支持是這一項造成的。',
       cols: {
         dCe: 'd（CE-FDH）', dCr: 'd（CR-FDH）', p: 'p（permutation）', nPeers: 'ceiling 點數',
         ceiling: 'Ceiling', zone: '空白區', d: 'd', effect: '效果', accuracy: '準確度',
+        equation: 'Ceiling 方程式',
         yLevel: '水準', yValue: 'Y 值', xRequired: '所需值', xPercent: '所需 %',
       },
     },
@@ -3513,13 +3572,19 @@ Gaussian copula（Park & Gupta, 2012；PLS-SEM 流程依 Hult et al., 2018）用
       ref:
         'Dul, J. (2016). Necessary Condition Analysis (NCA). Organizational Research Methods, 19(1), 10–52.\n' +
         'Dul, J., van der Laan, E., & Kuik, R. (2020). A statistical significance test for NCA. Organizational Research Methods.\n' +
-        '數值以 R NCA 套件封閉式定義實作；慣例對齊仍待本機 R 抽驗（見 validation-report）。',
+        '★ 數值已對官方 R 套件 NCA 5.0.2 逐值抽驗（2026-07-13）：scope、CE-FDH 空白區與 d、' +
+        'peers 座標、CR-FDH 截距與斜率、逐水準 bottleneck 與 NN 語意全部一致，零差異。' +
+        '詳見 docs/methods/nca-ce-fdh.md 第 6 節與 docs/validation-report-v1.md。',
     },
     apa: {
       sentence:
-        '必要條件分析（NCA; Dul, 2016）結果顯示，{xLabel} 是 {yLabel} 的必要條件（CE-FDH d = {dCe}，效果量{effectWord}；CR-FDH d = {dCr}），效果量以近似 permutation 檢定達顯著（p = {pStr}，n = {n}）。bottleneck 分析指出達到各水準之 {yLabel} 所需的最低 {xLabel} 水準。',
+        '必要條件分析（NCA; Dul, 2016）結果顯示，{xLabel} 是 {yLabel} 的必要條件（CE-FDH d = {dCe}，效果量{effectWord}；CR-FDH d = {dCr}），效果量以近似 permutation 檢定達顯著（p = {pStr}，n = {n}）。bottleneck 分析指出達到各水準之 {yLabel} 所需的最低 {xLabel} 水準。{caveat}',
       sentenceNs:
         '必要條件分析（NCA; Dul, 2016）結果顯示，{xLabel} 作為 {yLabel} 之必要條件的證據不足（CE-FDH d = {dCe}；CR-FDH d = {dCr}），近似 permutation 檢定未達顯著（p = {pStr}，n = {n}）。',
+      droppedClause: '（分析前以 listwise 剔除 {dropped} 筆含缺失值的資料，原始樣本 {total} 筆。）',
+      // ★ 2026-07-29 紅隊 R43：必要非充分＋觀察資料不蘊含因果。原本只在 teaching mode 的
+      //   interp 出現，而 APA 句才是被貼進論文的那一句（Dul 2016 原文即強調此限制）。
+      caveat: ' 須注意，必要性不蘊含充分性：X 未達門檻時 Y 到不了對應水準，但高 X 並不保證高 Y；且本分析建立在觀察資料上，必要條件的因果解釋須另由理論與研究設計支持。',
       copyHint: '一鍵複製 APA 敘述',
     },
     interp: {

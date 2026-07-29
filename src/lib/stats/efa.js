@@ -9,7 +9,8 @@
  *   rotation    — 'varimax' | 'none'（預設 'varimax'）
  *
  * 演算法：
- *   1. 從資料計算相關矩陣 R（pair-wise listwise）
+ *   1. 從資料計算相關矩陣 R（★ listwise：任一變項缺值即剔除整列。
+ *      2026-07-29 紅隊 R40-e 修正 —— 原註解誤寫「pair-wise listwise」，實作從來是純 listwise）
  *   2. Bartlett's 球形檢定：H₀ = R 為單位矩陣
  *      χ² = -((n-1) - (2p+5)/6) · ln|R|，df = p(p-1)/2
  *   3. KMO 取樣適切性（p ≥ 3 才計算）
@@ -24,8 +25,8 @@
  *   {
  *     n, p,
  *     correlationMatrix, determinant,
- *     bartlett: { chi2, df, p },
- *     kmo: { overall, perVar }                // 若 p ≥ 3
+ *     bartlett: { chi2, df, p, singular? },   // singular = true 時 |R| = 0，χ²/p 為 NaN
+ *     kmo: { overall, perVar, unavailable }   // unavailable = null | 'too-few-vars' | 'singular'
  *     eigenvalues: number[]                   // 全部 p 個，遞減
  *     varianceExplained: { values, percent, cumulative },
  *     nFactors,                               // 實際採用的因子數
@@ -158,7 +159,10 @@ function determinantFromEigen(eigenvalues) {
 function bartlettSphericity(eigenvalues, n, p) {
   if (n <= 1 || p < 2) return { chi2: NaN, df: NaN, p: NaN }
   const det = determinantFromEigen(eigenvalues)
-  if (det <= 0) return { chi2: Infinity, df: (p * (p - 1)) / 2, p: 0 }
+  // ★ 2026-07-29 紅隊 R40-i（L3，Kevin 核定）：|R| = 0（完全共線）時 χ² 發散。
+  //   修復前回 { chi2: Infinity, p: 0 }，UI 的 fmtNum(Infinity) 印「—」、fmtP(0) 印「< .001」，
+  //   於是完全共線的資料會亮綠燈「適合做因素分析」。改為明確標記 singular，由 UI 顯性說明。
+  if (!(det > 0)) return { chi2: NaN, df: (p * (p - 1)) / 2, p: NaN, singular: true }
   const chi2 = -((n - 1) - (2 * p + 5) / 6) * Math.log(det)
   const df = (p * (p - 1)) / 2
   const pVal = pChiSq(chi2, df)
@@ -177,9 +181,12 @@ function bartlettSphericity(eigenvalues, n, p) {
  */
 function kmo(R) {
   const p = R.length
-  if (p < 3) return null
+  // ★ 2026-07-29 紅隊 R40-i：回傳 { unavailable: 原因 } 而不是 null。
+  //   修復前 UI 兩處都寫 `result.kmo && (...)`，KMO 算不出來時整張卡片與統計量卡
+  //   直接消失、沒有任何說明 —— 使用者不會知道少了一個判準。
+  if (p < 3) return { unavailable: 'too-few-vars' }
   const Rinv = inverse(R)
-  if (!Rinv) return null
+  if (!Rinv) return { unavailable: 'singular' }
   // anti-image correlation aij = -Rinv[i][j] / sqrt(Rinv[i][i] * Rinv[j][j])
   // KMO_overall = sum(rij^2 over i!=j) / (sum(rij^2 over i!=j) + sum(aij^2 over i!=j))
   let sumR2 = 0
@@ -202,7 +209,7 @@ function kmo(R) {
     perVar[i] = perVarR2[i] / (perVarR2[i] + perVarA2[i])
   }
   const overall = sumR2 / (sumR2 + sumA2)
-  return { overall, perVar }
+  return { overall, perVar, unavailable: null }
 }
 
 /* ─────────────────  主要 EFA 函式  ───────────────── */
@@ -229,6 +236,22 @@ export function exploratoryFactorAnalysis(rows, columns, options = {}) {
   }
   const n = valid.length
   if (n < p + 5) return { error: 'need-more-data' }
+
+  // ★ 2026-07-29 紅隊 R40-h（L3，Kevin 核定）：零變異欄硬擋。
+  //   修復前不擋也不警告 —— pearsonCorr 對常數欄回 NaN，下方第 245 行把 NaN 換成 0，
+  //   於是該欄在 R 裡成為與所有變項零相關的孤島：
+  //     · Bartlett 的 df 仍照全部 p 計 → df 虛胖（7 題實測 21，實際應為 15）、p 系統性偏小
+  //     · KMO 的 perVar 出現 null，overall 仍照算
+  //     · 該欄的 h² 通常為 0（死列），但當因子數涵蓋到它自己的 λ = 1 特徵向量時，
+  //       它會拿到 loading 1.000 / h² 1.000 —— 看起來是全套最好的題目（3 欄 k=2 實測）
+  //   四支多變量方法裡 LDA（singularPooled）、CFA（sample-cov-not-pd）、NCA（no-variation）
+  //   都硬擋，修復前只有 EFA 放行。
+  const zeroVar = []
+  for (let i = 0; i < p; i++) {
+    const v0 = valid[0][i]
+    if (valid.every((row) => row[i] === v0)) zeroVar.push(columns[i])
+  }
+  if (zeroVar.length > 0) return { error: 'zero-variance-vars', vars: zeroVar }
 
   // 相關矩陣
   const R = []

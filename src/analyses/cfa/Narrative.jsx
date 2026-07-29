@@ -45,7 +45,13 @@ function buildNarrative(result, dataset, lang) {
   if (overallKeys.some((k) => k === 'poor')) overallKey = 'poor'
   else if (overallKeys.some((k) => k === 'acceptable')) overallKey = 'acceptable'
 
-  return fillTemplate(t.cfa.apa.sentence, {
+  const caveats = []
+  // ★ 2026-07-29 紅隊 R39-a：未收斂只在 Result 徽章顯示，敘述句修復前隻字未提
+  if (!result.converged) caveats.push(t.cfa.apa.notConvergedCaveat)
+  // ★ R39-b：SE 不可得時 Result 有紅字，敘述句修復前同樣不提
+  if (!result.hasStandardErrors) caveats.push(t.cfa.apa.noSeCaveat)
+
+  return (caveats.length ? caveats.join('') : '') + fillTemplate(t.cfa.apa.sentence, {
     n: result.n,
     p: result.p,
     m: result.m,

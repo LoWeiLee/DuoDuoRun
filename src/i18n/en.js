@@ -890,6 +890,11 @@ export default {
       groups: 'groups', predictors: 'predictors', functions: 'discriminant functions', cases: 'cases',
       functionsTitle: 'Discriminant functions',
       functionsHint: 'At most min(k - 1, p) functions can be retained. Wilks Lambda and chi-sq are sequential tests starting from function j.',
+      unstdCoefTitle: 'Unstandardized canonical coefficients',
+      unstdCoefHint: 'Scaled so that wᵀ S_p w = 1, matching the SPSS "unstandardized canonical discriminant function coefficients". Discriminant scores follow directly: s = Σ b_j (x_j − x̄_j), with x̄ the grand mean. Because the original metric is retained, these must NOT be compared across predictors to judge importance — use the standardized coefficients below for that.',
+      signNote: 'Sign convention: a discriminant function is an eigenvector, so its sign is mathematically arbitrary — flipping an entire function (coefficients, structure coefficients and group centroids together) changes no conclusion. This tool fixes the sign so that the largest-magnitude unstandardized coefficient in each function is positive; SPSS and R MASS may pick the opposite sign, so compare relative patterns rather than absolute signs.',
+      droppedNote: '{dropped} case(s) dropped (of {total}, listwise)',
+      priorNote: 'Prior probabilities: this tool uses proportional priors π_g = n_g / N (the R MASS::lda default, and the source of this tool\'s benchmark). SPSS defaults to equal priors (1/k per group), which yields a different classification table and hit rate whenever group sizes are unequal — check this setting before comparing against SPSS.',
       stdCoefTitle: 'Standardized canonical coefficients',
       stdCoefHint: 'Unstandardized coefficient (scaled so w^T S_p w = 1) times the predictor\'s pooled within-group SD — same definition as SPSS standardized canonical coefficients. Original units are removed, so magnitudes are comparable across predictors. Light < 0.32 (weak), mid 0.32-0.55, amber >= 0.55 (strong).',
       structureTitle: 'Structure matrix',
@@ -978,6 +983,7 @@ export default {
       boxOk: " Box's M test, chi-sq({df}) = {chi2}, p = {pStr}, did not violate the assumption.",
       boxBad: " Box's M test, chi-sq({df}) = {chi2}, p = {pStr}, violated the assumption; consider QDA.",
       boxNotApplicable: " Box's M was not computable.",
+      droppedClause: '({dropped} case(s) with missing values were removed listwise before analysis; the original sample was {total}.) ',
       copyHint: 'Copy APA narrative to clipboard',
     },
   },
@@ -1158,6 +1164,8 @@ export default {
         'A CFA (ML) tested a {m}-factor structure ({factorList}) with {p} indicators (N = {n}). ' +
         'Fit: chi-sq({df}) = {chi2}, p = {pStr}; CFI = {cfi}; TLI = {tli}; RMSEA = {rmsea} (90% CI {rmseaCi}); SRMR = {srmr}. ' +
         'Overall fit was {overall}.',
+      notConvergedCaveat: '[WARNING: the ML iteration did not converge; every estimate and fit index below is unreliable and should not be reported as is.] ',
+      noSeCaveat: '[NOTE: standard errors could not be obtained from the numerical Hessian (not positive definite, or inversion failed), so significance tests for the loadings are unavailable.] ',
       copyHint: 'Copy APA narrative',
     },
     interp: {
@@ -2077,6 +2085,26 @@ export default {
       'var1-equals-var2': 'The two variables must be different columns.',
       'group-empty': 'At least one group has no valid data.',
       'need-arrays': 'Unexpected input format (numeric arrays expected).',
+      // ★ 2026-07-29 red team R37-a: previously missing in both locales — the user saw the raw code.
+      'need-n>=5': 'Too few valid cases (fewer than 5 after listwise deletion) to fit a ceiling line.',
+      // ★ 2026-07-29 red team R41 (stage A / A4): all 13 codes below contain `>` or `=`,
+      //   so the old regex in errorCodes.test.js silently skipped them and neither locale
+      //   had a string — the raw code was shown on screen. Added when the regex was widened.
+      'each-group-needs-n>=2': 'At least one group has fewer than 2 valid cases, so within-group variance cannot be computed.',
+      'need-n>=2-non-zero-diffs': 'Fewer than 2 non-zero paired differences — the test cannot run (Wilcoxon drops pairs whose difference is exactly 0).',
+      'need-n>=4': 'Fewer than 4 valid cases — this statistic cannot be computed.',
+      'need-n>=2': 'Fewer than 2 valid cases — variance cannot be computed.',
+      'need-n>=3': 'Fewer than 3 valid cases — the regression model cannot be estimated.',
+      'need-N>k': 'The number of valid cases must exceed the number of groups, otherwise no degrees of freedom remain for the error term.',
+      'need->=2-groups': 'The grouping variable needs at least 2 groups to compare.',
+      'need->=3-groups': 'This method requires at least 3 groups.',
+      'need->=2-items': 'At least 2 items are needed to compute internal consistency.',
+      'need->=3-cases': 'At least 3 complete cases are needed to compute internal consistency.',
+      'need->=2-vars': 'At least 2 variables are required.',
+      'need->=2-categories': 'This variable needs at least 2 categories.',
+      'need->=2x2': 'The contingency table needs at least 2 rows by 2 columns.',
+      'factorA-needs->=2-levels': 'Factor A needs at least 2 levels.',
+      'factorB-needs->=2-levels': 'Factor B needs at least 2 levels.',
       'paired-arrays-must-match-length': 'The two paired columns have different lengths.',
       'mu0-must-be-finite-number': 'The test value must be a finite number.',
       'sample-size-out-of-range': 'Sample size is outside the range this method supports.',
@@ -2590,6 +2618,7 @@ export default {
       selectVarsTitle: 'Select variables for analysis',
       selectVarsHint: 'At least 3 numeric variables (continuous or ordinal); ≥ 5 recommended',
       needAtLeastThree: 'Tick at least 3 variables',
+      'zero-variance-vars': 'The following variables have no variation (every value identical) and cannot enter the factor analysis: {vars}. Please untick them and try again.',
       nFactorsTitle: 'Number of factors',
       nFactorsHint: 'Empty → Kaiser rule (eigenvalue > 1); positive integer → force that count',
       rotationTitle: 'Rotation',
@@ -2621,11 +2650,26 @@ export default {
         variable: 'Variable',
         h2: 'h²',
         communalities: 'Communality',
+        msa: 'MSA',
+        msaVerdict: 'Verdict',
       },
       kmoInterp: {
         unacceptable: 'unacceptable', miserable: 'miserable', mediocre: 'mediocre',
         middling: 'middling', meritorious: 'meritorious', marvelous: 'marvelous',
       },
+      kmoUnavailable: {
+        'too-few-vars': 'Fewer than 3 variables — KMO is undefined',
+        singular: 'Correlation matrix is singular (variables perfectly collinear) — KMO cannot be computed',
+      },
+      msaTitle: 'Per-variable sampling adequacy (MSA / anti-image)',
+      msaHint: 'MSA is the single-variable counterpart of KMO and answers "which item should go": < 0.5 is the first candidate for removal, and dropping it usually raises both the remaining MSAs and the overall KMO. Same definition as the diagonal of the SPSS anti-image correlation matrix.',
+      detR: '|R| = {det} (approaching 0 indicates near-perfect collinearity)',
+      singularWarn: 'Warning: the determinant of the correlation matrix is 0 — the variables are perfectly collinear (e.g. one item is a linear combination of the others, or two codings of the same item were both ticked). Bartlett\'s χ² diverges, KMO cannot be computed, and the factor solution is not unique. Remove the duplicated or linearly dependent variables first.',
+      bartlettSingular: 'Undecidable: |R| = 0, χ² diverges (variables perfectly collinear)',
+      keptHint: 'amber shading = retained factors ({k})',
+      rotatedTag: '(Varimax rotated)',
+      rotationSkipped: 'You selected Varimax, but only 1 factor was retained — a single factor has no plane to rotate, so no rotation was applied. The table below shows unrotated principal component loadings.',
+      loadingColorHint: 'Loading colours: light < 0.32 (consider dropping) → dark 0.32–0.55 → amber ≥ 0.55 (strong)',
       decisionRule: 'Retained {k} factors ({strategy})',
       strategyKaiser: 'Kaiser: eigenvalue > 1',
       strategyUser: 'user-specified',
@@ -2679,6 +2723,7 @@ export default {
         '{k} factors were retained by Kaiser rule, cumulatively explaining {cumPct}% of variance.',
       sentenceUnsuit:
         'KMO for the {p} variables was {kmo} ({kmoInterp}); EFA suitability was {suitWord}.',
+      suitWordPoor: 'poor',
       copyHint: 'Copy APA narrative',
     },
     interp: {
@@ -3394,9 +3439,21 @@ Three boundaries:
       readingTitle: 'Reading',
       nn: 'NN',
       nnHint: 'NN (Not Necessary) = the X required for that Y level is at or below the minimum, so X is not a bottleneck there. Required X is monotonically non-decreasing in Y.',
+      droppedNote: '{dropped} case(s) dropped (of {total}, listwise)',
+      // ★ 2026-07-29 red team R47: CE-FDH is a step function with no closed-form line.
+      ceilingStep: 'step function (no linear form)',
+      bottleneckSource: 'Every value in this table is read off the CE-FDH step ceiling (the NCA convention is to invert the actual ceiling). ★ Inverting the linear CR-FDH ceiling from the table above gives different required-X values — in this demo dataset the largest per-level difference is 11.61 (X range 73.4, about 16%), and at the 30% and 40% levels the two even move in opposite directions. State that the reported bottleneck is CE-FDH based whenever you cite these values.',
+      permNote: 'Significance is approximated by a permutation test: {perms} reshuffles with a fixed random seed (so results are reproducible), p = #{d* >= d} / P, with no +1 correction in the denominator (matching the R NCA package). The resolution floor for p is therefore {minP}; a printed p = .000 should be read as "below that value", not exactly zero.',
+      // ★ 2026-07-29 red team R42: the compound rule is this tool's own convention.
+      verdictNote: 'Overall verdict: {verdict} a necessary condition. This tool requires BOTH conditions to hold — permutation p < {alpha} AND a CE-FDH effect size of d >= {dMin}. {reason} (★ This is a compound convention of this tool: the p-value comes from the significance test of Dul, van der Laan & Kuik (2020) and the d >= {dMin} threshold from the effect-size benchmarks of Dul (2016); neither paper combines them into a single criterion. They are combined here so that a ceiling zone too small to matter in practice is not reported as support merely because it is unlikely under random reshuffling.)',
+      verdictBoth: 'Both conditions were met.',
+      verdictNeither: 'Neither condition was met.',
+      verdictPOnly: '★ The effect size cleared the threshold, but the permutation p did not reach significance.',
+      verdictDOnly: '★ The p-value reached significance, but the effect size fell below the practical threshold of d >= {dMin} — this is the condition that produced the negative verdict.',
       cols: {
         dCe: 'd (CE-FDH)', dCr: 'd (CR-FDH)', p: 'p (permutation)', nPeers: 'ceiling points',
         ceiling: 'Ceiling', zone: 'Zone', d: 'd', effect: 'Effect', accuracy: 'Accuracy',
+        equation: 'Ceiling equation',
         yLevel: 'level', yValue: 'Y value', xRequired: 'required', xPercent: 'required %',
       },
     },
@@ -3429,13 +3486,19 @@ Three boundaries:
       ref:
         'Dul, J. (2016). Necessary Condition Analysis (NCA). Organizational Research Methods, 19(1), 10–52.\n' +
         'Dul, J., van der Laan, E., & Kuik, R. (2020). A statistical significance test for NCA. Organizational Research Methods.\n' +
-        'Implemented from the R NCA package’s closed-form definitions; convention alignment pending local R spot-check (see validation-report).',
+        '★ Values have been checked value-by-value against the official R package NCA 5.0.2 (2026-07-13): ' +
+        'scope, the CE-FDH ceiling zone and d, peer coordinates, the CR-FDH intercept and slope, ' +
+        'and the per-level bottleneck table including NN semantics all matched exactly, with zero differences. ' +
+        'See docs/methods/nca-ce-fdh.md section 6 and docs/validation-report-v1.md.',
     },
     apa: {
       sentence:
-        'Necessary Condition Analysis (NCA; Dul, 2016) indicated that {xLabel} is necessary for {yLabel} (CE-FDH d = {dCe}, a {effectWord} effect; CR-FDH d = {dCr}), with the effect size significant by an approximate permutation test (p = {pStr}, n = {n}). The bottleneck analysis reports the minimum {xLabel} required to reach each level of {yLabel}.',
+        'Necessary Condition Analysis (NCA; Dul, 2016) indicated that {xLabel} is necessary for {yLabel} (CE-FDH d = {dCe}, a {effectWord} effect; CR-FDH d = {dCr}), with the effect size significant by an approximate permutation test (p = {pStr}, n = {n}). The bottleneck analysis reports the minimum {xLabel} required to reach each level of {yLabel}.{caveat}',
       sentenceNs:
         'Necessary Condition Analysis (NCA; Dul, 2016) found insufficient evidence that {xLabel} is necessary for {yLabel} (CE-FDH d = {dCe}; CR-FDH d = {dCr}), with the approximate permutation test not significant (p = {pStr}, n = {n}).',
+      droppedClause: '({dropped} case(s) with missing values were removed listwise before analysis; the original sample was {total}.) ',
+      // ★ 2026-07-29 red team R43: necessity does not imply sufficiency, and the data are observational.
+      caveat: ' Note that necessity does not imply sufficiency: falling below the threshold on X caps the attainable level of Y, but a high X does not guarantee a high Y. The analysis rests on observational data, so any causal reading of the necessary condition must be supported by theory and research design.',
       copyHint: 'Copy APA narrative to clipboard',
     },
     interp: {

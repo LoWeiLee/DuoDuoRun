@@ -11,6 +11,7 @@
 import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runNCACompute } from './compute'
+import { ncaVerdict, NCA_ALPHA, NCA_MIN_EFFECT } from '../../lib/stats/nca'
 import StatCards from '../../components/StatCards'
 import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
 import Heading from '../../components/ui/Heading'
@@ -40,7 +41,7 @@ function effectWord(label, t) {
   return t.nca.effect[label] || label
 }
 
-function ScopeRow({ nca, t, labelMap, xVar, yVar }) {
+function ScopeRow({ nca, t, labelMap, xVar, yVar, nDropped, nTotal }) {
   const s = nca.scope
   return (
     <div>
@@ -54,6 +55,12 @@ function ScopeRow({ nca, t, labelMap, xVar, yVar }) {
         {'  ·  '}
         {t.nca.result.scope} <span className="font-mono">{fmtNum(s.area, 2)}</span>
         {'  ·  n = '}<span className="font-mono">{nca.n}</span>
+        {/* ★ R37-b：修復前完全不揭露缺失值處理 */}
+        {nDropped > 0 && (
+          <span className="text-duo-sig-warn">
+            {'  ·  '}{fillTemplate(t.nca.result.droppedNote, { dropped: nDropped, total: nTotal })}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -70,6 +77,13 @@ function CeilingTable({ nca, t }) {
       <Td>{fmtNum(obj.effectSize, 3)}</Td>
       <Td mono={false}>{effectWord(obj.effectLabel, t)}</Td>
       <Td>{fmtNum(obj.accuracy * 100, 1)}%</Td>
+      {/* ★ R47：CR-FDH 的賣點正是「ceiling 可以寫成一條方程式」，修復前 intercept／slope
+          有基準、有逐值比對，卻零 UI 消費者——使用者拿不到那條方程式就無法自行代入計算。 */}
+      <Td align="left" mono>
+        {Number.isFinite(obj.intercept) && Number.isFinite(obj.slope)
+          ? `y = ${fmtNum(obj.intercept, 3)} ${obj.slope < 0 ? '−' : '+'} ${fmtNum(Math.abs(obj.slope), 3)}x`
+          : t.nca.result.ceilingStep}
+      </Td>
     </tr>
   )
   return (
@@ -84,6 +98,7 @@ function CeilingTable({ nca, t }) {
               <Th>{c.d}</Th>
               <Th>{c.effect}</Th>
               <Th>{c.accuracy}</Th>
+              <Th align="left">{c.equation}</Th>
             </tr>
           </thead>
           <tbody>
@@ -103,6 +118,9 @@ function BottleneckTable({ nca, t, labelMap, xVar, yVar }) {
   return (
     <div>
       <Heading>{t.nca.result.bottleneckTitle}</Heading>
+      {/* ★ R47：本表讀值一律錨定於 CE-FDH 階梯（`nca.js:249` 的 cr_fdh.bottleneck 是本表的複本）。
+          修復前標題與註記都沒說是哪一條 ceiling，而上方的 ceiling 表才剛把 CE 與 CR 並列。 */}
+      <p className="text-[11px] text-duo-cocoa-500 mb-1.5 leading-snug">{t.nca.result.bottleneckSource}</p>
       <div className="overflow-x-auto bg-white border border-duo-cream-200 rounded-lg">
         <table className="w-full text-xs">
           <thead className="bg-duo-cream-50">
@@ -136,8 +154,8 @@ function BottleneckTable({ nca, t, labelMap, xVar, yVar }) {
 
 function Interpretation({ nca, t, labelMap, xVar, yVar }) {
   const ce = nca.ceilings.ce_fdh
-  const p = nca.test ? nca.test.p_ce : NaN
-  const sig = Number.isFinite(p) && p < 0.05 && ce.effectSize >= 0.1
+  // ★ R42：與報表、敘述句共讀同一份判準
+  const { supported: sig, p } = ncaVerdict(nca.test, ce.effectSize)
   const text = fillTemplate(t.nca.interp.sentence, {
     xLabel: labelMap[xVar] || xVar,
     yLabel: labelMap[yVar] || yVar,
@@ -169,7 +187,9 @@ function Result() {
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const nca = result.nca
   const ce = nca.ceilings.ce_fdh
-  const p = nca.test ? nca.test.p_ce : NaN
+  // ★ R42：整體判準只有這一份（`ncaVerdict`）；燈號、註記、敘述句都由它決定
+  const verdict = ncaVerdict(nca.test, ce.effectSize)
+  const p = verdict.p
   const cols = t.nca.result.cols
 
   return (
@@ -177,7 +197,7 @@ function Result() {
       <StatCards
         items={[
           { label: cols.dCe, value: fmtNum(ce.effectSize, 3), sub: effectWord(ce.effectLabel, t),
-            tone: ce.effectSize >= 0.1 ? 'ok' : undefined },
+            tone: verdict.dOk ? 'ok' : undefined },
           {
             label: cols.p,
             value: fmtP(p),
@@ -190,8 +210,34 @@ function Result() {
         ]}
       />
 
-      <ScopeRow nca={nca} t={t} labelMap={labelMap} xVar={result.xVar} yVar={result.yVar} />
+      <ScopeRow nca={nca} t={t} labelMap={labelMap} xVar={result.xVar} yVar={result.yVar}
+        nDropped={result.nDropped} nTotal={result.nTotal} />
       <CeilingTable nca={nca} t={t} />
+      {/* ★ R37-e：修復前 permutation 的次數、seed 與 p 的分母慣例在 UI 完全不揭露 */}
+      <p className="text-xs text-duo-cocoa-400 -mt-1 leading-relaxed">
+        {fillTemplate(t.nca.result.permNote, {
+          perms: nca.test ? nca.test.nPermutations.toLocaleString('en-US') : '—',
+          minP: nca.test ? (1 / nca.test.nPermutations).toFixed(4) : '—',
+        })}
+      </p>
+      {/* ★ R42：複合判準（p < .05 且 d >= .1）是本工具口徑，兩篇原文都沒有合併過——
+          修復前使用者看到「不足以作為必要條件」卻無從得知是哪一項沒過。 */}
+      <p className="text-xs text-duo-cocoa-500 -mt-1 leading-relaxed">
+        {fillTemplate(t.nca.result.verdictNote, {
+          alpha: NCA_ALPHA.toFixed(2).replace(/^0/, ''),
+          dMin: NCA_MIN_EFFECT.toFixed(1),
+          verdict: verdict.supported ? t.nca.interp.supported : t.nca.interp.notSupported,
+          // ★ reason 本身含 {dMin} 插槽 → 先 fill 一次再帶入外層，避免巢狀插槽漏替換
+          reason: fillTemplate(
+            verdict.supported
+              ? t.nca.result.verdictBoth
+              : (!verdict.pOk && !verdict.dOk
+                ? t.nca.result.verdictNeither
+                : (verdict.pOk ? t.nca.result.verdictDOnly : t.nca.result.verdictPOnly)),
+            { dMin: NCA_MIN_EFFECT.toFixed(1) },
+          ),
+        })}
+      </p>
       <BottleneckTable nca={nca} t={t} labelMap={labelMap} xVar={result.xVar} yVar={result.yVar} />
       {mode === 'teaching' && (
         <Interpretation nca={nca} t={t} labelMap={labelMap} xVar={result.xVar} yVar={result.yVar} />

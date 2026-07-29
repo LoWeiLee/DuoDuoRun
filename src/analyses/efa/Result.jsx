@@ -48,19 +48,29 @@ function loadingColor(v) {
 
 function SuitabilitySection({ result, t }) {
   const c = t.efa.result.cols
-  const ki = result.kmo ? kmoInterpKey(result.kmo.overall) : null
-  const bSig = Number.isFinite(result.bartlett.p) && result.bartlett.p < 0.05
+  const kmoNA = result.kmo?.unavailable || null
+  const ki = kmoNA ? null : kmoInterpKey(result.kmo.overall)
+  const singular = !!result.bartlett.singular
+  const bSig = !singular && Number.isFinite(result.bartlett.p) && result.bartlett.p < 0.05
   return (
     <div>
       <Heading>{t.efa.result.suitabilityTitle}</Heading>
+      {singular && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {t.efa.result.singularWarn}
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {result.kmo && (
-          <div className="bg-white border border-duo-cocoa-100 rounded-md px-4 py-3">
-            <div className="text-[10px] uppercase tracking-wider text-duo-cocoa-400 mb-1">{c.kmo}</div>
-            <div className="font-mono text-2xl text-duo-cocoa-800 font-medium">{fmtNum(result.kmo.overall, 3)}</div>
-            {ki && <div className="text-xs text-duo-amber-700 mt-0.5">{t.efa.result.kmoInterp[ki]}</div>}
+        <div className="bg-white border border-duo-cocoa-100 rounded-md px-4 py-3">
+          <div className="text-[10px] uppercase tracking-wider text-duo-cocoa-400 mb-1">{c.kmo}</div>
+          {/* ★ R40-i：KMO 算不出來時顯示原因，不再整張卡片消失 */}
+          <div className="font-mono text-2xl text-duo-cocoa-800 font-medium">
+            {kmoNA ? '—' : fmtNum(result.kmo.overall, 3)}
           </div>
-        )}
+          {kmoNA
+            ? <div className="text-xs text-duo-sig-bad mt-0.5">{t.efa.result.kmoUnavailable[kmoNA]}</div>
+            : ki && <div className="text-xs text-duo-amber-700 mt-0.5">{t.efa.result.kmoInterp[ki]}</div>}
+        </div>
         <div className="bg-white border border-duo-cocoa-100 rounded-md px-4 py-3">
           <div className="text-[10px] uppercase tracking-wider text-duo-cocoa-400 mb-1">{c.bartlett}</div>
           <div className="font-mono text-sm text-duo-cocoa-800">
@@ -69,11 +79,54 @@ function SuitabilitySection({ result, t }) {
           <div className="font-mono text-xs text-duo-cocoa-600">
             p = {fmtP(result.bartlett.p)}{fmtSig(result.bartlett.p)}
           </div>
-          <div className={`text-[11px] mt-1 ${bSig ? 'text-duo-sig-ok' : 'text-duo-sig-bad'}`}>
-            {bSig ? t.efa.result.bartlettSig : t.efa.result.bartlettNs}
+          <div className={`text-[11px] mt-1 ${singular ? 'text-duo-sig-bad' : bSig ? 'text-duo-sig-ok' : 'text-duo-sig-bad'}`}>
+            {singular ? t.efa.result.bartlettSingular : bSig ? t.efa.result.bartlettSig : t.efa.result.bartlettNs}
+          </div>
+          {/* ★ R40-c：|R| 原本是孤兒欄位（算了、零 UI）。|R| → 0 是多元共線的標準警訊 */}
+          <div className="font-mono text-[11px] text-duo-cocoa-400 mt-1">
+            {fillTemplate(t.efa.result.detR, { det: fmtNum(result.determinant, 5) })}
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ★ R40-b：逐變項 MSA（KMO 的 perVar）原本是孤兒欄位。
+   它是 SPSS 用來決定「該刪哪一題」的標準診斷欄，過去算了卻沒有任何 UI 讀它。 */
+function MsaTable({ result, t, labelMap }) {
+  if (result.kmo?.unavailable) return null
+  const c = t.efa.result.cols
+  return (
+    <div>
+      <Heading>{t.efa.result.msaTitle}</Heading>
+      <div className="overflow-x-auto bg-white border border-duo-cocoa-100 rounded-md">
+        <table className="w-full text-xs">
+          <thead className="bg-duo-cream-50">
+            <tr>
+              <Th align="left">{c.variable}</Th>
+              <Th>{c.msa}</Th>
+              <Th align="left">{c.msaVerdict}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.columns.map((col, i) => {
+              const v = result.kmo.perVar[i]
+              const key = kmoInterpKey(v)
+              return (
+                <tr key={col}>
+                  <Td align="left" mono={false} bold>{labelMap[col] || col}</Td>
+                  <Td color={Number.isFinite(v) && v < 0.5 ? 'text-duo-sig-bad font-semibold' : 'text-duo-cocoa-700'}>
+                    {fmtNum(v, 3)}
+                  </Td>
+                  <Td align="left" mono={false}>{key ? t.efa.result.kmoInterp[key] : '—'}</Td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">{t.efa.result.msaHint}</p>
     </div>
   )
 }
@@ -109,8 +162,9 @@ function EigenvaluesTable({ result, t }) {
           </tbody>
         </table>
       </div>
+      {/* ★ R40-a：修復前此處硬編中文，完全不經 i18n → 英文介面顯示中文 */}
       <p className="text-[11px] text-duo-cocoa-400 mt-2">
-        amber 底色 = 採用的因子（{result.nFactors} 個）
+        {fillTemplate(t.efa.result.keptHint, { k: result.nFactors })}
       </p>
     </div>
   )
@@ -124,10 +178,15 @@ function LoadingsTable({ result, t, labelMap }) {
     <div>
       <Heading>
         {t.efa.result.loadingsTitle}
+        {/* ★ R40-a：修復前此處硬編中文 */}
         {result.rotation === 'varimax' && (
-          <span className="ml-2 text-[10px] font-normal text-duo-cocoa-500">（Varimax 轉軸後）</span>
+          <span className="ml-2 text-[10px] font-normal text-duo-cocoa-500">{t.efa.result.rotatedTag}</span>
         )}
       </Heading>
+      {/* ★ R40-d：選了 varimax 但因子數 < 2 → 不轉軸。修復前完全靜默 */}
+      {result.rotationSkipped && (
+        <p className="text-[11px] text-duo-sig-bad mb-1.5 leading-snug">{t.efa.result.rotationSkipped}</p>
+      )}
       <div className="overflow-x-auto bg-white border border-duo-cocoa-100 rounded-md">
         <table className="w-full text-xs">
           <thead className="bg-duo-cream-50">
@@ -152,9 +211,8 @@ function LoadingsTable({ result, t, labelMap }) {
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] text-duo-cocoa-400 mt-2">
-        負荷量顏色：cocoa 淡色 &lt; 0.32（建議移除）→ cocoa 深色 0.32-0.55 → amber 深色 ≥ 0.55（解釋力強）
-      </p>
+      {/* ★ R40-a：修復前此處硬編中文 */}
+      <p className="text-[11px] text-duo-cocoa-400 mt-2">{t.efa.result.loadingColorHint}</p>
     </div>
   )
 }
@@ -188,7 +246,11 @@ function Result() {
   const result = useMemo(() => (dataset ? runEFA(dataset.rows, state) : null), [dataset, state])
   if (!dataset) return null
   if (result.error) {
-    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{t.efa.config[result.error] || t.errors.stats[result.error] || result.error}</div>
+    // ★ R40-h：零變異要指名是哪幾個變項（比照 A1 的 R7）
+    const msg = result.error === 'zero-variance-vars'
+      ? fillTemplate(t.efa.config['zero-variance-vars'], { vars: (result.vars || []).join('、') })
+      : t.efa.config[result.error] || t.errors.stats[result.error] || result.error
+    return <div className="text-sm text-duo-cocoa-400 leading-relaxed">{msg}</div>
   }
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
 
@@ -199,9 +261,10 @@ function Result() {
       {/* 關鍵統計量卡片（2026-07 UI 改版；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
       <StatCards
         items={[
-          ...(result.kmo
-            ? [{ label: t.efa.result.cols.kmo, value: fmtNum(result.kmo.overall, 3) }]
-            : []),
+          {
+            label: t.efa.result.cols.kmo,
+            value: result.kmo?.unavailable ? '—' : fmtNum(result.kmo.overall, 3),
+          },
           {
             label: t.efa.result.cols.bartlett,
             value: fmtP(result.bartlett.p),
@@ -226,6 +289,7 @@ function Result() {
       </div>
       <EigenvaluesTable result={result} t={t} />
       <LoadingsTable result={result} t={t} labelMap={labelMap} />
+      <MsaTable result={result} t={t} labelMap={labelMap} />
       {mode === 'teaching' && <Interpretation result={result} t={t} />}
     </div>
   )

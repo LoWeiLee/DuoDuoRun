@@ -16,5 +16,11 @@ export function runLDA(rows, settings) {
   if (predictors.includes(groupVar)) return { error: 'group-in-predictors' }
 
   const result = lda(rows, groupVar, predictors)
+  // ★ 2026-07-29 紅隊 R38-e：揭露 listwise 剔除筆數。
+  //   修復前報表只印 N（＝剔除後的有效樣本），使用者會以為資料沒有缺失值。
+  if (!result.error && Number.isFinite(result.n)) {
+    result.nTotal = rows.length
+    result.nDropped = rows.length - result.n
+  }
   return result
 }

@@ -39,5 +39,7 @@ export function runNCACompute(rows, settings) {
   const nca = runNCA(xs, ys, { permutations: UI_PERMUTATIONS, seed: UI_SEED })
   if (nca.error) return { error: nca.error }
 
-  return { nca, xVar, yVar }
+  // ★ 2026-07-29 紅隊 R37-b：揭露 listwise 剔除筆數。
+  //   修復前報表只印剔除後的 n，使用者會以為資料沒有缺失值。
+  return { nca, xVar, yVar, nTotal: rows.length, nDropped: rows.length - xs.length }
 }

@@ -7,46 +7,52 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：PLS 的**功能面**與**方法文件面**都已收尾——**階段 A 的 A1–A3 共 30 份文件全數交付**，
-PLS 側 39 組基準全部被文件第 6 節點名。溯源面仍未全部結案：83 組基準中 2 組 pending、
-4 組 verified 但帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
+**目前狀態一句話**：階段 A 已完成 **A1–A4 共 37 份方法文件**——PLS 側 30 份（A1–A3）
+＋ NCA／LDA／CFA／EFA 共 7 份（A4，2026-07-29 收官）。`reference.json` 的 83 組基準中
+**47 組已被文件第 6 節點名**，未涵蓋 36 組全部落在尚未動工的 A5／A6。
+溯源面仍未全部結案：2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
 
-**★ 現在的下一步：階段 A / A4（NCA／LDA／CFA／EFA）**——見 §6.5 的 A4 條目。
-A1、A2、A3 各 10 / 10 全部交付（A3c 於 2026-07-29 收官）。
-紅隊累計 **47 項（R2–R36-d）全部處置完畢**，其中 A3c 的 15 項為 **12 修 3 記錄**。
-唯一未結案的仍是「bootstrap 的 $p$ 值口徑未對 seminr 核對」，卡本機 R。
-基準組維持 **83**、`MAX_PENDING` 維持 **2**。
+**★ 現在的下一步：階段 A / A5（推論統計與無母數，tier A）**——見 §6.5 的 A5 條目。
+A4 紅隊累計 **13 項（R37–R49）全部處置完畢**（3 項 L3 由 Kevin 當日核定、3 項書面記錄，
+R47 裁決為「修呈現層、回傳契約留階段 B」，見 §6.6）。基準組維持 **83**、`MAX_PENDING` 維持 **2**、
+`MAX_UNDOCUMENTED` **44 → 36**。
 
-★ **A3c 新增了一道防線**：`tests/docs.coverage.test.js`（§6.7 判準 5 已達成）——
-棘輪 `MAX_UNDOCUMENTED = 44`，**寫完 A4 一批就把它調降到新的實際值**。
-它補的是既有兩道防線之間的縫：`provenance.test.js` 管登記、`compare.test.js` 管數值，
-**這一支管「有沒有人說得清這組基準是什麼」**。
+★ **A4 是階段 A 第一批離開 PLS 的文件，而它的結論與前三批不同**：
+PLS 側 26 組是 tier B（沒有第三方數值來源），A4 的 11 組有 **7 組是 tier A**。
+⇒ **本批沒有一項發現是公式錯誤**，13 項全部落在呈現層、可見性與慣例揭露。
+四支引擎的獨立重寫全數通過：NCA 走 400 萬點網格積分（差 3.7e−5＝網格解析度）、
+LDA 走 sklearn（**1.288e−14**，且 sklearn 自己的 `predict` 準確率逐位元相同）、
+CFA 換 scipy `L-BFGS-B` 重求極小（與引擎差 6.4e−8）、EFA 走 numpy 主成分＋自寫 varimax（**5.0e−9**）。
 
-★ **A3c 交付後 §6.7 的七條判準只剩兩條未達成**：
-判準 1（A4–A6 的文件本身，約 30 份）與判準 7（§8 休眠快照）。
+★ **A4 累積出來的兩條檢查習慣，接到既有的四條後面（A5／A6 直接沿用）**：
 
-★ **本機補跑（jsdom 5 檔）**：A3c 動到 `src/lib/stats/pls.js`、`src/analyses/pls/Result.jsx`、
-`src/analyses/pls/apaNarrative.js`、`src/i18n/**`、`tests/pls.narrative.test.js`，
-並新增 `tests/docs.coverage.test.js`。
-沙盒 **9 檔全綠（1,091 過、6 跳過）**；另做兩道額外驗收：
-(a)「HEAD 版 pls.js vs 現行版逐一比對 77 組 adapter 輸出 → **零差異**」、
-(b)「`reference.json` 完整重生後 83 組數值逐位元不變」。
-✅ **本機全套已補跑完成（Kevin 2026-07-29）：14 檔全綠、1,258 過、6 跳過、eslint 0、build 成功。**
+5. ★ **「該擋沒擋」比「擋錯」危險——問一次：這個方法失敗時，報表看起來會不會像成功？**
+   A4 的 R40-i（完全共線 ⇒ 報表印「球形檢定顯著，適合做因素分析」的**綠燈**）與
+   R40-h（零變異的死題目拿到 **loading 1.000 / $h^2$ 1.000**，看起來是全套最好的題目）
+   都是這一型。它們不會被 `compare.test.js` 抓到，因為那些情境根本沒有 fixture。
+6. ★ **防線的「漏收」比防線不存在更難發現——新增或依賴任何掃描式測試時，先確認它掃到的母體是對的。**
+   A4 的 R41：`errorCodes.test.js` 的正規式只收 `[A-Za-z][\w-]*` 形狀的代碼，
+   **16 個含 `>`／`=` 的錯誤碼從防線底下溜過**，兩份 i18n 全缺字串而測試一路全綠。
+   同型的還有 R49：`docs.coverage.test.js` 的寬鬆比對把散文中的 `manova` 誤判為已涵蓋。
 
-★ **A1–A3c 累積出來的四條檢查習慣，直接沿用到 A4**：
+★ **A1–A3c 的四條檢查習慣仍然有效**：
 
 1. **寫第 7 節前先跑** `grep -rn "<欄位名>" src/ | grep -v src/lib/stats/`。
-   A3a 6 項裡 4 項、A3b 3 項裡 2 項、A3c 15 項裡 5 項都是這樣抓到的：引擎算了、回傳了、
-   `compare.test.js` 也逐值比對了，**但沒有任何 UI 元件讀它**。
-2. **把第 2／3 節裡每一句「本工具會…」當成待驗證的斷言**（A3b 的 R32、A3c 的 R33-a）。
-3. ★ **同一個判斷有沒有兩套實作？**（A3c 的 R33-b：報表用 CI、敘述句用 $p$，**會給相反結論**）
-   ——凡是「顯著／不顯著」「通過／不通過」這類二值判定，就去數它在專案裡被實作了幾次。
-4. ★ **改口徑時，該檔案的區塊註解跟著改了嗎？**（A3c 的 R34-a：Session Q2 改了實作、基準、
-   i18n 與 UI 警告，唯獨漏了程式碼頂端的區塊註解——那是維護者第一眼會讀的東西。）
+   A4 的 6 項孤兒欄位（LDA 未標準化係數、EFA 的 MSA 與 $|\mathbf R|$、NCA 的剔除筆數與
+   permutation 次數、CR-FDH 的線方程式）全部是這樣抓到的。
+2. **把第 2／3 節裡每一句「本工具會…」當成待驗證的斷言**。
+3. ★ **同一個判斷有沒有兩套實作？** A4 的 R42：NCA 的「是／不足以作為必要條件」
+   在三處各實作一次；R48：Box's M 的 $p\le.001$ 門檻在三處各實作一次。
+4. ★ **改口徑時，該檔案的區塊註解跟著改了嗎？** A4 的 R40-e（EFA 註解誤寫「pair-wise listwise」）、
+   R44（NCA 的三組 source 字串與生成端註解停在「待抽驗」的舊狀態）。
 
-★ **寫 jsdom 測試時凡選了特定資料子集（某兩群、某組指標），先在沙盒把該子集餵給引擎跑一次**
-（A3a 踩過：挑了 `department` 的人事組，casewise 後只剩 5 筆且 q2 零變異，兩群估計失敗、
-表格沒 render，測試失敗看起來像 UI 壞了）。
+★ **寫 jsdom 測試時凡選了特定資料子集（某兩群、某組指標），先在沙盒把該子集餵給引擎跑一次**。
+
+★ **本機補跑（jsdom 5 檔）**：A4 動到 `src/analyses/nca/**`、`src/analyses/lda/**`、
+`src/analyses/cfa/**`、`src/analyses/efa/**`、`src/lib/stats/nca.js`、`src/lib/stats/efa.js`、
+`src/i18n/**`，並新增 `tests/a4.behavior.test.js`（30 條）。
+沙盒 **11 檔全綠**；`reference.json` 因 R44 完整重生，**83 組 values 逐位元不變**。
+⬜ **Kevin 本機待補跑**：`跑UI測試.bat`（jsdom 5 檔）＋ `npm run lint` ＋ `npm run build`。
 
 ---
 
@@ -664,10 +670,22 @@ Sarstedt et al. (2011) 仍取不到。文件據實標註「取得管道已窮盡
 與第 7 條（§8 休眠快照）目前都還沒動工**——排 A4 之前先確認要不要提前做第 5 條，
 因為它會擋住「新增方法忘了寫文件」，越早裝上越有用。
 
-**A4 — 其餘 tier B ＋ 慣例分歧多者** ⬜
+**A4 — 其餘 tier B ＋ 慣例分歧多者** ✅ **完成（7 / 7，2026-07-29）**
 `nca_ce_fdh`、`nca_cr_fdh`、`nca_bottleneck`、`lda_group3`、CFA（`cfa_2factor`／
 `cfa_2factor_loadings`／`cfa_noncentral_chi2`／`cfa_rmsea_ci`，χ² 慣例與 RMSEA CI 是重點）、
 EFA（`efa_pca_none`／`efa_pca_varimax`／`efa_pca_varimax_k3`）
+
+★ **文件切成 7 份**（Kevin 2026-07-29 裁決）：NCA 依「可報告的統計方法」拆為
+`nca-ce-fdh`／`nca-cr-fdh`／`nca-bottleneck`／`nca-permutation` 四份
+（CE-FDH 與 CR-FDH 是兩種不同的天花板線技術；bottleneck 有自己的 NN 語意與 level 慣例；
+permutation 檢定另有出處 Dul et al. 2020，且 $p$ 的分母慣例是本批發現之一），
+加上 `lda`／`cfa`／`efa` 各一份。CFA 的 χ² 慣例與 RMSEA CI 併在 `cfa.md` §3.3–3.4 處理。
+
+★ **11 組基準全部進第 6 節**，`MAX_UNDOCUMENTED` **44 → 36**（見 §6.7 判準 5）。
+★ **紅隊 13 項（R37–R49），無 L4**，其中 3 項 L3（R40-h／R40-i／R44）Kevin 當日核定。
+★ **本批沒有一項是公式錯誤**——四支引擎的獨立重寫全數通過（NCA 網格積分 3.7e−5＝解析度、
+LDA 走 sklearn 1.288e−14、CFA 換 scipy L-BFGS-B 6.4e−8、EFA 5.0e−9）。
+發現全部落在呈現層、可見性與慣例揭露，詳見 `docs/methods/README.md` 的 A4 摘要。
 
 **A5 — 推論統計與無母數（tier A）** ⬜
 三種 t 檢定、`anova_oneway`＋`tukey_hsd`、`twoway_anova_type3`、`ancova`、`repeated_anova`、
@@ -737,6 +755,29 @@ Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn�
 | R36-b | A3c | `pls_fimix`／`pls_pos` | — | `posteriors`（$n\times K$ 軟指派）、`assignment`、`expectedSize` 三個孤兒——FIMIX 的賣點是軟指派而軟指派看不到；POS 的 `assignment` 亦同。**使用者拿不到段別標籤 ⇒ 無法做段別刻畫**，而段別刻畫正是這兩個方法能不能落地的關鍵 | 屬功能擴充（需要輸出／下載機制），記為 **E16**，本批不做 | ⬜ 記錄，不修 |
 | R36-c | A3c | `pls_fimix` | L1 | `selection` 表在 $n<10k$ 時**靜默截斷**（實測 `kMax=8`、$n=60$ → 只到 $K=6$）；注入 `initPosteriors` 時亦會**靜默掉列**（實測只剩 $K=1,2$） | 截斷時警告並指名門檻（`pls.js:4577–4579`）；缺列時另推一條（`4580–4582`） | ✅ 已修（L1 當場修） |
 | **R36-d** | A3c | `pls_fimix` | **L3** | ★ `reference.json → pls_fimix` 的 **source 字串有兩處事實錯誤**：寫「β 遞減排序以消除 label switching」實際是 **ρ（佔比）遞減**（`pls.js`／`generate_reference.py` 兩邊的實作與註解都是 ρ）；寫模擬真值「+0.70 / −0.30」實際是 **±0.80、180/120**。source 字串是溯源證據的一部分，排序規則寫錯會讓讀者誤解 71 欄裡 12 個 $\beta$ 欄的意義 | 比照 A1 的 R2：改 `generate_reference.py`（`2095`／`2097`＋註解 `1984`）後**完整重生** `reference.json`。★ 驗證：83 組鍵集合相同、**只有 `pls_fimix` 的 source 有差異**、**values 零組有差異（逐位元不變）**、`datasets.json` 不變 | ✅ 核定並已執行（2026-07-29） |
+| **R37-a** | A4 | `nca` | **L2** | ★ `nca.js:218` 回 `'need-n>=5'`，但**兩份 i18n 都沒有這個鍵**，`Result.jsx` 三段 fallback 落到 `\|\| result.error` ⇒ 使用者螢幕上直接看到裸代碼。`errorCodes.test.js` 本該擋下，卻因正規式漏收而全綠（見 R41） | 中英各補一條訊息 | ✅ 已修 |
+| R37-b | A4 | `nca`／`lda` | L2 | listwise 剔除筆數不揭露（比照 A1 的 R12）：報表只印剔除後的 $n$，使用者會以為資料沒有缺失值 | `compute.js` 回傳 `nDropped`／`nTotal`；scope 行／摘要行＋APA 句各揭露一次 | ✅ 已修 |
+| R37-e | A4 | `nca` | L2 | permutation 的次數、固定種子、$p$ 的分母慣例（不做 $+1$）與解析度下限 $1/P$ 在 UI 完全不揭露 | ceiling 表下方新增註記 | ✅ 已修 |
+| **R38-a** | A4 | `lda_group3` | **L2** | ★ 未標準化典型係數是**孤兒欄位**（有 fixture、`compare.test.js` 逐值比對、零 UI）——而標準化係數的說明文字**正是拿它下定義的**；它也是唯一能讓使用者自行算出判別分數的係數（比照 A3b 的 R30） | 新增「未標準化典型係數」表，註記寫明縮放慣例、判別分數公式與「不可跨變項比較重要性」的界線 | ✅ 已修 |
+| R38-b | A4 | `lda_group3` | L2 | 判別函數的**符號完全任意**（特徵向量性質），整體反號不改變結論，UI 隻字未提；SPSS／R `MASS` 的符號可能相反 | `signNote` 中英各一 | ✅ 已修 |
+| R38-c | A4 | `lda_group3` | L2 | ★ **事前機率的慣例分歧未揭露**：本工具用比例事前 $\pi_g=n_g/N$（＝R `MASS::lda`／sklearn 預設），**SPSS 預設等機率**，人數不均時分類表與準確率不同 | `priorNote` 中英各一，點名 SPSS。★ 但見下方「A4 記錄但不修」——**本基準三組各 20 人，此分歧無基準涵蓋** | ✅ 已修 |
+| R38-e | A4 | `lda_group3` | L2 | 同 R37-b（LDA 側） | 同上 | ✅ 已修 |
+| **R39-a** | A4 | `cfa_2factor` | **L2** | ★ **未收斂時 APA 敘述句照常輸出一整段數字**：`converged = false` 只反映在 Result 的徽章上，而 APA 句才是被「一鍵複製」貼進論文的那一段——警示留在畫面上、沒有跟著走 | 句首插入「【警告：ML 疊代未收斂，以下所有估計值與適配指標都不可靠，不應直接引用。】」，中英各一 | ✅ 已修（行為測試另鎖措辭須含「不可靠／unreliable」） |
+| R39-b | A4 | `cfa_2factor` | L2 | SE 不可得（Hessian 非正定或反矩陣失敗）時同樣不進敘述句 | 句首插入 SE 不可得說明 | ✅ 已修 |
+| R40-a | A4 | `efa_*` | L2 | ★ **四處硬編中文，完全不經 i18n**（採用因子數說明、「（Varimax 轉軸後）」標記、負荷量色階說明、`suitWord` 的 `'不佳'`）——其中 `suitWord` 那一處會讓**英文 APA 敘述句混入中文** | 四處全部改走 i18n，中英各一 | ✅ 已修 |
+| R40-b | A4 | `efa_pca_varimax` | L2 | 逐變項 MSA（`kmo.perVar`）是**孤兒欄位**。MSA 正是 SPSS 用來決定「該刪哪一題」的標準診斷欄——使用者看得到整體 KMO 不佳，卻沒有線索知道問題出在哪一題 | 新增 MSA 表，$<0.5$ 標紅並附「優先考慮移除」說明 | ✅ 已修（★ 但該表逐格數字**無第三方對照**，見 `efa.md` §6） |
+| R40-c | A4 | `efa_pca_varimax` | L2 | $\|\mathbf R\|$（`determinant`）是孤兒欄位；$\|\mathbf R\|\to0$ 是多元共線的標準警訊 | Bartlett 卡片下方顯示，附說明 | ✅ 已修 |
+| R40-d | A4 | `efa_*` | L2 | 使用者選了 varimax 但因子數 $<2$ 時引擎不轉軸，**完全靜默**——標題的「（Varimax 轉軸後）」跟著消失，使用者不會知道是自己的設定造成的 | `compute.js` 回傳 `rotationSkipped`，表上方說明 | ✅ 已修（＋「本來就選不轉軸時不得誤報」的防修過頭鎖） |
+| R40-e | A4 | `efa_*` | L1 | 程式碼區塊註解誤寫「pair-wise listwise」（兩個互斥的詞），而實作從來是純 listwise。同 A3c 的 R34-a 類型 | 註解更正，零行為變動 | ✅ 已修（L1 當場修） |
+| **R40-h** | A4 | `efa_*` | **L3** | ★ **零變異欄靜默放行**。常數欄的相關為 NaN → 換成 0 → 在 $\mathbf R$ 裡成為零相關孤島：(a) Bartlett 的 df 虛胖（7 題實測 21，應為 15）、$p$ 系統性偏小；(b) KMO 的 `perVar` 出現 null 而 `overall` 照算；(c) ★ 當 $k$ 涵蓋到它自己的 $\lambda=1$ 特徵向量時，**該死題目會拿到 loading 1.000 / $h^2$ 1.000——看起來是全套最好的題目**（3 欄 $k=2$ 實測）。LDA／CFA／NCA 都硬擋，只有 EFA 放行 | 硬擋，回 `zero-variance-vars` 並**指名是哪幾個變項**（比照 A1 的 R7） | ✅ **Kevin 2026-07-29 核定並已執行**。`efa.js:240–254`＋`compute.js`＋UI 兩處＋i18n 中英；＋4 條行為測試（含「正常資料不得被誤擋」） |
+| **R40-i** | A4 | `efa_*` | **L3** | ★ **完全共線時亮綠燈**。$\|\mathbf R\|=0$ 時原回 `{chi2: Infinity, p: 0}`，UI 的 `fmtNum(Infinity)` 印「—」、`fmtP(0)` 印「< .001」⇒ **報表顯示「球形檢定顯著，適合做因素分析」**。同時 KMO 回 `null`，而 UI 兩處都寫 `result.kmo && (...)` ⇒ **整張卡片與統計量卡靜默消失，沒有任何說明** | `bartlett` 回 `{chi2: NaN, p: NaN, singular: true}`、`kmo` 回 `{unavailable: 'too-few-vars'\|'singular'}`；UI 三處顯性說明 | ✅ **Kevin 2026-07-29 核定並已執行**。＋3 條行為測試（含「正常資料 `unavailable` 必須為 null」）；★ **既有 fixture 數值零變動** |
+| **R41** | A4 | 全工具 | **L2** | ★ **防線漏收**：`errorCodes.test.js` 的正規式為 `/'([A-Za-z][\w-]*)'/`，**只收該形狀的代碼**。含 `>` 或 `=` 的錯誤碼**全部從防線底下溜過**——實測 16 個（`need-n>=5`、`each-group-needs-n>=2`、`need->=2-groups`…），兩份 i18n 全缺字串，而測試一路全綠 | 正規式放寬為「任何不含引號的非空字串」；16 條訊息中英一次補齊（跨 A4／A5／A6 範圍，屬提前修正） | ✅ 已修 |
+| **R42** | A4 | `nca_*` | **L2** | ★ **整體判準是複合口徑且 UI 不說**：「是／不足以作為必要條件」＝ $p<.05$ **且** $d\ge.1$，兩篇原文都沒有把兩者合併。實跑內建示範資料 **272 組配對中有 2 組**（`x2→rater1`：$d=.079$、$p=.0036$）$p<.05$ 卻被判不支持，使用者無從得知是效果量那一關沒過。且該判準在 `Narrative.jsx:18`、`Result.jsx:146`、`Result.jsx:186` **各實作一次**（A3c 習慣 3 的形狀） | 比照 A3b 的 `plspredictVerdict`：抽成匯出純函式 `ncaVerdict`＋常數 `NCA_ALPHA`／`NCA_MIN_EFFECT`，三處共讀；UI 新增判讀說明，四種情境中英各一，寫明複合口徑與理由 | ✅ **Kevin 2026-07-29 核定並已執行**。＋7 條行為測試（含實跑那一例） |
+| **R43** | A4 | `nca_*` | **L2** | ★ **APA 句對必要性宣稱過強**：直述「X 是 Y 的必要條件」，「必要非充分」只出現在 **teaching mode 才顯示**的 `interp.sentence`——而 APA 句正是被「一鍵複製」貼進論文的那一段。Dul (2016) 原文對此限制著墨甚多 | 顯著版句尾中英各補 `{caveat}`：必要不蘊含充分＋觀察資料的因果解釋須由理論與研究設計支持。未達顯著版**不掛** | ✅ **Kevin 2026-07-29 核定並已執行**。＋2 條測試（含「`sentenceNs` 不得含 `{caveat}`」的防修過頭鎖） |
+| **R44** | A4 | `nca_ce_fdh`／`nca_cr_fdh`／`nca_bottleneck` | **L3** | ★ 三組的 `source` 字串都寫「**待** Kevin 本機 R NCA 抽驗」、`generate_reference.py:1606–1610` 的區塊註解同樣停在舊狀態，**但該抽驗已於 2026-07-13 完成且零差異**（`provenance.json` 已據此列為 verified）。source 字串是溯源證據的一部分——照字面讀會把本組**低估**為「只有手算基準」。同 A3c 的 R36-d／R34-a 類型 | 比照 R36-d：改 `generate_reference.py` 的三處 source 與區塊註解後**完整重生** `reference.json` | ✅ **Kevin 2026-07-29 核定並已執行**。★ 驗證：83 組鍵集合相同、**只有三組 NCA 的 source 有差異**、**values 零組有差異（逐位元不變）**、`datasets.json` 不變 |
+| **R47** | A4 | `nca_cr_fdh`／`nca_bottleneck` | **L2** | ★ 三項同一成因：(a) CR-FDH 的 `intercept`／`slope` 有基準、有逐值比對，**零 UI**——CR-FDH 的賣點正是「ceiling 可以寫成方程式」而使用者拿不到；(b) `ceilings.cr_fdh.bottleneck` **實測與 `ce_fdh.bottleneck` 逐字元相同**，欄名掛在 `cr_fdh` 底下會誤導 API 消費者；(c) 瓶頸表只讀 CE 版，**標題與註記都沒說是哪一條 ceiling**，而上方的 ceiling 表才剛把兩者並列。★ **實測改用 CR 線反查，逐水準差最大 11.61**（$x$ 全距 73.4，約 16%），30%／40% 兩個水準方向相反——**不是捨入等級的差異** | **Kevin 2026-07-29 裁決：修呈現層，回傳契約留階段 B**。(a) ceiling 表新增「Ceiling 方程式」欄（CR 印 $y=a+bx$、CE 印「階梯函數（無線性式）」）；(c) 瓶頸表新增來源說明並**量化**改用 CR 線的差異；(b) 移除／改名 `cr_fdh.bottleneck` 屬回傳契約變更，比照 A3c 的 R35-b 留階段 B | ✅ (a)(c) 已執行；⬜ (b) 留階段 B，本批加**現況鎖**（`a4.behavior.test.js` 斷言兩份 bottleneck 序列化後相同，日後改動回傳結構會紅燈） |
+| R48 | A4 | `lda_group3` | L1 | Box's M 的 $p\le.001$ 門檻在 `Result.jsx:382`、`Result.jsx:445`、`Narrative.jsx:33` 各實作一次（A3c 習慣 3 的形狀）。三份同值，且**門檻已寫在使用者看得到的文字裡**（`boxMOk` 印「通過（p > .001）」），故不構成口徑不透明 | 書面記錄；抽成單一函式屬重構，留 Box's M 有進一步變更時一併處理 | ✅ 已記錄（Kevin 2026-07-29 裁決） |
+| R49 | A4 | 測試基礎建設 | L1 | ★ **防線自身的縫**：`docs.coverage.test.js` 的 `mentions()` 是寬鬆比對——基準鍵只要當作獨立字詞出現在第 6 節任何地方（含散文）就算涵蓋。A4 實際踩到：`lda.md` §6 寫「base R 的 `manova()` …亦同」，使 **`manova`（屬 A6、尚未寫文件）被誤判為已涵蓋**，未涵蓋數少算 1 | 該處改寫為大寫 MANOVA 規避；棘輪設為**修正後的真實值 36**（而非誤判下的 35）；測試註解補上警告供 A5／A6 參考。收緊比對規則需回頭改 30 份 A1–A3 文件，本批不做 | ✅ 已修＋已記錄 |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -788,7 +829,7 @@ E18 是本批唯一一條「還沒試過的驗證路徑」，也是 `pls_fimix` 
 4. 6.6 的 L3／L4 待辦**全部有 Kevin 裁決或已修**
 5. ✅ **已完成（2026-07-29，A3c）**：`tests/docs.coverage.test.js` 上線。六條斷言——
    八節模板完整性、README 索引涵蓋、**未被任何第 6 節引用的基準組數棘輪
-   （`MAX_UNDOCUMENTED = 44`，只能往下調）**、PLS 側（A1–A3）不得掉出涵蓋、
+   （**`MAX_UNDOCUMENTED` 2026-07-29 由 44 調降為 36**，只能往下調）**、PLS 側（A1–A3）不得掉出涵蓋、
    文件不得引用不存在的基準鍵。★ 上線第一天即抓到 `pls_scheme_centroid`／`pls_scheme_factorial`
    兩組未被任何文件承認（已補）。**寫完一批方法文件就把 `MAX_UNDOCUMENTED` 調降到新的實際值。**
 6. 全套測試綠燈（沙盒 8 檔 ＋ Kevin 本機 jsdom 5 檔）
@@ -925,6 +966,32 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.13（2026-07-29 同日）：**階段 A / A4 交付（7 / 7），階段 A 累計 37 份文件**：
+  `nca-ce-fdh`、`nca-cr-fdh`、`nca-bottleneck`、`nca-permutation`、`lda`、`cfa`、`efa`。
+  ★ **文件切成 7 份為 Kevin 當日裁決**（NCA 依「可報告的統計方法」拆四份）。
+  四支引擎的獨立重寫全數通過，且**每一支都刻意換一條路線**：NCA 走 400 萬點網格數值積分
+  （差 3.695e−5＝網格解析度，$d$ 差 1.055e−8，peers／bottleneck／$p$ **逐值零差異**）、
+  LDA 走 **sklearn `LinearDiscriminantAnalysis`**（11 組陣列 **1.288e−14**，且 sklearn 自己的
+  `predict` 準確率與 fixture 逐位元相同）、CFA 換 **scipy `L-BFGS-B`** 重求 $F_{ML}$ 極小
+  （與引擎差 6.4e−8；與 semopy 的差恰為 $N$ vs $N-1$ 慣例，比值 60/59）、
+  EFA 走 numpy 主成分＋自寫 varimax（**4.998e−9**）。
+  紅隊 **13 項（R37–R49），無 L4**——3 項 L3 由 Kevin 當日核定、3 項書面記錄、1 項（R47）待裁決。
+  ★ **本批沒有一項是公式錯誤**，13 項全部落在呈現層、可見性與慣例揭露。
+  ★ **兩類新發現**：(1) **「該擋沒擋」的失敗會偽裝成成功的報表**——R40-i（完全共線 ⇒ 印
+  「球形檢定顯著，適合做因素分析」的綠燈）、R40-h（零變異的死題目拿到 loading 1.000 / $h^2$ 1.000）；
+  (2) **防線的漏收比防線不存在更難發現**——R41（`errorCodes.test.js` 的正規式漏收 16 個
+  含 `>`／`=` 的錯誤碼，兩份 i18n 全缺字串而測試一路全綠）、R49（`docs.coverage.test.js`
+  的寬鬆比對把散文中的 `manova` 誤判為已涵蓋）。兩者已寫成 §6.5 的檢查習慣 5、6。
+  ★ **R44（L3）**：`reference.json` 三組 NCA 的 source 與 `generate_reference.py` 區塊註解停在
+  「待本機 R 抽驗」，而該抽驗 2026-07-13 已完成且零差異。比照 R36-d **完整重生**——
+  83 組鍵集合相同、**只有三組 NCA 的 source 有差異、values 零組有差異（逐位元不變）**、
+  `datasets.json` 不變。
+  引擎改動：`nca.js` 新增 `ncaVerdict`／`NCA_ALPHA`／`NCA_MIN_EFFECT`（R42）、
+  `efa.js` 的零變異硬擋與 `singular`／`unavailable` 旗標（R40-h／R40-i）、
+  `lda/compute.js` 與 `nca/compute.js` 的 `nDropped`／`nTotal`（R37-b／R38-e）。
+  測試：新增 `tests/a4.behavior.test.js`（**30 條**），`errorCodes.test.js` 正規式放寬。
+  `MAX_UNDOCUMENTED` **44 → 36**；`MAX_PENDING` 維持 2、基準組維持 83。
+  沙盒 11 檔全綠；⬜ Kevin 本機待補跑 jsdom 5 檔＋lint＋build。
 - v2.12（2026-07-29 同日）：**階段 A / A3c 交付，A3 收官（10 / 10）**：`pls-copula`、`pls-pos`、
   `pls-cta`、`pls-fimix`。四組獨立重寫全數通過（`pls_copula` 30 欄 3.775e−15、`pls_pos` 39 欄 2.132e−13、
   `pls_cta` 50 欄含 7 個字串欄 6.661e−16、`pls_fimix` 71 欄 4.547e−13；EM 全程單調）。

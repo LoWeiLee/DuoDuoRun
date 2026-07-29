@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import NarrativeBlock from '../../components/NarrativeBlock'
 import { runNCACompute } from './compute'
+import { ncaVerdict } from '../../lib/stats/nca'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
 import { getStrings } from '../../i18n'
 
@@ -14,11 +15,15 @@ function buildNarrative(result, dataset, lang) {
   const nca = result.nca
   const ce = nca.ceilings.ce_fdh
   const cr = nca.ceilings.cr_fdh
-  const p = nca.test ? nca.test.p_ce : NaN
-  const sig = Number.isFinite(p) && p < 0.05 && ce.effectSize >= 0.1
+  // ★ R42：判準改讀單一純函式 `ncaVerdict`，不再各處自算（見 nca.js 的口徑說明）
+  const { supported: sig, p } = ncaVerdict(nca.test, ce.effectSize)
   const template = sig ? t.nca.apa.sentence : t.nca.apa.sentenceNs
 
-  return fillTemplate(template, {
+  // ★ 2026-07-29 紅隊 R37-b（比照 A1 的 R12）：敘述句補揭露 listwise 剔除
+  const dropped = result.nDropped > 0
+    ? fillTemplate(t.nca.apa.droppedClause, { dropped: result.nDropped, total: result.nTotal })
+    : ''
+  return dropped + fillTemplate(template, {
     xLabel: labelMap[result.xVar] || result.xVar,
     yLabel: labelMap[result.yVar] || result.yVar,
     dCe: fmtNum(ce.effectSize, 3),
@@ -26,6 +31,9 @@ function buildNarrative(result, dataset, lang) {
     effectWord: t.nca.effect[ce.effectLabel] || ce.effectLabel,
     pStr: fmtP(p),
     n: nca.n,
+    // ★ R43：必要非充分＋觀察資料不蘊含因果——這一句只在 teaching mode 的 interp 出現過，
+    //   而 APA 句才是被貼進論文的那一句。Dul (2016) 本人在原文即強調此限制。
+    caveat: t.nca.apa.caveat,
   })
 }
 

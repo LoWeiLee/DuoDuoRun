@@ -172,6 +172,38 @@ export function bottleneckCE(rx, ry, scope, levels) {
 
 const DEFAULT_LEVELS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
+/** 判準常數（見 `ncaVerdict` 的口徑說明；改動這兩個數字等於改動全工具的判讀） */
+export const NCA_ALPHA = 0.05
+export const NCA_MIN_EFFECT = 0.1
+
+/**
+ * ★ 2026-07-29 紅隊 R42（階段 A / A4，比照 A3b 的 `plspredictVerdict`）：
+ * 「X 是否為 Y 的必要條件」的整體判準只留這一份，報表、敘述句與燈號三處共讀。
+ *
+ * 修復前這條規則在 `Result.jsx`（兩處）與 `Narrative.jsx`（一處）各寫了一次。
+ * 三份當時同值，但那正是 A3c 的 R33-b 踩過的形狀——同一個二值判定有多套實作，
+ * 只要有人改動其中一處就會給出相反結論。
+ *
+ * ★ 這是**複合口徑，且屬本工具自訂**：
+ *   · $p$ 來自 Dul, van der Laan & Kuik (2020) 的 permutation 顯著性檢定
+ *   · $d \ge 0.1$ 來自 Dul (2016) 的效果量基準（< 0.1 為「小」）
+ *   兩篇文獻都沒有把兩者合併成單一門檻——合併是本工具的決定，
+ *   因為單看 $p$ 會讓「統計上不像隨機、但空白區小到沒有實務意義」的情形被判為支持。
+ *   實測內建示範資料 272 組配對中有 2 組落在這個縫裡（x2 → rater1：$d=.079$、$p=.0036$）。
+ *   ⇒ 口徑必須在 UI 上寫明（`nca.result.verdictNote`），不能只有結論。
+ *
+ * @param {object|null} test  runNCA 回傳的 test 物件（無 permutation 時為 null）
+ * @param {number} dCe        CE-FDH 效果量
+ * @returns {{ supported: boolean, p: number, d: number, pOk: boolean, dOk: boolean }}
+ */
+export function ncaVerdict(test, dCe) {
+  const p = test ? test.p_ce : NaN
+  const d = Number.isFinite(dCe) ? dCe : NaN
+  const pOk = Number.isFinite(p) && p < NCA_ALPHA
+  const dOk = Number.isFinite(d) && d >= NCA_MIN_EFFECT
+  return { supported: pOk && dOk, p, d, pOk, dOk }
+}
+
 /**
  * NCA 主入口。
  * @param {number[]} x 條件變數
