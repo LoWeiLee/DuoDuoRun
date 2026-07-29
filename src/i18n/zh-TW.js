@@ -2995,6 +2995,8 @@ export default {
       bootstrapHighSkip: '本次 bootstrap 有 {nSkipped} / {nRequested} 次重抽（{pct}%）因不收斂或退化被剔除，推論實際基於 {nValid} 次，p 值的自由度亦隨之為 {df}。剔除比例偏高通常代表模型接近共線、樣本量不足或測量模型有問題，SE 與信賴區間請謹慎解讀。',
       r2Title: '結構模型 — 解釋力',
       effectsTitle: '結構模型 — 效果量 f² 與共線性 VIF',
+      itcTitle: '結構模型 — 模型選擇準則（IT criteria）',
+      itcNote: '★ 這四個準則只用來比較「**同一個內生構念**的不同前置組合」——換句話說，只有在你手上有兩個以上的競爭模型、且被解釋的構念是同一個時，才有意義；數值越小越好。**不可跨構念比較**（表中各列的依變數不同，AIC 的絕對值無可比性），**也不可跨資料集比較**。SSE = (n−1)(1−R²)（構念分數為標準化，故 n−1 即總變異）；k = 該構念的前置構念數，參數計數為 k+1（含誤差變異）。AIC 與 BIC 的公式與 seminr 的 compute_metrics.R 同式；AICc 為小樣本校正（Hurvich & Tsai, 1989），HQ 為 Hannan-Quinn，兩者無主流 PLS 第三方實作，屬同族標準延伸。內生構念才有本表；n − k − 2 ≤ 0 或 SSE ≈ 0 時不計算。',
       f2Note: 'f² 慣例（Cohen, 1988）：.02 小、.15 中、.35 大。VIF：< 3.3 佳（綠）、3.3 – 5 注意（黃）、≥ 5 共線性疑慮（紅）。',
       fitTitle: '模型適配 — SRMR / d_ULS / d_G / NFI',
       fitNote: 'SRMR：< .08 佳（綠）、.08 – .10 邊緣（黃）、≥ .10 不佳（紅）；NFI ≥ .90 佳。d_ULS / d_G 供模型間比較（越小越好）。★ d_G（測地距離）的對數底數：本工具用**自然對數 ln**（測地距離在正定矩陣流形上的定義即為 ½·Σ(ln λ)²）；cSEM 0.6.1 用以 10 為底的對數，兩者相差 (ln10)² = 5.3019 倍——cSEM 原始碼自己也註記不確定該用哪一個底數。判準是 bootstrap 分位數（相對比較），**統計結論不受影響**，但報表數字會與 cSEM 差 5.3 倍。「飽和模型」構念相關自由（只評測量模型）、「估計模型」依結構路徑隱含相關。依原始文獻公式計算（SmartPLS 未完整公開實作細節），建議與 SmartPLS / seminr 抽驗互證。\nGoF（Tenenhaus et al., 2005）＝ √(平均 communality × 平均 R²)：官方文件明載**不建議**作為適配指標，僅供舊文獻對照；communality 取反映型多指標構念。',
@@ -3057,11 +3059,12 @@ export default {
       downloadDerived: '下載 CSV',
       mgaTitle: '多群組分析 — PLS-MGA（三法並列）',
       mgaMeta: '群組：{g1}（n = {n1}）vs {g2}（n = {n2}）｜bootstrap {b} 次／組｜permutation {np} 次有效',
-      mgaNote: '判讀以 permutation 檢定為主（Chin & Dibbern, 2010；分布無母數假設），Henseler MGA p 為單尾 P(β₁ ≤ β₂)——接近 0 或 1 都代表組間差異；偏誤校正的錨點為 **bootstrap 平均 θ̄***（Henseler et al., 2009 原式；與 seminr 的 estimate_pls_mga 一致），非點估計。參數檢定（pooled／Welch）供對照，Welch 依 Sarstedt, Henseler & Ringle (2011) 以 (n−1)/n 加權變異數，兩組人數相等時與 pooled t 恆等。進行 MGA 前應先以 MICOM 確認 compositional invariance，否則差異可能來自測量而非結構。',
+      mgaNote: '判讀以 permutation 檢定為主（Chin & Dibbern, 2010；分布無母數假設），Henseler MGA p 為單尾 P(β₁ ≤ β₂)——接近 0 或 1 都代表組間差異；偏誤校正的錨點為 **bootstrap 平均 θ̄***（Henseler et al., 2009 原式；與 seminr 的 estimate_pls_mga 一致），非點估計。參數檢定（pooled／Welch）供對照，Welch 依 Sarstedt, Henseler & Ringle (2011) 以 (n−1)/n 加權變異數；兩組人數相等時**兩者的 t 統計量逐位元相同，但自由度與 p 不同**（示範資料 n = 30／30：df 58 vs 52.23、p .0194 vs .0198），人數不等時連 t 都不同。進行 MGA 前應先以 MICOM 確認 compositional invariance，否則差異可能來自測量而非結構。',
       mgaColG1: 'β（{g}）',
       mgaColG2: 'β（{g}）',
       mgaColDiff: 'Δβ',
       mgaColHenseler: 'p (Henseler)',
+      mgaColHenseler2: 'p (Henseler 雙尾)',
       mgaColPerm: 'p (permutation)',
       mgaColParam: 'p (pooled t)',
       mgaColWelch: 'p (Welch)',
@@ -3115,8 +3118,10 @@ export default {
       copulaMeta: 'bootstrap {b} 次（每次重估權重與 copula 項）｜n = {n}',
       copulaNote: 'copula 項 c = Φ⁻¹(H(分數))，H 為經驗 CDF（並列取最大秩；H = 1 夾為 1−1e−7，Hult et al. 2018 慣例）。c 的係數不顯著 → 無內生性證據（不等於證明外生）。識別條件（Park & Gupta, 2012）：解釋構念必須非常態——上表 KS 未拒絕常態者，其 copula 結果不可據以判定內生性。copula 項為秩基底，對單調變換不變，故 LV 分數標準化與否不影響。SE 與 CI 以 bootstrap 取得（copula 項的漸近 SE 非標準，Hult et al. 2018 建議）。',
       micomTitle: '測量恆等性 — MICOM',
-      micomNote: 'Step 1（configural）：兩群組使用相同模型設定、指標與資料處理——由本工具的執行方式自動滿足。Step 2（compositional invariance）：c ≥ 5% 分位（permutation）即成立（綠）。Step 3：平均差與 log 變異數比 log(var₁)−log(var₂)（Henseler, Ringle & Sarstedt, 2016 的原式，非變異數差）落在 permutation 95% CI 內即等平均／等變異（完全恆等）；只過 step 2 為部分恆等（可做 MGA，比較平均時留意）。註：step 2 的 c 以標準化指標計算複合體分數；cSEM 0.6.1 在此以未標準化資料計算，數值會有微幅差異。',
+      micomNote: 'Step 1（configural）：兩群組使用相同模型設定、指標與資料處理——由本工具的執行方式自動滿足。Step 2（compositional invariance）：c ≥ 5% 分位（permutation）即成立（綠）；並列的 p 值為 P(c* ≤ c_obs) 的 permutation 估計（(#{c* ≤ c}+1)/(P+1)），p 大代表觀察到的 c 不比隨機分組更低，與「c ≥ 5% 分位」是同一判準的兩種呈現。Step 3：平均差與 log 變異數比 log(var₁)−log(var₂)（Henseler, Ringle & Sarstedt, 2016 的原式，非變異數差）落在 permutation 95% CI 內即等平均／等變異（完全恆等）；只過 step 2 為部分恆等（可做 MGA，比較平均時留意）。註：step 2 的 c 以標準化指標計算複合體分數；cSEM 0.6.1 在此以未標準化資料計算，數值會有微幅差異。',
+      micomMeta: '群組：{g1}（n = {n1}）vs {g2}（n = {n2}）｜permutation {np} 次有效',
       micomColC: 'c（step 2）',
+      micomColP: 'p (permutation)',
       micomColQ5: '5% 分位',
       micomColMean: '平均差 [95% CI]',
       micomColVar: 'log 變異數比 [95% CI]',
@@ -3361,6 +3366,20 @@ Gaussian copula（Park & Gupta, 2012；PLS-SEM 流程依 Hult et al., 2018）用
       // 原則：句子只重述報表已呈現的判讀，不引入新的統計主張；
       // 每一項的方法界線（Bonferroni、非常態前提、EN 門檻、POS 不可選段數、
       // NCA 的 d≥.1 且 p<.05）都必須進句子，避免使用者複製後在論文中過度宣稱。
+      micomIntro: '測量恆等性方面，依 Henseler, Ringle 與 Sarstedt（2016）的 MICOM 程序檢驗 ' +
+        '{g1}（n = {n1}）與 {g2}（n = {n2}）兩群（permutation {np} 次有效重排）。' +
+        'Step 1（configural invariance）由本工具的執行方式滿足：兩群使用相同的模型設定、指標與資料處理。' +
+        '各構念的結果為：',
+      micomConstruct: '{lv}（c = {c}，5% 分位 = {q5}，permutation {cP}，{step2}；' +
+        '平均差 = {mDiff}，95% CI [{mLo}, {mHi}]；log 變異數比 = {vDiff}，95% CI [{vLo}, {vHi}]，{step3}）',
+      micomStep2Yes: 'step 2 成立',
+      micomStep2No: 'step 2 未成立',
+      micomStep3Yes: 'step 3 等平均與等變異均成立',
+      micomStep3No: 'step 3 未完全成立',
+      micomFull: '全部構念達完全測量恆等（full measurement invariance），可進行群組間的路徑比較，亦可比較潛在變數平均',
+      micomPartial: '達部分測量恆等（partial measurement invariance）——compositional invariance 成立，故可進行 MGA 的路徑係數比較，但**不可**直接比較群組間的潛在變數平均',
+      micomNone: '至少一個構念未通過 compositional invariance（step 2），**群組間的路徑係數比較不具意義**，差異可能來自測量而非結構',
+      micomTail: '。綜合判定：{micomVerdict}。',
       mgaIntro: '多群組分析（MGA）方面，以 {g1}（n = {n1}）與 {g2}（n = {n2}）兩群比較路徑係數，' +
         'permutation 檢定（{np} 次有效重排）結果：',
       mgaPath: '{from} → {to}（β_{g1} = {b1}, β_{g2} = {b2}, 差異 = {diff}, permutation {pStr}，{sig}）',

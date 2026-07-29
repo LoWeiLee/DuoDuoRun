@@ -1022,6 +1022,27 @@ describe('W5：IT 準則與 IPMA', () => {
       expect(st.itCriteria.aicc).toBeGreaterThan(st.itCriteria.aic)
     }
   })
+  // 階段 A / A3a：第 6 節原本要寫「此路徑無測試覆蓋」——補上就不用寫了。
+  it('★ IT 準則：R² ≈ 1（SSE ≈ 0）時回 null，不輸出 −∞', () => {
+    const rows = []
+    for (let i = 0; i < 40; i++) {
+      const v = Math.sin(i) * 2 + i * 0.01
+      rows.push({ a1: v, a2: v * 1.1 + 0.3, a3: v * 0.9 - 0.2, b1: v, b2: v * 1.05, b3: v * 0.95 })
+    }
+    const model = {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: 'F1', indicators: ['a1', 'a2', 'a3'] },
+        { name: 'F2', indicators: ['b1', 'b2', 'b3'] },
+      ],
+      paths: [{ from: 'F1', to: 'F2' }],
+    }
+    const r = runPLS(rows, model)
+    expect(r.error).toBeUndefined()
+    expect(r.structural[0].r2).toBeCloseTo(1, 10)
+    expect(r.structural[0].itCriteria).toBeNull()
+  })
+
   it('IPMA：performance 落在 0–100、目標必須內生、指標層 importance 分解一致', () => {
     const r = ipmaPLS(main, M4, { target: 'C' })
     expect(r.error).toBeUndefined()

@@ -279,6 +279,64 @@ describe('PLS 畫布：W4 交互項與高階構念的顯示層', () => {
  * 它與 ANCOVA 有**完全相同**的 `error` 欄位撞名（2026-07-13 紅隊 R5 修復），
  * 用合成資料補一條專屬煙霧測試。
  */
+/**
+ * 階段 A / A3a 紅隊 R24–R27：四個「引擎算了、回傳了、使用者卻看不到」的欄位。
+ *
+ * 這一批之所以要跑 UI（而不是只測引擎），是因為缺口本來就在呈現層——
+ * 引擎那四個值一直是對的，`compare.test.js` 也一直在比對它們。
+ */
+const W5_GROUP_STATE = {
+  bootstrapN: 200,
+  plsView: 'form',
+  configErrors: [],
+  w5: {},
+  committed: {
+    model: {
+      schemaVersion: 1,
+      latentVariables: [
+        { name: '滿意', indicators: ['q1', 'q2', 'q3'], mode: 'reflective' },
+        { name: '績效', indicators: ['performance_score'], mode: 'reflective' },
+      ],
+      paths: [{ from: '滿意', to: '績效' }],
+    },
+    bootstrapN: 200,
+    options: {
+      scheme: 'path',
+      consistent: false,
+      ciType: 'percentile',
+      q2: false,
+      w5: {
+        mga: true, micom: true,
+        groupColumn: 'department', g1: '人事', g2: '資訊',
+        permutations: 30,
+      },
+    },
+  },
+}
+
+describe('PLS 結果：R24–R27「算了但看不到」的四個欄位', () => {
+  it('R24：模型選擇準則表出現，且「不可跨構念比較」的界線寫在使用者看得到的地方', () => {
+    const panel = renderPanel('pls-sem', ANALYSIS_DEMOS['pls-sem'], 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle), 'IT 準則表炸了').not.toBeInTheDocument()
+    // 修好之前：itCriteria 掛在 structural[] 上，但全 src/ 沒有任何元件讀它
+    expect(panel.textContent).toContain(zh.pls.result.itcTitle)
+    expect(panel.textContent).toContain('AICc')
+    // ★ 這條不是形式：AIC 跨構念不可比，逐列一個構念的表最容易誘發這個誤讀
+    expect(panel.textContent).toContain('不可跨構念比較')
+  })
+
+  it('R25–R27：MGA 雙尾 p、MICOM permutation p 與 MICOM meta 行都出現在報表上', () => {
+    const panel = renderPanel('pls-sem', { dataset: 'employee', settings: W5_GROUP_STATE }, 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle), 'MGA／MICOM 區塊炸了').not.toBeInTheDocument()
+    expect(panel.textContent).toContain(zh.pls.result.mgaColHenseler2)   // R25
+    expect(panel.textContent).toContain(zh.pls.result.micomColP)         // R26
+    // R27：MICOM 先前沒有 meta 行，使用者看不到各組樣本數與有效 permutation 次數
+    expect(panel.textContent).toMatch(/人事.*n = \d+.*資訊.*n = \d+/s)
+  })
+})
+
 describe('twoWayAnova（無 demo，用合成的兩因子資料補測）', () => {
   it('計算成功時 result.error 必須是 undefined（不可是誤差項物件）', async () => {
     const { runTwoWayAnova } = await import('../src/analyses/twoWayAnova/compute')

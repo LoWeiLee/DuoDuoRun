@@ -36,7 +36,7 @@
 |---|---|---|
 | **A1** | PLS 測量與估計核心 | ✅ **完成（10 / 10）** |
 | **A2** | PLS 調節／高階／中介 | ✅ **完成（10 / 10）** |
-| A3 | PLS 進階分析（W5／W6） | 未開始 |
+| **A3** | PLS 進階分析（W5／W6） | 🔄 **進行中（3 / 10）** |
 | A4 | NCA／LDA／CFA／EFA | 未開始 |
 | A5 | 推論統計與無母數 | 未開始 |
 | A6 | 敘述／相關／迴歸／量表／多變量 | 未開始 |
@@ -120,6 +120,40 @@
 
 ★ R13 是本批最值得記的一項：**A1 的修正在 A2 被驗出有假陽性**。
 這說明「加警告」本身也需要跨情境驗證，不能只在原始情境測過就算數。
+
+## A3 — PLS 進階分析（W5／W6）【進行中 3 / 10】
+
+| 文件 | 方法 | 基準組 | tier / status |
+|---|---|---|---|
+| [pls-mga.md](pls-mga.md) | 多群組分析（pooled t／Welch／Henseler／permutation 四法並列） | `pls_mga_formulas`、`pls_mga_perm`、`pls_mga_perm_inputs` | B / verified（輸入組 I / exempt） |
+| [pls-micom.md](pls-micom.md) | 測量恆等性 MICOM（三步驟） | `pls_micom` | B / verified |
+| [pls-itcriteria.md](pls-itcriteria.md) | 模型選擇準則（AIC／AICc／BIC／HQ） | `pls_itcriteria` | B / verified |
+
+**未完成（7 份）**：`pls-predict`（含多次重複）、`pls-ipma`、`pls-cipma`、`pls-cta`、
+`pls-copula`、`pls-fimix`（維持 **pending**，卡文獻）、`pls-pos`。
+
+### A3a 的紅隊結果摘要
+
+三份文件跑完八條紅隊檢查表，開出 6 項，**當日全部處置完畢**。
+★ **本批的發現集中在同一個樣式：引擎算了、回傳了、測試也鎖了，但使用者看不到。**
+
+| 編號 | 級別 | 內容 | 狀態 |
+|---|---|---|---|
+| **R24** | L2 | ★ **IT 準則（AIC/AICc/BIC/HQ）完全沒有 UI**，而說明區已對使用者描述它——工具在說明一張不存在的報表 | ✅ 已修（另立「模型選擇準則」表＋三條不可比較的警語） |
+| R25 | L2 | 雙尾 Henseler p（`henselerP2`）算了、測試鎖了，報表只顯示單尾 | ✅ 已修（MGA 表新增一欄） |
+| R26 | L2 | MICOM 的 compositional invariance permutation p（`cP`）算了但不顯示 | ✅ 已修（MICOM 表新增一欄） |
+| R27 | L2 | MICOM 表沒有 meta 行，看不到各組 $n$ 與有效 permutation 次數（MGA 有） | ✅ 已修 |
+| R28 | L1 | `mgaNote` 寫「兩組人數相等時與 pooled t 恆等」——**t 確實逐位元相同，但 df 與 p 不同**（58 vs 52.23、.0194 vs .0198） | ✅ 已修（措辭精確化＋附實測數字） |
+| R29 | L2 | MICOM **完全不進 APA 敘述句**，而 MGA 敘述句叫讀者「先檢視 MICOM」——句子指向自己不報的東西 | ✅ 已修（新增 MICOM 段落，排在 MGA 之前）＋6 條測試 |
+
+★ **這一批沒有 L3／L4**：三個方法的公式層與引擎層全部對得起獨立重寫
+（`pls_mga_formulas` 7 欄差 **0.0**、`pls_mga_perm` 42 欄差 3.886e−16、
+`pls_micom` 18 欄差 2.220e−16、`pls_itcriteria` 12 欄差 8.882e−15）。
+**問題全部在呈現層。**
+
+★ 一則值得記住的觀察：`provenance.test.js` 的棘輪管「方法有沒有登記」、
+`compare.test.js` 管「數字對不對」，**沒有任何一道防線管「這個數字使用者看得到嗎」**。
+R24–R27 四項都是從這個縫隙掉出去的。A1 的 R6（組合未被基準覆蓋）是同一類死角的另一面。
 
 ## 側欄模組 → 方法對照
 

@@ -505,6 +505,40 @@ function R2Table({ estimate, r }) {
   )
 }
 
+/** W5：IT 模型選擇準則（AIC／AICc／BIC／HQ）——僅內生構念，跨構念不可比 */
+function ItCriteriaTable({ estimate, r }) {
+  const rows = estimate.structural.filter((q) => q.itCriteria)
+  if (rows.length === 0) return null
+  return (
+    <div>
+      <Heading>{r.itcTitle}</Heading>
+      <TableBox>
+        <thead className="bg-duo-cream-50">
+          <tr>
+            <Th align="left">{r.cols.lv}</Th>
+            <Th>AIC</Th>
+            <Th>AICc</Th>
+            <Th>BIC</Th>
+            <Th>HQ</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((q) => (
+            <tr key={q.lv}>
+              <Td align="left" mono={false} bold>{q.lv}</Td>
+              <Td>{fmtNum(q.itCriteria.aic, 2)}</Td>
+              <Td>{fmtNum(q.itCriteria.aicc, 2)}</Td>
+              <Td>{fmtNum(q.itCriteria.bic, 2)}</Td>
+              <Td>{fmtNum(q.itCriteria.hq, 2)}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </TableBox>
+      <Note>{r.itcNote}</Note>
+    </div>
+  )
+}
+
 function EffectsTable({ estimate, r }) {
   const c = r.cols
   const rows = estimate.structural.flatMap((s) =>
@@ -1049,6 +1083,7 @@ function MgaBlock({ mga, r }) {
             <Th>{r.mgaColDiff}</Th>
             <Th>{r.mgaColPerm}</Th>
             <Th>{r.mgaColHenseler}</Th>
+            <Th>{r.mgaColHenseler2}</Th>
             <Th>{r.mgaColParam}</Th>
             <Th>{r.mgaColWelch}</Th>
           </tr>
@@ -1069,6 +1104,7 @@ function MgaBlock({ mga, r }) {
                   </span>
                 </Td>
                 <Td>{fmtNum(q.henselerP, 3)}</Td>
+                <Td><span className={TONE_TEXT[toneForP(q.henselerP2)] || ''}>{fmtP(q.henselerP2)}</span></Td>
                 <Td><span className={TONE_TEXT[toneForP(q.parametric.p)] || ''}>{fmtP(q.parametric.p)}</span></Td>
                 <Td><span className={TONE_TEXT[toneForP(q.welch.p)] || ''}>{fmtP(q.welch.p)}</span></Td>
               </tr>
@@ -1086,11 +1122,18 @@ function MicomBlock({ micom, r }) {
   return (
     <div>
       <Heading>{r.micomTitle}</Heading>
+      <p className="text-[11px] text-duo-cocoa-400 mb-1.5 font-mono">
+        {fillTemplate(r.micomMeta, {
+          g1: micom.groups[0], n1: micom.n1, g2: micom.groups[1], n2: micom.n2,
+          np: micom.nPermValid,
+        })}
+      </p>
       <TableBox>
         <thead className="bg-duo-cream-50">
           <tr>
             <Th align="left">{r.cols.lv}</Th>
             <Th>{r.micomColC}</Th>
+            <Th>{r.micomColP}</Th>
             <Th>{r.micomColQ5}</Th>
             <Th>{r.micomColMean}</Th>
             <Th>{r.micomColVar}</Th>
@@ -1110,6 +1153,7 @@ function MicomBlock({ micom, r }) {
                     <span className={step2ok ? TONE_TEXT.ok : TONE_TEXT.bad}>{fmtNum(q.c, 3)}</span>
                   </span>
                 </Td>
+                <Td>{fmtP(q.cP)}</Td>
                 <Td>{fmtNum(q.cQuantile5, 3)}</Td>
                 <Td>
                   <span className="inline-flex items-center gap-2">
@@ -1946,6 +1990,7 @@ function Result() {
         <InteractionBlock estimate={estimate} boot={boot} bootOk={bootOk} r={r} />
       )}
       <R2Table estimate={estimate} r={r} />
+      <ItCriteriaTable estimate={estimate} r={r} />
       <EffectsTable estimate={estimate} r={r} />
       {estimate.mediation && (
         <MediationTable estimate={estimate} boot={boot} bootOk={bootOk} r={r} />

@@ -40,7 +40,7 @@ function pStr(p, lang) {
 export function buildNarrative(res, lang) {
   const t = getStrings(lang)
   const a = t.pls.apa
-  const { estimate, bootstrap, q2, mga, predict, ipma, cta, copula, fimix, pos } = res
+  const { estimate, bootstrap, q2, mga, micom, predict, ipma, cta, copula, fimix, pos } = res
   const bootOk = Boolean(bootstrap && !bootstrap.error)
 
   const schemeName = a.schemeNames[estimate.meta.scheme] || estimate.meta.scheme
@@ -294,6 +294,41 @@ export function buildNarrative(res, lang) {
   // 這些區塊各自獨立於 bootstrap：MGA 有自己的 permutation、PLSpredict 走交叉驗證、
   // IPMA／cIPMA／CTA／copula／FIMIX／POS 各有自己的推論程序。
   // 一律先檢查 !x.error 再取值，錯誤時整段略過（不輸出半成品句子）。
+
+  // MICOM（測量恆等性）——2026-07-29 階段 A / A3a 紅隊 R29。
+  // MGA 敘述句的結尾要求讀者檢視 MICOM，先前卻沒有任何 MICOM 句子，句子指向自己不報的東西。
+  // 判定與 UI 表格同一套規則：step 2 看 c ≥ 5% 分位、step 3 看差異是否落在 permutation 95% CI 內。
+  if (micom && !micom.error && Array.isArray(micom.constructs) && micom.constructs.length > 0) {
+    const [mg1, mg2] = micom.groups
+    const inCi = (d, lo, hi) => Number.isFinite(d) && d >= lo && d <= hi
+    const step2 = micom.constructs.map((q) => q.c >= q.cQuantile5)
+    const step3 = micom.constructs.map((q) => inCi(q.mean.diff, q.mean.ciLower, q.mean.ciUpper)
+      && inCi(q.variance.diff, q.variance.ciLower, q.variance.ciUpper))
+    let verdict
+    if (!step2.every(Boolean)) verdict = a.micomNone
+    else if (step3.every(Boolean)) verdict = a.micomFull
+    else verdict = a.micomPartial
+    const items = micom.constructs.map((q, i) => fillTemplate(a.micomConstruct, {
+      lv: q.lv,
+      c: fmtNum(q.c, 3),
+      q5: fmtNum(q.cQuantile5, 3),
+      cP: pStr(q.cP, lang),
+      mDiff: fmtNum(q.mean.diff, 3),
+      mLo: fmtNum(q.mean.ciLower, 3),
+      mHi: fmtNum(q.mean.ciUpper, 3),
+      vDiff: fmtNum(q.variance.diff, 3),
+      vLo: fmtNum(q.variance.ciLower, 3),
+      vHi: fmtNum(q.variance.ciUpper, 3),
+      step2: step2[i] ? a.micomStep2Yes : a.micomStep2No,
+      step3: step3[i] ? a.micomStep3Yes : a.micomStep3No,
+    }))
+    parts.push(
+      fillTemplate(a.micomIntro, {
+        g1: mg1, n1: micom.n1, g2: mg2, n2: micom.n2, np: micom.nPermValid,
+      })
+      + items.join(sep) + fillTemplate(a.micomTail, { micomVerdict: verdict })
+    )
+  }
 
   // MGA（多群組分析）
   if (mga && !mga.error && Array.isArray(mga.paths) && mga.paths.length > 0) {

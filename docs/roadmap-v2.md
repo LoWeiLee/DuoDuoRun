@@ -10,15 +10,26 @@
 **目前狀態一句話**：PLS 的**功能面已收尾**（P1 殘項全清、三項會動統計核心的都交付），
 但**溯源面沒有全部結案**——82 組基準中 2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。
 功能開發（階段 B）尚未動工。
-最近一次本機全套驗收：**1,237 過、6 跳過、13 檔全綠**（2026-07-26，階段 A / A2 收尾後）。
+最近一次沙盒驗收：**1,082 過、6 跳過、8 檔全綠**（2026-07-29，A3a 交付後）。
+最近一次本機全套驗收：**1,237 過、6 跳過、13 檔全綠**（2026-07-26，階段 A / A2 收尾後）——
+★ **A3a 動到 `src/analyses/**` 與 `src/i18n/**`，本機 jsdom 5 檔需補跑**。
 
-**★ 現在的下一步：階段 A 的 A3**（Kevin 2026-07-25 裁決；2026-07-26 開工）。
-**A1 與 A2 皆已全數交付（各 10 / 10，共 20 份方法文件）**，模板規格定案。
-紅隊累計 **23 項（R2–R23）全部處置完畢**——A1 的 R2–R12、A2 的 R13–R23 皆已修或已記錄。
-唯一未結案的是「bootstrap 的 $p$ 值口徑未對 seminr 核對」，卡本機 R。
-基準組 82 → **83**。下一步接 **A3：PLS 進階分析（W5／W6）**（10 個方法群）。
-不要跳過它直接做 Wave F1——階段 A 的目的正是先確認「已經做好的東西是否可信」，
-再往上疊新功能。
+**★ 現在的下一步：階段 A / A3 的第二批（A3b）**。
+**A1、A2 各 10 / 10 已交付；A3 已交付 3 / 10**（`pls-mga`、`pls-micom`、`pls-itcriteria`，2026-07-29）。
+紅隊累計 **29 項（R2–R29）全部處置完畢**。
+唯一未結案的仍是「bootstrap 的 $p$ 值口徑未對 seminr 核對」，卡本機 R。
+基準組維持 **83**、`MAX_PENDING` 維持 **2**（A3a 未動引擎、未動 fixture）。
+
+**A3b 建議範圍（3 份）**：`pls-predict`（含多次重複，49 欄、k-fold CV）、`pls-ipma`、`pls-cipma`。
+**A3c（4 份，最貴）**：`pls-cta`（bootstrap tetrad，50 欄）、`pls-copula`（30 欄）、
+`pls-fimix`（EM，71 欄，**維持 pending**）、`pls-pos`（爬山法，39 欄）。
+
+★ **A3a 交出來的一則教訓，直接影響 A3b／A3c 怎麼查**：本批 6 項紅隊發現裡有 4 項是
+**「引擎算了、回傳了、`compare.test.js` 也逐值比對了，但沒有任何 UI 元件讀它」**。
+現有的兩道防線各管一半——`provenance.test.js` 管「方法有沒有登記」、`compare.test.js` 管「數字對不對」，
+**沒有一道管「這個數字使用者看得到嗎」**。
+⇒ 後續每一份文件寫第 7 節時，請先跑一次
+`grep -rn "<欄位名>" src/ | grep -v src/lib/stats/`，零命中就是一個發現。
 
 ---
 
@@ -513,22 +524,33 @@ Fornell-Larcker／HTMT）、`pls_fit`＋`pls_gof`、bootstrap（percentile／`pl
 ★ 本批最重要的一項是 **R13：A1 自己引入的假陽性**（交互構念的乘積指標被誤判為「反向題未反向計分」）——
 說明「加警告」也需要跨情境驗證，不能只在原始情境測過就算數。
 
-**A3 — PLS 進階分析（W5／W6，tier B 密集）** 🔄 **已開工（0 / 10 交付，3 組已完成獨立重寫驗證）**
+**A3 — PLS 進階分析（W5／W6，tier B 密集）** 🔄 **進行中（3 / 10 交付）**
+
+**A3a 已交付（2026-07-29）**：`pls-mga`（涵蓋 `pls_mga_formulas`＋`pls_mga_perm`＋`pls_mga_perm_inputs`）、
+`pls-micom`、`pls-itcriteria`。三份文件與索引見 `docs/methods/`。
+四組獨立重寫全數通過：`pls_mga_formulas` 7 欄 **0.0**、`pls_mga_perm` 42 欄 3.886e−16、
+`pls_micom` 18 欄 2.220e−16、`pls_itcriteria` 12 欄 8.882e−15。
+紅隊開出 6 項（R24–R29），**當日全部處置完畢，無 L3／L4**。
+`reference.json`／`provenance.json` **零改動**，`MAX_PENDING` 維持 2。
+
+★ **本批的發現全部集中在呈現層**：6 項裡有 4 項是「引擎算了、回傳了、`compare.test.js`
+逐值比對了，但沒有任何 UI 元件讀它」（IT 準則整組、雙尾 Henseler p、MICOM 的 permutation p、
+MICOM 的 meta 行）。這是既有兩道防線之間的縫隙——`provenance.test.js` 管登記、
+`compare.test.js` 管數值，**沒有一道管可見性**。A3b／A3c 寫第 7 節前請先跑
+`grep -rn "<欄位名>" src/ | grep -v src/lib/stats/`。
+
+★ **A3a 未重跑 2026-07-26 的三組舊驗證，而是重做了一次**：舊紀錄只存在於本檔的表格中，
+`validation-report-v1.md` 沒有對應章節，重寫腳本也未留存。重做的成本可接受，且順帶把
+`pls_micom` 一起做掉。給後續的提醒：**獨立重寫的結果要寫進 validation-report 才算數**。
+
 ★ **A3 的規模明顯大於前兩批**：基準欄位數 A1 約 120、A2 約 80，**A3 超過 350**
 （`pls_fimix` 71 欄、`pls_cta` 50 欄、`pls_predict` 49 欄、`pls_pos` 39 欄、`pls_copula` 30 欄），
 且含 EM 迭代（FIMIX）、爬山法（POS）、k-fold 交叉驗證（PLSpredict）、bootstrap tetrad（CTA）
 等需要完整重寫演算法的項目。建議**單獨一個 session 執行**，不與其他工作混排。
 
-2026-07-26 已完成的獨立重寫驗證（可直接沿用，不需重跑）：
-
-| 組 | 欄位 | 最大絕對差 |
-|---|---|---|
-| `pls_mga_formulas` | 11 | 2.78e−17 |
-| `pls_mga_perm` | 3（含 40 組 permDiffs 逐值） | 3.33e−16 |
-| `pls_itcriteria` | 12 | **0.0** |
-
-待驗證：`pls_micom`、`pls_predict`、`pls_ipma`、`pls_cipma`、`pls_cta`、`pls_copula`、
-`pls_fimix`、`pls_pos`（後四組需重寫 bootstrap tetrad／copula 迴圈／EM／爬山法）。
+**A3b／A3c 待辦（7 份）**：`pls_predict`（含多次重複）、`pls_ipma`、`pls_cipma`、
+`pls_cta`、`pls_copula`、`pls_fimix`、`pls_pos`
+（後四組需重寫 bootstrap tetrad／copula 迴圈／EM／爬山法）。
 
 ★ **`pls_fimix` 維持 pending**：Kevin 2026-07-26 再次確認 Hahn et al. (2002) 與 
 Sarstedt et al. (2011) 仍取不到，A3 的文件將據實標註「取得管道已窮盡」，不以替代驗證充當結案。
@@ -581,6 +603,28 @@ Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn�
 | **R19** | A2 | `pls_mod_threeway` | L2 | **三向交互的階層完整性不檢核**。只宣告三向項而不宣告 3 個兩向項時照跑照出數字，而該係數**無法解釋**（吸收了本該由兩向項承擔的變異），報表完全看不出來 | `buildPlan` 檢查相異因子數 ≥ 3 的交互項，逐一比對其全部二元子集；缺少時**指名缺了哪幾個**並警告，不擋 | ✅ 核定並已執行（2026-07-26）。`pls.js:1373–1396`＋3 條測試（含「二次效果不得誤觸發」） |
 | **R21** | A2 | `pls_hoc_embedded` | L2 | embedded 法在模型語法中的值是 `'two-stage'`；寫 `'embedded'` 會被擋，訊息雖列出三個合法值但**沒說明「你要的 embedded 就是 two-stage」** | 驗證器接受 `'embedded'` 並正規化為 `'two-stage'`，錯誤訊息一併列出別名 | ✅ 核定並已執行。`pls.js:311–316`＋2 條測試（兩種寫法逐值等價） |
 | **R22** | A2 | `pls_modmed` | L2 | 不符範圍限制（非兩步鏈／非 two-stage 交互／調節變數在鏈上）時 `moderatedMediation` **靜默為 null**，UI 無表也無訊息，使用者以為功能不支援 | 依情形分兩種訊息：沒有可用交互項時**指名實際估計法**；有可用交互項時列出三個可能原因 | ✅ 核定並已執行。`pls.js:2281–2300`＋2 條測試 |
+
+| **R24** | A3a | `pls_itcriteria` | **L2** | ★ **IT 準則（AIC/AICc/BIC/HQ）完全沒有 UI**：`pls.js:881–892` 逐內生構念算出、掛在 `structural[]`、`compare.test.js` 比對 12 欄、`pls.test.js` 有代數斷言，但 `grep -rn "itCriteria" src/` 在 `pls.js` 以外零命中。同時說明區（`Notes.jsx:31`）已對使用者描述它——**工具在說明一張不存在的報表** | 另立「模型選擇準則」表（不併入 R² 表，因 AIC 跨構念不可比而 R² 可並列），註記第一句即三條界線 | ✅ 核定並已執行（2026-07-29）。`Result.jsx:509–540`＋`1993`、i18n `itcTitle`／`itcNote` 中英各一；引擎與 fixture 零改動；＋1 條 UI 測試（含「不可跨構念比較」必須出現的斷言） |
+| R25 | A3a | `pls_mga_formulas` | L2 | 雙尾 Henseler p（`henselerP2`，`pls.js:2929`）算出、`pls.test.js:808` 已鎖，報表只顯示單尾。單尾值 .97 在表上看起來像「非常不顯著」 | MGA 表新增「p (Henseler 雙尾)」欄 | ✅ 核定並已執行。`Result.jsx:1086`＋`1107` |
+| R26 | A3a | `pls_micom` | L2 | compositional invariance 的 permutation p（`cP`，`pls.js:3092`）算了但不顯示；表上只有 c 與 5% 分位，看不出是擦邊過還是遠遠通過 | MICOM 表新增「p (permutation)」欄＋`micomNote` 說明兩者是同一判準的兩種呈現 | ✅ 核定並已執行。`Result.jsx:1136`＋`1156` |
+| R27 | A3a | `pls_micom` | L2 | MICOM 表**沒有 meta 行**（MGA 有），看不到各組 $n$ 與有效 permutation 次數 | 比照 `mgaMeta` 新增 `micomMeta` | ✅ 核定並已執行。`Result.jsx:1124–1130` |
+| R28 | A3a | `pls_mga_formulas` | L1 | `mgaNote` 寫「兩組人數相等時與 pooled t 恆等」。實測：$t$ 逐位元相同（差 0），但 df 58 vs 52.23、$p$ .0194 vs .0198；人數不等時連 $t$ 都不同 | 措辭精確化並附實測數字 | ✅ 已修（L1 當場修），中英各一 |
+| R29 | A3a | `pls_micom` | L2 | MICOM **完全不進 APA 敘述句**（`apaNarrative.js` 未解構 `micom`），而 `mgaTail` 叫讀者「先確認恆等性再解讀本表」——**句子指向自己不報的東西**。投稿 MGA 的論文審稿人一定會要 MICOM 段落 | 新增 MICOM 敘述句，**排在 MGA 之前**；逐構念報 c／5% 分位／permutation p／平均差與 log 變異數比及 CI，以「完全／部分／未達恆等」三分判定收尾 | ✅ 核定並已執行。`apaNarrative.js:298–332`、i18n 中英各 9 鍵；＋6 條測試（含三條「防止修過頭」） |
+
+#### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
+
+| # | 方法 | 內容 |
+|---|---|---|
+| E1 | MGA | **測量恆等性不檢核**：沒跑 MICOM 也照樣產出 MGA 表，無警告。硬擋不恰當（部分恆等仍可做 MGA），但可考慮「MICOM 未跑時在 MGA 表上標示前置未滿足」 |
+| E2 | MGA | **三群以上不支援且無多重比較提醒**：使用者兩兩跑三次，工具不會提醒需要 Bonferroni 之類的校正 |
+| E3 | MGA | **`nPermValid` 偏低無警告**：1000 次只成功 50 次時 $p$ 的解析度只剩 1/51，報表照樣顯示三位小數 |
+| E4 | MICOM | **單指標構念的 $c$ 恆為 1**（實測 M4 的 `Y`：`c=1 q5=1 cP=1`），燈號恆綠，看不出是套套邏輯。示範模型自己就有一個 |
+| E5 | MICOM | **綜合判定只在 APA 敘述句，報表上沒有**：UI 逐構念給燈號，「完全／部分／未達恆等」要使用者自己合成 |
+| E6 | MICOM／MGA | **casewise 剔除的列數不揭露**：meta 行的 $n$ 是剔除後的數字，剔了幾列不知道 |
+| E7 | IT 準則 | ★ **沒有「模型比較」工作流程**：本表只顯示當前模型的四個值，而 IT 準則唯一正當的用法是比較兩個模型。加了表之後這個缺口反而更明顯 |
+
+★ E1／E2／E7 是**誤用入口**（使用者可能在不知情下踩到），E3–E6 是資訊揭露不足。
+七項的完整說明在各自方法文件的第 6 節「尚未驗證的部分」。
 
 ### 6.7 完成判準（全部達成才算階段 A 結案）
 
@@ -714,6 +758,20 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.10（2026-07-29）：**階段 A / A3a 交付**（3 / 10）：`pls-mga`、`pls-micom`、`pls-itcriteria`。
+  四組獨立重寫全數通過（最大差 8.882e−15 至逐位元相同）。紅隊開出 **R24–R29 共 6 項，當日全部處置完畢，無 L3／L4**。
+  ★ **本批的實質發現是一個系統性樣式**：6 項裡有 4 項是「引擎算了、回傳了、`compare.test.js`
+  逐值比對了，但沒有任何 UI 元件讀它」——最嚴重的是 **R24：IT 準則（AIC/AICc/BIC/HQ）
+  完全沒有報表，而說明區已經在對使用者描述它**。這是既有兩道防線之間的縫隙：
+  `provenance.test.js` 管「方法有沒有登記」、`compare.test.js` 管「數字對不對」，
+  **沒有一道管「使用者看得到嗎」**。§6.5 已寫入後續批次的檢查指令。
+  引擎、`reference.json`、`provenance.json` **零改動**（`MAX_PENDING` 維持 2、基準組維持 83）；
+  改動全在 `Result.jsx`／`apaNarrative.js`／i18n 中英，**因此本批必須由 Kevin 本機補跑 jsdom 5 檔**。
+  沙盒 8 檔 1,082 過、6 跳過、eslint 0；新增 8 條測試（6 條敘述句＋1 條 IT 準則邊界＋2 條 UI，
+  其中 UI 兩條沙盒跑不動）。另記錄 7 項功能擴充待辦（§6.6 末的 E1–E7）。
+  ★ 一則程序教訓：本檔原記載 2026-07-26 已完成三組獨立重寫「可直接沿用」，
+  但 `validation-report-v1.md` 沒有對應章節、重寫腳本也未留存——**獨立重寫的結果要寫進
+  validation-report 才算數**。本批重做了一次（並補上 `pls_micom`）。
 - v2.9（2026-07-25）：修正 v2.8 的一個前提錯誤。原以為 Kevin 在階段 A 期間不在場，
   實際是**他全程參與階段 A，休眠發生在階段 A 之後**（階段 B 最早 2026-09 底）。
   影響兩處並已改：§6.4 的 L3（數值層）處置由「累積清單等裁決」改為「當場問」

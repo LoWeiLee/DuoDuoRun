@@ -349,3 +349,83 @@ describe('APA 敘述句：資料處理揭露（階段 A 紅隊 R12）', () => {
     }
   })
 })
+
+/**
+ * MICOM 敘述句（2026-07-29 階段 A / A3a 紅隊 R29）
+ *
+ * 修這一項的理由：MGA 的敘述句結尾要求讀者「先確認恆等性」，而 MICOM 先前沒有任何句子——
+ * 句子指向一個它自己不報的東西。測的是三種綜合判定各自對應正確的界線措辭，
+ * 以及「沒有 MICOM 結果時不得憑空出現這一段」。
+ */
+describe('PLS APA 敘述句：MICOM', () => {
+  /** c／CI 皆可控的最小 MICOM 結果 */
+  const mk = (over = {}) => ({
+    groups: ['男', '女'], n1: 150, n2: 148, nPermValid: 999,
+    constructs: [{
+      lv: 'F1', c: 0.998, cQuantile5: 0.972, cP: 0.41,
+      mean: { diff: 0.05, ciLower: -0.22, ciUpper: 0.23 },
+      variance: { diff: -0.08, ciLower: -0.31, ciUpper: 0.30 },
+      ...over,
+    }],
+  })
+
+  it('完全恆等：三步皆過 → 判定可比較潛在平均', () => {
+    const res = baseResult({ micom: mk() })
+    const zh = buildNarrative(res, 'zh-TW')
+    expect(zh).toContain('MICOM')
+    expect(zh).toContain('0.998')
+    expect(zh).toContain('完全測量恆等')
+    expect(zh).toContain('configural')
+    const en = buildNarrative(res, 'en')
+    expect(en).toMatch(/full measurement invariance/)
+  })
+
+  it('★ 部分恆等：step 2 過、step 3 不過 → 必須寫出「不可比較潛在平均」', () => {
+    // 平均差落在 CI 外 → step 3 不成立
+    const res = baseResult({ micom: mk({ mean: { diff: 0.9, ciLower: -0.22, ciUpper: 0.23 } }) })
+    const zh = buildNarrative(res, 'zh-TW')
+    expect(zh).toContain('部分測量恆等')
+    expect(zh).toContain('潛在變數平均')
+    expect(zh).not.toContain('完全測量恆等')
+    const en = buildNarrative(res, 'en')
+    expect(en).toMatch(/partial measurement invariance/)
+    expect(en).toMatch(/latent means must/)
+  })
+
+  it('★ step 2 未過 → 必須寫出「路徑係數比較不具意義」，不得只說部分恆等', () => {
+    const res = baseResult({ micom: mk({ c: 0.80, cQuantile5: 0.97 }) })
+    const zh = buildNarrative(res, 'zh-TW')
+    expect(zh).toContain('不具意義')
+    expect(zh).not.toContain('部分測量恆等')
+    expect(zh).not.toContain('完全測量恆等')
+    const en = buildNarrative(res, 'en')
+    expect(en).toMatch(/not meaningful/)
+  })
+
+  it('permutation p 與 5% 分位兩個判準都要入句（報表有幾欄，句子就要交代幾欄）', () => {
+    const zh = buildNarrative(baseResult({ micom: mk() }), 'zh-TW')
+    expect(zh).toContain('5% 分位')
+    expect(zh).toContain('permutation')
+    expect(zh).toContain('log 變異數比')
+  })
+
+  it('★ 防止修過頭：沒有 MICOM 結果（null／error）時不得出現該段落', () => {
+    for (const micom of [null, undefined, { error: 'micom-too-few', message: 'x' }]) {
+      for (const lang of LANGS) {
+        const t = buildNarrative(baseResult({ micom }), lang)
+        expect(t).not.toContain('MICOM')
+        expect(t).not.toContain('invariance')
+        expect(t).not.toContain('恆等')
+      }
+    }
+  })
+
+  it('不留未填模板、不吐 undefined／NaN', () => {
+    for (const lang of LANGS) {
+      const t = buildNarrative(baseResult({ micom: mk() }), lang)
+      expect(t).not.toMatch(/\{[a-zA-Z]+\}/)
+      expect(t).not.toContain('undefined')
+      expect(t).not.toContain('NaN')
+    }
+  })
+})
