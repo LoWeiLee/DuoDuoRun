@@ -11,6 +11,7 @@ import { describe as describeStats } from '../src/lib/stats/descriptive.js'
 import { independentT, pairedT, oneSampleT } from '../src/lib/stats/ttest.js'
 import { pearsonCorr, spearmanRho } from '../src/lib/stats/correlation.js'
 import { oneWayANOVA, tukeyHSD } from '../src/lib/stats/anova.js'
+import { ptukeyUpper } from '../src/lib/stats/ptukey.js'
 import { simpleLinearRegression } from '../src/lib/stats/regression.js'
 import { multipleRegression } from '../src/lib/stats/multipleRegression.js'
 import { hierarchicalRegression } from '../src/lib/stats/hierarchicalRegression.js'
@@ -123,6 +124,17 @@ export const ADAPTERS = {
     return { F: r.F, p: r.p, dfBetween: r.dfBetween, dfWithin: r.dfWithin,
       ssBetween: r.ssBetween, ssWithin: r.ssWithin, ssTotal: r.ssTotal,
       eta2: r.eta2, omega2: r.omega2 }
+  },
+  // ★ 2026-07-29 紅隊 R50（L4）：studentized range 分布本身的格點回歸防線。
+  //   `tukey_hsd` 只涵蓋 df = 57 一點——恰好是舊實作失準前的最後一個安全點。
+  //   這一組直接打 ptukeyUpper，不經過任何資料集，讓 df ≥ 100 的失準區有東西鎖。
+  tukey_ptukey_grid() {
+    const out = {}
+    for (const k of [2, 3, 4, 6, 10])
+      for (const df of [5, 20, 57, 100, 120, 200, 500, 999])
+        for (const q of [1.7, 3.5, 4.5])
+          out[`sf_q${q}_k${k}_df${df}`] = ptukeyUpper(q, k, df)
+    return out
   },
   tukey_hsd() {
     const a = oneWayANOVA(groups3)

@@ -41,7 +41,13 @@ const METHODS_DIR = path.join(HERE, '..', 'docs', 'methods')
 /**
  * 未被任何方法文件第 6 節引用的基準組數上限（棘輪，只能往下調）。
  *
- * 2026-07-29（A4 交付後）實際值 **36**（前值 44，A3c 交付後）：
+ * 2026-07-29（A5a 交付後）實際值 **27**（前值 36，A4 交付後；再前 44，A3c 交付後）：
+ *   · ★ A5a 新涵蓋 10 組：ttest_one_sample／ttest_independent_welch／ttest_paired、
+ *     anova_oneway、tukey_hsd、★ tukey_ptukey_grid（本批新增，見 R50）、
+ *     twoway_anova_type3、ancova、repeated_anova、mixed_anova
+ *   · 基準組總數 83 → **84**（tukey_ptukey_grid 為 R50 的高 df 回歸防線）
+ *
+ * A4 交付後的實際值 36：
  *   · PLS 側 36 組（A1–A3）全數涵蓋
  *   · ★ A4 新涵蓋 11 組：nca_ce_fdh／nca_cr_fdh／nca_bottleneck、lda_group3、
  *     cfa_2factor／cfa_2factor_loadings／cfa_noncentral_chi2／cfa_rmsea_ci、
@@ -59,7 +65,7 @@ const METHODS_DIR = path.join(HERE, '..', 'docs', 'methods')
  *   第 6 節提到別組方法的套件名或函式名時，避免寫成與基準鍵完全相同的小寫字串。
  *   （收緊為「只認 `reference.json → \`key\`` 宣告式」需回頭改 30 份 A1–A3 文件，本批不做。）
  */
-const MAX_UNDOCUMENTED = 36
+const MAX_UNDOCUMENTED = 27
 
 /** 取出一份方法文件的第 6 節（到第 7 節為止）。 */
 function sectionSix(text) {

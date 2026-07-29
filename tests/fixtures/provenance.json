@@ -1,583 +1,590 @@
 {
- "ancova": {
-  "authority": "pingouin",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "anova_oneway": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cfa_2factor": {
-  "authority": "semopy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 semopy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cfa_2factor_loadings": {
-  "authority": "semopy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 semopy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cfa_noncentral_chi2": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cfa_rmsea_ci": {
-  "authority": "scipy",
-  "note": "2026-07-13 溯源審計覆核維持 A：值由 scipy ncx2＋brentq 產生；手編部分僅 MacCallum et al. (1996) 的 CI 定義本身。可日後以 Kevin 本機 lavaan 佐證（低優先）。",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "chisquare_2x2": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cluster_kmeans_k3": {
-  "authority": "scikit-learn",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cluster_ward_k3": {
-  "authority": "scikit-learn",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cohen_kappa": {
-  "authority": "scikit-learn",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cronbach_alpha_6items": {
-  "authority": "pingouin",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "cronbach_alpha_f1": {
-  "authority": "pingouin",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "descriptive_y": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "efa_pca_none": {
-  "authority": "factor_analyzer",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "efa_pca_varimax": {
-  "authority": "factor_analyzer",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "efa_pca_varimax_k3": {
-  "authority": "factor_analyzer",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "fisher_exact": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "icc": {
-  "authority": "pingouin",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "kruskal_wallis": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "ks_lilliefors": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "lda_group3": {
-  "authority": "MASS 7.3.65（MASS::lda，隨 R 出貨）＋ base R manova（Wilks）；SPSS 慣例換算關係逐值確認",
-  "note": "2026-07-14 抽驗中發現工具鏈陷阱：library(cSEM) 會遮蔽 stats::predict（對 lda 物件直接進 cSEM 內部碼）——R 抽驗腳本一律顯式 stats::predict，已記入 validation-report。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-14 溯源審計（Session Q1，04_q1_audit.R v4/v5）：MASS::lda 逐值一致——未標準化係數（LD1 −0.090887/0.099743/0.046781；MASS scaling 慣例＝SPSS unstandardized，wᵀSpw=1）、標準化係數（×pooled SD：−0.723571/0.754252/0.717626）、pooled SD（7.9612/7.5620/15.3400）、特徵值換算（λ=svd²(g−1)/(N−g)、proportion of trace 0.895133/0.104867）、組重心（fn1 0.239776/−0.302967/0.063191）、structure matrix（pooled within-group 相關，fn1 −0.274692/0.364920/0.732972）、再代入分類表（對角 8/10/7、accuracy 0.416667）。manova Wilks Λ=0.94302 同；Λ₂ 與 Bartlett χ² 由已驗特徵值之封閉式推得。第二判別函數整體翻號＝特徵向量符號任意性（fixture 符號正規化規則已文件化）。"
- },
- "levene_mean_spss_default": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "levene_median": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "logistic_regression": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "mann_whitney": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "mann_whitney_small": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "mann_whitney_ties": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "manova": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "mixed_anova": {
-  "authority": "pingouin",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "nca_bottleneck": {
-  "authority": "NCA (R)",
-  "note": "2026-07-13 溯源審計改列 tier B：同 nca_cr_fdh（numpy 手算＋一次性 R NCA 逐值抽驗）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "fixture 值直接由 NCA (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "nca_ce_fdh": {
-  "authority": "R NCA 5.0.2（Dul 2016）",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：scope 3501.5488、CE zone 835.0134、d_ce 0.2384697、peers = 8、bottleneck 逐 level、NN 語意——全部與 R NCA 逐值一致，零差異。"
- },
- "nca_cr_fdh": {
-  "authority": "NCA (R)",
-  "note": "2026-07-13 溯源審計改列 tier B：與 nca_ce_fdh 同批同證據（numpy 手算＋一次性 R NCA 5.0.2 逐值抽驗），原先一 B 二 A 的標籤自相矛盾，統一為 B。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "fixture 值直接由 NCA (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pearson_x1_x2": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pls_basic": {
-  "authority": "plspm 0.5.7（fixture 的 loadings／weights／path／R²／LV 相關／cross-loadings 產生來源，PATH scheme、逐欄 z-score、tol=1e-12）；seminr 2.5.0（2026-07-13 本機 R 抽驗，第二證人，Hair 團隊實作）。plspm 未提供、以 numpy 依公式手算者：alphaStd（標準化 α，相關矩陣版）、rho_A（Dijkstra & Henseler 2015, MIS Quarterly 39(2), 297-316；方程式編號待原文核定）、rho_c（Jöreskog 1971, Psychometrika 36(2)）、AVE（Fornell & Larcker 1981, JMR 18(1)）、HTMT（Henseler, Ringle & Sarstedt 2015, JAMS 43(1)）——這五項皆已對 seminr 逐值核對。",
-  "note": "2026-07-26 階段 A 紅隊修正本欄的一處不精確敘述：原 note 稱「fixture 值為 numpy 手算」，實際上 loadings／weights／path／R²／adjR²／LV 相關／cross-loadings 出自 plspm 0.5.7，只有上列五項信效度量為 numpy 手算；原 authority 亦漏列實際產生 fixture 的 plspm。★ 慣例差異：權重以 w'Sw=1 正規化（樣本單位變異）後才與 plspm 比對（plspm 原生為母體單位變異）；本組回報的 α 為**標準化 α**（相關矩陣版），與 SPSS 預設的原始分數 α 在題目變異數不等時數值不同。方法文件見 `docs/methods/pls-basic.md`。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：M1 核心的 loadings／weights／path／R²／adjR²／alpha／rhoA／rhoC／AVE／HTMT／LV 相關全部與 seminr 逐值一致（小數 6 位）。見 validation-report「R 抽驗銷帳（Session A）」一之表。\n★ 2026-07-26 階段 A 紅隊（見 `docs/methods/pls-basic.md` 第 8 節）補三道：\n(1) 標準化 α 的兩種寫法代數等價性驗證（k/(k−1)·(1−k/ΣS) ≡ k·r̄/(1+(k−1)r̄)，實測差 0 / 1.11e−16）；\n(2) **第四次獨立編碼**——依方法文件第 3 節的文字描述（不看 pls.js）以 numpy 重寫整條 Lohmöller 迭代，對本組 28 個純量欄位比對，最大絕對差 7.15e−8（量級與 plspm 迭代容差相符）。意義：文件所載公式即產生基準值的公式，兩者無漂移；\n(3) 邊界條件：兩區塊的區塊內平均相關同為負時，HTMT 原會輸出「通過」的數值（Kevin 裁決修正為 null ＋警告，pls.js:956-958／1792-1808，新增 4 條行為測試）。\n★ 仍未驗證：七篇方法出處**原文全部未取得**，本組的 verified 建立在「plspm 與 seminr 兩個獨立第三方數值全中」，不是「公式對過原文式號」；跨實作的收斂準則定義比較亦未查核。"
- },
- "pls_bca_reference": {
-  "authority": "待審計【卡文獻取得，非技術問題】。已鎖定的權威來源：Efron & Tibshirani (1993),《An Introduction to the Bootstrap》第 14.3 節（BCa 的 z₀ 與加速常數 a 的估計式）；原始出處 Efron (1987), JASA 82(397), 171-185「Better Bootstrap Confidence Intervals」。待核兩個風險點：z₀ = Φ⁻¹(#{θ̂*_b < θ̂}/B) 的並列與端點夾擠慣例、a = Σ(θ̄_(·)−θ̂_(i))³ / (6[Σ(θ̄_(·)−θ̂_(i))²]^{3/2}) 的 jackknife 定義與符號方向。",
-  "note": "無主流第三方實作可對照，基準為 numpy 手算（scipy.stats.bootstrap 的 BCa 可作對照候選，但其內部亦為同一族公式的再實作，且未逐式文件化，不足以單獨作為權威）。2026-07-25 已試開放存取管道：Efron 個人頁（efron.ckirby.su.domains）與 JASA 均取不到 1987 原文；書籍第 14 章無合法開放全文。Kevin 亦回報找不到。**在取得前維持 pending，不以記憶中的公式充當 authority。**",
-  "status": "pending",
-  "tier": "B",
-  "verification": "待審計（原文未取得）。**現行替代交叉驗證（已實施且通過）**：\n(1) 固定 B=999 draws（rng seed 20260704）＋完整 jackknife 一併寫入 fixture，JS 的 bcaInterval() 對同一批 draws/jackknife 逐值比對（z₀、a、alphaLower、alphaUpper、ciLower、ciUpper 六欄）。\n(2) **2026-07-25 新增第二道獨立實作抽驗（已升為重生時 assert）**：generate_reference.py 餵同一批 draws 與同一筆資料給 scipy.stats._resampling._bca_interval，逐值 assert z₀／a／alpha_lower／alpha_upper，容差 1e-12；實測差異為 z₀ 0.0、a 1.7e-18、alphaLower 0.0、alphaUpper 1.1e-16（機器精度內全中）。\n★ 兩道都**不足以結案**：(1) 只鎖住『JS 與本檔 numpy 一致』；(2) 的 scipy 實作同樣是『某人讀 Efron & Tibshirani §14.3 後的再實作』，未逐式文件化，屬同一族公式的另一次編碼，不是 §0 意義下的權威來源。兩者都抓不到『z₀ 或 a 的估計式本身讀錯』。\n另註一個 (2) 未涵蓋的差異：並列（ties）慣例——本檔用 #{θ̂*<θ̂}/B 再夾擠到 [1/(B+1), B/(B+1)]，scipy 用 (#{<}+#{≤})/(2B) 不夾擠；統計量為連續型平均、實測無並列，兩者恰好同值，此路徑仍待原文核定。\n取得原文後應優先核對 a 的分母指數（3/2 次方）、jackknife 偏差項的符號，以及上述並列與端點夾擠慣例。"
- },
- "pls_cipma": {
-  "authority": "Hauff, Richter, Sarstedt & Ringle (2024, J. Retailing & Consumer Services 78:103723)。全文無編號方程式（期刊排版事實），authority 以節號＋原式錨定：§3 效果量 d = C/S 與必要性判準（d ≥ .1 且 p < .05，另需理論支持）；§4.3 IPMA 0–100 重標定 LV 分數輸出為 NCA 輸入；§4.4 實證 scope＋僅取目標構念的直接前置構念＋CE-FDH bottleneck 表（實際值／百分位雙格式）；§4.5 於目標水準（如 Y=80）讀「未達所需水準之案例 %」；§5.4–5.5 實例同流程（CE-FDH 為主、CR-FDH 對照討論）",
-  "note": "重用 pls_ipma 的 _s100 與 nca_* 的 numpy 助手。IPMA 塊內量尺不一時的 0–100 先後灰區承 pls_ipma 條目（Q1 記錄）；Hauff et al. §4.1 明文要求單一構念的指標同量尺，混合量尺＝未滿足假設——UI 警告已入 roadmap P1。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-14 溯源審計（Session Q2）：(1) 逐項對 Hauff et al. (2024) 全文（OA：researchonline.jcu.edu.au/87274）——0–100 重標定分數作 NCA 輸入、實證 scope、僅直接前置構念、CE-FDH＋CR-FDH、d ≥ .1 且 p < .05、bottleneck 實際值＋未達案例 %——fixture 六項口徑逐項一致；(2) NCA 計算核心（CE-FDH ceiling／zone／CR-FDH OLS＋夾擠／permutation p）逐式重用已驗證的 nca_ce_fdh／nca_cr_fdh／nca_bottleneck 助手（R NCA 5.0.2 已逐值對過），cIPMA 新增的只有組合口徑；(3) permutation p ＝ #{d_perm ≥ d_obs}/199，與已驗 nca 條目同式；JS↔numpy 由 compare.test.js 全欄位鎖定。"
- },
- "pls_copula": {
-  "authority": "Park & Gupta (2012, Marketing Science 31(4), 567-586)：Eq. (6) 定義 Gaussian copula 並令 P* = Φ⁻¹(U_P)、U_P = H(P_t)；Eq. (10) 為擴充迴歸 Y_t = X'_t β + P_t α + σ_ξ·ρ·P*_t + σ_ξ·√(1−ρ²)·w_2t，原文明言「Given P* as an additional regressor … consistently estimate the model using the least squares estimator」且「P* corrects for the endogeneity bias and in this respect is similar to the control function」；p. 572 註 3 明文授權以經驗分布函數（ECDF）取代核密度數值積分求 U_P（「provides comparable results to the proposed method」）；p. 572-573 因 generated-regressor 問題提出 bootstrap 標準誤。PLS-SEM 應用流程：Hult, Hair, Proksch, Sarstedt, Pinkwart & Ringle (2018, JIM 26(3), 1-21) Eq. (5) c* = Φ⁻¹(H(X₁))、Eq. (6) y = β₀ + β₁′x₁ + β₂′x₂ + β₃c₁* + ε′。",
-  "note": "本工具採 control-function 變體（Park & Gupta Eq. 10 / Hult Eq. 6），非 Park & Gupta 的聯合 ML 主法——後者只能處理單一內生迴歸元，PLS-SEM 應用一律用前者（SmartPLS 亦然）。ECDF 的並列處理（取最大秩）與 H=1 夾為 1−1e−7 不出自論文（P&G 的 H 為連續 CDF，不會恰為 1），出自 Hult 等人公開 R 程式碼 CRP_copula_code.r 的 ifelse(H.p == 1, 1 - .0000001, H.p)。KS 非常態前置把關的理論依據為 P&G 對 Eq. (10) 的識別討論：P 為常態時 P* 是 P 的線性變換，α 與 σ_ξρ 無法分別識別。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-25 溯源審計（Session Q2）：(1) Park & Gupta (2012) 原文 PDF 逐式核對——Eq. (6) 的 P* = Φ⁻¹(U_P) 與 Eq. (10) 的加項迴歸與實作同式；註 3 授權 ECDF；bootstrap SE 的理由（generated regressor 使資訊矩陣 SE 失效）與本工具以 bootstrap 取 SE／percentile CI 一致；非常態識別條件與 KS 前置把關一致。(2) Hult et al. (2018) accepted MS（White Rose eprints 142302）Eq. (5)/(6) 與四個結構方程的擴充迴歸寫法一致；2^k−1 全組合檢視（k=3 時 model 1–7）與本工具同。(3) 慣例三項（ECDF 並列取最大秩、H=1 夾 1−1e−7、copula 項為秩基底故標準化不變）已於 W6 對 Hult 公開 R 程式碼逐行核對，出處為 pls-sem.net Downloads「Gaussian Copula R Code Example - JIM Article」的 CRP_copula_code.r（2026-07-25 覆查該檔仍在線）。(4) JS↔numpy：300 組固定 bootstrap 重抽索引注入，30 欄位逐值對齊（compare.test.js）；行為測試鎖定 copulaTerm(3x+7) == copulaTerm(x) 與最大值不產生 Infinity。KS 的 p 值屬已知慣例差異，基準只鎖 D 統計量。"
- },
- "pls_copula_inputs": {
-  "authority": "不適用（純輸入型 fixture）",
-  "note": "",
-  "status": "exempt",
-  "tier": "I",
-  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
- },
- "pls_cta": {
-  "authority": "Gudergan, Ringle, Wende & Will (2008, Journal of Business Research 61(12), 1238-1249)：Eq. (1) 定義 tetrad τ_1234 = σ_12σ_34 − σ_13σ_24（四個指標恰三個 tetrad）；Eq. (2) 定義偏誤校正信賴區間 τ̂ − b_B ± v_B^{1/2}·z_{1−α/2}（b_B＝bootstrap 偏誤、v_B＝bootstrap 變異數，**常態分位數 z**）；p. 1241 五步程序（Step 1 列舉全部 tetrad、Step 2 取 model-implied、Step 3 以代數替換剔除冗餘、Step 4 逐一顯著性檢定、Step 5 以 Bonferroni 處理多重檢定），Bonferroni 為 α′ = α/n、n＝該「單一測量模型」內待檢定的非冗餘 tetrad 數（引 Bollen 1990, p. 88）；bootstrap on raw data 而非常態近似（同頁，引 Davison & Hinkley 1997）。tetrad 定義與非冗餘選取的完整代數：Bollen & Ting (1993), Sociological Methodology 23, 147-175（Gudergan 全文將 Step 1–3 的細節逐處指向該文）。",
-  "note": "非冗餘 tetrad 的**選取集**只有 Bollen & Ting (1993) 有完整代數，該文尚未取得（列入待取清單）。本工具用『逐一加入指標』的確定性構造得 k(k−3)/2 個，並在基準生成端以 Jacobian 秩 assert 驗證極大獨立——數量與自由度一致、omnibus 判讀等價，但**個別 tetrad 的 CI 會隨選取集不同而不同**。SmartPLS 4 的選取集未文件化且授權已過期，無法對照。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-25 溯源審計（Session Q2）：(1) Gudergan et al. (2008) 原文 PDF 逐式核對 Eq. (1)（tetrad 定義）、Eq. (2)（bias-corrected CI）、Step 1–5 與 Bonferroni 的施加層級（單一測量模型內，與本工具的『區塊內 Bonferroni』一致）。(2) **審計發現並修正一處偏離**：原實作的 CI 半寬用 Student t（df = B−1），原文 Eq. (2) 明確為常態分位數 z_{1−α/2}；t 用 df=B−1 亦無理論依據（B 是重抽次數而非樣本數）。已改為 z_{1−α/(2T)} 並重生基準（B=300、T=5 時 CI 縮 0.64%；R 塊仍 reflective、M 塊仍 formative，判讀結論不變）。欄位 tCrit → zCrit。(3) 非冗餘選取集：Gudergan 將細節指向 Bollen & Ting (1993)，該文未取得 → 本工具的構造以 Jacobian 秩 assert 保證極大獨立（見 note 的等價性與限制）。(4) JS↔numpy：300 組固定重抽索引注入，全欄位逐值對齊（compare.test.js）；資料集設計 assert 鎖定 R 塊 reflective／M 塊 formative。"
- },
- "pls_fimix": {
-  "authority": "待審計【卡文獻取得，非技術問題】。已鎖定的權威來源：Hahn, Johnson, Herrmann & Huber (2002), Schmalenbach Business Review 54(3), 243-269（EM 演算法與『不含截距』的設定）；段數選擇準則：Sarstedt, Becker, Ringle & Schwaiger (2011), SBR 63(1), 34-62（AIC/AIC3/AIC4/BIC/CAIC/HQ/MDL5/EN 的定義與模擬比較）。待核三個風險點：參數計數 N_k = (K−1) + K·R + K·M 是否與原文一致、EN（normed entropy）的正規化分母、迴歸式是否含截距。",
-  "note": "無主流第三方 Python/R 完整實作可對照，基準為 numpy 手算。2026-07-25 已窮盡開放存取管道：SSRN (321004) 僅摘要、Cornell eCommons／scholarship.sha.cornell.edu 全文受限、SBR 官網與 Springer 為付費牆。Kevin 的機構訂閱亦未涵蓋（2026-07-25 回報找不到）。**現況不是沒查，是拿不到原文**——在取得前維持 pending，不以二手轉述充當 authority（違反全域文獻真實性鐵律）。替代驗證已就位（見 verification），故實作可繼續使用，只是溯源未閉環。",
-  "status": "pending",
-  "tier": "B",
-  "verification": "待審計（原文未取得）。**現行替代交叉驗證（已實施且通過，但不等於溯源閉環）**：(1) 模擬還原——datasets.json:fimix 為兩段已知係數（β = +0.80 / −0.80、180/120）的模擬資料，對稱設計使全域路徑大幅相消；引擎還原率 0.853、EN 0.566，K=2 在所有資訊準則上皆最佳；(2) EM 單調性——lnL 每步不得下降，基準端 assert ＋引擎端 warnings 雙重斷言；(3) JS↔numpy 逐值——初始後驗機率固定注入（pls_fimix_inputs）繞開兩邊 RNG 差異，71 欄位全對齊。這三重策略能抓『兩邊抄不一致』與『EM 寫錯』，**抓不到『N_k 或 EN 的定義讀錯』**——後者只有回原文能結案。"
- },
- "pls_fimix_inputs": {
-  "authority": "不適用（純輸入型 fixture）",
-  "note": "",
-  "status": "exempt",
-  "tier": "I",
-  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
- },
- "pls_fit": {
-  "authority": "cSEM 0.6.1；Henseler et al. (2014) ORM 17(2)；Dijkstra & Henseler (2015) MISQ 39(2)",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：SRMR（飽和 0.0975623／估計 0.1043736）、d_ULS（0.5235117／0.5991614）、NFI（0.6684221）與 cSEM 逐值一致。d_G 為**已知底數差異**：本工具用 ln（測地距離的幾何定義 ½·Σ(ln λ)²），cSEM 用 log₁₀ 且其原始碼自承不確定底數；差 (ln10)²=5.3019 倍，統計結論不受影響，已於 UI Notes 雙處標註。"
- },
- "pls_formative": {
-  "authority": "plspm 0.5.7（fixture 產生來源）；seminr 2.5.0（2026-07-13 本機 R 抽驗，第二證人）；VIF：封閉式（指標相關矩陣反矩陣對角線），seminr 同值",
-  "note": "",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 溯源審計（Session Q1，04_q1_audit.R）：seminr composite(mode_B) 與 fixture 逐值一致——weights 0.921/0.114/0.131、loadings 0.986/0.645/0.143、path 0.700、R² 0.491、VIF 1.482/1.486/1.003（顯示位數內全同）。fixture 主體本由 plspm 產生，本次補上 Hair 團隊實作的獨立佐證，Mode B 慣例（w′Sw=1 正規化、迴歸權重）跨三實作一致。"
- },
- "pls_gof": {
-  "authority": "plspm 0.5.7（Tenenhaus, Vinzi, Chatelin & Lauro 2005, CSDA 48(1)）",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "2026-07-13 溯源審計（Session Q1）：plspm goodness_of_fit() = 0.2577074252 vs fixture 0.2577074227，差 2.6e-9（plspm 迭代容差內）；「單指標區塊排除於 communality」的慣例亦一致。generate_reference.py 已加入重生時 assert（<1e-6），每次重生都對 plspm 重驗。"
- },
- "pls_hoc_disjoint": {
-  "authority": "seminr 2.5.0（2026-07-13 R 抽驗逐值：G→C −0.402148、loadings 0.803529／0.826177）；Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023)",
-  "note": "2026-07-13 溯源審計改列 tier B：fixture 重生為純 numpy、無重生時第三方 assert，證據為一次性 R 抽驗；原 authority 含 plspm 屬誤植（plspm 從未對過 disjoint），已移除。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "fixture 值直接由 plspm、seminr (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pls_hoc_embedded": {
-  "authority": "Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), International Journal of Contemporary Hospitality Management 35(1), 321-346，accepted MS pp. 15-16（開放取用：ueaeprints.uea.ac.uk/id/document/171785）——逐句界定 embedded 兩階段：第一階段「models the entire higher-order construct in its first stage by repeating the LOCs' indicators to identify the HOC」；第二階段「all non-hierarchical constructs need to be measured using single items that use the latent variable scores from the first stage as input」，HOC 指標＝第一階段的 LOC 分數；反映型 HOC 用 Mode A；weighting scheme 建議 path。方法原始出處為 Ringle, Sarstedt & Straub (2012)；Sarstedt, Hair, Cheah, Becker & Ringle (2019), Australasian Marketing Journal 27(3), 197-211 為程序指引（本次僅取得摘要與 SmartPLS 官方轉述，全文未取得）。",
-  "note": "**引用修正（Q3）**：原 authority 僅標「Sarstedt et al. 2019」。依 Becker et al. (2023)，embedded two-stage 的方法出處是 Ringle, Sarstedt & Straub (2012)，Sarstedt et al. (2019) 與 Becker et al. (2023) 是程序指引——已補正。另記錄一項官方偏好：Becker et al. (2023) 明確建議優先用 **disjoint** two-stage，理由是它容許在指標層跑 PLSpredict／CVPAT（embedded 的非階層構念在第二階段已成單指標）。UI Notes 既有「disjoint…近年文獻建議」的敘述與此一致。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 Becker et al. (2023) accepted MS pp. 15-16 **逐點核對四項口徑**——第一階段＝repeated indicators 模型（重複掛載 LOC 指標識別 HOC）✓；第二階段 HOC 指標＝第一階段 LOC 分數 ✓；第二階段全部非階層構念改為「以第一階段分數為單指標」✓（實作 `_e2_X = [sF1, sF2, C分數, Y分數]`、blocks `[[0,1],[2],[3]]`）；反映型 HOC 用 Mode A、scheme 用 path ✓。(2) **第一階段有第三方錨**：embedded 的第一階段就是 `pls_hoc_repeated`，該組已有對 plspm（欄位複製別名）的**重生時 assert <1e-6**，故 embedded 的輸入分數是第三方錨定的，不是純手算。(3) 第二階段的迭代與 `pls_hoc_disjoint` 共用同一引擎，後者已對 seminr 2.5.0 逐值（G→C −0.402148、loadings 0.803529／0.826177）。(4) JS↔numpy 逐值（compare.test.js）。**殘餘限制**：SmartPLS 4 授權過期、seminr 無 embedded 變體，故第二階段無法取得 embedded 專屬的第三方數值；本組的保證來自「第一階段第三方 assert ＋ 第二階段引擎與已驗 disjoint 同源 ＋ 程序逐點對照權威文獻」三者疊加。"
- },
- "pls_hoc_repeated": {
-  "authority": "plspm",
-  "note": "2026-07-13 溯源審計覆核維持 A：4 條路徑每次重生 assert 對 plspm <1e-6（欄位複製別名法）；loadings 出自與 plspm 全模型交叉驗證（<1e-6）的同一引擎。",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pls_ipma": {
-  "authority": "Ringle & Sarstedt (2016, IMDS 116(9)) 程序；cSEM 0.6.1 doIPMA（2026-07-13 原始碼逐式比對＋數值複算）",
-  "note": "已知灰區：塊內指標量尺不一時（本 fixture 的 cond 塊即是），「先縮 0–100 再解權重」與「先解權重再套 0–100」分岔（perf_C 54.54 vs 55.97）；官方 cIPMA 教程（Sarstedt et al. 2024）將此列為未滿足假設情境，SmartPLS 已鎖無法對照。本工具用觀察 min/max 而非理論界線已另註記（roadmap P1）。建議 UI 對塊內混合量尺加警告——已列入 P1。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 溯源審計（Session Q1）：(1) cSEM doIPMA 原始碼 dump 逐式核對——w_unstd=w_std/sd(輸入資料)、w̃=w_unstd/Σw_unstd（Σw̃=1；cSEM 文件寫 \"length of 1\" 為措辭不精確）、performance=分數平均、importance=標準化總效果×sd 比——與本工具同式；(2) 數值：cSEM 在原始資料上的 W_used（含 C 塊 0.25020274）與 fixture 的 w̃ 逐值相同，numpy 複算 cSEM 全部輸出（perf 3.135767/2.946359/22.152498/40.343340、unstd effects ±1.540129/±1.195415）逐位重現；(3) 以 fixture 慣例複算 perf_F1/F2 至 1e-7、perf_C=54.542248 逐值重現。importance 的 OLS-on-rescaled-scores 與 sd-ratio 兩法在塊內量尺相同時恆等（upath_F1_F2 兩法同值 0.322393）。"
- },
- "pls_itcriteria": {
-  "authority": "seminr compute_metrics.R（AIC_func／BIC_func 同式、pk+1 計數）；Sharma, Sarstedt, Shmueli, Kim & Thiele (2019, JAIS 20(4))；Sharma, Shmueli, Sarstedt, Danks & Ray (2021, Decision Sciences 52(3))；statsmodels（恆等式）",
-  "note": "原 source 引用錯置（誤標「Sharma, Shmueli, Sarstedt, Danks & Ray 2019」——該作者組合是 2021 Decision Sciences；2019 JAIS 是 Sharma, Sarstedt, Shmueli, Kim & Thiele），已修。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 溯源審計（Session Q1）：(1) seminr 原始碼逐式核對——AIC_func = 2(pk+1)+N·log(SSErrk/N)、BIC_func = N·log(SSErrk/N)+(pk+1)·log(N)、SSErrk=(1−R²)·var·(N−1)、pk=前置構念數，與 fixture 公式完全同式；(2) 沙盒以 plspm 獨立分數＋statsmodels OLS 重現全部 12 值（差 ≤5.4e-7，plspm 迭代容差）；(3) statsmodels llf 式 AIC/BIC 與 SSE 式恰差高斯常數 n(ln2π+1)（差 ≤2e-14），鎖住 SSE 定義與 (k+1) 計數，已寫入重生時 assert。AICc/HQ 無主流第三方實作，為同族標準延伸（同 SSE、同 K 計數）。"
- },
- "pls_mediation": {
-  "authority": "plspm",
-  "note": "2026-07-13 溯源審計覆核維持 A：M4 引擎每次重生 assert 對 plspm（loadings＋路徑 <1e-6），中介分解為其上的路徑算術（乘積／加總／VAF）。",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pls_mga_formulas": {
-  "authority": "seminr (R)、cSEM (R)",
-  "note": "2026-07-13 溯源審計改列 tier B：fixture 為固定輸入的 numpy 公式層計算，重生時無第三方 assert；證據為 2026-07-13 一次性 R 抽驗（該次即發現並修復 Welch t 加權與 Henseler 錨點兩處 bug）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "fixture 值直接由 seminr (R)、cSEM (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pls_mga_perm": {
-  "authority": "Chin & Dibbern (2010)；cSEM 0.6.1 的 Chin approach",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：diffObs = 0.332255 與 cSEM Chin 的 −0.3323 同值（僅群組相減方向不同）；permutation p 以 1000 次跑得 0.042 vs cSEM 0.032（近似檢定、種子不同，同決策）。"
- },
- "pls_mga_perm_inputs": {
-  "authority": "不適用（純輸入型 fixture）",
-  "note": "",
-  "status": "exempt",
-  "tier": "I",
-  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
- },
- "pls_micom": {
-  "authority": "Henseler, Ringle & Sarstedt (2016)；cSEM 0.6.1 原始碼（postestimate_test_MICOM.R）",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：step 2 的 c 本工具為 0.9823249（以標準化指標算複合體），**cSEM 因在未標準化資料上計算而有尺度依賴瑕疵**（其自身註解誤稱不影響相關）。step 3 的變異數比較原用『差』，經 cSEM 原始碼確認 Henseler 原式為 **log 變異數比**，已修正（varDiff −0.116466 → −0.114790，與排序後 cSEM 逐值吻合）。另查出 cSEM step 3 在資料未按群組排序時有群組錯位 bug。"
- },
- "pls_mod_ortho": {
-  "authority": "seminr 2.5.0；Little, Bovaird & Widaman (2006)",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗（04_ortho_check.R 決定性檢驗）：seminr 的 orthogonal 交互構念分數 sd = 0.835227；以標準化分數重跑 OLS 得 −0.115582／−0.223428／0.334718、R² = 0.177043，與本工具逐值吻合。同一尺度慣例差異，已雙處標註。"
- },
- "pls_mod_pi": {
-  "authority": "seminr 2.5.0；Chin, Marcolin & Newsted (2003)",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：路徑與 R² 與 seminr 一致。交互項係數為**已知尺度慣例差異**——本工具報標準化係數，seminr 報未標準化（其交互構念分數 sd = 1.001905）；0.194320 = 0.194690 ÷ 1.001905，配適完全相同。"
- },
- "pls_mod_threeway": {
-  "authority": "Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), IJCHM 35(1), 321-346，accepted MS guidance 表「How should a three-way interaction analysis be conducted?」**逐字**：「As with two-way interactions, researchers should draw on the two-stage approach to estimate models with three-way interactions. The resulting product should not be standardized, and the researchers should estimate and interpret the unstandardized coefficient.」two-stage 機制原始出處：Chin, Marcolin & Newsted (2003), ISR 14(2)。階層完整規格（三向項必須與三個主效果＋三個兩向項同時進入模型）：Aiken & West (1991)。",
-  "note": "與 `pls_mod_twostage`／`pls_quadratic` **同一條程式路徑**（two-stage 分支對 factors 陣列連乘，不限兩因子）。本 fixture 的規格為 3 主效果（F1、C、F2）＋3 兩向（F1×C、F1×F2、C×F2）＋1 三向（F1×C×F2），符合階層完整性。無法取得第三方數值（SmartPLS 4 授權過期；seminr 無三向支援）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 Becker et al. (2023) guidance 表**逐字核對**——三向走 two-stage ✓、乘積不標準化 ✓、回報未標準化係數 ✓（基準端 `path_*` 皆為 `_bt[k] / _t_sds[k]`，即除以乘積 sd 還原為未標準化量尺）。(2) 階層完整性：fixture 同時納入 3 個主效果與全部 3 個兩向項，符合 Aiken & West (1991) 的規格要求——若省略任一低階項，三向係數將無法解釋。(3) 機制同源於已對 seminr 逐值的 `pls_mod_twostage`（同一 two-stage 分支，差別僅在連乘的因子數）。(4) JS↔numpy 逐值（compare.test.js）。**殘餘限制**：無三向交互的第三方實作可對，本組保證來自「權威文獻逐字＋機制同源＋規格完整性」三者，不含獨立數值對照。"
- },
- "pls_mod_twostage": {
-  "authority": "seminr 2.5.0；Chin et al. (2003)；SmartPLS 4 Moderation 文件",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：F1／C／交互項係數與 R² 與 seminr 一致（交互項對到未標準化的 path_int_Y = 0.14728）。"
- },
- "pls_pairwise_wpls": {
-  "authority": "pairwise-complete 相關：pandas `DataFrame.corr()`（預設即 pairwise-complete，獨立第三方實作）。加權相關：statsmodels `DescrStatsW(weights=...).corrcoef` 與 `numpy.cov(aweights=..., ddof=0)`（兩個獨立第三方實作，皆為「可靠度權重」慣例、分母 Σw）。相關矩陣驅動的 Lohmöller 迭代：handoff-roadmap-v1 §6.6／§6.7 的設計，其正確性由 `full_*` 自我一致性欄位錨定到 `pls_basic`（已對 seminr 2.5.0 逐值）。",
-  "note": "本組是批次 3 中唯一能在沙盒取得完整第三方對照的：pairwise 與加權相關都是封閉式，且有現成的獨立實作。★ 2026-07-25 Session Q3 已把三道對照升為**重生時 assert**（結構性防護，非一次性抽驗）——之後任何人改動這段手算碼，重生基準就會紅燈。註：相關為尺度不變量，加權共變異的 ddof 取 0 或 1 得到同一個相關矩陣（已實測差 <1e-15），故此處不存在 ddof 慣例分歧的風險。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-25 溯源審計（Session Q3）：(1) pairwise-complete 相關 vs `pandas.DataFrame.corr()` 最大絕對差 **3.886e-16**；(2) 加權相關 vs `statsmodels DescrStatsW(ddof=0).corrcoef` 最大絕對差 **4.441e-16**；(3) 加權相關 vs `numpy.cov(aweights, ddof=0)` 最大絕對差 **2.220e-16**。三道皆已寫入 `generate_reference.py` 成為重生時 assert（容差 1e-12）。(4) `full_*` 自我一致性：完整資料＋全 1 權重走同一條相關矩陣路徑，必須重現 `pls_basic` 的 path_F1_F2 = 0.3603108815（既有 assert，容差 1e-6；實測差約 1.3e-8）——這條把整條相關矩陣驅動的迭代錨定到已對 seminr 的基準上。(5) 行為測試另鎖：權重同乘常數不改變結果、權重為 0 的列實質不參與、pairwise 與 blindfolding 互斥報錯、配對 <3 筆報錯。(6) JS↔numpy 59 欄位逐值（compare.test.js）。"
- },
- "pls_plsc": {
-  "authority": "cSEM 0.6.1",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：rhoA（1.017597／0.707796／0.888324）、一致 loadings（含 i2 = 1.151977 > 1）、校正後路徑、R² 全部與 cSEM 逐值一致；『rhoA > 1 不截斷』的行為亦確認同步。\n★ 2026-07-25 補記**與 MGA 併用**：mgaPLS 的 consistent 選項隨 baseOpts 一路傳進 runPLS／bootstrapPLS／每一次 permutation 的重估，因此兩群的點估計、bootstrap SE、Henseler draws 與 permutation 分布**全部**走反衰減後的相關矩陣，不會出現「點估計校正、推論未校正」的混用。這是既有兩組 verified 組件（本組與 pls_mga_formulas／pls_mga_perm）的組合，不引入新公式，因此不另立基準組；改以 tests/pls.test.js 的行為測試鎖住（PLSc 版與一般版係數確實不同、同種子可重現、群組層 PLSc 警告會轉呈到 MGA 結果）。解讀上的代價已寫入 MGA 的警告：反衰減分母是**各群組各自**的 rho_A，群組小時 rho_A 不穩，跨群係數差異會同時反映信度估計的差異。"
- },
- "pls_pos": {
-  "authority": "Becker, Rai, Ringle & Völckner (2013, MIS Quarterly 37(3), 665-694)。全文正文無編號方程式（完整目標函數、距離量測與演算法在線上補充 Appendix B，尚未取得），authority 以頁碼＋原句錨定：p. 676「a fitting objective criterion for PLS segmentation is to maximize the sum of the endogenous latent variables' explained variance (R²) across all groups」；同頁三項區辨特徵——(1) PLS 專屬目標準則、(2) 適用形成型測量的新距離量測、(3) 只在能改善目標時才重新指派（爬山法，故可能落入局部最優 →「repeated application with different starting partitions is advisable」）。",
-  "note": "**本實作為原文的結構模型層簡化版**，三處差異已在 UI Notes、i18n 與 generate_reference.py 明文揭露：(a) LV 分數取自全樣本 PLS 權重、不做段別測量模型權重重估——這正是原文批評 FIMIX-PLS 的第 2 項限制，也是原文的區辨特徵 (2)，故本工具偵測不到僅存在於測量模型層的異質性；(b) 未實作原文的距離量測，改為逐案窮舉評估目標改善（距離量測是原文用來『挑候選』的啟發式，窮舉在目標函數上不劣，但收斂路徑與原文不同）；(c) 段別大小下限為本工具的數值穩定性硬約束，原文無此設定且強調 POS 能找出極小利基段。Appendix B 取得後應覆核目標函數是否含加權或其他修正。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-25 溯源審計（Session Q2）：(1) Becker et al. (2013) 原文 PDF 逐句核對。**審計發現並修正一處實質偏離**：原實作的目標函數為各段 SSE 之和，原文為各段 R² 之和；兩者不等價（SST 隨段別組成改變）。以 fixture 資料實測，兩個目標收斂到不同分割（125/175 vs 195/105），改用原文口徑後段別還原率由 0.8367 升至 0.8567。已改 pls.js 與 generate_reference.py 並重生 pls_pos 基準（objective 改為 ΣR²，另加 sseTotal 欄位保留預測誤差的可讀性）。(2) 交叉驗證：改碼前先以獨立的 numpy 原型（不共用本工具程式碼）算出 ΣR² 目標下的解為 195/105、ΣR²=1.5765、還原率 0.8567；重生後的 fixture 為 195/105、objective_K2=1.57649436、recovery_K2=0.85667——獨立重現。(3) 三重策略：模擬還原（兩段 β=±0.80 的已知真值，還原率 0.857）＋目標函數單調遞增（基準端 assert ＋引擎端 warnings 斷言）＋JS↔numpy 逐值（起始分割固定注入，40 欄位全對齊）。(4) 範圍限制見 note——本工具不宣稱是 PLS-POS 的完整重現。"
- },
- "pls_pos_inputs": {
-  "authority": "不適用（純輸入型 fixture）",
-  "note": "",
-  "status": "exempt",
-  "tier": "I",
-  "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
- },
- "pls_predict": {
-  "authority": "seminr 2.5.0；Shmueli et al. (2016, 2019)",
-  "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 R 抽驗：RMSE／MAE 的量級與 PLS-vs-LM 方向與 seminr 一致。**無法逐值比對**——k-fold 的 fold 指派為隨機，兩邊不可能相同；這是方法本身的性質，不是實作差異。 ／ 2026-07-13 Q²predict 定義補驗（Session Q1）：SmartPLS PLSpredict 官方文件明載 naive 基準＝訓練樣本的指標平均、Q²predict＝1−SSE_PLS/SSE_naive——與實作逐項一致（generate_reference 與 JS 皆以訓練摺平均為 naive、彙總全部 holdout 後取比）。\n★ 2026-07-25 新增**重複（repetitions）層**，刻意不建立新的基準組——它是聚合而非新公式，改以兩條沙盒可精確驗證的恆等式鎖住（tests/pls.test.js）：\n(a) repetitions=1 的輸出與原本的單次 k-fold **逐值相同**（本組 fixture 因此零回歸）；\n(b) 注入 R 組分摺時，指標層 RMSE／MAE／Q²predict（含 LM 基準）**逐值等於** R 次單跑的算術平均。\nCVPAT 的彙總另立規則：先把逐案損失在 R 次之間平均，再跑一次既有的成對 t 檢定（不平均 t 或 p——平均 p 值沒有統計意義）。\n★ **口徑分歧已核對完畢（2026-07-25），結論：不跟隨 seminr**。\nseminr 2.5.0 的 R/feature_plspredict.R：predict_pls 在 reps 非 NULL 時把各次的**預測值**逐格平均（apply(array, c(1,2), mean)），再由 item_metrics() 對平均後的殘差算一次 RMSE／MAE，屬「彙總預測值」口徑。但同一支函式把洗牌（order <- sample(...)）寫在重複迴圈**之外**，迴圈內 prediction_matrices() 以 cut(seq(1,n), breaks=noFolds) 決定分摺——那是決定性的，因此每次重複用完全相同的分割，reps 不會改變任何數字。Kevin 本機實測（seminr 2.5.0 / R 4.6.0、n=60、k=5）reps=1 與 reps=10 的 PLS_out_of_sample 與 LM_out_of_sample 逐位元相同，與原始碼判讀一致（兩條獨立證據）。\n⇒ (a) seminr 無法作為本層的數值基準（它產不出有差異的數字）；(b) 其口徑本身有系統性樂觀偏誤：由模糊分解 mean_r MSE_r − MSE(p̄) = mean_r mean_i (p_ri − p̄_i)² ≥ 0，先平均預測值再算指標必然給出不高於「平均各次指標」的誤差，差額恰為各次預測值之間的變異，屬集成效果而非樣本外表現（沙盒以該恆等式數值驗證，誤差 <1e-12）。本工具因此維持「平均各次指標」，此決定與依據已寫入 UI 警告、JSDoc 與 validation-report。\n核對用的 R 腳本保留於 tests/verify_plspredict_reps.R，供日後 seminr 修正 reps 後重驗。"
- },
- "pls_q2": {
-  "authority": "Stone (1974)／Geisser (1974)；程序：Hair, Hult, Ringle & Sarstedt (2017) 第 6 章＋SmartPLS Blindfolding 官方文件。無在世第三方實作——SmartPLS 4 官方文件明載已移除該演算法、seminr 明確拒做（GitHub issue #156，引 Shmueli et al. 2016 Appendix C 的方法論批評）、matrixpls／semPLS 已自 CRAN 下架（2022 歸檔）",
-  "note": "SmartPLS 4 已棄用 blindfolding、官方改推 PLSpredict／CVPAT（本工具皆已內建）。UI 宜註記 Q² 為 legacy 指標——已列入 roadmap P1。原工單將本組列於「有第三方可對」批次係誤判（seminr blindfold() 不存在）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-13 溯源審計（Session Q1）：對照 SmartPLS Blindfolding 官方文件，程序四要點逐項一致——(1) 輪數＝omission distance D；(2) 第 d 輪自第 d 個資料點起每隔 D 刪一點（逐 LV 指標矩陣序列計數）；(3) 略去點按缺失值處理、以欄平均補值後全模型重估；(4) n/D 不得為整數的合規約束（n=60、D=7 ✓）。cross-validated redundancy＝結構預測分數 × loading 還原指標，符合 Hair et al. (2017) 第 6 章定義。JS 與獨立 numpy 引擎逐值互驗。第三方實作已不存在，此為「程序文獻」路線所能達到的最強驗證。"
- },
- "pls_quadratic": {
-  "authority": "SmartPLS 4 官方文件「Nonlinear Relationships」（smartpls.com/documentation/algorithms-and-techniques/nonlinear）：二次效果「is like a self-moderation」，「The computation of results uses the two-stage approach. This approach uses the latent variable scores of the latent predictor variable **from the main effects model (without the quadratic effect term)**. These latent variable scores are saved and used to calculate the **squared indicator** for the second stage analysis」。two-stage 機制原始出處：Chin, Marcolin & Newsted (2003), Information Systems Research 14(2), 189-217。乘積項不標準化、回報未標準化係數：Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), IJCHM 35(1) 的 guidance 表（「The resulting product should not be standardized, and the researchers should estimate and interpret the unstandardized coefficient」）。條件斜率 dY/dX = b₁ + 2·b_q·x 為 Y = b₁X + b_qX² 的微分（非慣例選擇）；取值點 ±1 SD 依 Aiken & West (1991)。",
-  "note": "與 `pls_mod_twostage` **同一條程式路徑**：二次效果即 factors = [F1, F1] 的自我調節，pls.js 的 two-stage 分支不區分兩者。因此 `pls_mod_twostage` 對 seminr 的逐值抽驗（path_int_Y = 0.14728）同時是本組的機制證據。無法取得二次效果專屬的第三方數值（SmartPLS 4 授權過期；seminr 無 quadratic 支援）。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 SmartPLS 官方 Nonlinear 文件**逐點核對三項口徑**——第一階段取「主效果模型（不含二次項）」的 LV 分數 ✓、平方作為第二階段指標 ✓、走 two-stage 而非 product indicator ✓。(2) **實作層查核第一階段是否真的排除二次項**：`pls.js` 的 two-stage 分支先以 `curPaths`（僅主效果）呼叫 `estimateStage`，交互路徑 `intPaths` 在該次估計**之後**才併入 `curPaths`——確認第一階段乾淨。(3) 係數量尺：基準端對標準化平方項做 OLS 再除以 sd(平方項)，與直接對未標準化平方項迴歸恆等（置中後截距吸收均值），故回報值即權威文獻要求的未標準化係數。(4) 條件斜率為封閉式微分，已由行為測試鎖住 slopes = b₁ + 2·b_q·x 於 x = −1/0/+1。(5) 機制同源於已對 seminr 的 `pls_mod_twostage`。(6) JS↔numpy 逐值（compare.test.js）。"
- },
- "pls_scheme_centroid": {
-  "authority": "plspm",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pls_scheme_factorial": {
-  "authority": "plspm",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "regression_hierarchical": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "regression_multiple": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "regression_simple": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "repeated_anova": {
-  "authority": "pingouin",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "shapiro_wilk": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "spearman_x1_x2": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "ttest_independent_welch": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "ttest_one_sample": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "ttest_paired": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "tukey_hsd": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "twoway_anova_type3": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "wilcoxon_signed_rank": {
-  "authority": "scipy",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "zprop_one": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "zprop_two": {
-  "authority": "statsmodels",
-  "note": "",
-  "status": "verified",
-  "tier": "A",
-  "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
- },
- "pls_modmed": {
-  "authority": "**演算法本身為定義性合成，不是有爭議的估計量**：條件間接效果 = 條件 a 路徑 × 條件 b 路徑，a(w) = a1 + a3·w、b(w) = b1 + b3·w。其中 (i) 兩階段調節的口徑沿用本專案已 verified 的 pls_mod_twostage（SmartPLS 4 Moderation 文件：交互項＝第一階段標準化 LV 分數乘積、不標準化、自動補主效果路徑）；(ii) 調節值取 ∓1 SD 沿用 Aiken & West (1991) 的慣例，與本工具既有 simple slopes 同一組取值；(iii) 兩條第二階段方程的係數對 **statsmodels OLS** 逐值 assert。\n★ 誠實標註：本工具回報的 slopeOverW（恰一條路徑被調節時，條件間接效果對 w 的斜率，＝a3·b1 或 a1·b3）在文獻上稱為 index of moderated mediation，出處為 Hayes (2015), Multivariate Behavioral Research 50(1), 1-22。**該原文未取得**，故本工具以描述性名稱回報這個量並在 UI 註明標籤待核定，不逕自掛上該名稱，也不宣稱實作了該文的檢定程序。取得原文後應核對：(a) index 的定義是否恰為此乘積、(b) 其推論是否另有指定的 bootstrap 程序（本工具沿用主 bootstrap 設定的 percentile／BCa CI）。",
-  "note": "PLS 版的調節式中介沒有可執行的第三方對照（SmartPLS 4 授權過期；seminr 無條件間接效果輸出；R processR／PROCESS 為 OLS 版、且需 Kevin 本機 R）。因此驗證策略是「把最容易出錯的部分交給第三方，把不會出錯的部分用代數鎖死」——見 verification。範圍限制（已在程式碼與 UI 明示）：只處理兩步鏈 X→M→Y、只支援 two-stage 且恰兩個相異因子的交互項；a、b 兩條路徑同時被調節時條件間接效果對 w 是二次的，slopeOverW 回 null 而非硬給一個數。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "三層疊加：\n(1) **第三方（重生時 assert，容差 1e-10）**：第二階段兩條方程 M ~ X + W + z(X·W) 與 Y ~ M + X 的全部係數與 R²，由 statsmodels OLS 獨立重算並逐值 assert。本檔原以 np.linalg.lstsq 計算，兩者為獨立實作。這道 assert 攔的正是 moderated mediation 最容易錯的地方——「哪些變項進哪條方程」（a 方程漏放 W 主效果、b 方程誤放交互項）與係數擷取位置。\n(2) **第一階段有既有第三方錨**：第一階段＝主效果模型的 LV 分數，與 pls_mod_twostage 同一條程式路徑，該組第一階段已對 plspm assert <1e-6。\n(3) **合成層以代數斷言鎖死**（tests/pls.test.js）：條件間接效果在 w=0 必須等於一般中介的間接效果 a1·b1（與已 verified 的 pls_mediation 口徑相接）；相鄰兩個 w 的差必須恰等於 slopeOverW（線性性質）；兩條路徑同時被調節時 slopeOverW 必須為 null 且三個 w 的值不落在一條直線上。\n★ 未涵蓋：index of moderated mediation 這個**名稱**與其原始檢定程序的定義（Hayes 2015 原文未取得）。本工具因此不使用該名稱。這不影響上述數值的正確性，只影響能不能在論文裡直接沿用該術語。"
- },
- "pls_plsc_pw": {
-  "authority": "Dijkstra & Henseler (2015), MIS Quarterly 39(2), 297-316（PLSc 的 rho_A 與一致化係數 c²；方程式編號待原文核定——原文未取得）。底層權重來自「相關矩陣驅動」的 Lohmöller 迭代，其 pairwise-complete 相關已對 pandas DataFrame.corr()、加權相關已對 statsmodels DescrStatsW 與 numpy.cov(aweights) 逐值（見 pls_pairwise_wpls 的重生時 assert，皆 <1e-12）。★ 無第三方可對 PLSc 本身在此組合下的值：cSEM 的 PLSc 不支援 pairwise deletion 與抽樣權重。",
-  "note": "2026-07-26 階段 A 紅隊（L4）新增。設立理由：原 plscAdjust 從**欄位**重算區塊相關矩陣，而 pairwise／WPLS 下欄位是補值（NaN→0，＝原尺度均值補值）或未加權標準化的，導致 rho_A／c²／一致 loadings／反衰減後構念相關全部算在錯的矩陣上（實測 rho_A 低估 0.09–0.15，跨過 .70 判準；path F1→F2 由 0.4252 誤為 0.5026，高估約 18%）。這個缺陷之所以能存活，正是因為**沒有任何基準組涵蓋「PLSc × pairwise／WPLS」這個組合**——本組就是補這個洞。完整資料時 spec.corrMatrix 為 undefined、走原路徑，故 pls_plsc 零回歸。方法文件見 docs/methods/pls-plsc.md 與 docs/methods/pls-pairwise-wpls.md。",
-  "status": "verified",
-  "tier": "B",
-  "verification": "(1) ★ 重生時**結構性 assert**（generate_reference.py，容差 1e-12）：由迭代所用 R 的區塊子矩陣重算 rho_A，必須逐位元等於本組值——後人若把 plscAdjust 改回「由欄位重算」就會紅燈。這是本組真正的防線，比數值比對更能鎖住該類缺陷。\n(2) JS↔numpy 22 欄位逐值（compare.test.js）。\n(3) 修正前後的差異已量化並記入 validation-report「階段 A」節（rho_A 低估 0.09–0.15、路徑高估 18%）。\n★ 尚未驗證：PLSc 在 pairwise-complete 相關矩陣上的**統計性質**（該矩陣可能非正定，本資料集實測最小特徵值為正，見 pls_pairwise_wpls 的 pw_minEig）；以及 rho_A 反衰減在加權樣本下的推論性質——兩者皆無文獻可依，原文亦未取得。"
- }
+  "ancova": {
+    "authority": "pingouin",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "anova_oneway": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cfa_2factor": {
+    "authority": "semopy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 semopy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cfa_2factor_loadings": {
+    "authority": "semopy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 semopy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cfa_noncentral_chi2": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cfa_rmsea_ci": {
+    "authority": "scipy",
+    "note": "2026-07-13 溯源審計覆核維持 A：值由 scipy ncx2＋brentq 產生；手編部分僅 MacCallum et al. (1996) 的 CI 定義本身。可日後以 Kevin 本機 lavaan 佐證（低優先）。",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "chisquare_2x2": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cluster_kmeans_k3": {
+    "authority": "scikit-learn",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cluster_ward_k3": {
+    "authority": "scikit-learn",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cohen_kappa": {
+    "authority": "scikit-learn",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cronbach_alpha_6items": {
+    "authority": "pingouin",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "cronbach_alpha_f1": {
+    "authority": "pingouin",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "descriptive_y": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "efa_pca_none": {
+    "authority": "factor_analyzer",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "efa_pca_varimax": {
+    "authority": "factor_analyzer",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "efa_pca_varimax_k3": {
+    "authority": "factor_analyzer",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 factor_analyzer 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "fisher_exact": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "icc": {
+    "authority": "pingouin",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "kruskal_wallis": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "ks_lilliefors": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "lda_group3": {
+    "authority": "MASS 7.3.65（MASS::lda，隨 R 出貨）＋ base R manova（Wilks）；SPSS 慣例換算關係逐值確認",
+    "note": "2026-07-14 抽驗中發現工具鏈陷阱：library(cSEM) 會遮蔽 stats::predict（對 lda 物件直接進 cSEM 內部碼）——R 抽驗腳本一律顯式 stats::predict，已記入 validation-report。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-14 溯源審計（Session Q1，04_q1_audit.R v4/v5）：MASS::lda 逐值一致——未標準化係數（LD1 −0.090887/0.099743/0.046781；MASS scaling 慣例＝SPSS unstandardized，wᵀSpw=1）、標準化係數（×pooled SD：−0.723571/0.754252/0.717626）、pooled SD（7.9612/7.5620/15.3400）、特徵值換算（λ=svd²(g−1)/(N−g)、proportion of trace 0.895133/0.104867）、組重心（fn1 0.239776/−0.302967/0.063191）、structure matrix（pooled within-group 相關，fn1 −0.274692/0.364920/0.732972）、再代入分類表（對角 8/10/7、accuracy 0.416667）。manova Wilks Λ=0.94302 同；Λ₂ 與 Bartlett χ² 由已驗特徵值之封閉式推得。第二判別函數整體翻號＝特徵向量符號任意性（fixture 符號正規化規則已文件化）。"
+  },
+  "levene_mean_spss_default": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "levene_median": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "logistic_regression": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "mann_whitney": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "mann_whitney_small": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "mann_whitney_ties": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "manova": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "mixed_anova": {
+    "authority": "pingouin",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "nca_bottleneck": {
+    "authority": "NCA (R)",
+    "note": "2026-07-13 溯源審計改列 tier B：同 nca_cr_fdh（numpy 手算＋一次性 R NCA 逐值抽驗）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "fixture 值直接由 NCA (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "nca_ce_fdh": {
+    "authority": "R NCA 5.0.2（Dul 2016）",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：scope 3501.5488、CE zone 835.0134、d_ce 0.2384697、peers = 8、bottleneck 逐 level、NN 語意——全部與 R NCA 逐值一致，零差異。"
+  },
+  "nca_cr_fdh": {
+    "authority": "NCA (R)",
+    "note": "2026-07-13 溯源審計改列 tier B：與 nca_ce_fdh 同批同證據（numpy 手算＋一次性 R NCA 5.0.2 逐值抽驗），原先一 B 二 A 的標籤自相矛盾，統一為 B。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "fixture 值直接由 NCA (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "pearson_x1_x2": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "pls_basic": {
+    "authority": "plspm 0.5.7（fixture 的 loadings／weights／path／R²／LV 相關／cross-loadings 產生來源，PATH scheme、逐欄 z-score、tol=1e-12）；seminr 2.5.0（2026-07-13 本機 R 抽驗，第二證人，Hair 團隊實作）。plspm 未提供、以 numpy 依公式手算者：alphaStd（標準化 α，相關矩陣版）、rho_A（Dijkstra & Henseler 2015, MIS Quarterly 39(2), 297-316；方程式編號待原文核定）、rho_c（Jöreskog 1971, Psychometrika 36(2)）、AVE（Fornell & Larcker 1981, JMR 18(1)）、HTMT（Henseler, Ringle & Sarstedt 2015, JAMS 43(1)）——這五項皆已對 seminr 逐值核對。",
+    "note": "2026-07-26 階段 A 紅隊修正本欄的一處不精確敘述：原 note 稱「fixture 值為 numpy 手算」，實際上 loadings／weights／path／R²／adjR²／LV 相關／cross-loadings 出自 plspm 0.5.7，只有上列五項信效度量為 numpy 手算；原 authority 亦漏列實際產生 fixture 的 plspm。★ 慣例差異：權重以 w'Sw=1 正規化（樣本單位變異）後才與 plspm 比對（plspm 原生為母體單位變異）；本組回報的 α 為**標準化 α**（相關矩陣版），與 SPSS 預設的原始分數 α 在題目變異數不等時數值不同。方法文件見 `docs/methods/pls-basic.md`。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：M1 核心的 loadings／weights／path／R²／adjR²／alpha／rhoA／rhoC／AVE／HTMT／LV 相關全部與 seminr 逐值一致（小數 6 位）。見 validation-report「R 抽驗銷帳（Session A）」一之表。\n★ 2026-07-26 階段 A 紅隊（見 `docs/methods/pls-basic.md` 第 8 節）補三道：\n(1) 標準化 α 的兩種寫法代數等價性驗證（k/(k−1)·(1−k/ΣS) ≡ k·r̄/(1+(k−1)r̄)，實測差 0 / 1.11e−16）；\n(2) **第四次獨立編碼**——依方法文件第 3 節的文字描述（不看 pls.js）以 numpy 重寫整條 Lohmöller 迭代，對本組 28 個純量欄位比對，最大絕對差 7.15e−8（量級與 plspm 迭代容差相符）。意義：文件所載公式即產生基準值的公式，兩者無漂移；\n(3) 邊界條件：兩區塊的區塊內平均相關同為負時，HTMT 原會輸出「通過」的數值（Kevin 裁決修正為 null ＋警告，pls.js:956-958／1792-1808，新增 4 條行為測試）。\n★ 仍未驗證：七篇方法出處**原文全部未取得**，本組的 verified 建立在「plspm 與 seminr 兩個獨立第三方數值全中」，不是「公式對過原文式號」；跨實作的收斂準則定義比較亦未查核。"
+  },
+  "pls_bca_reference": {
+    "authority": "待審計【卡文獻取得，非技術問題】。已鎖定的權威來源：Efron & Tibshirani (1993),《An Introduction to the Bootstrap》第 14.3 節（BCa 的 z₀ 與加速常數 a 的估計式）；原始出處 Efron (1987), JASA 82(397), 171-185「Better Bootstrap Confidence Intervals」。待核兩個風險點：z₀ = Φ⁻¹(#{θ̂*_b < θ̂}/B) 的並列與端點夾擠慣例、a = Σ(θ̄_(·)−θ̂_(i))³ / (6[Σ(θ̄_(·)−θ̂_(i))²]^{3/2}) 的 jackknife 定義與符號方向。",
+    "note": "無主流第三方實作可對照，基準為 numpy 手算（scipy.stats.bootstrap 的 BCa 可作對照候選，但其內部亦為同一族公式的再實作，且未逐式文件化，不足以單獨作為權威）。2026-07-25 已試開放存取管道：Efron 個人頁（efron.ckirby.su.domains）與 JASA 均取不到 1987 原文；書籍第 14 章無合法開放全文。Kevin 亦回報找不到。**在取得前維持 pending，不以記憶中的公式充當 authority。**",
+    "status": "pending",
+    "tier": "B",
+    "verification": "待審計（原文未取得）。**現行替代交叉驗證（已實施且通過）**：\n(1) 固定 B=999 draws（rng seed 20260704）＋完整 jackknife 一併寫入 fixture，JS 的 bcaInterval() 對同一批 draws/jackknife 逐值比對（z₀、a、alphaLower、alphaUpper、ciLower、ciUpper 六欄）。\n(2) **2026-07-25 新增第二道獨立實作抽驗（已升為重生時 assert）**：generate_reference.py 餵同一批 draws 與同一筆資料給 scipy.stats._resampling._bca_interval，逐值 assert z₀／a／alpha_lower／alpha_upper，容差 1e-12；實測差異為 z₀ 0.0、a 1.7e-18、alphaLower 0.0、alphaUpper 1.1e-16（機器精度內全中）。\n★ 兩道都**不足以結案**：(1) 只鎖住『JS 與本檔 numpy 一致』；(2) 的 scipy 實作同樣是『某人讀 Efron & Tibshirani §14.3 後的再實作』，未逐式文件化，屬同一族公式的另一次編碼，不是 §0 意義下的權威來源。兩者都抓不到『z₀ 或 a 的估計式本身讀錯』。\n另註一個 (2) 未涵蓋的差異：並列（ties）慣例——本檔用 #{θ̂*<θ̂}/B 再夾擠到 [1/(B+1), B/(B+1)]，scipy 用 (#{<}+#{≤})/(2B) 不夾擠；統計量為連續型平均、實測無並列，兩者恰好同值，此路徑仍待原文核定。\n取得原文後應優先核對 a 的分母指數（3/2 次方）、jackknife 偏差項的符號，以及上述並列與端點夾擠慣例。"
+  },
+  "pls_cipma": {
+    "authority": "Hauff, Richter, Sarstedt & Ringle (2024, J. Retailing & Consumer Services 78:103723)。全文無編號方程式（期刊排版事實），authority 以節號＋原式錨定：§3 效果量 d = C/S 與必要性判準（d ≥ .1 且 p < .05，另需理論支持）；§4.3 IPMA 0–100 重標定 LV 分數輸出為 NCA 輸入；§4.4 實證 scope＋僅取目標構念的直接前置構念＋CE-FDH bottleneck 表（實際值／百分位雙格式）；§4.5 於目標水準（如 Y=80）讀「未達所需水準之案例 %」；§5.4–5.5 實例同流程（CE-FDH 為主、CR-FDH 對照討論）",
+    "note": "重用 pls_ipma 的 _s100 與 nca_* 的 numpy 助手。IPMA 塊內量尺不一時的 0–100 先後灰區承 pls_ipma 條目（Q1 記錄）；Hauff et al. §4.1 明文要求單一構念的指標同量尺，混合量尺＝未滿足假設——UI 警告已入 roadmap P1。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-14 溯源審計（Session Q2）：(1) 逐項對 Hauff et al. (2024) 全文（OA：researchonline.jcu.edu.au/87274）——0–100 重標定分數作 NCA 輸入、實證 scope、僅直接前置構念、CE-FDH＋CR-FDH、d ≥ .1 且 p < .05、bottleneck 實際值＋未達案例 %——fixture 六項口徑逐項一致；(2) NCA 計算核心（CE-FDH ceiling／zone／CR-FDH OLS＋夾擠／permutation p）逐式重用已驗證的 nca_ce_fdh／nca_cr_fdh／nca_bottleneck 助手（R NCA 5.0.2 已逐值對過），cIPMA 新增的只有組合口徑；(3) permutation p ＝ #{d_perm ≥ d_obs}/199，與已驗 nca 條目同式；JS↔numpy 由 compare.test.js 全欄位鎖定。"
+  },
+  "pls_copula": {
+    "authority": "Park & Gupta (2012, Marketing Science 31(4), 567-586)：Eq. (6) 定義 Gaussian copula 並令 P* = Φ⁻¹(U_P)、U_P = H(P_t)；Eq. (10) 為擴充迴歸 Y_t = X'_t β + P_t α + σ_ξ·ρ·P*_t + σ_ξ·√(1−ρ²)·w_2t，原文明言「Given P* as an additional regressor … consistently estimate the model using the least squares estimator」且「P* corrects for the endogeneity bias and in this respect is similar to the control function」；p. 572 註 3 明文授權以經驗分布函數（ECDF）取代核密度數值積分求 U_P（「provides comparable results to the proposed method」）；p. 572-573 因 generated-regressor 問題提出 bootstrap 標準誤。PLS-SEM 應用流程：Hult, Hair, Proksch, Sarstedt, Pinkwart & Ringle (2018, JIM 26(3), 1-21) Eq. (5) c* = Φ⁻¹(H(X₁))、Eq. (6) y = β₀ + β₁′x₁ + β₂′x₂ + β₃c₁* + ε′。",
+    "note": "本工具採 control-function 變體（Park & Gupta Eq. 10 / Hult Eq. 6），非 Park & Gupta 的聯合 ML 主法——後者只能處理單一內生迴歸元，PLS-SEM 應用一律用前者（SmartPLS 亦然）。ECDF 的並列處理（取最大秩）與 H=1 夾為 1−1e−7 不出自論文（P&G 的 H 為連續 CDF，不會恰為 1），出自 Hult 等人公開 R 程式碼 CRP_copula_code.r 的 ifelse(H.p == 1, 1 - .0000001, H.p)。KS 非常態前置把關的理論依據為 P&G 對 Eq. (10) 的識別討論：P 為常態時 P* 是 P 的線性變換，α 與 σ_ξρ 無法分別識別。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-25 溯源審計（Session Q2）：(1) Park & Gupta (2012) 原文 PDF 逐式核對——Eq. (6) 的 P* = Φ⁻¹(U_P) 與 Eq. (10) 的加項迴歸與實作同式；註 3 授權 ECDF；bootstrap SE 的理由（generated regressor 使資訊矩陣 SE 失效）與本工具以 bootstrap 取 SE／percentile CI 一致；非常態識別條件與 KS 前置把關一致。(2) Hult et al. (2018) accepted MS（White Rose eprints 142302）Eq. (5)/(6) 與四個結構方程的擴充迴歸寫法一致；2^k−1 全組合檢視（k=3 時 model 1–7）與本工具同。(3) 慣例三項（ECDF 並列取最大秩、H=1 夾 1−1e−7、copula 項為秩基底故標準化不變）已於 W6 對 Hult 公開 R 程式碼逐行核對，出處為 pls-sem.net Downloads「Gaussian Copula R Code Example - JIM Article」的 CRP_copula_code.r（2026-07-25 覆查該檔仍在線）。(4) JS↔numpy：300 組固定 bootstrap 重抽索引注入，30 欄位逐值對齊（compare.test.js）；行為測試鎖定 copulaTerm(3x+7) == copulaTerm(x) 與最大值不產生 Infinity。KS 的 p 值屬已知慣例差異，基準只鎖 D 統計量。"
+  },
+  "pls_copula_inputs": {
+    "authority": "不適用（純輸入型 fixture）",
+    "note": "",
+    "status": "exempt",
+    "tier": "I",
+    "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+  },
+  "pls_cta": {
+    "authority": "Gudergan, Ringle, Wende & Will (2008, Journal of Business Research 61(12), 1238-1249)：Eq. (1) 定義 tetrad τ_1234 = σ_12σ_34 − σ_13σ_24（四個指標恰三個 tetrad）；Eq. (2) 定義偏誤校正信賴區間 τ̂ − b_B ± v_B^{1/2}·z_{1−α/2}（b_B＝bootstrap 偏誤、v_B＝bootstrap 變異數，**常態分位數 z**）；p. 1241 五步程序（Step 1 列舉全部 tetrad、Step 2 取 model-implied、Step 3 以代數替換剔除冗餘、Step 4 逐一顯著性檢定、Step 5 以 Bonferroni 處理多重檢定），Bonferroni 為 α′ = α/n、n＝該「單一測量模型」內待檢定的非冗餘 tetrad 數（引 Bollen 1990, p. 88）；bootstrap on raw data 而非常態近似（同頁，引 Davison & Hinkley 1997）。tetrad 定義與非冗餘選取的完整代數：Bollen & Ting (1993), Sociological Methodology 23, 147-175（Gudergan 全文將 Step 1–3 的細節逐處指向該文）。",
+    "note": "非冗餘 tetrad 的**選取集**只有 Bollen & Ting (1993) 有完整代數，該文尚未取得（列入待取清單）。本工具用『逐一加入指標』的確定性構造得 k(k−3)/2 個，並在基準生成端以 Jacobian 秩 assert 驗證極大獨立——數量與自由度一致、omnibus 判讀等價，但**個別 tetrad 的 CI 會隨選取集不同而不同**。SmartPLS 4 的選取集未文件化且授權已過期，無法對照。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-25 溯源審計（Session Q2）：(1) Gudergan et al. (2008) 原文 PDF 逐式核對 Eq. (1)（tetrad 定義）、Eq. (2)（bias-corrected CI）、Step 1–5 與 Bonferroni 的施加層級（單一測量模型內，與本工具的『區塊內 Bonferroni』一致）。(2) **審計發現並修正一處偏離**：原實作的 CI 半寬用 Student t（df = B−1），原文 Eq. (2) 明確為常態分位數 z_{1−α/2}；t 用 df=B−1 亦無理論依據（B 是重抽次數而非樣本數）。已改為 z_{1−α/(2T)} 並重生基準（B=300、T=5 時 CI 縮 0.64%；R 塊仍 reflective、M 塊仍 formative，判讀結論不變）。欄位 tCrit → zCrit。(3) 非冗餘選取集：Gudergan 將細節指向 Bollen & Ting (1993)，該文未取得 → 本工具的構造以 Jacobian 秩 assert 保證極大獨立（見 note 的等價性與限制）。(4) JS↔numpy：300 組固定重抽索引注入，全欄位逐值對齊（compare.test.js）；資料集設計 assert 鎖定 R 塊 reflective／M 塊 formative。"
+  },
+  "pls_fimix": {
+    "authority": "待審計【卡文獻取得，非技術問題】。已鎖定的權威來源：Hahn, Johnson, Herrmann & Huber (2002), Schmalenbach Business Review 54(3), 243-269（EM 演算法與『不含截距』的設定）；段數選擇準則：Sarstedt, Becker, Ringle & Schwaiger (2011), SBR 63(1), 34-62（AIC/AIC3/AIC4/BIC/CAIC/HQ/MDL5/EN 的定義與模擬比較）。待核三個風險點：參數計數 N_k = (K−1) + K·R + K·M 是否與原文一致、EN（normed entropy）的正規化分母、迴歸式是否含截距。",
+    "note": "無主流第三方 Python/R 完整實作可對照，基準為 numpy 手算。2026-07-25 已窮盡開放存取管道：SSRN (321004) 僅摘要、Cornell eCommons／scholarship.sha.cornell.edu 全文受限、SBR 官網與 Springer 為付費牆。Kevin 的機構訂閱亦未涵蓋（2026-07-25 回報找不到）。**現況不是沒查，是拿不到原文**——在取得前維持 pending，不以二手轉述充當 authority（違反全域文獻真實性鐵律）。替代驗證已就位（見 verification），故實作可繼續使用，只是溯源未閉環。",
+    "status": "pending",
+    "tier": "B",
+    "verification": "待審計（原文未取得）。**現行替代交叉驗證（已實施且通過，但不等於溯源閉環）**：(1) 模擬還原——datasets.json:fimix 為兩段已知係數（β = +0.80 / −0.80、180/120）的模擬資料，對稱設計使全域路徑大幅相消；引擎還原率 0.853、EN 0.566，K=2 在所有資訊準則上皆最佳；(2) EM 單調性——lnL 每步不得下降，基準端 assert ＋引擎端 warnings 雙重斷言；(3) JS↔numpy 逐值——初始後驗機率固定注入（pls_fimix_inputs）繞開兩邊 RNG 差異，71 欄位全對齊。這三重策略能抓『兩邊抄不一致』與『EM 寫錯』，**抓不到『N_k 或 EN 的定義讀錯』**——後者只有回原文能結案。"
+  },
+  "pls_fimix_inputs": {
+    "authority": "不適用（純輸入型 fixture）",
+    "note": "",
+    "status": "exempt",
+    "tier": "I",
+    "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+  },
+  "pls_fit": {
+    "authority": "cSEM 0.6.1；Henseler et al. (2014) ORM 17(2)；Dijkstra & Henseler (2015) MISQ 39(2)",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：SRMR（飽和 0.0975623／估計 0.1043736）、d_ULS（0.5235117／0.5991614）、NFI（0.6684221）與 cSEM 逐值一致。d_G 為**已知底數差異**：本工具用 ln（測地距離的幾何定義 ½·Σ(ln λ)²），cSEM 用 log₁₀ 且其原始碼自承不確定底數；差 (ln10)²=5.3019 倍，統計結論不受影響，已於 UI Notes 雙處標註。"
+  },
+  "pls_formative": {
+    "authority": "plspm 0.5.7（fixture 產生來源）；seminr 2.5.0（2026-07-13 本機 R 抽驗，第二證人）；VIF：封閉式（指標相關矩陣反矩陣對角線），seminr 同值",
+    "note": "",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 溯源審計（Session Q1，04_q1_audit.R）：seminr composite(mode_B) 與 fixture 逐值一致——weights 0.921/0.114/0.131、loadings 0.986/0.645/0.143、path 0.700、R² 0.491、VIF 1.482/1.486/1.003（顯示位數內全同）。fixture 主體本由 plspm 產生，本次補上 Hair 團隊實作的獨立佐證，Mode B 慣例（w′Sw=1 正規化、迴歸權重）跨三實作一致。"
+  },
+  "pls_gof": {
+    "authority": "plspm 0.5.7（Tenenhaus, Vinzi, Chatelin & Lauro 2005, CSDA 48(1)）",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "2026-07-13 溯源審計（Session Q1）：plspm goodness_of_fit() = 0.2577074252 vs fixture 0.2577074227，差 2.6e-9（plspm 迭代容差內）；「單指標區塊排除於 communality」的慣例亦一致。generate_reference.py 已加入重生時 assert（<1e-6），每次重生都對 plspm 重驗。"
+  },
+  "pls_hoc_disjoint": {
+    "authority": "seminr 2.5.0（2026-07-13 R 抽驗逐值：G→C −0.402148、loadings 0.803529／0.826177）；Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023)",
+    "note": "2026-07-13 溯源審計改列 tier B：fixture 重生為純 numpy、無重生時第三方 assert，證據為一次性 R 抽驗；原 authority 含 plspm 屬誤植（plspm 從未對過 disjoint），已移除。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "fixture 值直接由 plspm、seminr (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "pls_hoc_embedded": {
+    "authority": "Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), International Journal of Contemporary Hospitality Management 35(1), 321-346，accepted MS pp. 15-16（開放取用：ueaeprints.uea.ac.uk/id/document/171785）——逐句界定 embedded 兩階段：第一階段「models the entire higher-order construct in its first stage by repeating the LOCs' indicators to identify the HOC」；第二階段「all non-hierarchical constructs need to be measured using single items that use the latent variable scores from the first stage as input」，HOC 指標＝第一階段的 LOC 分數；反映型 HOC 用 Mode A；weighting scheme 建議 path。方法原始出處為 Ringle, Sarstedt & Straub (2012)；Sarstedt, Hair, Cheah, Becker & Ringle (2019), Australasian Marketing Journal 27(3), 197-211 為程序指引（本次僅取得摘要與 SmartPLS 官方轉述，全文未取得）。",
+    "note": "**引用修正（Q3）**：原 authority 僅標「Sarstedt et al. 2019」。依 Becker et al. (2023)，embedded two-stage 的方法出處是 Ringle, Sarstedt & Straub (2012)，Sarstedt et al. (2019) 與 Becker et al. (2023) 是程序指引——已補正。另記錄一項官方偏好：Becker et al. (2023) 明確建議優先用 **disjoint** two-stage，理由是它容許在指標層跑 PLSpredict／CVPAT（embedded 的非階層構念在第二階段已成單指標）。UI Notes 既有「disjoint…近年文獻建議」的敘述與此一致。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 Becker et al. (2023) accepted MS pp. 15-16 **逐點核對四項口徑**——第一階段＝repeated indicators 模型（重複掛載 LOC 指標識別 HOC）✓；第二階段 HOC 指標＝第一階段 LOC 分數 ✓；第二階段全部非階層構念改為「以第一階段分數為單指標」✓（實作 `_e2_X = [sF1, sF2, C分數, Y分數]`、blocks `[[0,1],[2],[3]]`）；反映型 HOC 用 Mode A、scheme 用 path ✓。(2) **第一階段有第三方錨**：embedded 的第一階段就是 `pls_hoc_repeated`，該組已有對 plspm（欄位複製別名）的**重生時 assert <1e-6**，故 embedded 的輸入分數是第三方錨定的，不是純手算。(3) 第二階段的迭代與 `pls_hoc_disjoint` 共用同一引擎，後者已對 seminr 2.5.0 逐值（G→C −0.402148、loadings 0.803529／0.826177）。(4) JS↔numpy 逐值（compare.test.js）。**殘餘限制**：SmartPLS 4 授權過期、seminr 無 embedded 變體，故第二階段無法取得 embedded 專屬的第三方數值；本組的保證來自「第一階段第三方 assert ＋ 第二階段引擎與已驗 disjoint 同源 ＋ 程序逐點對照權威文獻」三者疊加。"
+  },
+  "pls_hoc_repeated": {
+    "authority": "plspm",
+    "note": "2026-07-13 溯源審計覆核維持 A：4 條路徑每次重生 assert 對 plspm <1e-6（欄位複製別名法）；loadings 出自與 plspm 全模型交叉驗證（<1e-6）的同一引擎。",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "pls_ipma": {
+    "authority": "Ringle & Sarstedt (2016, IMDS 116(9)) 程序；cSEM 0.6.1 doIPMA（2026-07-13 原始碼逐式比對＋數值複算）",
+    "note": "已知灰區：塊內指標量尺不一時（本 fixture 的 cond 塊即是），「先縮 0–100 再解權重」與「先解權重再套 0–100」分岔（perf_C 54.54 vs 55.97）；官方 cIPMA 教程（Sarstedt et al. 2024）將此列為未滿足假設情境，SmartPLS 已鎖無法對照。本工具用觀察 min/max 而非理論界線已另註記（roadmap P1）。建議 UI 對塊內混合量尺加警告——已列入 P1。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 溯源審計（Session Q1）：(1) cSEM doIPMA 原始碼 dump 逐式核對——w_unstd=w_std/sd(輸入資料)、w̃=w_unstd/Σw_unstd（Σw̃=1；cSEM 文件寫 \"length of 1\" 為措辭不精確）、performance=分數平均、importance=標準化總效果×sd 比——與本工具同式；(2) 數值：cSEM 在原始資料上的 W_used（含 C 塊 0.25020274）與 fixture 的 w̃ 逐值相同，numpy 複算 cSEM 全部輸出（perf 3.135767/2.946359/22.152498/40.343340、unstd effects ±1.540129/±1.195415）逐位重現；(3) 以 fixture 慣例複算 perf_F1/F2 至 1e-7、perf_C=54.542248 逐值重現。importance 的 OLS-on-rescaled-scores 與 sd-ratio 兩法在塊內量尺相同時恆等（upath_F1_F2 兩法同值 0.322393）。"
+  },
+  "pls_itcriteria": {
+    "authority": "seminr compute_metrics.R（AIC_func／BIC_func 同式、pk+1 計數）；Sharma, Sarstedt, Shmueli, Kim & Thiele (2019, JAIS 20(4))；Sharma, Shmueli, Sarstedt, Danks & Ray (2021, Decision Sciences 52(3))；statsmodels（恆等式）",
+    "note": "原 source 引用錯置（誤標「Sharma, Shmueli, Sarstedt, Danks & Ray 2019」——該作者組合是 2021 Decision Sciences；2019 JAIS 是 Sharma, Sarstedt, Shmueli, Kim & Thiele），已修。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 溯源審計（Session Q1）：(1) seminr 原始碼逐式核對——AIC_func = 2(pk+1)+N·log(SSErrk/N)、BIC_func = N·log(SSErrk/N)+(pk+1)·log(N)、SSErrk=(1−R²)·var·(N−1)、pk=前置構念數，與 fixture 公式完全同式；(2) 沙盒以 plspm 獨立分數＋statsmodels OLS 重現全部 12 值（差 ≤5.4e-7，plspm 迭代容差）；(3) statsmodels llf 式 AIC/BIC 與 SSE 式恰差高斯常數 n(ln2π+1)（差 ≤2e-14），鎖住 SSE 定義與 (k+1) 計數，已寫入重生時 assert。AICc/HQ 無主流第三方實作，為同族標準延伸（同 SSE、同 K 計數）。"
+  },
+  "pls_mediation": {
+    "authority": "plspm",
+    "note": "2026-07-13 溯源審計覆核維持 A：M4 引擎每次重生 assert 對 plspm（loadings＋路徑 <1e-6），中介分解為其上的路徑算術（乘積／加總／VAF）。",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "pls_mga_formulas": {
+    "authority": "seminr (R)、cSEM (R)",
+    "note": "2026-07-13 溯源審計改列 tier B：fixture 為固定輸入的 numpy 公式層計算，重生時無第三方 assert；證據為 2026-07-13 一次性 R 抽驗（該次即發現並修復 Welch t 加權與 Henseler 錨點兩處 bug）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "fixture 值直接由 seminr (R)、cSEM (R) 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "pls_mga_perm": {
+    "authority": "Chin & Dibbern (2010)；cSEM 0.6.1 的 Chin approach",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：diffObs = 0.332255 與 cSEM Chin 的 −0.3323 同值（僅群組相減方向不同）；permutation p 以 1000 次跑得 0.042 vs cSEM 0.032（近似檢定、種子不同，同決策）。"
+  },
+  "pls_mga_perm_inputs": {
+    "authority": "不適用（純輸入型 fixture）",
+    "note": "",
+    "status": "exempt",
+    "tier": "I",
+    "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+  },
+  "pls_micom": {
+    "authority": "Henseler, Ringle & Sarstedt (2016)；cSEM 0.6.1 原始碼（postestimate_test_MICOM.R）",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：step 2 的 c 本工具為 0.9823249（以標準化指標算複合體），**cSEM 因在未標準化資料上計算而有尺度依賴瑕疵**（其自身註解誤稱不影響相關）。step 3 的變異數比較原用『差』，經 cSEM 原始碼確認 Henseler 原式為 **log 變異數比**，已修正（varDiff −0.116466 → −0.114790，與排序後 cSEM 逐值吻合）。另查出 cSEM step 3 在資料未按群組排序時有群組錯位 bug。"
+  },
+  "pls_mod_ortho": {
+    "authority": "seminr 2.5.0；Little, Bovaird & Widaman (2006)",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗（04_ortho_check.R 決定性檢驗）：seminr 的 orthogonal 交互構念分數 sd = 0.835227；以標準化分數重跑 OLS 得 −0.115582／−0.223428／0.334718、R² = 0.177043，與本工具逐值吻合。同一尺度慣例差異，已雙處標註。"
+  },
+  "pls_mod_pi": {
+    "authority": "seminr 2.5.0；Chin, Marcolin & Newsted (2003)",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：路徑與 R² 與 seminr 一致。交互項係數為**已知尺度慣例差異**——本工具報標準化係數，seminr 報未標準化（其交互構念分數 sd = 1.001905）；0.194320 = 0.194690 ÷ 1.001905，配適完全相同。"
+  },
+  "pls_mod_threeway": {
+    "authority": "Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), IJCHM 35(1), 321-346，accepted MS guidance 表「How should a three-way interaction analysis be conducted?」**逐字**：「As with two-way interactions, researchers should draw on the two-stage approach to estimate models with three-way interactions. The resulting product should not be standardized, and the researchers should estimate and interpret the unstandardized coefficient.」two-stage 機制原始出處：Chin, Marcolin & Newsted (2003), ISR 14(2)。階層完整規格（三向項必須與三個主效果＋三個兩向項同時進入模型）：Aiken & West (1991)。",
+    "note": "與 `pls_mod_twostage`／`pls_quadratic` **同一條程式路徑**（two-stage 分支對 factors 陣列連乘，不限兩因子）。本 fixture 的規格為 3 主效果（F1、C、F2）＋3 兩向（F1×C、F1×F2、C×F2）＋1 三向（F1×C×F2），符合階層完整性。無法取得第三方數值（SmartPLS 4 授權過期；seminr 無三向支援）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 Becker et al. (2023) guidance 表**逐字核對**——三向走 two-stage ✓、乘積不標準化 ✓、回報未標準化係數 ✓（基準端 `path_*` 皆為 `_bt[k] / _t_sds[k]`，即除以乘積 sd 還原為未標準化量尺）。(2) 階層完整性：fixture 同時納入 3 個主效果與全部 3 個兩向項，符合 Aiken & West (1991) 的規格要求——若省略任一低階項，三向係數將無法解釋。(3) 機制同源於已對 seminr 逐值的 `pls_mod_twostage`（同一 two-stage 分支，差別僅在連乘的因子數）。(4) JS↔numpy 逐值（compare.test.js）。**殘餘限制**：無三向交互的第三方實作可對，本組保證來自「權威文獻逐字＋機制同源＋規格完整性」三者，不含獨立數值對照。"
+  },
+  "pls_mod_twostage": {
+    "authority": "seminr 2.5.0；Chin et al. (2003)；SmartPLS 4 Moderation 文件",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：F1／C／交互項係數與 R² 與 seminr 一致（交互項對到未標準化的 path_int_Y = 0.14728）。"
+  },
+  "pls_modmed": {
+    "authority": "**演算法本身為定義性合成，不是有爭議的估計量**：條件間接效果 = 條件 a 路徑 × 條件 b 路徑，a(w) = a1 + a3·w、b(w) = b1 + b3·w。其中 (i) 兩階段調節的口徑沿用本專案已 verified 的 pls_mod_twostage（SmartPLS 4 Moderation 文件：交互項＝第一階段標準化 LV 分數乘積、不標準化、自動補主效果路徑）；(ii) 調節值取 ∓1 SD 沿用 Aiken & West (1991) 的慣例，與本工具既有 simple slopes 同一組取值；(iii) 兩條第二階段方程的係數對 **statsmodels OLS** 逐值 assert。\n★ 誠實標註：本工具回報的 slopeOverW（恰一條路徑被調節時，條件間接效果對 w 的斜率，＝a3·b1 或 a1·b3）在文獻上稱為 index of moderated mediation，出處為 Hayes (2015), Multivariate Behavioral Research 50(1), 1-22。**該原文未取得**，故本工具以描述性名稱回報這個量並在 UI 註明標籤待核定，不逕自掛上該名稱，也不宣稱實作了該文的檢定程序。取得原文後應核對：(a) index 的定義是否恰為此乘積、(b) 其推論是否另有指定的 bootstrap 程序（本工具沿用主 bootstrap 設定的 percentile／BCa CI）。",
+    "note": "PLS 版的調節式中介沒有可執行的第三方對照（SmartPLS 4 授權過期；seminr 無條件間接效果輸出；R processR／PROCESS 為 OLS 版、且需 Kevin 本機 R）。因此驗證策略是「把最容易出錯的部分交給第三方，把不會出錯的部分用代數鎖死」——見 verification。範圍限制（已在程式碼與 UI 明示）：只處理兩步鏈 X→M→Y、只支援 two-stage 且恰兩個相異因子的交互項；a、b 兩條路徑同時被調節時條件間接效果對 w 是二次的，slopeOverW 回 null 而非硬給一個數。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "三層疊加：\n(1) **第三方（重生時 assert，容差 1e-10）**：第二階段兩條方程 M ~ X + W + z(X·W) 與 Y ~ M + X 的全部係數與 R²，由 statsmodels OLS 獨立重算並逐值 assert。本檔原以 np.linalg.lstsq 計算，兩者為獨立實作。這道 assert 攔的正是 moderated mediation 最容易錯的地方——「哪些變項進哪條方程」（a 方程漏放 W 主效果、b 方程誤放交互項）與係數擷取位置。\n(2) **第一階段有既有第三方錨**：第一階段＝主效果模型的 LV 分數，與 pls_mod_twostage 同一條程式路徑，該組第一階段已對 plspm assert <1e-6。\n(3) **合成層以代數斷言鎖死**（tests/pls.test.js）：條件間接效果在 w=0 必須等於一般中介的間接效果 a1·b1（與已 verified 的 pls_mediation 口徑相接）；相鄰兩個 w 的差必須恰等於 slopeOverW（線性性質）；兩條路徑同時被調節時 slopeOverW 必須為 null 且三個 w 的值不落在一條直線上。\n★ 未涵蓋：index of moderated mediation 這個**名稱**與其原始檢定程序的定義（Hayes 2015 原文未取得）。本工具因此不使用該名稱。這不影響上述數值的正確性，只影響能不能在論文裡直接沿用該術語。"
+  },
+  "pls_pairwise_wpls": {
+    "authority": "pairwise-complete 相關：pandas `DataFrame.corr()`（預設即 pairwise-complete，獨立第三方實作）。加權相關：statsmodels `DescrStatsW(weights=...).corrcoef` 與 `numpy.cov(aweights=..., ddof=0)`（兩個獨立第三方實作，皆為「可靠度權重」慣例、分母 Σw）。相關矩陣驅動的 Lohmöller 迭代：handoff-roadmap-v1 §6.6／§6.7 的設計，其正確性由 `full_*` 自我一致性欄位錨定到 `pls_basic`（已對 seminr 2.5.0 逐值）。",
+    "note": "本組是批次 3 中唯一能在沙盒取得完整第三方對照的：pairwise 與加權相關都是封閉式，且有現成的獨立實作。★ 2026-07-25 Session Q3 已把三道對照升為**重生時 assert**（結構性防護，非一次性抽驗）——之後任何人改動這段手算碼，重生基準就會紅燈。註：相關為尺度不變量，加權共變異的 ddof 取 0 或 1 得到同一個相關矩陣（已實測差 <1e-15），故此處不存在 ddof 慣例分歧的風險。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-25 溯源審計（Session Q3）：(1) pairwise-complete 相關 vs `pandas.DataFrame.corr()` 最大絕對差 **3.886e-16**；(2) 加權相關 vs `statsmodels DescrStatsW(ddof=0).corrcoef` 最大絕對差 **4.441e-16**；(3) 加權相關 vs `numpy.cov(aweights, ddof=0)` 最大絕對差 **2.220e-16**。三道皆已寫入 `generate_reference.py` 成為重生時 assert（容差 1e-12）。(4) `full_*` 自我一致性：完整資料＋全 1 權重走同一條相關矩陣路徑，必須重現 `pls_basic` 的 path_F1_F2 = 0.3603108815（既有 assert，容差 1e-6；實測差約 1.3e-8）——這條把整條相關矩陣驅動的迭代錨定到已對 seminr 的基準上。(5) 行為測試另鎖：權重同乘常數不改變結果、權重為 0 的列實質不參與、pairwise 與 blindfolding 互斥報錯、配對 <3 筆報錯。(6) JS↔numpy 59 欄位逐值（compare.test.js）。"
+  },
+  "pls_plsc": {
+    "authority": "cSEM 0.6.1",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：rhoA（1.017597／0.707796／0.888324）、一致 loadings（含 i2 = 1.151977 > 1）、校正後路徑、R² 全部與 cSEM 逐值一致；『rhoA > 1 不截斷』的行為亦確認同步。\n★ 2026-07-25 補記**與 MGA 併用**：mgaPLS 的 consistent 選項隨 baseOpts 一路傳進 runPLS／bootstrapPLS／每一次 permutation 的重估，因此兩群的點估計、bootstrap SE、Henseler draws 與 permutation 分布**全部**走反衰減後的相關矩陣，不會出現「點估計校正、推論未校正」的混用。這是既有兩組 verified 組件（本組與 pls_mga_formulas／pls_mga_perm）的組合，不引入新公式，因此不另立基準組；改以 tests/pls.test.js 的行為測試鎖住（PLSc 版與一般版係數確實不同、同種子可重現、群組層 PLSc 警告會轉呈到 MGA 結果）。解讀上的代價已寫入 MGA 的警告：反衰減分母是**各群組各自**的 rho_A，群組小時 rho_A 不穩，跨群係數差異會同時反映信度估計的差異。"
+  },
+  "pls_plsc_pw": {
+    "authority": "Dijkstra & Henseler (2015), MIS Quarterly 39(2), 297-316（PLSc 的 rho_A 與一致化係數 c²；方程式編號待原文核定——原文未取得）。底層權重來自「相關矩陣驅動」的 Lohmöller 迭代，其 pairwise-complete 相關已對 pandas DataFrame.corr()、加權相關已對 statsmodels DescrStatsW 與 numpy.cov(aweights) 逐值（見 pls_pairwise_wpls 的重生時 assert，皆 <1e-12）。★ 無第三方可對 PLSc 本身在此組合下的值：cSEM 的 PLSc 不支援 pairwise deletion 與抽樣權重。",
+    "note": "2026-07-26 階段 A 紅隊（L4）新增。設立理由：原 plscAdjust 從**欄位**重算區塊相關矩陣，而 pairwise／WPLS 下欄位是補值（NaN→0，＝原尺度均值補值）或未加權標準化的，導致 rho_A／c²／一致 loadings／反衰減後構念相關全部算在錯的矩陣上（實測 rho_A 低估 0.09–0.15，跨過 .70 判準；path F1→F2 由 0.4252 誤為 0.5026，高估約 18%）。這個缺陷之所以能存活，正是因為**沒有任何基準組涵蓋「PLSc × pairwise／WPLS」這個組合**——本組就是補這個洞。完整資料時 spec.corrMatrix 為 undefined、走原路徑，故 pls_plsc 零回歸。方法文件見 docs/methods/pls-plsc.md 與 docs/methods/pls-pairwise-wpls.md。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "(1) ★ 重生時**結構性 assert**（generate_reference.py，容差 1e-12）：由迭代所用 R 的區塊子矩陣重算 rho_A，必須逐位元等於本組值——後人若把 plscAdjust 改回「由欄位重算」就會紅燈。這是本組真正的防線，比數值比對更能鎖住該類缺陷。\n(2) JS↔numpy 22 欄位逐值（compare.test.js）。\n(3) 修正前後的差異已量化並記入 validation-report「階段 A」節（rho_A 低估 0.09–0.15、路徑高估 18%）。\n★ 尚未驗證：PLSc 在 pairwise-complete 相關矩陣上的**統計性質**（該矩陣可能非正定，本資料集實測最小特徵值為正，見 pls_pairwise_wpls 的 pw_minEig）；以及 rho_A 反衰減在加權樣本下的推論性質——兩者皆無文獻可依，原文亦未取得。"
+  },
+  "pls_pos": {
+    "authority": "Becker, Rai, Ringle & Völckner (2013, MIS Quarterly 37(3), 665-694)。全文正文無編號方程式（完整目標函數、距離量測與演算法在線上補充 Appendix B，尚未取得），authority 以頁碼＋原句錨定：p. 676「a fitting objective criterion for PLS segmentation is to maximize the sum of the endogenous latent variables' explained variance (R²) across all groups」；同頁三項區辨特徵——(1) PLS 專屬目標準則、(2) 適用形成型測量的新距離量測、(3) 只在能改善目標時才重新指派（爬山法，故可能落入局部最優 →「repeated application with different starting partitions is advisable」）。",
+    "note": "**本實作為原文的結構模型層簡化版**，三處差異已在 UI Notes、i18n 與 generate_reference.py 明文揭露：(a) LV 分數取自全樣本 PLS 權重、不做段別測量模型權重重估——這正是原文批評 FIMIX-PLS 的第 2 項限制，也是原文的區辨特徵 (2)，故本工具偵測不到僅存在於測量模型層的異質性；(b) 未實作原文的距離量測，改為逐案窮舉評估目標改善（距離量測是原文用來『挑候選』的啟發式，窮舉在目標函數上不劣，但收斂路徑與原文不同）；(c) 段別大小下限為本工具的數值穩定性硬約束，原文無此設定且強調 POS 能找出極小利基段。Appendix B 取得後應覆核目標函數是否含加權或其他修正。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-25 溯源審計（Session Q2）：(1) Becker et al. (2013) 原文 PDF 逐句核對。**審計發現並修正一處實質偏離**：原實作的目標函數為各段 SSE 之和，原文為各段 R² 之和；兩者不等價（SST 隨段別組成改變）。以 fixture 資料實測，兩個目標收斂到不同分割（125/175 vs 195/105），改用原文口徑後段別還原率由 0.8367 升至 0.8567。已改 pls.js 與 generate_reference.py 並重生 pls_pos 基準（objective 改為 ΣR²，另加 sseTotal 欄位保留預測誤差的可讀性）。(2) 交叉驗證：改碼前先以獨立的 numpy 原型（不共用本工具程式碼）算出 ΣR² 目標下的解為 195/105、ΣR²=1.5765、還原率 0.8567；重生後的 fixture 為 195/105、objective_K2=1.57649436、recovery_K2=0.85667——獨立重現。(3) 三重策略：模擬還原（兩段 β=±0.80 的已知真值，還原率 0.857）＋目標函數單調遞增（基準端 assert ＋引擎端 warnings 斷言）＋JS↔numpy 逐值（起始分割固定注入，40 欄位全對齊）。(4) 範圍限制見 note——本工具不宣稱是 PLS-POS 的完整重現。"
+  },
+  "pls_pos_inputs": {
+    "authority": "不適用（純輸入型 fixture）",
+    "note": "",
+    "status": "exempt",
+    "tier": "I",
+    "verification": "固定重抽索引／排列，供 JS 與 numpy 注入同一批以達成引擎層級逐值交叉驗證；不含任何統計公式，無溯源義務。"
+  },
+  "pls_predict": {
+    "authority": "seminr 2.5.0；Shmueli et al. (2016, 2019)",
+    "note": "fixture 值為 numpy 手算，但已與上列第三方實作逐項核對（2026-07-13 Session A）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 R 抽驗：RMSE／MAE 的量級與 PLS-vs-LM 方向與 seminr 一致。**無法逐值比對**——k-fold 的 fold 指派為隨機，兩邊不可能相同；這是方法本身的性質，不是實作差異。 ／ 2026-07-13 Q²predict 定義補驗（Session Q1）：SmartPLS PLSpredict 官方文件明載 naive 基準＝訓練樣本的指標平均、Q²predict＝1−SSE_PLS/SSE_naive——與實作逐項一致（generate_reference 與 JS 皆以訓練摺平均為 naive、彙總全部 holdout 後取比）。\n★ 2026-07-25 新增**重複（repetitions）層**，刻意不建立新的基準組——它是聚合而非新公式，改以兩條沙盒可精確驗證的恆等式鎖住（tests/pls.test.js）：\n(a) repetitions=1 的輸出與原本的單次 k-fold **逐值相同**（本組 fixture 因此零回歸）；\n(b) 注入 R 組分摺時，指標層 RMSE／MAE／Q²predict（含 LM 基準）**逐值等於** R 次單跑的算術平均。\nCVPAT 的彙總另立規則：先把逐案損失在 R 次之間平均，再跑一次既有的成對 t 檢定（不平均 t 或 p——平均 p 值沒有統計意義）。\n★ **口徑分歧已核對完畢（2026-07-25），結論：不跟隨 seminr**。\nseminr 2.5.0 的 R/feature_plspredict.R：predict_pls 在 reps 非 NULL 時把各次的**預測值**逐格平均（apply(array, c(1,2), mean)），再由 item_metrics() 對平均後的殘差算一次 RMSE／MAE，屬「彙總預測值」口徑。但同一支函式把洗牌（order <- sample(...)）寫在重複迴圈**之外**，迴圈內 prediction_matrices() 以 cut(seq(1,n), breaks=noFolds) 決定分摺——那是決定性的，因此每次重複用完全相同的分割，reps 不會改變任何數字。Kevin 本機實測（seminr 2.5.0 / R 4.6.0、n=60、k=5）reps=1 與 reps=10 的 PLS_out_of_sample 與 LM_out_of_sample 逐位元相同，與原始碼判讀一致（兩條獨立證據）。\n⇒ (a) seminr 無法作為本層的數值基準（它產不出有差異的數字）；(b) 其口徑本身有系統性樂觀偏誤：由模糊分解 mean_r MSE_r − MSE(p̄) = mean_r mean_i (p_ri − p̄_i)² ≥ 0，先平均預測值再算指標必然給出不高於「平均各次指標」的誤差，差額恰為各次預測值之間的變異，屬集成效果而非樣本外表現（沙盒以該恆等式數值驗證，誤差 <1e-12）。本工具因此維持「平均各次指標」，此決定與依據已寫入 UI 警告、JSDoc 與 validation-report。\n核對用的 R 腳本保留於 tests/verify_plspredict_reps.R，供日後 seminr 修正 reps 後重驗。"
+  },
+  "pls_q2": {
+    "authority": "Stone (1974)／Geisser (1974)；程序：Hair, Hult, Ringle & Sarstedt (2017) 第 6 章＋SmartPLS Blindfolding 官方文件。無在世第三方實作——SmartPLS 4 官方文件明載已移除該演算法、seminr 明確拒做（GitHub issue #156，引 Shmueli et al. 2016 Appendix C 的方法論批評）、matrixpls／semPLS 已自 CRAN 下架（2022 歸檔）",
+    "note": "SmartPLS 4 已棄用 blindfolding、官方改推 PLSpredict／CVPAT（本工具皆已內建）。UI 宜註記 Q² 為 legacy 指標——已列入 roadmap P1。原工單將本組列於「有第三方可對」批次係誤判（seminr blindfold() 不存在）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-13 溯源審計（Session Q1）：對照 SmartPLS Blindfolding 官方文件，程序四要點逐項一致——(1) 輪數＝omission distance D；(2) 第 d 輪自第 d 個資料點起每隔 D 刪一點（逐 LV 指標矩陣序列計數）；(3) 略去點按缺失值處理、以欄平均補值後全模型重估；(4) n/D 不得為整數的合規約束（n=60、D=7 ✓）。cross-validated redundancy＝結構預測分數 × loading 還原指標，符合 Hair et al. (2017) 第 6 章定義。JS 與獨立 numpy 引擎逐值互驗。第三方實作已不存在，此為「程序文獻」路線所能達到的最強驗證。"
+  },
+  "pls_quadratic": {
+    "authority": "SmartPLS 4 官方文件「Nonlinear Relationships」（smartpls.com/documentation/algorithms-and-techniques/nonlinear）：二次效果「is like a self-moderation」，「The computation of results uses the two-stage approach. This approach uses the latent variable scores of the latent predictor variable **from the main effects model (without the quadratic effect term)**. These latent variable scores are saved and used to calculate the **squared indicator** for the second stage analysis」。two-stage 機制原始出處：Chin, Marcolin & Newsted (2003), Information Systems Research 14(2), 189-217。乘積項不標準化、回報未標準化係數：Becker, Cheah, Gholamzade, Ringle & Sarstedt (2023), IJCHM 35(1) 的 guidance 表（「The resulting product should not be standardized, and the researchers should estimate and interpret the unstandardized coefficient」）。條件斜率 dY/dX = b₁ + 2·b_q·x 為 Y = b₁X + b_qX² 的微分（非慣例選擇）；取值點 ±1 SD 依 Aiken & West (1991)。",
+    "note": "與 `pls_mod_twostage` **同一條程式路徑**：二次效果即 factors = [F1, F1] 的自我調節，pls.js 的 two-stage 分支不區分兩者。因此 `pls_mod_twostage` 對 seminr 的逐值抽驗（path_int_Y = 0.14728）同時是本組的機制證據。無法取得二次效果專屬的第三方數值（SmartPLS 4 授權過期；seminr 無 quadratic 支援）。",
+    "status": "verified",
+    "tier": "B",
+    "verification": "2026-07-25 溯源審計（Session Q3）：(1) 對 SmartPLS 官方 Nonlinear 文件**逐點核對三項口徑**——第一階段取「主效果模型（不含二次項）」的 LV 分數 ✓、平方作為第二階段指標 ✓、走 two-stage 而非 product indicator ✓。(2) **實作層查核第一階段是否真的排除二次項**：`pls.js` 的 two-stage 分支先以 `curPaths`（僅主效果）呼叫 `estimateStage`，交互路徑 `intPaths` 在該次估計**之後**才併入 `curPaths`——確認第一階段乾淨。(3) 係數量尺：基準端對標準化平方項做 OLS 再除以 sd(平方項)，與直接對未標準化平方項迴歸恆等（置中後截距吸收均值），故回報值即權威文獻要求的未標準化係數。(4) 條件斜率為封閉式微分，已由行為測試鎖住 slopes = b₁ + 2·b_q·x 於 x = −1/0/+1。(5) 機制同源於已對 seminr 的 `pls_mod_twostage`。(6) JS↔numpy 逐值（compare.test.js）。"
+  },
+  "pls_scheme_centroid": {
+    "authority": "plspm",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "pls_scheme_factorial": {
+    "authority": "plspm",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 plspm 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "regression_hierarchical": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "regression_multiple": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "regression_simple": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "repeated_anova": {
+    "authority": "pingouin",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "shapiro_wilk": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "spearman_x1_x2": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "ttest_independent_welch": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "ttest_one_sample": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "ttest_paired": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "tukey_hsd": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "tukey_ptukey_grid": {
+    "authority": "scipy.stats.studentized_range.sf（studentized range 分布右尾機率）",
+    "note": "2026-07-29 紅隊 R50（L4）建立。tukey_hsd 僅涵蓋 df=57 一點，恰為舊 ptukey 實作失準前的最後一個安全點；本組直接對分布本身建 k×df×q 格點（含 df=100/120/200/500/999 的失準區），不經過任何資料集。",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值由 scipy.stats.studentized_range.sf 產生；JS 的 ptukeyUpper 與其逐值比對（120 欄，容差見 compare.test.js）。另以獨立的雙層 Gauss-Legendre 數值積分在 896 個格點（k 7 值 × df 1–2000 共 16 值 × q 8 值）覆核，修正後最大絕對差 5.561e-07、零個格點超過 1e-6。"
+  },
+  "twoway_anova_type3": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "wilcoxon_signed_rank": {
+    "authority": "scipy",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "zprop_one": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "zprop_two": {
+    "authority": "statsmodels",
+    "note": "",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  }
 }

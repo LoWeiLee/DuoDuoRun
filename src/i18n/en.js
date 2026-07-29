@@ -2228,6 +2228,8 @@ export default {
       homogeneity: "Levene's homogeneity",
       assumpOk: 'OK (p ≥ .05)',
       assumpViolated: 'Violated (p < .05)',
+      // ★ 2026-07-29 red team R51: with zero variance t diverges and p = 0.
+      zeroVarianceWarn: 'Warning: at least one group in this analysis has no variation at all (every value identical), so its standard deviation is 0. The t statistic then diverges mathematically (±∞), p is identically 0 and Cohen’s d diverges — the t, p and d shown below cannot be interpreted and must not be reported. Check whether the wrong variable was selected, whether the column is a constant, or whether a ceiling/floor effect is present.',
       assumpViolationWarn:
         "Note: assumption violation detected. Welch's correction is already applied for independent t-test (robust to unequal variances). " +
         'For severe normality violation with small n (< 30), consider nonparametric alternatives (Mann-Whitney U / Wilcoxon).',
@@ -2274,6 +2276,8 @@ export default {
         "A paired samples t-test revealed a {sigWord} difference between {var1Name} (M = {m1}, SD = {sd1}) and {var2Name} (M = {m2}, SD = {sd2}); mean of paired differences = {meanDiff} (SD = {sdDiff}), t({df}) = {t}, p = {pStr}, Cohen's d = {d} ({effectWord} effect).",
       oneSample:
         "A one-sample t-test revealed a {sigWord} difference between the sample mean (M = {m}, SD = {sd}, n = {n}) and the test value μ₀ = {mu0}, t({df}) = {t}, p = {pStr}, Cohen's d = {d} ({effectWord} effect).",
+      // ★ R51: inserted at the head of the sentence when variance is zero.
+      zeroVarianceCaveat: '[WARNING: the data have no variation at all (SD = 0), so t and Cohen’s d diverge mathematically and p is identically 0. None of the figures below can be interpreted and they must not be reported as is.] ',
       sigYes: 'significant',
       sigNo: 'non-significant',
       copyHint: 'Copy APA narrative',
@@ -2436,6 +2440,14 @@ export default {
       hint: 'Both factors must be categorical with ≥ 2 levels each',
     },
     result: {
+      // ★ 2026-07-29 red team R52: two-way ANOVA previously had no assumption checks at all.
+      assumpTitle: 'Assumption checks',
+      homogeneityCells: 'Homogeneity of variance (Levene, per cell)',
+      normalityResid: 'Normality of residuals (Shapiro-Wilk)',
+      assumpOk: 'met',
+      assumpViolated: 'violated',
+      assumpViolationWarn: 'Warning: at least one assumption was not met. The two-way ANOVA F test is fairly robust to non-normality when cell sizes are equal, but is sensitive to heterogeneity of variance, especially with unequal cell sizes. Read these results together with the cell sizes and cell SDs, and consider transforming the DV or using a robust alternative.',
+      assumpHint: 'The error term in a two-way design is within-cell variance, so homogeneity is tested across the A x B cells (not across the levels of a single factor); normality applies to the full-model residuals, not to the raw scores within each group. Both only warn — neither blocks the analysis.',
       cellMeansTitle: 'Cell means',
       anovaTitle: 'ANOVA table (Type III SS)',
       effectSizeTitle: 'Effect size',

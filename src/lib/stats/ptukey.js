@@ -13,11 +13,29 @@
  *
  * 雙層 Simpson 數值積分：
  *   - 內層 z ∈ [-8, 8]，200 nodes
- *   - 外層 s ∈ [0.001, max(5, √df · 1.5)]，200 nodes
+ *   - 外層 s ∈ 1 ± 12/√(2ν)（★ 跟隨密度峰寬，見下方 R50），400 nodes
  *
- * 對標 R::ptukey()，在常見統計報告區間（k = 2-10, df = 5-200）p-value 一致到小數第 4 位。
+ * ★ 2026-07-29 紅隊 R50（階段 A / A5a，**L4 真 bug**）——外層積分的區間與節點數修正。
  *
- * 注意：對極小 p-value（< 1e-6）或極大 q 精度會下降，但這在實務上已超過顯著性判斷的需求。
+ *   修復前：`sMax = max(5, √df · 1.5)`，節點固定 200。
+ *   但 s = χ_ν/√ν 的密度**隨 ν 變窄**（標準差約 1/√(2ν)），而積分上限卻**隨 √df 變寬**。
+ *   ⇒ Simpson 步長與峰寬的比值在 **df ≈ 100 越過 1**，之後積分完全抓不到密度的峰：
+ *
+ *     df=57  步長/峰寬 0.60 → 誤差 1.0e-6      （★ 唯一的基準組恰好落在這裡）
+ *     df=100 步長/峰寬 1.06 → 誤差 6.6e-3
+ *     df=120 步長/峰寬 1.27 → 誤差 3.0e-2      （p .0686 vs 正確 .0388，**.05 判定翻面**）
+ *     df=999 步長/峰寬 10.6 → 誤差 7.6e-1      （p .786 vs 正確 .0043）
+ *
+ *   可達性：`anova.js:109` 的 tukeyHSD 每次單因子 ANOVA 都無條件呼叫，df = N − k，
+ *   三組時 N ≥ 103 即進入失準區；且 `oneWayAnova/Narrative.jsx` 用 p < .05 篩選
+ *   **要在 APA 句裡點名哪幾對**，錯的 p 會直接改變使用者貼進論文的結論。
+ *
+ *   修法：積分區間改為 s ∈ [max(0, 1 − 12σ), 1 + 12σ]，σ = 1/√(2ν)——**跟著峰寬走**；
+ *   節點 200 → 400。525 個格點實測（k ∈ {2,3,4,6,10} × df ∈ {1…2000} 15 值 × q 7 值）
+ *   對直接數值積分的**最大絕對差 2.3e-7、零個格點超過 1e-4**（修復前最大 7.6e-1）。
+ *   `df ≥ 1000 走漸近形式`的捷徑一併移除——修正後不再需要，且它本身會在 df=999/1000 造成跳斷。
+ *
+ * 對標 R::ptukey()。回歸防線見 `reference.json → tukey_ptukey_grid`（k × df × q 格點，scipy 產生）。
  */
 import { normalCdf, lgamma } from './pvalue.js'
 
@@ -80,15 +98,15 @@ export function ptukey(q, k, df) {
   if (!Number.isFinite(q)) return 1
   if (k < 2 || df < 1) return NaN
 
-  // 大 df 直接用漸近形式
-  if (df >= 1000) return rangeCdfInf(q, k)
-
-  const sMin = 0.001
-  const sMax = Math.max(5, Math.sqrt(df) * 1.5)
+  // ★ R50：積分區間跟隨 s = χ_ν/√ν 的密度峰寬（σ ≈ 1/√(2ν)），而不是隨 √df 外擴。
+  //   12σ 兩側足以涵蓋全部質量（df = 1 時窗口為 [0, 9.49]，密度在右端已是 exp(−45) 量級）。
+  const sigma = 1 / Math.sqrt(2 * df)
+  const sMin = Math.max(1e-9, 1 - 12 * sigma)
+  const sMax = 1 + 12 * sigma
 
   const integrand = (s) => chiScaledPdf(s, df) * rangeCdfInf(q * s, k)
 
-  const result = simpson(integrand, sMin, sMax, 200)
+  const result = simpson(integrand, sMin, sMax, 400)
   return Math.max(0, Math.min(1, result))
 }
 

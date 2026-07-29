@@ -21,7 +21,9 @@ function buildNarrative(result, dataset, lang) {
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const { ttest, type } = result
   const effectKey = cohenDInterpretation(ttest.d)
-  const sig = ttest.p < 0.05
+  // ★ 2026-07-29 紅隊 R51：零變異時 t 發散、p = 0，不能當成「顯著」寫進 APA 句
+  const zeroVar = !!ttest.zeroVarianceWarning
+  const sig = !zeroVar && ttest.p < 0.05
 
   const data = {
     t: fmtNum(ttest.t, 3),
@@ -67,7 +69,8 @@ function buildNarrative(result, dataset, lang) {
     })
   }
 
-  return fillTemplate(template, data)
+  // ★ R51：零變異時句首插入警語——APA 句才是被「一鍵複製」貼進論文的那一段
+  return (zeroVar ? t.ttest.apa.zeroVarianceCaveat : '') + fillTemplate(template, data)
 }
 
 function Narrative() {

@@ -338,6 +338,15 @@ function Result() {
         t={t}
       />
 
+      {/* ★ 2026-07-29 紅隊 R51（階段 A / A5a）：零變異時 t 發散（±Infinity）、p = 0。
+          修復前 `zeroVarianceWarning` 是孤兒旗標——引擎算了、回傳了，零 UI 消費者。
+          實測報表印「t = —（fmtNum(Infinity)）、p < .001 且亮綠燈（toneForP(0)）、d = —」，
+          也就是**失敗偽裝成一個高度顯著卻沒有數字的結果**。 */}
+      {result.ttest.zeroVarianceWarning && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {t.ttest.result.zeroVarianceWarn}
+        </div>
+      )}
       {/* 關鍵統計量卡片（2026-07 UI 改版參考實作；p 值紅綠語意：顯著=綠、未達顯著=紅） */}
       <StatCards
         items={[
@@ -345,7 +354,8 @@ function Result() {
           {
             label: cols.p,
             value: fmtP(result.ttest.p),
-            tone: toneForP(result.ttest.p),
+            // ★ R51：零變異時不下顯著性判定（燈號會把發散的 p = 0 讀成「高度顯著」）
+            tone: result.ttest.zeroVarianceWarning ? undefined : toneForP(result.ttest.p),
             sub: Number.isFinite(result.ttest.p) ? (result.ttest.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
           },
           { label: cols.d, value: fmtNum(result.ttest.d, 3) },

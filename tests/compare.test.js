@@ -24,9 +24,11 @@ const DEFAULT_TOL = 1e-6
 
 // 放寬容差：method.field → tol
 const TOL = {
-  'tukey_hsd.p_AB': 5e-4, // ptukey 雙層 Simpson 積分 vs scipy；絕對差 <1e-6，小 p 時相對差放大
-  'tukey_hsd.p_AC': 5e-4,
-  'tukey_hsd.p_BC': 5e-4,
+  // ★ 2026-07-29 紅隊 R50（L4）：這三行原本放寬到 5e-4，註解寫「絕對差 <1e-6」——
+  //   那句話只在 df = 57（本資料集）成立，而**沒有人問過其他 df**。
+  //   舊 ptukey 實作在 df ≥ 100 誤差達 1e-2 ~ 7.6e-1、p 值在 .05 兩側翻面，
+  //   而這條放寬的容差正好蓋在唯一安全的那一點上。修正後改回 DEFAULT_TOL（1e-6），
+  //   並新增 `tukey_ptukey_grid`（120 欄，含 df = 100/120/200/500/999）作為高 df 的回歸防線。
   'mann_whitney_small.p': 1e-4, // 小樣本常態近似的邊界行為
   'mann_whitney_ties.p': 1e-4,
   'zprop_one.p': 1e-4,

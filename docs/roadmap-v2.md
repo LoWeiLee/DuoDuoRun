@@ -12,10 +12,24 @@
 **47 組已被文件第 6 節點名**，未涵蓋 36 組全部落在尚未動工的 A5／A6。
 溯源面仍未全部結案：2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
 
-**★ 現在的下一步：階段 A / A5（推論統計與無母數，tier A）**——見 §6.5 的 A5 條目。
-A4 紅隊累計 **13 項（R37–R49）全部處置完畢**（3 項 L3 由 Kevin 當日核定、3 項書面記錄，
-R47 裁決為「修呈現層、回傳契約留階段 B」，見 §6.6）。基準組維持 **83**、`MAX_PENDING` 維持 **2**、
-`MAX_UNDOCUMENTED` **44 → 36**。
+**★ 現在的下一步：階段 A / A5b（類別與無母數，tier A）**——見 §6.5 的 A5b 條目。
+A5a 紅隊 **4 項（R50–R53）全部處置完畢**，其中 **R50 是階段 A 的第二個 L4 真 bug**
+（前一個是 A1 的 R6）。基準組 **83 → 84**（新增 `tukey_ptukey_grid`）、`MAX_PENDING` 維持 **2**、
+`MAX_UNDOCUMENTED` **36 → 27**。
+
+★ **A5a 與 A4 的結論相反，而差別在檢查方式**：A4 的 13 項全落在呈現層，A5a 卻在**數值本體**
+抓到一個。A4 的獨立重寫是「換一條路線算同一個量」，A5a 的 Tukey 重寫則是**對分布本身做參數空間掃描**
+（$k\times \mathrm{df}\times q$ 共 896 格點），才把「只有一個基準點、而它恰好安全」逼出來。
+
+★ **A5a 累積出來的兩條檢查習慣（接在既有六條之後，A5b／A6 直接沿用）**：
+
+7. ★ **只有一個基準點的方法，要對「參數空間」掃描，不能只驗那一點。**
+   R50 的所有證據都不在 `datasets.json` 的那組資料裡——它在 **df 這個參數方向**上。
+   ⇒ 凡引擎帶有數值近似（積分、迭代、查表）者，先問：
+   **基準覆蓋的是參數空間裡的哪一點？那一點有沒有剛好是最好的一點？**
+8. ★ **`compare.test.js` 裡放寬過的容差是紅旗，不是結案。** 每一行 `TOL` 都在說
+   「這裡有一個我們知道但沒查清楚的差異」。R50 就藏在那句「絕對差 <1e-6」的註解後面——
+   那句話只在 df=57 成立。⇒ 每遇到一個 `TOL` 條目，先問「這個放寬在參數空間的其他地方還成立嗎」。
 
 ★ **A4 是階段 A 第一批離開 PLS 的文件，而它的結論與前三批不同**：
 PLS 側 26 組是 tier B（沒有第三方數值來源），A4 的 11 組有 **7 組是 tier A**。
@@ -687,10 +701,27 @@ permutation 檢定另有出處 Dul et al. 2020，且 $p$ 的分母慣例是本�
 LDA 走 sklearn 1.288e−14、CFA 換 scipy L-BFGS-B 6.4e−8、EFA 5.0e−9）。
 發現全部落在呈現層、可見性與慣例揭露，詳見 `docs/methods/README.md` 的 A4 摘要。
 
-**A5 — 推論統計與無母數（tier A）** ⬜
-三種 t 檢定、`anova_oneway`＋`tukey_hsd`、`twoway_anova_type3`、`ancova`、`repeated_anova`、
-`mixed_anova`、`chisquare_2x2`、`fisher_exact`、`zprop_one`＋`zprop_two`、
-Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn）
+**A5 — 推論統計與無母數（tier A）**——★ **Kevin 2026-07-29 裁決拆成 A5a／A5b 兩批**
+
+**A5a — t 檢定與 ANOVA 家族** ✅ **完成（7 / 7，2026-07-29）**
+`t-test`（三組基準）、`anova-oneway`、`tukey-hsd`（★ 含本批新增的 `tukey_ptukey_grid`）、
+`anova-twoway`、`ancova`、`anova-repeated`、`anova-mixed`。
+
+★ **本批抓到階段 A 的第二個 L4 真 bug（R50）**，也是唯一一個落在**數值本體**的批次：
+`ptukey.js` 的 Tukey $p$ 值在 **df ≥ 100 系統性錯誤**，df=999 誤差達 7.6e−1，
+且 $p$ 在 .05 兩側翻面。可達性極高（每次單因子 ANOVA 無條件跑 Tukey，三組時 $N\ge103$ 即中招），
+而三道防線全沒抓到——**唯一的基準恰在失準區前的最後一個安全點，且該欄的容差早已被放寬到 5e-4**。
+處置三件：修積分（區間跟隨密度峰寬、節點 200→400）、新增 `tukey_ptukey_grid`（120 欄，含 df 100–999）、
+容差收緊回 `DEFAULT_TOL`。修後 896 格點最大差 5.6e−7、零翻面。基準組 **83 → 84**。
+
+★ 另開出 R51（t 檢定零變異偽裝成顯著，同 A4 R40-i 之型）、R52（雙因子 ANOVA 完全無前提檢核，已補）、
+R53（混合設計缺 Box's M，書面記錄）。七支的獨立重寫全數通過（t 檢定 14 欄**逐位元相同**，
+其餘最大 2.6e−12）。`MAX_UNDOCUMENTED` **36 → 27**。
+
+**A5b — 類別與無母數（tier A）** ⬜
+`chisquare_2x2`、`fisher_exact`、`zprop_one`＋`zprop_two`、
+Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn）——共 6 份、8 組基準。
+★ 開工前先讀 `docs/methods/README.md` 的 A5a 摘要末兩條（參數空間掃描、放寬過的容差是紅旗）。
 
 **A6 — 敘述／相關／迴歸／量表／多變量（tier A）** ⬜
 `descriptive_y`、`shapiro_wilk`、`ks_lilliefors`、Levene（兩慣例）、資料視覺化、
@@ -778,6 +809,10 @@ Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn�
 | **R47** | A4 | `nca_cr_fdh`／`nca_bottleneck` | **L2** | ★ 三項同一成因：(a) CR-FDH 的 `intercept`／`slope` 有基準、有逐值比對，**零 UI**——CR-FDH 的賣點正是「ceiling 可以寫成方程式」而使用者拿不到；(b) `ceilings.cr_fdh.bottleneck` **實測與 `ce_fdh.bottleneck` 逐字元相同**，欄名掛在 `cr_fdh` 底下會誤導 API 消費者；(c) 瓶頸表只讀 CE 版，**標題與註記都沒說是哪一條 ceiling**，而上方的 ceiling 表才剛把兩者並列。★ **實測改用 CR 線反查，逐水準差最大 11.61**（$x$ 全距 73.4，約 16%），30%／40% 兩個水準方向相反——**不是捨入等級的差異** | **Kevin 2026-07-29 裁決：修呈現層，回傳契約留階段 B**。(a) ceiling 表新增「Ceiling 方程式」欄（CR 印 $y=a+bx$、CE 印「階梯函數（無線性式）」）；(c) 瓶頸表新增來源說明並**量化**改用 CR 線的差異；(b) 移除／改名 `cr_fdh.bottleneck` 屬回傳契約變更，比照 A3c 的 R35-b 留階段 B | ✅ (a)(c) 已執行；⬜ (b) 留階段 B，本批加**現況鎖**（`a4.behavior.test.js` 斷言兩份 bottleneck 序列化後相同，日後改動回傳結構會紅燈） |
 | R48 | A4 | `lda_group3` | L1 | Box's M 的 $p\le.001$ 門檻在 `Result.jsx:382`、`Result.jsx:445`、`Narrative.jsx:33` 各實作一次（A3c 習慣 3 的形狀）。三份同值，且**門檻已寫在使用者看得到的文字裡**（`boxMOk` 印「通過（p > .001）」），故不構成口徑不透明 | 書面記錄；抽成單一函式屬重構，留 Box's M 有進一步變更時一併處理 | ✅ 已記錄（Kevin 2026-07-29 裁決） |
 | R49 | A4 | 測試基礎建設 | L1 | ★ **防線自身的縫**：`docs.coverage.test.js` 的 `mentions()` 是寬鬆比對——基準鍵只要當作獨立字詞出現在第 6 節任何地方（含散文）就算涵蓋。A4 實際踩到：`lda.md` §6 寫「base R 的 `manova()` …亦同」，使 **`manova`（屬 A6、尚未寫文件）被誤判為已涵蓋**，未涵蓋數少算 1 | 該處改寫為大寫 MANOVA 規避；棘輪設為**修正後的真實值 36**（而非誤判下的 35）；測試註解補上警告供 A5／A6 參考。收緊比對規則需回頭改 30 份 A1–A3 文件，本批不做 | ✅ 已修＋已記錄 |
+| **R50** | A5a | `tukey_hsd` | ★ **L4** | ★ **真 bug**：`ptukey.js` 外層積分上限 `max(5, √df·1.5)` 隨 df 外擴、節點固定 200，而被積函數（$s=\chi_\nu/\sqrt\nu$ 的密度）峰寬隨 $1/\sqrt{2\nu}$ 內縮 ⇒ **步長/峰寬在 df ≈ 100 越過 1**。df=120 誤差 3.0e−2（$p$ .0686 vs 正確 .0388，**.05 判定翻面**）、df=200 反向翻面、df=150–500 大 $q$ 直接回 **0**（報表印 `p = .000`）、df=999 誤差 **7.6e−1**（$p$ .786 vs 正確 .0043）。★ 可達性：`oneWayAnova/compute.js:51` 每次 ANOVA 無條件跑 Tukey，$\mathrm{df}=N-k$，三組時 **$N\ge103$ 即失準**；`Narrative.jsx:33` 用 $p<.05$ 決定 **APA 句點名哪幾對**。★ **三道防線全沒抓到**：唯一基準 `tukey_hsd` 在 **df=57**（失準區前最後一個安全點），且 `compare.test.js` 早已把該三欄放寬到 **5e-4**（註解寫「絕對差 <1e-6」——只在 df=57 成立） | 三件：(1) 積分區間改為跟隨密度峰寬 $s\in1\pm12/\sqrt{2\nu}$、節點 200→400、移除 df≥1000 的漸近捷徑；(2) **新增基準組 `tukey_ptukey_grid`**（scipy `studentized_range.sf`，120 欄，$k\times\mathrm{df}\times q$，含 df=100/120/200/500/999）；(3) `compare.test.js` 的 tukey 三行放寬刪除、改回 `DEFAULT_TOL` | ✅ **Kevin 2026-07-29 核定並已執行**。修後 **896 格點**（$k$ 7 值 × df 1–2000 共 16 值 × $q$ 8 值）最大絕對差 **5.561e−7**、零個超過 1e−6、**零個 .05 判定翻面**。既有 `tukey_hsd` 三欄的相對差由 1.3e−6/1.3e−4/8.2e−6 降到 2.8e−11/3.6e−9/1.6e−10。基準組 83 → **84** |
+| **R51** | A5a | `ttest_*` | **L2** | ★ **零變異時失敗偽裝成成功**：三種 t 檢定都算 `zeroVarianceWarning`，**零 UI 消費者**。實測成對 t（差值全同）：引擎回 $t=-\infty$、$p=0$、$d=-\infty$，而 `fmtNum(±∞)` 印「—」、`fmtP(0)` 印「< .001」、`toneForP(0)` 給**綠燈** ⇒ 報表顯示「$t=$ —、$p<.001$（綠）、$d=$ —」，APA 句照樣寫「達顯著差異」。與 A4 的 R40-i 同型且**共用同一個成因**（格式化函式對發散值的處理） | 純呈現層：警告框（指出 $t$ 發散、$p$ 恆為 0、三個數字都不可解讀）＋統計卡燈號在該情形取消＋APA 句句首插入警語且不下顯著性判定。引擎回傳值不變 | ✅ **Kevin 2026-07-29 核定並已執行**。`ttest/Result.jsx:341–358`、`Narrative.jsx:24–26`＋`72–73`、i18n 中英各 2 鍵；＋4 條行為測試（含「正常資料旗標必須為假」的回歸鎖） |
+| **R52** | A5a | `twoway_anova_type3` | **L2** | ★ **雙因子 ANOVA 完全沒有前提檢核**——實查 `assumptionChecker.js:283–289` 與各 `Result.jsx`：t 檢定與單因子有 Levene＋Shapiro、ANCOVA 有斜率同質性、重複量數與混合設計有 Mauchly，**七支裡只有雙因子是空的**，而 `levene.js` 與 `normality.js` 早就被另兩支使用 | 比照 `oneWayAnova/compute.js:47–48`：**細格層** Levene（雙因子的誤差項是細格內變異）＋**全模型殘差**的 Shapiro-Wilk（雙因子的常態假設是殘差常態）。只警告不擋 | ✅ **Kevin 2026-07-29 核定並已執行**。`twoWayAnova/compute.js:23–52`、`Result.jsx:233–291`、i18n 中英各 7 鍵；＋4 條行為測試（含「Levene 的 df1 必須是細格數−1」與四個 SS 逐值不變的回歸鎖） |
+| R53 | A5a | `mixed_anova` | L1 | 混合設計缺**被試間因子的共變異同質檢核**。正確的前提是各組的受試者內共變異矩陣相等（Box's M），而非單變量 Levene；`lda.js:545–576` 已有可複用實作但未接上 | 書面記錄（記為 E37）。接上 Box's M 屬功能擴充，跨出「文件批次不做功能擴充」的界線；`anova-mixed.md` §4／§6 已寫明缺口、正確的檢核是什麼、以及現成實作的位置 | ✅ 已記錄（Kevin 2026-07-29 裁決） |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -966,6 +1001,24 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.14（2026-07-29 同日）：**階段 A / A5a 交付（7 / 7），階段 A 累計 44 份文件**：
+  `t-test`、`anova-oneway`、`tukey-hsd`、`anova-twoway`、`ancova`、`anova-repeated`、`anova-mixed`。
+  ★ **Kevin 裁決把 A5 拆成 A5a／A5b 兩批**，文件粒度定為 13 份（t 檢定三種合一、tukey-hsd 獨立）。
+  ★ **本批抓到階段 A 的第二個 L4 真 bug（R50）**——`ptukey.js` 的 Tukey $p$ 值在 **df ≥ 100
+  系統性錯誤**，df=999 誤差 7.6e−1，$p$ 在 .05 兩側翻面；可達性極高（三組時 $N\ge103$ 即中招），
+  而**三道防線全沒抓到**：唯一基準在 df=57（失準區前最後一個安全點），且該三欄的容差早已放寬到 5e-4。
+  處置三件：修積分（區間跟隨密度峰寬、節點 200→400、移除 df≥1000 捷徑）、
+  **新增基準組 `tukey_ptukey_grid`**（scipy `studentized_range.sf`，120 欄，含 df 100–999）、
+  容差收緊回 `DEFAULT_TOL`。修後 896 格點最大差 5.561e−7、零翻面。**基準組 83 → 84**。
+  另開出 R51（t 檢定零變異偽裝成顯著，同 A4 R40-i 之型，已修）、R52（雙因子 ANOVA 完全無前提檢核，
+  已補細格 Levene ＋殘差 Shapiro）、R53（混合設計缺 Box's M，書面記錄）。
+  七支的獨立重寫全數通過且**每一支都不呼叫產生基準的那個函式**：t 檢定 14 欄**逐位元相同**、
+  單因子 9.1e−13、雙因子 Type III 2.6e−12、ANCOVA 4.5e−13、重複量數 2.4e−12、混合設計 1.1e−13。
+  ★ **兩條新檢查習慣寫入 §6.5 的「★ 下一步」**：(7) 只有一個基準點的方法要對**參數空間**掃描；
+  (8) `compare.test.js` 裡**放寬過的容差是紅旗，不是結案**。
+  測試：新增 `tests/a5a.behavior.test.js`（15 條，含單調性與 df 方向連續性兩條結構鎖）。
+  `MAX_UNDOCUMENTED` **36 → 27**；`MAX_PENDING` 維持 2。
+  沙盒 12 檔全綠；⬜ Kevin 本機待補跑 jsdom 5 檔＋lint＋build。
 - v2.13（2026-07-29 同日）：**階段 A / A4 交付（7 / 7），階段 A 累計 37 份文件**：
   `nca-ce-fdh`、`nca-cr-fdh`、`nca-bottleneck`、`nca-permutation`、`lda`、`cfa`、`efa`。
   ★ **文件切成 7 份為 Kevin 當日裁決**（NCA 依「可報告的統計方法」拆四份）。

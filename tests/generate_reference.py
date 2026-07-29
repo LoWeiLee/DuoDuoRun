@@ -259,9 +259,25 @@ put("anova_oneway", "scipy.f_oneway",
     F=F, p=p, dfBetween=2, dfWithin=N-3,
     ssBetween=ssb, ssWithin=ssw, ssTotal=sst,
     eta2=ssb/sst, omega2=(ssb-2*msw)/(sst+msw))
+from scipy.stats import studentized_range as sps_sr
 tk = sps.tukey_hsd(*groups)
 put("tukey_hsd", "scipy.tukey_hsd",
     p_AB=tk.pvalue[0][1], p_AC=tk.pvalue[0][2], p_BC=tk.pvalue[1][2])
+
+# --- studentized range 分布本身的格點基準（2026-07-29 紅隊 R50，階段 A / A5a）
+# ★ 為什麼要有這一組：`tukey_hsd` 只鎖住 datasets.json:main 那一組資料，
+#   而該資料 N=60、k=3 ⇒ **df = 57**——恰好是 ptukey 舊實作失準前的最後一個安全點。
+#   舊版外層積分的上限隨 √df 外擴而節點固定 200，df ≥ 100 起誤差達 1e-2 ~ 7.6e-1，
+#   p 值在 .05 兩側翻面，而三道防線全部沒抓到（詳見 src/lib/stats/ptukey.js 的 R50 註記）。
+#   ⇒ 直接對分布本身建格點基準，不經過任何資料集，讓 df 高區有東西鎖。
+# 權威：scipy.stats.studentized_range.sf（與 tukey_hsd 的內部實作同族但為獨立入口）。
+_sr_grid = [(q, k, df) for k in (2, 3, 4, 6, 10)
+            for df in (5, 20, 57, 100, 120, 200, 500, 999)
+            for q in (1.7, 3.5, 4.5)]
+put("tukey_ptukey_grid",
+    "scipy.stats.studentized_range.sf(q, k, df) — studentized range 右尾機率格點。"
+    "★ 刻意涵蓋 df = 100/120/200/500/999（舊 ptukey 實作的失準區，見 R50）",
+    **{("sf_q%g_k%d_df%d" % (q, k, df)): float(sps_sr.sf(q, k, df)) for q, k, df in _sr_grid})
 
 # --- 迴歸
 import statsmodels.api as sm

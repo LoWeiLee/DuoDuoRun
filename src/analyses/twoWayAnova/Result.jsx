@@ -230,6 +230,66 @@ function Interpretation({ result, t, labelMap }) {
   )
 }
 
+/* ★ 2026-07-29 紅隊 R52（階段 A / A5a）：雙因子 ANOVA 原本完全沒有前提檢核區塊。
+   細格層 Levene（誤差項＝細格內變異）＋ 全模型殘差的 Shapiro-Wilk（雙因子的常態假設是
+   殘差常態，不是逐組常態）。比照 oneWayAnova/Result.jsx:47–100 的呈現，只警告不擋。 */
+function AssumptionChecks({ assumptions, t }) {
+  if (!assumptions) return null
+  const r = t.anova2.result
+  const items = []
+  if (assumptions.homogeneity) {
+    const lv = assumptions.homogeneity
+    items.push({
+      label: r.homogeneityCells,
+      stat: `F(${lv.df1}, ${lv.df2}) = ${fmtNum(lv.F, 2)}, p = ${fmtP(lv.p)}`,
+      ok: !(lv.p < 0.05),
+    })
+  }
+  if (assumptions.normality) {
+    const sw = assumptions.normality
+    items.push({
+      label: r.normalityResid,
+      stat: `W = ${fmtNum(sw.W, 3)}, p = ${fmtP(sw.p)}`,
+      ok: !(sw.p < 0.05),
+    })
+  }
+  if (items.length === 0) return null
+  const anyViolated = items.some((x) => !x.ok)
+  return (
+    <div>
+      <Heading>{r.assumpTitle}</Heading>
+      {anyViolated && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/20 border border-duo-tongue text-xs text-duo-cocoa-800 leading-relaxed">
+          {r.assumpViolationWarn}
+        </div>
+      )}
+      <ul className="bg-white border border-duo-cream-200 rounded-lg overflow-hidden text-xs">
+        {items.map((it, idx) => (
+          <li key={idx} className={[
+            'flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2',
+            idx > 0 ? 'border-t border-duo-cream-100' : '',
+          ].join(' ')}>
+            <span className="flex items-center gap-2 min-w-0">
+              <span className={[
+                'inline-block w-2 h-2 rounded-full shrink-0',
+                it.ok ? 'bg-duo-sig-ok shadow-led-ok' : 'bg-duo-sig-bad shadow-led-bad',
+              ].join(' ')} />
+              <span className="text-duo-cocoa-700">{it.label}</span>
+            </span>
+            <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
+              {it.stat}{' '}
+              <span className={it.ok ? 'text-duo-sig-ok' : 'text-duo-sig-bad'}>
+                · {it.ok ? r.assumpOk : r.assumpViolated}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-duo-cocoa-400 mt-2 leading-snug">{r.assumpHint}</p>
+    </div>
+  )
+}
+
 function Result() {
   const { dataset, lang, mode, t } = useApp()
   const [state] = useAnalysisState()
@@ -278,6 +338,7 @@ function Result() {
       />
 
       <CellMeansTable result={result} t={t} dataset={dataset} lang={lang} />
+      <AssumptionChecks assumptions={result.assumptions} t={t} />
       <AnovaTable result={result} t={t} />
       <PlotSection result={result} dataset={dataset} lang={lang} t={t} />
       {mode === 'teaching' && <Interpretation result={result} t={t} labelMap={labelMap} />}

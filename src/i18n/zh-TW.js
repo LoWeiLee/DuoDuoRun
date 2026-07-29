@@ -2293,6 +2293,8 @@ export default {
       homogeneity: "Levene's 等變異數",
       assumpOk: '通過（p ≥ .05）',
       assumpViolated: '違反（p < .05）',
+      // ★ 2026-07-29 紅隊 R51：零變異時 t 發散、p = 0，修復前報表印「t = —、p < .001（綠燈）、d = —」
+      zeroVarianceWarn: '警告：本次分析中至少有一組資料完全沒有變異（所有數值相同），標準差為 0。此時 t 統計量在數學上發散（±∞）、p 值恆為 0、Cohen’s d 亦發散——下方的 t、p、d 都不可解讀，也不應寫進報告。請先確認變項是否選錯、是否為常數欄，或是否有天花板／地板效應。',
       assumpViolationWarn:
         '注意：偵測到前提違反。獨立樣本 t 已預設使用 Welch 修正，對等變異數違反具穩健性；若常態性嚴重違反且樣本數小（n < 30），考慮改用無母數檢定（Mann-Whitney U / Wilcoxon）。',
     },
@@ -2336,6 +2338,8 @@ export default {
         '配對樣本 t 檢定結果顯示，{var1Name}（M = {m1}, SD = {sd1}）與{var2Name}（M = {m2}, SD = {sd2}）之間{sigWord}差異，配對差平均 {meanDiff}（SD = {sdDiff}），t({df}) = {t}, p = {pStr}，Cohen\'s d = {d}（{effectWord}效果量）。',
       oneSample:
         '單一樣本 t 檢定結果顯示，樣本平均（M = {m}, SD = {sd}, n = {n}）與比較值 μ₀ = {mu0} 之間{sigWord}差異，t({df}) = {t}, p = {pStr}，Cohen\'s d = {d}（{effectWord}效果量）。',
+      // ★ R51：零變異時句首插入，且不下顯著性判定
+      zeroVarianceCaveat: '【警告：資料完全沒有變異（標準差為 0），t 與 Cohen’s d 在數學上發散、p 值恆為 0，以下數字都不可解讀，不應直接引用。】',
       sigYes: '達顯著',
       sigNo: '未達顯著',
       copyHint: '一鍵複製 APA 敘述',
@@ -2495,6 +2499,14 @@ export default {
       hint: '兩個因子均需為類別型，且各 ≥ 2 組',
     },
     result: {
+      // ★ 2026-07-29 紅隊 R52：雙因子 ANOVA 原本完全沒有前提檢核區塊
+      assumpTitle: '前提假設檢核',
+      homogeneityCells: '變異數同質性（各細格 Levene）',
+      normalityResid: '殘差常態性（Shapiro-Wilk）',
+      assumpOk: '通過',
+      assumpViolated: '違反',
+      assumpViolationWarn: '警告：至少有一項前提假設未通過。雙因子 ANOVA 的 F 檢定在細格人數相等時對常態違反相當穩健，但對變異數不同質較敏感（細格人數不等時尤其嚴重）。請併同細格人數與細格標準差一起判讀，必要時考慮轉換依變項或改用穩健方法。',
+      assumpHint: '雙因子的誤差項是「細格內」變異，故變異數同質性檢核的是 A × B 交叉後的各細格（而非單一因子的各水準）；常態假設針對的是全模型殘差，而不是逐組原始分數。兩者皆只警告、不阻擋計算。',
       cellMeansTitle: '細格平均（Cell Means）',
       anovaTitle: 'ANOVA 表（Type III SS）',
       effectSizeTitle: '效果量',
