@@ -15,6 +15,7 @@ import { INTERVENTION_DATA, INTERVENTION_LABELS, INTERVENTION_VALUE_LABELS } fro
 import { MULTIGROUP_DATA, MULTIGROUP_LABELS, MULTIGROUP_VALUE_LABELS } from './multigroup'
 import { CATEGORICAL_DATA, CATEGORICAL_LABELS, CATEGORICAL_VALUE_LABELS } from './categorical'
 import { FACTORIAL_DATA, FACTORIAL_LABELS, FACTORIAL_VALUE_LABELS } from './factorial'
+import { TPB_DATA, TPB_LABELS, TPB_VALUE_LABELS, TPB_SCALE_VARS } from './tpb'
 
 const REGISTRY = {
   employee: {
@@ -46,6 +47,13 @@ const REGISTRY = {
     rows: CATEGORICAL_DATA,
     labels: CATEGORICAL_LABELS,
     valueLabels: CATEGORICAL_VALUE_LABELS,
+  },
+  tpb: {
+    id: 'tpb',
+    rows: TPB_DATA,
+    labels: TPB_LABELS,
+    valueLabels: TPB_VALUE_LABELS,
+    scaleVars: TPB_SCALE_VARS,
   },
 }
 

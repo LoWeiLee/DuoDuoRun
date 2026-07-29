@@ -10,10 +10,11 @@
  */
 
 /**
- * PLS-SEM 示範模型（employee 資料集的 Likert 題項）：
- *   工作滿意度 (q1 工作環境, q2 同事關係, q3 主管溝通, q4 薪資福利)
- *     → 整體滿意 (q5) → 工作績效 (performance_score)
- * 簡單中介鏈，示範測量模型（多指標構念）與兩條結構路徑。
+ * PLS-SEM 示範模型（2026-07-29 起改用 tpb 資料集，TPB 經典五路徑全模型）：
+ *   態度 (att1-att4)、主觀規範 (sn1-sn3)、知覺行為控制 (pbc1-pbc4)
+ *     → 行為意圖 (bi1-bi3) → 行為 (beh1-beh3)；另有 知覺行為控制 → 行為。
+ * N = 200，比原 employee（N = 50）更符合 PLS 樣本量慣例；
+ * 資料生成時已用本引擎實測：五路徑全顯著、AVE > .5、HTMT 最大 .68（見 src/data/tpb.js 檔頭）。
  * committed 直接附上（載入示範即出結果，不需再按「執行分析」）；
  * draft 快照的 JSON 需與 Config buildModel() 的輸出逐鍵一致，否則會誤報「設定已變更」。
  *
@@ -27,16 +28,21 @@
  *     選開的是「不需要額外 permutation／EM 迭代」的一組（Q² / PLSpredict k=5 /
  *     IPMA＋cIPMA / CTA-PLS），MGA・MICOM（permutation 重）與 FIMIX・PLS-POS
  *     （EM／爬山法重）刻意不開：示範要秒出，煙霧測試也不該因此變慢。
- *     CTA-PLS 需要 4 個以上指標的構念 → 工作滿意度補入 q4。
+ *     CTA-PLS 需要 4 個以上指標的構念 → 態度與知覺行為控制各有 4 指標，條件滿足。
  */
 const PLS_DEMO_LVS = [
-  { name: '工作滿意度', indicators: ['q1', 'q2', 'q3', 'q4'], mode: 'reflective' },
-  { name: '整體滿意', indicators: ['q5'], mode: 'reflective' },
-  { name: '工作績效', indicators: ['performance_score'], mode: 'reflective' },
+  { name: '態度', indicators: ['att1', 'att2', 'att3', 'att4'], mode: 'reflective' },
+  { name: '主觀規範', indicators: ['sn1', 'sn2', 'sn3'], mode: 'reflective' },
+  { name: '知覺行為控制', indicators: ['pbc1', 'pbc2', 'pbc3', 'pbc4'], mode: 'reflective' },
+  { name: '行為意圖', indicators: ['bi1', 'bi2', 'bi3'], mode: 'reflective' },
+  { name: '行為', indicators: ['beh1', 'beh2', 'beh3'], mode: 'reflective' },
 ]
 const PLS_DEMO_PATHS = [
-  { from: '工作滿意度', to: '整體滿意' },
-  { from: '整體滿意', to: '工作績效' },
+  { from: '態度', to: '行為意圖' },
+  { from: '主觀規範', to: '行為意圖' },
+  { from: '知覺行為控制', to: '行為意圖' },
+  { from: '行為意圖', to: '行為' },
+  { from: '知覺行為控制', to: '行為' },
 ]
 const PLS_DEMO_MODEL = {
   schemaVersion: 1,
@@ -53,7 +59,7 @@ const PLS_DEMO_OPTIONS = {
     predict: true,
     k: 5,
     ipma: true,
-    target: '工作績效',
+    target: '行為',
     cipma: true,
     cta: true,
   },
@@ -185,7 +191,7 @@ export const ANALYSIS_DEMOS = {
 
   // ── 結構方程模型 ─────────────────────
   'pls-sem': {
-    dataset: 'employee',
+    dataset: 'tpb',
     settings: {
       lvs: PLS_DEMO_LVS,
       paths: PLS_DEMO_PATHS,

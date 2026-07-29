@@ -126,4 +126,5 @@ export const DEMO_DATASETS = [
   { id: 'multigroup',    i18nKey: 'multigroup',    descKey: 'multigroupDesc' },
   { id: 'factorial',     i18nKey: 'factorial',     descKey: 'factorialDesc' },
   { id: 'categorical',   i18nKey: 'categorical',   descKey: 'categoricalDesc' },
+  { id: 'tpb',           i18nKey: 'tpb',           descKey: 'tpbDesc' },
 ]

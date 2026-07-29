@@ -27,6 +27,7 @@ const TREE = {
       { key: 'describe', optKey: 'describe', next: 'describe' },
       { key: 'compare',  optKey: 'compare',  next: 'compareDv' },
       { key: 'relate',   optKey: 'relate',   next: 'relate' },
+      { key: 'model',    optKey: 'model',    next: 'model' },
       { key: 'scale',    optKey: 'scale',    next: 'scale' },
       { key: 'classify', optKey: 'classify', next: 'classify' },
     ],
@@ -66,6 +67,7 @@ const TREE = {
     qKey: 'compareManyDesign',
     options: [
       { key: 'between',   optKey: 'between',   recommend: ['one-way-anova'] },
+      { key: 'twoFactor', optKey: 'twoFactor', recommend: ['two-way-anova'] },
       { key: 'within',    optKey: 'within',    recommend: ['repeated-anova'] },
       { key: 'mixed',     optKey: 'mixed',     recommend: ['mixed-anova'] },
       { key: 'covariate', optKey: 'covariate', recommend: ['ancova'] },
@@ -97,6 +99,14 @@ const TREE = {
     options: [
       { key: 'lda',     optKey: 'lda',     recommend: ['lda'] },
       { key: 'cluster', optKey: 'cluster', recommend: ['cluster'] },
+    ],
+  },
+  model: {
+    qKey: 'model',
+    options: [
+      { key: 'modelPls', optKey: 'modelPls', recommend: ['pls-sem'] },
+      { key: 'modelCfa', optKey: 'modelCfa', recommend: ['cfa'] },
+      { key: 'modelNca', optKey: 'modelNca', recommend: ['nca'] },
     ],
   },
 }
