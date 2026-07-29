@@ -3191,7 +3191,7 @@ export default {
       ctaMeta: 'k={k}、非冗餘 tetrad {t} 個、Bonferroni α={alpha}',
       ctaConflict: '構念「{lv}」宣告為{declared}，但 tetrad 檢定判為{verdict} — 請重新檢視測量模式的理論依據。',
       ctaSkipped: '以下構念指標少於 4 個，無法做 tetrad 檢定：{lvs}',
-      ctaNote: 'tetrad τ = σ_gh·σ_ij − σ_gi·σ_hj（Bollen & Ting, 1993），在標準化資料的指標相關矩陣上計算。反映型（共同因子）測量模型隱含所有 model-implied tetrad 消失；任一 tetrad 的信賴區間不含 0 → 拒絕反映型設定，該構念應改採形成型（Gudergan et al., 2008）。非冗餘 tetrad 數 = k(k−3)/2；CI 為 bias-corrected bootstrap（{b} 次重抽）＋區塊內 Bonferroni 調整（族系 α = {alpha}）。判讀為統計證據，最終設定仍須有理論依據——CTA 否證反映型不等於自動支持某一組形成型指標。',
+      ctaNote: 'tetrad τ = σ_gh·σ_ij − σ_gi·σ_hj（Bollen & Ting, 1993），在標準化資料的指標相關矩陣上計算。反映型（共同因子）測量模型隱含所有 model-implied tetrad 消失；任一 tetrad 的信賴區間不含 0 → 拒絕反映型設定，該構念應改採形成型（Gudergan et al., 2008）。非冗餘 tetrad 數 = k(k−3)/2；CI 為 bias-corrected bootstrap（{b} 次重抽，n = {n}）＋區塊內 Bonferroni 調整（族系 α = {alpha}）。非冗餘 tetrad 的選取集取決於指標的宣告順序——整體判讀不受影響（任一極大獨立子集張成相同的約束空間），但表上列出的是哪幾個 tetrad 會隨順序改變。判讀為統計證據，最終設定仍須有理論依據——CTA 否證反映型不等於自動支持某一組形成型指標。',
       ipmaColPerformance: 'Performance（0–100）',
       ipmaIndicatorTitle: '指標層 IPMA',
       w5ErrorPrefix: '{feature} 無法計算：{message}',
@@ -3294,7 +3294,7 @@ Gaussian copula（Park & Gupta, 2012；PLS-SEM 流程依 Hult et al., 2018）用
 
 怎麼讀：
 1. 先看上方的識別條件表。Park & Gupta 的方法靠「P 非常態」來識別——P 若是常態，c 與 P 高度共線，檢定沒有意義。KS 檢定未拒絕常態的構念會標黃字，那一列的 copula 結果不能用。
-2. 再看每個結構方程的擴充迴歸。工具會跑該方程所有 copula 組合（k 個候選 → 2^k − 1 個模型，Hult et al. 建議全組合檢視）。任一 copula 項的 95% CI 不含 0 → 內生性訊號。
+2. 再看每個結構方程的擴充迴歸。候選構念 k ≤ 5 時，工具會跑該方程所有 copula 組合（2^k − 1 個模型，Hult et al. 建議全組合檢視）；k > 5 時組合數會爆炸，改為只跑「各自單獨」與「全部同時」共 k + 1 個模型，並在報表上警告。任一 copula 項的 95% CI 不含 0 → 內生性訊號。
 3. copula 項的 SE 沒有標準的漸近式，工具用 bootstrap（每次重抽都重估權重與 copula 項）。
 
 三個界線要守住：

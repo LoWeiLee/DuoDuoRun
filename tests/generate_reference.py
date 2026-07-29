@@ -1981,7 +1981,7 @@ except Exception as e:
 #   M 步：ρ_k = mean_i p_ik；β_kj = 加權 OLS（權重 p_ik）；σ²_kj = Σp_ik·resid² / Σp_ik
 #
 # 為什麼沒有外部基準：FIMIX 沒有主流 Python/R 完整實作。驗證改採三重策略——
-#   (a) 模擬還原：datasets["fimix"] 為兩段已知係數（+0.70 / −0.30）的模擬資料
+#   (a) 模擬還原：datasets["fimix"] 為兩段已知係數（+0.80 / −0.80）的模擬資料
 #   (b) EM 單調性：lnL 每步不得下降（引擎端行為測試斷言）
 #   (c) JS↔numpy 逐值：初始後驗機率固定注入（pls_fimix_inputs），繞開兩邊 RNG 不同的問題
 try:
@@ -2092,9 +2092,9 @@ try:
         "FIMIX-PLS（Hahn, Johnson, Herrmann & Huber 2002；段數準則依 Sarstedt et al. 2011）："
         "全域 PLS 的標準化 LV 分數 → 內模型的有限混合迴歸 EM（Hahn 原式不含截距）。"
         "K = 1–4 的 lnL／AIC／AIC3／AIC4／BIC／CAIC／HQ／MDL5／EN（normed entropy，"
-        "Ramaswamy et al. 1993）與段別解（β 遞減排序以消除 label switching）。"
+        "Ramaswamy et al. 1993）與段別解（依段別佔比 ρ 遞減排序以消除 label switching）。"
         "初始後驗機率固定注入（見 pls_fimix_inputs）→ JS↔numpy 逐值可比。"
-        "資料為兩段已知係數（+0.70 / −0.30）的模擬資料，recovery_K2 為段別還原率。"
+        "資料為兩段已知係數（+0.80 / −0.80、180/120）的模擬資料，recovery_K2 為段別還原率。"
         "無主流 Python/R 實作可對照 → 驗證採「模擬還原＋EM 單調性＋JS↔numpy 逐值」三重策略",
         **_fx_vals)
 

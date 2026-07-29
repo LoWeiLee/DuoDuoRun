@@ -4175,6 +4175,13 @@ export function copulaPLS(rows, model, options = {}) {
     return { error: 'copula-bootstrap-failed', message: `bootstrap 有效重抽只有 ${nValid} 次（模型在重抽樣本上無法收斂）` }
   }
 
+  if ((base.meta?.nDropped ?? 0) > 0) {
+    warnings.push(`casewise deletion 剔除 ${base.meta.nDropped} 筆含缺失值的資料列（分析樣本 n = ${n}）`)
+  }
+  if (nValid < B * 0.95) {
+    warnings.push(`bootstrap 有 ${B - nValid} 次重抽（${(100 * (1 - nValid / B)).toFixed(1)}%）因模型無法收斂或迴歸奇異而被剔除，有效重抽數為 ${nValid}；SE 與 CI 的穩定性下降，p 值的自由度亦隨之改變（df = ${nValid - 1}）`)
+  }
+
   const equations = plan.map((eq, e) => ({
     endogenous: eq.endogenous,
     predictors: eq.predictors,
@@ -4523,6 +4530,24 @@ export function fimixPLS(rows, model, options = {}) {
     warnings.push(`有 ${tiny} 個段的成員數不足全樣本的 5%——段數可能過多（Hair et al. 建議每段至少要能支撐該段的模型估計）`)
   }
 
+  // 退化（未識別）解：兩段的全部係數與殘差變異幾乎相同 → EM 落在概似面的脊線上
+  const dupPairs = []
+  for (let a = 0; a < K; a++) {
+    for (let b2 = a + 1; b2 < K; b2++) {
+      const same = eqs.every((eq, j) => eq.predictors.every((_, c) =>
+        Math.abs(main.beta[a][j][c] - main.beta[b2][j][c]) < 1e-6)
+        && Math.abs(main.sigma2[a][j] - main.sigma2[b2][j]) < 1e-6)
+      if (same) dupPairs.push(`${a + 1} 與 ${b2 + 1}`)
+    }
+  }
+  if (dupPairs.length > 0) {
+    warnings.push(`段 ${dupPairs.join('、')} 的路徑係數與殘差變異幾乎完全相同——這是解未識別的徵候（多出來的段沒有承載任何異質性），請減少段數`)
+  }
+  const emptySegs = counts.map((c, k) => (c === 0 ? k + 1 : null)).filter((v) => v !== null)
+  if (emptySegs.length > 0) {
+    warnings.push(`段 ${emptySegs.join('、')} 的佔比 ρ 大於 0，但沒有任何個案的後驗機率以該段為最大——該段在硬指派下是空的，段數過多`)
+  }
+
   const segments = main.rho.map((share, k) => ({
     index: k + 1,
     share,
@@ -4542,11 +4567,18 @@ export function fimixPLS(rows, model, options = {}) {
       return { error: 'fimix-bad-segments', message: `kMax 必須是 ≥ 1 的整數（收到 ${options.kMax}）` }
     }
     selection = []
+    let selTruncatedAt = null
     for (let kk = 1; kk <= kMax; kk++) {
-      if (n < 10 * kk) break
+      if (n < 10 * kk) { selTruncatedAt = kk; break }
       const sol = kk === K ? main : solve(kk)
       if (sol.error) continue
       selection.push({ k: kk, ...fimixCriteria(kk, sol.lnL, sol.post, n, nPaths, nEndo) })
+    }
+    if (selTruncatedAt !== null) {
+      warnings.push(`段數選擇表只算到 K = ${selTruncatedAt - 1}：K = ${selTruncatedAt} 需要至少 ${10 * selTruncatedAt} 筆資料，目前只有 ${n} 筆（每段 10 筆為極保守下限）`)
+    }
+    if (selection.length < Math.min(kMax, Math.floor(n / 10))) {
+      warnings.push('段數選擇表有缺列：部分 K 的估計未能完成（注入固定初始後驗時，只有形狀相符的 K 會被計算）')
     }
   }
 
@@ -4574,17 +4606,19 @@ export function fimixPLS(rows, model, options = {}) {
  *
  *            FIMIX                          PLS-POS
  *   指派      軟（後驗機率）                  硬（每個個案屬於一段）
- *   目標      混合模型的對數概似               內生構念的**預測誤差**（殘差平方和）
+ *   目標      混合模型的對數概似               各段各內生構念的**解釋變異 R²** 之和
  *   演算法    EM                             逐案重新指派的爬山法
  *   分布假設  常態                           無
  *
- * 目標函數：Obj = Σ_段 Σ_內生構念 SSE_段,構念，愈小愈好。
+ * 目標函數：Obj = Σ_段 Σ_內生構念 R²_段,構念，**愈大愈好**（Becker et al. 2013, p. 676）。
+ * 注意這**不等價於**最小化 Σ SSE——SST 隨段別組成改變，兩者收斂到不同分割
+ * （Session Q2 的溯源審計即因此改口徑；見 docs/methods/pls-pos.md §3.3）。
  *
  * 爬山法（確定性）：以充分統計量（A = Σxx'、b = Σxy、yy = Σy²、n）做增量更新——
  * 搬移一個個案只需 O(k²)，不必重跑整段的 OLS。逐案（索引序）試著搬到其他段（段索引序），
  * 取「改善最大且 > 1e-12」者；同分取段索引較小者。一輪掃完沒有搬移即停止。
  *
- * ★ 本法的關鍵弱點（UI 明確警告）：目標函數**必然**隨段數增加而下降——
+ * ★ 本法的關鍵弱點（UI 明確警告）：目標函數**必然**隨段數增加而上升——
  * 段數愈多、配適愈好，POS 自己沒有懲罰項。所以 **POS 不能用來選段數**。
  * 段數要靠 FIMIX 的資訊準則、理論、或段別的可解釋性來決定。
  * ──────────────────────────────────────────────────────────────────────────── */
@@ -4830,6 +4864,11 @@ export function posPLS(rows, model, options = {}) {
   if (best.passes >= maxPasses) {
     warnings.push(`爬山法在 ${maxPasses} 輪內未停止；結果可能不是局部最優`)
   }
+  const posMinCases = Math.max(10, 5 * Math.max(...eqs.map((e) => e.X.length)))
+  const posTiny = segments.filter((sg) => sg.size < posMinCases)
+  if (posTiny.length > 0) {
+    warnings.push(`段 ${posTiny.map((sg) => `${sg.index}（${sg.size} 筆）`).join('、')} 的樣本數過小（低於 ${posMinCases} 筆）——段內迴歸的自由度不足，該段的係數與 R² 會嚴重過度配適，不宜解讀；請減少段數或提高段別大小下限 minSize`)
+  }
   warnings.push('PLS-POS 的目標函數（各段 R² 之和）必然隨段數增加而上升——本法自身沒有懲罰項，因此**不能用來選段數**。段數請依 FIMIX 的資訊準則、理論、或段別的可解釋性決定。')
   warnings.push('本實作為 Becker et al. (2013) PLS-POS 的**結構模型層簡化版**：LV 分數取自全樣本 PLS 權重，不做段別的測量模型權重重估（原文的區辨特徵之一），因此偵測不到純測量模型層的異質性；另加了段別大小下限（原文無此設定，且原文強調能找出極小利基段）。')
 
@@ -4849,6 +4888,8 @@ export function posPLS(rows, model, options = {}) {
         return {
           endogenous: eq.endogenous,
           sse,
+          // 逐方程 R²（與 segments[].equations[].r2 同慣例：無截距 → 未置中 TSS）
+          r2: globalStats[j].yy > 1e-12 ? 1 - sse / globalStats[j].yy : 0,
           coefficients: eq.predictors.map((from, c) => ({ from, coef: beta[c] })),
         }
       }),

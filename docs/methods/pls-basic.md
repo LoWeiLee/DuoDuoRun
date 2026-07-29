@@ -229,7 +229,10 @@ $$\text{HTMT}_{ab}=\frac{\bar{r}_{\text{hetero}}}{\sqrt{\bar{r}^{\text{mono}}_{a
 
 ## 6. 對照與驗證狀態
 
-**基準組**：`reference.json → pls_basic`（29 個欄位）
+**基準組**：`reference.json → pls_basic`（29 個欄位，path scheme）
+＋ `reference.json → pls_scheme_centroid`（17 欄）與 `reference.json → pls_scheme_factorial`（17 欄）
+——後兩組為 §3.3 另兩種 weighting scheme 的基準，同樣由 plspm 0.5.7 產生
+（★ 2026-07-29 A3c 補列：`docs.coverage.test.js` 上線後發現本節原先只點名 `pls_basic`，另兩組雖有基準、有 adapter、有比對，卻未被任何文件的第 6 節引用）
 
 **tier / status**：tier **B** / **verified**（`provenance.json`）
 

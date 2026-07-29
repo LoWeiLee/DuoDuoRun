@@ -412,11 +412,13 @@ export function buildNarrative(res, lang) {
 
   // Gaussian copula 內生性檢查
   if (copula && !copula.error && Array.isArray(copula.equations) && copula.equations.length > 0) {
+    // ★ 判準與報表共用同一份：percentile CI 是否含 0（引擎的 endogeneitySignal）。
+    // 不可改用 p < .05——兩者在 bootstrap 分布偏斜時會給出相反結論（A3c R33-b）。
     let nSig = 0
     for (const eq of copula.equations) {
       for (const m of eq.models || []) {
         if (m.singular) continue
-        if ((m.coefficients || []).some((cf) => cf.isCopula && Number.isFinite(cf.p) && cf.p < 0.05)) nSig++
+        if (m.endogeneitySignal) nSig++
       }
     }
     const normalLvs = (copula.normality || []).filter((q) => !q.nonNormal).map((q) => q.lv)

@@ -3133,7 +3133,7 @@ export default {
       ctaMeta: 'k={k}, {t} nonredundant tetrads, Bonferroni \u03b1={alpha}',
       ctaConflict: 'Construct \u201c{lv}\u201d is declared {declared} but the tetrad test indicates {verdict} \u2014 revisit the theoretical basis for the measurement mode.',
       ctaSkipped: 'These constructs have fewer than 4 indicators and cannot be tetrad-tested: {lvs}',
-      ctaNote: 'Tetrad \u03c4 = \u03c3_gh\u00b7\u03c3_ij \u2212 \u03c3_gi\u00b7\u03c3_hj (Bollen & Ting, 1993), computed on the indicator correlation matrix of standardized data. A reflective (common factor) measurement model implies that all model-implied tetrads vanish; if any confidence interval excludes 0, the reflective specification is rejected and the construct should be specified as formative (Gudergan et al., 2008). The number of nonredundant tetrads is k(k\u22123)/2; CIs are bias-corrected bootstrap ({b} resamples) with a within-block Bonferroni adjustment (family-wise \u03b1 = {alpha}). The verdict is statistical evidence only \u2014 rejecting a reflective specification does not by itself justify any particular formative indicator set.',
+      ctaNote: 'Tetrad \u03c4 = \u03c3_gh\u00b7\u03c3_ij \u2212 \u03c3_gi\u00b7\u03c3_hj (Bollen & Ting, 1993), computed on the indicator correlation matrix of standardized data. A reflective (common factor) measurement model implies that all model-implied tetrads vanish; if any confidence interval excludes 0, the reflective specification is rejected and the construct should be specified as formative (Gudergan et al., 2008). The number of nonredundant tetrads is k(k\u22123)/2; CIs are bias-corrected bootstrap ({b} resamples, n = {n}) with a within-block Bonferroni adjustment (family-wise \u03b1 = {alpha}). Which nonredundant tetrads are selected depends on the order in which the indicators are declared \u2014 the overall verdict is unaffected (any maximal independent subset spans the same constraint space), but the particular tetrads listed in the table will change. The verdict is statistical evidence only \u2014 rejecting a reflective specification does not by itself justify any particular formative indicator set.',
       ipmaColPerformance: 'Performance (0–100)',
       ipmaIndicatorTitle: 'Indicator-level IPMA',
       w5ErrorPrefix: '{feature} unavailable: {message}',
@@ -3236,7 +3236,7 @@ The Gaussian copula (Park & Gupta, 2012; PLS-SEM procedure per Hult et al., 2018
 
 How to read it:
 1. Start with the identification-condition table. Park & Gupta's method is identified through the non-normality of P — if P is normal, c is nearly collinear with P and the test is meaningless. Constructs where the KS test does not reject normality are flagged; their copula results cannot be used.
-2. Then read each structural equation. The tool runs every copula combination for that equation (k candidates → 2^k − 1 models; Hult et al. recommend inspecting all of them). A copula term whose 95% CI excludes 0 is an endogeneity signal.
+2. Then read each structural equation. With k ≤ 5 candidates the tool runs every copula combination for that equation (2^k − 1 models; Hult et al. recommend inspecting all of them); with k > 5 the number of combinations explodes, so the tool runs only the k + 1 models "each on its own" and "all together", and warns in the report. A copula term whose 95% CI excludes 0 is an endogeneity signal.
 3. The copula term has no standard asymptotic SE, so the tool bootstraps it (weights and copula terms are re-estimated in every resample).
 
 Three boundaries:

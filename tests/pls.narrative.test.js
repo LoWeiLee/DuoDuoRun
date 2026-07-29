@@ -203,7 +203,7 @@ describe('APA 敘述句：W5／W6 區塊', () => {
         nBootstrap: 300, n: 300,
         normality: [{ lv: 'F1', D: 0.09, p: 0.002, nonNormal: true }],
         equations: [{ endogenous: 'F2', predictors: ['F1'], models: [
-          { copulas: ['F1'], singular: false, r2: 0.32,
+          { copulas: ['F1'], singular: false, r2: 0.32, endogeneitySignal: true,
             coefficients: [{ name: 'F1', coef: 0.5, se: 0.1, ciLower: 0.3, ciUpper: 0.7, p: 0.001, isCopula: false },
               { name: 'c(F1)', coef: -0.22, se: 0.08, ciLower: -0.38, ciUpper: -0.06, p: 0.007, isCopula: true }] },
         ] }],
@@ -218,7 +218,7 @@ describe('APA 敘述句：W5／W6 區塊', () => {
         nBootstrap: 300, n: 300,
         normality: [{ lv: 'F1', D: 0.03, p: 0.42, nonNormal: false }],
         equations: [{ endogenous: 'F2', predictors: ['F1'], models: [
-          { copulas: ['F1'], singular: false, r2: 0.32,
+          { copulas: ['F1'], singular: false, r2: 0.32, endogeneitySignal: false,
             coefficients: [{ name: 'c(F1)', coef: -0.02, se: 0.08, ciLower: -0.2, ciUpper: 0.16, p: 0.8, isCopula: true }] },
         ] }],
       },
@@ -227,6 +227,37 @@ describe('APA 敘述句：W5／W6 區塊', () => {
     expect(zhGate).toContain('未能拒絕常態')
     expect(zhGate).toContain('不足以作為內生性的判準')
     expect(buildNarrative(gated, 'en')).toContain('cannot be used to decide the endogeneity question')
+  })
+
+  it('★ copula（R33-b 回歸鎖）：判準必須跟報表一致（percentile CI），不得改回 p < .05', () => {
+    // bootstrap 分布偏斜時兩者會給相反答案——A3c 實測到雙向不一致各一例。
+    // 情境 1：p = .043（< .05）但 CI 含 0 → 報表無訊號 → 敘述句必須說「未發現證據」
+    const pSigCiNot = baseResult({
+      copula: {
+        nBootstrap: 400, n: 60,
+        normality: [{ lv: 'F2', D: 0.12, p: 0.01, nonNormal: true }],
+        equations: [{ endogenous: 'C', predictors: ['F2'], models: [
+          { copulas: ['F2'], singular: false, r2: 0.21, endogeneitySignal: false,
+            coefficients: [{ name: 'c(F2)', coef: -0.5254, se: 0.2591, p: 0.0433,
+              ciLower: -0.7158, ciUpper: 0.3501, isCopula: true }] },
+        ] }],
+      },
+    })
+    expect(buildNarrative(pSigCiNot, 'zh-TW')).toContain('未發現內生性的證據')
+
+    // 情境 2：p = .104（> .05）但 CI 排除 0 → 報表有訊號 → 敘述句必須說「可能存在內生性」
+    const ciSigPNot = baseResult({
+      copula: {
+        nBootstrap: 400, n: 60,
+        normality: [{ lv: 'F2', D: 0.12, p: 0.01, nonNormal: true }],
+        equations: [{ endogenous: 'C', predictors: ['F2'], models: [
+          { copulas: ['F2'], singular: false, r2: 0.21, endogeneitySignal: true,
+            coefficients: [{ name: 'c(F2)', coef: -0.2044, se: 0.1255, p: 0.1043,
+              ciLower: -0.4956, ciUpper: -0.0081, isCopula: true }] },
+        ] }],
+      },
+    })
+    expect(buildNarrative(ciSigPNot, 'zh-TW')).toContain('可能存在內生性')
   })
 
   it('★ FIMIX：EN 未達 .50 時必須明說不宜據此分群解讀', () => {
@@ -290,7 +321,8 @@ describe('APA 敘述句：W5／W6 區塊', () => {
       copula: { nBootstrap: 300, n: 300,
         normality: [{ lv: 'F1', D: 0.09, p: 0.002, nonNormal: true }],
         equations: [{ endogenous: 'F2', predictors: ['F1'], models: [{ copulas: ['F1'],
-          singular: false, r2: 0.3, coefficients: [{ name: 'c(F1)', coef: -0.2, se: 0.08,
+          singular: false, r2: 0.3, endogeneitySignal: true,
+          coefficients: [{ name: 'c(F1)', coef: -0.2, se: 0.08,
             ciLower: -0.36, ciUpper: -0.04, p: 0.01, isCopula: true }] }] }] },
       fimix: { n: 300, lnL: -410.2, iterations: 42, restarts: 10, criteria: { en: 0.62 },
         selection: [], segments: [

@@ -1494,7 +1494,7 @@ function PosBlock({ pos, r }) {
                 <Td align="left" mono={false}>{cf.from} → {eq.endogenous}</Td>
                 <Td>{fmtNum(cf.coef, 3)}</Td>
                 <Td>{i === 0 ? fmtNum(eq.sse, 2) : ''}</Td>
-                <Td>{i === 0 ? fmtNum(pos.global.r2, 3) : ''}</Td>
+                <Td>{i === 0 ? fmtNum(eq.r2, 3) : ''}</Td>
               </tr>
             )))}
           </tbody>
@@ -1846,12 +1846,19 @@ function CtaBlock({ cta, r }) {
           </TableBox>
         </div>
       ))}
+      {Array.isArray(cta.warnings) && cta.warnings.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {cta.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}
+        </div>
+      )}
       {cta.skipped && cta.skipped.length > 0 && (
         <p className="mt-2 text-[11px] text-duo-cocoa-800 leading-snug bg-duo-tongue/20 border border-duo-tongue rounded-md px-3 py-2">
           {fillTemplate(r.ctaSkipped, { lvs: cta.skipped.map((s) => `${s.lv}（${s.nIndicators}）`).join('、') })}
         </p>
       )}
-      <Note>{fillTemplate(r.ctaNote, { b: cta.nBootstrap, alpha: fmtNum(cta.ciAlpha, 2) })}</Note>
+      <Note>{fillTemplate(r.ctaNote, {
+        b: cta.nBootstrap, alpha: fmtNum(cta.ciAlpha, 2), n: cta.n,
+      })}</Note>
     </div>
   )
 }

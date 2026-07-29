@@ -36,7 +36,7 @@
 |---|---|---|
 | **A1** | PLS 測量與估計核心 | ✅ **完成（10 / 10）** |
 | **A2** | PLS 調節／高階／中介 | ✅ **完成（10 / 10）** |
-| **A3** | PLS 進階分析（W5／W6） | 🔄 **進行中（6 / 10）** |
+| **A3** | PLS 進階分析（W5／W6） | ✅ **完成（10 / 10，2026-07-29）** |
 | A4 | NCA／LDA／CFA／EFA | 未開始 |
 | A5 | 推論統計與無母數 | 未開始 |
 | A6 | 敘述／相關／迴歸／量表／多變量 | 未開始 |
@@ -121,7 +121,7 @@
 ★ R13 是本批最值得記的一項：**A1 的修正在 A2 被驗出有假陽性**。
 這說明「加警告」本身也需要跨情境驗證，不能只在原始情境測過就算數。
 
-## A3 — PLS 進階分析（W5／W6）【進行中 6 / 10】
+## A3 — PLS 進階分析（W5／W6）✅ 完成（10 / 10）
 
 | 文件 | 方法 | 基準組 | tier / status |
 |---|---|---|---|
@@ -131,9 +131,10 @@
 | [pls-predict.md](pls-predict.md) | 樣本外預測 PLSpredict ＋ CVPAT（含多次重複） | `pls_predict` | B / verified |
 | [pls-ipma.md](pls-ipma.md) | 重要性－績效地圖分析 IPMA | `pls_ipma` | B / verified |
 | [pls-cipma.md](pls-cipma.md) | 組合式 IPMA × NCA（cIPMA） | `pls_cipma` | B / verified |
-
-**未完成（4 份，最貴的一批）**：`pls-cta`（bootstrap tetrad，50 欄）、`pls-copula`（30 欄）、
-`pls-fimix`（EM，71 欄，維持 **pending**，卡文獻）、`pls-pos`（爬山法，39 欄）。
+| [pls-copula.md](pls-copula.md) | 內生性檢查 Gaussian copula（control function） | `pls_copula`、`pls_copula_inputs` | B / verified（輸入組 I / exempt） |
+| [pls-pos.md](pls-pos.md) | 預測導向分段 PLS-POS（爬山法） | `pls_pos`、`pls_pos_inputs` | B / verified（輸入組 I / exempt） |
+| [pls-cta.md](pls-cta.md) | 驗證性四分差分析 CTA-PLS（bootstrap tetrad） | `pls_cta` | B / verified（**帶明文保留**：選取集無第三方可核） |
+| [pls-fimix.md](pls-fimix.md) | 潛在異質性分段 FIMIX-PLS（EM ＋ 八個段數準則） | `pls_fimix`、`pls_fimix_inputs` | B / ★ **pending**（三筆原文皆未取得） |
 
 ### A3a 的紅隊結果摘要
 
@@ -164,6 +165,60 @@
 ★ 一則值得記住的觀察：`provenance.test.js` 的棘輪管「方法有沒有登記」、
 `compare.test.js` 管「數字對不對」，**沒有任何一道防線管「這個數字使用者看得到嗎」**。
 R24–R27 四項都是從這個縫隙掉出去的。A1 的 R6（組合未被基準覆蓋）是同一類死角的另一面。
+
+### A3b 的紅隊結果摘要
+
+三份文件（`pls-predict`／`pls-ipma`／`pls-cipma`）開出 3 項，**當日全部處置完畢，無 L3／L4**。
+獨立重寫：`pls_predict` 48 欄 8.882e−15、`pls_ipma` 10 欄 1.421e−14、`pls_cipma` 10 欄 3.553e−15。
+
+| 編號 | 級別 | 內容 | 狀態 |
+|---|---|---|---|
+| **R32** | L2 | ★ **說明文字寫四級判讀、實作只做三級**——不是有沒有，是**級數不符** | ✅ 已修（判準抽成純函式 `plspredictVerdict`，報表與敘述句共用）＋3 條測試 |
+| R31 | L2 | LM 基準的 Q²predict 與 MAE 算了、比對了，報表只顯示 `lm.rmse` | ✅ 已修（補兩欄，原欄名加「(PLS)」維持對稱） |
+| R30 | L2 | IPMA 的非標準化路徑係數有 fixture、有比對，零 UI 消費者 | ✅ 已修（新增專表＋「與標準化 β 不同尺度」註記） |
+
+★ R32 留下一個必須誠實標註的口徑：「多數／少數」的門檻**原文未明定**，本工具取「超過半數」
+（故恰好半數判為「低」），已於報表註記、APA 敘述句、方法文件三處標註為**本工具的選擇而非引用**。
+
+## A3c 的紅隊結果摘要（2026-07-29，A3 收官）
+
+四份文件（`pls-copula`／`pls-pos`／`pls-cta`／`pls-fimix`）開出 15 項，**無 L4**。
+獨立重寫全數通過：`pls_copula` 30 欄 **3.775e−15**、`pls_pos` 39 欄 **2.132e−13**、
+`pls_cta` 50 欄（含 7 個字串欄）**6.661e−16**、`pls_fimix` 71 欄 **4.547e−13**。
+
+| 編號 | 方法 | 級別 | 內容 | 狀態 |
+|---|---|---|---|---|
+| **R33-b** | copula | L2 | ★ **報表用 percentile CI 判內生性、APA 敘述句用 `p < .05`**——掃描 60 個資料集，**兩個方向的不一致都出現過**（p 顯著但 CI 含 0，以及 CI 排除 0 但 p 不顯著） | ✅ 已修（敘述句改讀引擎的 `endogeneitySignal`，判準只留一份） |
+| R33-a | copula | L1 | 說明區宣稱跑「全組合」，實測 $k=6$ 時只跑 7 個（宣稱 63） | ✅ 已修（中英各補條件） |
+| R33-c | copula | L2 | `nDropped` 孤兒——缺失值剔除完全不揭露 | ✅ 已修（補 casewise 警告） |
+| R33-d | copula | L2 | 有效重抽偏低無警告（比照 A1 的 R10） | ✅ 已修（>5% 時警告，含 df 說明） |
+| R33-e | copula | L1 | KS $p$ 與 statsmodels 預設（table 法）差 .015；CTA 用 $z$ 而 copula 用 $t(B'-1)$ | ✅ 已書面化（§3.4／§3.5／第 6 節） |
+| **R34-a** | POS | L1 | ★ **程式碼區塊註解仍是 Session Q2 之前的舊口徑**（寫「SSE 最小化、愈小愈好、必然下降」，實際是 ΣR² 最大化） | ✅ 已修（三處註解） |
+| **R34-b** | POS | L2 | ★ 全域表的 $R^2$ 欄在多內生構念時**逐列重複整體 $R^2$**（實測 M4 三列都印 0.0952），而正下方段別表印的是逐方程值 | ✅ 已修（`global.equations[]` 補 `r2`，全域表改印逐方程值） |
+| R34-c | POS | L2 | 微小段無警告（實測 57／3 分割，3 筆的段 $R^2$ = 0.97） | ✅ 已修（段內樣本過小時指名段別警告） |
+| **R35-a** | CTA | L2 | ★ **CTA 是 W5／W6 唯一沒有渲染 `warnings` 的區塊**——低樣本與 casewise 剔除兩條警告使用者永遠看不到，且**報表上完全沒有樣本數** | ✅ 已修（補 WarnBox 區塊，註記補 $n$） |
+| R35-b | CTA | L1 | `tetrads[].t`／`.p` 是死碼（不進基準、不進 UI、不進測試，且用已被否定的 $\mathrm{df}=B-1$） | ✅ 已書面化（§3.5 標「不得引用」；Kevin 裁決本批不刪） |
+| R35-c | CTA | L1 | 非冗餘 tetrad 的選取集**取決於指標宣告順序**（實測三種順序給三組不同 tetrad，判讀一致） | ✅ 已修（`ctaNote` 中英各補一句） |
+| **R36-a** | FIMIX | L2 | ★ $K=4$ 出現**退化解**：兩段的 $\beta$ 與 $\sigma^2$ 完全相同，其中一段 $\rho=0.147$ 但**硬指派 0 人** | ✅ 已修（重複段與空段各一條警告） |
+| R36-b | FIMIX | L2 | `posteriors`／`assignment`／`expectedSize` 三個孤兒——軟指派看不到，段別無法刻畫 | ⬜ 記為功能擴充（見 roadmap §6.6） |
+| R36-c | FIMIX | L1 | 段數選擇表在 $n<10K$ 時**靜默截斷**（實測 kMax=8、$n=60$ → 只到 $K=6$） | ✅ 已修（截斷時警告） |
+| **R36-d** | FIMIX | L3 | ★ `reference.json` 的 source 字串有兩處事實錯誤：寫「β 遞減排序」實際是 **ρ 遞減**；寫模擬真值「+0.70/−0.30」實際是 **±0.80** | ✅ Kevin 核定並已執行：改 `generate_reference.py` 後**完整重生**，83 組數值**逐位元不變**、`datasets.json` 不變 |
+
+★ **本批四組的共同結構**：**數值本體全部通過獨立重寫，15 項發現全部落在呈現層、註解層與文獻層。**
+這與 A3a／A3b 的樣式一致——`provenance.test.js` 管登記、`compare.test.js` 管數值，
+**沒有一道管可見性**，而 A3c 又多抓到一種：**同一件事有兩套判準**（R33-b）與**註解沒跟上改碼**（R34-a）。
+
+★ **A3c 同時交付了補這道縫的測試**：`tests/docs.coverage.test.js`（roadmap §6.7 判準 5）。
+它檢查 `reference.json` 的每一組基準是否被至少一份方法文件的第 6 節點名，
+以 `MAX_UNDOCUMENTED` 棘輪硬擋（比照 `provenance.test.js` 的 `MAX_PENDING`）。
+★ **它上線第一天就抓到一組**：`pls_scheme_centroid` 與 `pls_scheme_factorial` 有基準、有 adapter、
+有逐值比對，但 A1 的 `pls-basic.md` 第 6 節只點名 `pls_basic`——34 個欄位沒有任何文件承認它們存在。已同日補上。
+
+★ **本批仍未結案的一項**：`pls_fimix` 維持 **pending**。Hahn et al. (2002)、
+Sarstedt et al. (2011)、Ramaswamy et al. (1993) 三筆原文皆未取得，
+$N_k$ 與 EN 的定義**無法核定**。`pls-fimix.md` 第 6 節逐條寫明了現行三重替代驗證
+**鎖得住什麼、鎖不住什麼**，並記下一條未執行的路徑：以 R `flexmix`
+在「無截距＋本工具的 LV 分數」設定下對照 EM 本身。
 
 ## 側欄模組 → 方法對照
 
