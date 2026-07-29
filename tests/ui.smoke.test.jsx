@@ -338,6 +338,46 @@ describe('PLS 結果：R24–R27「算了但看不到」的四個欄位', () => 
 })
 
 /**
+ * 階段 A / A3b 紅隊 R30–R32。前兩項與 A3a 的 R24–R27 同一個樣式（算了但看不到），
+ * 第三項是「說明文字寫了四級判讀，工具卻只做三級」——說明與實作級數不符。
+ *
+ * 用預設示範設定即可：`ANALYSIS_DEMOS['pls-sem']` 已開 PLSpredict＋IPMA＋cIPMA。
+ * （A3a 的教訓：選特定資料子集前先在沙盒把該子集餵給引擎跑一次；本批已確認
+ *   示範設定產出 verdict='low'、upaths 2 條、cIPMA 1 個條件。）
+ */
+describe('PLS 結果：R30–R32', () => {
+  it('R30：IPMA 的非標準化路徑表出現，且說明講清楚它與標準化 β 不同尺度', () => {
+    const panel = renderPanel('pls-sem', ANALYSIS_DEMOS['pls-sem'], 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle), 'IPMA 非標準化路徑表炸了').not.toBeInTheDocument()
+    // 修好之前：unstandardizedPaths 在 fixture 有 3 欄、adapters 有比對，但全 src/ 零元件讀它
+    expect(panel.textContent).toContain(zh.pls.result.ipmaUpathTitle)
+    // ★ 這條不是形式：importance 看起來像路徑係數，讀者會拿去和結構模型表的 β 比
+    expect(panel.textContent).toContain('不可互相比較')
+  })
+
+  it('R31：PLSpredict 表同時列出 LM 的 Q²predict 與 MAE', () => {
+    const panel = renderPanel('pls-sem', ANALYSIS_DEMOS['pls-sem'], 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle)).not.toBeInTheDocument()
+    expect(panel.textContent).toContain(zh.pls.result.predictColQ2pLm)
+    expect(panel.textContent).toContain(zh.pls.result.predictColMaeLm)
+  })
+
+  it('★ R32：PLSpredict 的整體判讀（四級）出現在報表上，且四級用語都在 i18n 有定義', () => {
+    const panel = renderPanel('pls-sem', ANALYSIS_DEMOS['pls-sem'], 'Result')
+    expect(panel).toBeTruthy()
+    expect(screen.queryByText(zh.errors.boundaryTitle)).not.toBeInTheDocument()
+    expect(panel.textContent).toContain('整體判讀')
+    // 示範資料實測為 low（2 個內生指標中 1 個優於 LM，恰好半數 → 少數）
+    expect(panel.textContent).toContain(zh.pls.result.predictVerdict.low)
+    for (const k of ['high', 'medium', 'low', 'none']) {
+      expect(typeof zh.pls.result.predictVerdict[k], `predictVerdict.${k} 缺譯`).toBe('string')
+    }
+  })
+})
+
+/**
  * 沒有示範設定的模組，煙霧測試涵蓋不到——twoWayAnova 就是漏網之魚：
  * 內建的四個資料集裡沒有任何一個同時有兩個類別因子 ＋ 一個連續依變項，
  * 所以它沒有 demo，也就沒被上面的 describe.each 掃到。

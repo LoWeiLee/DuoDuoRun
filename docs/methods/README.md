@@ -36,7 +36,7 @@
 |---|---|---|
 | **A1** | PLS 測量與估計核心 | ✅ **完成（10 / 10）** |
 | **A2** | PLS 調節／高階／中介 | ✅ **完成（10 / 10）** |
-| **A3** | PLS 進階分析（W5／W6） | 🔄 **進行中（3 / 10）** |
+| **A3** | PLS 進階分析（W5／W6） | 🔄 **進行中（6 / 10）** |
 | A4 | NCA／LDA／CFA／EFA | 未開始 |
 | A5 | 推論統計與無母數 | 未開始 |
 | A6 | 敘述／相關／迴歸／量表／多變量 | 未開始 |
@@ -121,16 +121,19 @@
 ★ R13 是本批最值得記的一項：**A1 的修正在 A2 被驗出有假陽性**。
 這說明「加警告」本身也需要跨情境驗證，不能只在原始情境測過就算數。
 
-## A3 — PLS 進階分析（W5／W6）【進行中 3 / 10】
+## A3 — PLS 進階分析（W5／W6）【進行中 6 / 10】
 
 | 文件 | 方法 | 基準組 | tier / status |
 |---|---|---|---|
 | [pls-mga.md](pls-mga.md) | 多群組分析（pooled t／Welch／Henseler／permutation 四法並列） | `pls_mga_formulas`、`pls_mga_perm`、`pls_mga_perm_inputs` | B / verified（輸入組 I / exempt） |
 | [pls-micom.md](pls-micom.md) | 測量恆等性 MICOM（三步驟） | `pls_micom` | B / verified |
 | [pls-itcriteria.md](pls-itcriteria.md) | 模型選擇準則（AIC／AICc／BIC／HQ） | `pls_itcriteria` | B / verified |
+| [pls-predict.md](pls-predict.md) | 樣本外預測 PLSpredict ＋ CVPAT（含多次重複） | `pls_predict` | B / verified |
+| [pls-ipma.md](pls-ipma.md) | 重要性－績效地圖分析 IPMA | `pls_ipma` | B / verified |
+| [pls-cipma.md](pls-cipma.md) | 組合式 IPMA × NCA（cIPMA） | `pls_cipma` | B / verified |
 
-**未完成（7 份）**：`pls-predict`（含多次重複）、`pls-ipma`、`pls-cipma`、`pls-cta`、
-`pls-copula`、`pls-fimix`（維持 **pending**，卡文獻）、`pls-pos`。
+**未完成（4 份，最貴的一批）**：`pls-cta`（bootstrap tetrad，50 欄）、`pls-copula`（30 欄）、
+`pls-fimix`（EM，71 欄，維持 **pending**，卡文獻）、`pls-pos`（爬山法，39 欄）。
 
 ### A3a 的紅隊結果摘要
 

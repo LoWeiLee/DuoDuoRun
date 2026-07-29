@@ -91,7 +91,7 @@ describe('APA 敘述句：W5／W6 區塊', () => {
     expect(en).toContain('measurement invariance')
   })
 
-  it('PLSpredict：Q²predict 與 RMSE 對 LM 的計數正確，三種判讀各自對應', () => {
+  it('★ PLSpredict：Shmueli et al. (2019) 四級判讀各自對應，且「多數／少數」的門檻說明必須入句', () => {
     const mk = (inds) => baseResult({
       predict: { k: 10, indicators: inds, cvpat: {
         vsIA: { dBar: -0.031, t: -2.4, p: 0.017 },
@@ -110,9 +110,34 @@ describe('APA 敘述句：W5／W6 區塊', () => {
       { lv: 'F2', indicator: 'i4', q2predict: 0.21, rmse: 0.80, mae: 0.6, lm: { rmse: 0.90 } },
       { lv: 'F2', indicator: 'i5', q2predict: -0.05, rmse: 0.98, mae: 0.7, lm: { rmse: 0.91 } },
     ])
-    expect(buildNarrative(allGood, 'zh-TW')).toContain('優於基準的樣本外預測力')
-    expect(buildNarrative(allBad, 'zh-TW')).toContain('未展現優於基準')
-    expect(buildNarrative(mixed, 'zh-TW')).toContain('僅在部分指標上')
+    // 2026-07-29 A3b 紅隊 R32：先前敘述句只有三級，把「多數」與「少數」壓成同一句，
+    // 與說明文字寫的四級不符。四級各測一次，並鎖住門檻的誠實標註。
+    const majority = mk([
+      { lv: 'F2', indicator: 'i4', q2predict: 0.21, rmse: 0.80, mae: 0.6, lm: { rmse: 0.90 } },
+      { lv: 'F2', indicator: 'i5', q2predict: 0.15, rmse: 0.85, mae: 0.6, lm: { rmse: 0.91 } },
+      { lv: 'F2', indicator: 'i6', q2predict: -0.05, rmse: 0.98, mae: 0.7, lm: { rmse: 0.91 } },
+    ])
+    const minority = mk([
+      { lv: 'F2', indicator: 'i4', q2predict: 0.21, rmse: 0.80, mae: 0.6, lm: { rmse: 0.90 } },
+      { lv: 'F2', indicator: 'i5', q2predict: -0.02, rmse: 0.95, mae: 0.7, lm: { rmse: 0.91 } },
+      { lv: 'F2', indicator: 'i6', q2predict: -0.05, rmse: 0.98, mae: 0.7, lm: { rmse: 0.91 } },
+    ])
+    expect(buildNarrative(allGood, 'zh-TW')).toContain('高度樣本外預測力')
+    expect(buildNarrative(allBad, 'zh-TW')).toContain('未展現樣本外預測力')
+    expect(buildNarrative(majority, 'zh-TW')).toContain('中度樣本外預測力')
+    expect(buildNarrative(minority, 'zh-TW')).toContain('樣本外預測力偏低')
+    // ★ 恰好半數（2/4）必須落在「少數」而不是「多數」——門檻是「超過半數」
+    const half = mk([
+      { lv: 'F2', indicator: 'i4', q2predict: 0.2, rmse: 0.80, mae: 0.6, lm: { rmse: 0.90 } },
+      { lv: 'F2', indicator: 'i5', q2predict: 0.2, rmse: 0.80, mae: 0.6, lm: { rmse: 0.90 } },
+      { lv: 'F2', indicator: 'i6', q2predict: -0.1, rmse: 0.95, mae: 0.7, lm: { rmse: 0.90 } },
+      { lv: 'F2', indicator: 'y', q2predict: -0.1, rmse: 0.95, mae: 0.7, lm: { rmse: 0.90 } },
+    ])
+    expect(buildNarrative(half, 'zh-TW')).toContain('樣本外預測力偏低')
+    expect(buildNarrative(half, 'zh-TW')).not.toContain('中度樣本外預測力')
+    // ★ 門檻是本工具的口徑選擇而非引用，這件事必須寫在使用者複製得到的句子裡
+    expect(buildNarrative(mixed, 'zh-TW')).toContain('原文未明定')
+    expect(buildNarrative(mixed, 'en')).toMatch(/fixes no numeric threshold/)
     // CVPAT 兩個對照都要出現
     const en = buildNarrative(allGood, 'en')
     expect(en).toContain('CVPAT')

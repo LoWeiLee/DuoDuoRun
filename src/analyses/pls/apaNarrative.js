@@ -18,6 +18,7 @@
  * NCA 的 d≥.1 且 p<.05 等）都必須進入句子，避免使用者複製後過度宣稱。
  */
 import { fmtNum, fillTemplate } from '../../lib/format'
+import { plspredictVerdict } from '../../lib/stats/pls'
 import { getStrings } from '../../i18n'
 
 function rangeStr(values) {
@@ -350,16 +351,21 @@ export function buildNarrative(res, lang) {
   // PLSpredict ＋ CVPAT
   if (predict && !predict.error && Array.isArray(predict.indicators) && predict.indicators.length > 0) {
     const inds = predict.indicators
-    const nQ2ok = inds.filter((q) => Number.isFinite(q.q2predict) && q.q2predict > 0).length
-    const nBeatLm = inds.filter((q) => Number.isFinite(q.rmse) && Number.isFinite(q.lm?.rmse)
-      && q.rmse < q.lm.rmse).length
-    let verdict
-    if (nQ2ok === inds.length && nBeatLm === inds.length) verdict = a.predAll
-    else if (nQ2ok === 0 && nBeatLm === 0) verdict = a.predNone
-    else verdict = a.predSome
+    // 2026-07-29 階段 A / A3b 紅隊 R32：改用引擎回傳的 Shmueli et al. (2019) 四級判讀。
+    // 先前這裡自己算三級（把「多數」與「少數」合併成 predSome），與說明文字寫的四級不符；
+    // 現在判準只有引擎一份，UI 表格與敘述句讀同一個 verdict，不會再各算各的。
+    const nQ2ok = Number.isFinite(predict.nQ2ok)
+      ? predict.nQ2ok
+      : inds.filter((q) => Number.isFinite(q.q2predict) && q.q2predict > 0).length
+    const nBeatLm = Number.isFinite(predict.nBeatLm)
+      ? predict.nBeatLm
+      : inds.filter((q) => Number.isFinite(q.rmse) && Number.isFinite(q.lm?.rmse)
+        && q.rmse < q.lm.rmse).length
+    const v = predict.verdict || plspredictVerdict(inds)
+    const verdict = a.predVerdictSentence[v] || ''
     parts.push(fillTemplate(a.predictIntro, {
       k: predict.k, nInd: inds.length, nQ2ok, nBeatLm, predVerdict: verdict,
-    }))
+    }) + a.predVerdictCaveat)
     if (predict.cvpat && predict.cvpat.vsIA && predict.cvpat.vsLM) {
       parts.push(fillTemplate(a.predictCvpat, {
         dIA: fmtNum(predict.cvpat.vsIA.dBar, 3),

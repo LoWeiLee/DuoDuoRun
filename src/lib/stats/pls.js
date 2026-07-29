@@ -3125,6 +3125,29 @@ function olsFit(Xcols, y, rowsIdx) {
 }
 
 /**
+ * PLSpredict 的整體判讀（Shmueli et al. 2019 四級）。
+ *
+ * 抽成獨立匯出函式的理由：報表（`Result.jsx`）與 APA 敘述句（`apaNarrative.js`）
+ * 都要用它，而 2026-07-29 紅隊 R32 抓到的正是「說明文字寫四級、敘述句自己算三級」
+ * 這種各算各的。判準只留這一份。
+ *
+ * ★ 「多數／少數」的數值門檻**原文未明定**，本工具取「超過半數＝多數」——
+ *   這是本工具的口徑選擇，不是引用。
+ *
+ * @param {Array<{rmse:number, lm:{rmse:number}}>} indicators
+ * @returns {'high'|'medium'|'low'|'none'|null}
+ */
+export function plspredictVerdict(indicators) {
+  if (!Array.isArray(indicators) || indicators.length === 0) return null
+  const nInd = indicators.length
+  const nBeatLm = indicators.filter((q) => Number.isFinite(q.rmse) && Number.isFinite(q.lm?.rmse)
+    && q.rmse < q.lm.rmse).length
+  if (nBeatLm === nInd) return 'high'
+  if (nBeatLm === 0) return 'none'
+  return nBeatLm > nInd / 2 ? 'medium' : 'low'
+}
+
+/**
  * PLSpredict（Shmueli et al. 2016；判讀依 Shmueli et al. 2019）＋
  * CVPAT（Liengaard et al. 2021：PLS vs IA、PLS vs LM 的逐案損失成對 t 檢定）。
  * k-fold 交叉驗證；LM 基準 = 各內生指標對全部外生指標的 OLS。
@@ -3153,6 +3176,11 @@ function olsFit(Xcols, y, rowsIdx) {
  *     先平均預測值再算指標必然給出**不高於**「平均各次指標」的誤差，差額恰為各次預測值
  *     之間的變異；重複次數越多、看起來越準，但那是集成效果不是樣本外表現。
  *   本工具因此維持「平均各次指標」。詳見 docs/validation-report-v1.md。
+ *
+ * ★ **整體判讀**（`verdict`）依 Shmueli et al. (2019)：全部指標的 PLS RMSE 低於 LM ＝ `'high'`、
+ *   超過半數 ＝ `'medium'`、半數以下但非零 ＝ `'low'`、全部不低於 ＝ `'none'`。
+ *   **「多數／少數」的數值門檻原文未明定**，「超過半數」是本工具的口徑選擇（已於三處標註）。
+ *   判讀的前提是 Q²predict > 0，故一併回報 `nQ2ok`／`nBeatLm`／`nIndicators` 供讀者把關。
  *
  * @param {object} options { k=10, seed=42, repetitions=1,
  *                           foldIndices?（測試注入：長度 n 的 fold id 陣列；
@@ -3387,11 +3415,26 @@ export function plspredictPLS(rows, model, options = {}) {
     const t = sdD > 0 ? dBar / (sdD / Math.sqrt(n)) : null
     return { dBar, t, df: n - 1, p: t === null ? null : pT(Math.abs(t), n - 1) }
   }
+  // ── 整體判讀（Shmueli et al. 2019 的四級；2026-07-29 階段 A / A3a→A3b 紅隊 R32）──
+  // 先前只有說明文字寫了四級，工具既不回報也不套用（APA 敘述句只有三級）。
+  // ★ 「多數／少數」的數值門檻**原文未明定**，本工具取「超過半數＝多數」。
+  //   這是本工具的口徑選擇，不是引用；已標註於 UI 註記、APA 敘述句與方法文件第 3 節。
+  // ★ 判讀的前提是 Q²predict > 0（原文的程序順序），故一併回報 nQ2ok 供讀者自行把關。
+  const nInd = indicators.length
+  const nBeatLm = indicators.filter((q) => Number.isFinite(q.rmse) && Number.isFinite(q.lm.rmse)
+    && q.rmse < q.lm.rmse).length
+  const nQ2ok = indicators.filter((q) => Number.isFinite(q.q2predict) && q.q2predict > 0).length
+  const verdict = plspredictVerdict(indicators)
+
   return {
     k,
     n,
     repetitions: reps,
     indicators,
+    nIndicators: nInd,
+    nBeatLm,
+    nQ2ok,
+    verdict,
     cvpat: { vsIA: cvOne(meanLoss('lIA')), vsLM: cvOne(meanLoss('lLM')) },
     warnings: reps > 1
       ? ['本次 PLSpredict 重複 ' + reps + ' 次 k-fold 後彙總：指標層取各次的算術平均，CVPAT 則先平均逐案損失再檢定一次（不平均 t 或 p）。註：seminr 的 predict_pls 採另一種口徑（先平均各次預測值、再算一次指標），該口徑會系統性低估誤差（差額＝各次預測值之間的變異，屬集成效果而非樣本外表現），且其 reps 因洗牌寫在重複迴圈之外而實際不生效；本工具不跟隨，判讀依據見 docs/validation-report-v1.md']

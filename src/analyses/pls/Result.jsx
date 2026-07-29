@@ -1186,6 +1186,8 @@ function PredictBlock({ predict, r }) {
       <Td>{fmtNum(cv.t, 2)}</Td>
       <Td><span className={TONE_TEXT[toneForP(cv.p)] || ''}>{fmtP(cv.p)}</span></Td>
       <Td> </Td>
+      <Td> </Td>
+      <Td> </Td>
     </tr>
   )
   return (
@@ -1199,15 +1201,25 @@ function PredictBlock({ predict, r }) {
       {Array.isArray(predict.warnings) && predict.warnings.length > 0 && (
         <div>{predict.warnings.map((w) => <WarnBox key={w}>{w}</WarnBox>)}</div>
       )}
+      {predict.verdict && (
+        <p className="text-xs text-duo-cocoa-700 mb-1.5">
+          {fillTemplate(r.predictVerdictLine, {
+            verdict: r.predictVerdict[predict.verdict],
+            nBeatLm: predict.nBeatLm, nInd: predict.nIndicators, nQ2ok: predict.nQ2ok,
+          })}
+        </p>
+      )}
       <TableBox>
         <thead className="bg-duo-cream-50">
           <tr>
             <Th align="left">{r.cols.lv}</Th>
             <Th align="left">{r.cols.indicator}</Th>
             <Th>{r.predictColQ2p}</Th>
+            <Th>{r.predictColQ2pLm}</Th>
             <Th>{r.predictColRmsePls}</Th>
             <Th>{r.predictColRmseLm}</Th>
             <Th>{r.predictColMae}</Th>
+            <Th>{r.predictColMaeLm}</Th>
           </tr>
         </thead>
         <tbody>
@@ -1225,11 +1237,13 @@ function PredictBlock({ predict, r }) {
                     <span className={q2ok ? TONE_TEXT.ok : TONE_TEXT.bad}>{fmtNum(q.q2predict, 3)}</span>
                   </span>
                 </Td>
+                <Td>{fmtNum(q.lm.q2predict, 3)}</Td>
                 <Td>
                   <span className={beatsLm ? TONE_TEXT.ok : TONE_TEXT.bad}>{fmtNum(q.rmse, 3)}</span>
                 </Td>
                 <Td>{fmtNum(q.lm.rmse, 3)}</Td>
                 <Td>{fmtNum(q.mae, 3)}</Td>
+                <Td>{fmtNum(q.lm.mae, 3)}</Td>
               </tr>
             )
           })}
@@ -1340,6 +1354,28 @@ function IpmaBlock({ ipma, r }) {
           </TableBox>
         </div>
       </div>
+      {Array.isArray(ipma.unstandardizedPaths) && ipma.unstandardizedPaths.length > 0 && (
+        <div className="mt-3">
+          <Heading>{r.ipmaUpathTitle}</Heading>
+          <TableBox>
+            <thead className="bg-duo-cream-50">
+              <tr>
+                <Th align="left">{r.cols.path}</Th>
+                <Th>{r.ipmaColUpath}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {ipma.unstandardizedPaths.map((q) => (
+                <tr key={`${q.from}-${q.to}`}>
+                  <Td align="left" mono={false} bold>{q.from} → {q.to}</Td>
+                  <Td>{fmtNum(q.coef, 3)}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </TableBox>
+          <Note>{r.ipmaUpathNote}</Note>
+        </div>
+      )}
       <Note>{fillTemplate(r.ipmaNote, { targetPerf: fmtNum(ipma.targetPerformance, 1) })}</Note>
     </div>
   )

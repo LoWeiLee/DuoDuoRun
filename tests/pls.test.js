@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   validatePLSModel, runPLS, bootstrapPLS, blindfoldPLS, bcaInterval, PLS_SCHEMA_VERSION,
-  mgaPLS, micomPLS, plspredictPLS, ipmaPLS, cipmaPLS, ctaPLS, henselerMgaP,
+  mgaPLS, micomPLS, plspredictPLS, plspredictVerdict, ipmaPLS, cipmaPLS, ctaPLS, henselerMgaP,
   copulaPLS, copulaTerm, fimixPLS, posPLS,
 } from '../src/lib/stats/pls.js'
 import { handleMessage } from '../src/lib/plsWorker.js'
@@ -922,6 +922,35 @@ describe('W5：PLSpredict 多次重複（repetitions）', () => {
     expect(plspredictPLS(main, M, { k: 5, repetitions: 2.5 }).error).toBe('bad-repetitions')
     expect(plspredictPLS(main, M, { k: 5, repetitions: 101 }).error).toBe('bad-repetitions')
     expect(plspredictPLS(main, M, { k: 5, repetitions: 2, foldIndices: foldPlans }).error).toBe('bad-folds')
+  })
+
+  // 2026-07-29 階段 A / A3b 紅隊 R32：說明文字寫了 Shmueli et al. (2019) 的四級判讀，
+  // 工具卻既不回報也不套用（敘述句自己算三級）。判準抽成 plspredictVerdict 後在此鎖住。
+  it('★ 四級判讀：high／medium／low／none 各自對應，且「恰好半數」落在 low', () => {
+    const mk = (beats) => beats.map((b, i) => ({
+      indicator: `x${i}`, rmse: b ? 0.8 : 1.0, lm: { rmse: 0.9 },
+    }))
+    expect(plspredictVerdict(mk([true, true, true]))).toBe('high')
+    expect(plspredictVerdict(mk([false, false, false]))).toBe('none')
+    expect(plspredictVerdict(mk([true, true, false]))).toBe('medium')
+    expect(plspredictVerdict(mk([true, false, false]))).toBe('low')
+    // ★ 門檻是「超過半數」——2/4 不算多數。這一條鎖的是本工具自訂的口徑，
+    //   原文（Shmueli et al. 2019）並未明定數值門檻。
+    expect(plspredictVerdict(mk([true, true, false, false]))).toBe('low')
+    expect(plspredictVerdict(mk([true, true, true, false]))).toBe('medium')
+    expect(plspredictVerdict([])).toBeNull()
+    expect(plspredictVerdict(null)).toBeNull()
+  })
+
+  it('★ 四級判讀與計數隨 plspredictPLS 回傳，UI 與敘述句不必各算一次', () => {
+    const r = plspredictPLS(main, M4, { k: 5, seed: 42 })
+    expect(r.error).toBeUndefined()
+    expect(['high', 'medium', 'low', 'none']).toContain(r.verdict)
+    expect(r.nIndicators).toBe(r.indicators.length)
+    expect(r.nBeatLm).toBe(r.indicators.filter((q) => q.rmse < q.lm.rmse).length)
+    expect(r.nQ2ok).toBe(r.indicators.filter((q) => q.q2predict > 0).length)
+    // 回傳的 verdict 必須等於同一支純函式算出來的（不得有第二套判準）
+    expect(r.verdict).toBe(plspredictVerdict(r.indicators))
   })
 })
 
