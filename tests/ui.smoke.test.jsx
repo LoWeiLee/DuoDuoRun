@@ -273,13 +273,6 @@ describe('PLS 畫布：W4 交互項與高階構念的顯示層', () => {
 })
 
 /**
- * 沒有示範設定的模組，煙霧測試涵蓋不到——twoWayAnova 就是漏網之魚：
- * 內建的四個資料集裡沒有任何一個同時有兩個類別因子 ＋ 一個連續依變項，
- * 所以它沒有 demo，也就沒被上面的 describe.each 掃到。
- * 它與 ANCOVA 有**完全相同**的 `error` 欄位撞名（2026-07-13 紅隊 R5 修復），
- * 用合成資料補一條專屬煙霧測試。
- */
-/**
  * 階段 A / A3a 紅隊 R24–R27：四個「引擎算了、回傳了、使用者卻看不到」的欄位。
  *
  * 這一批之所以要跑 UI（而不是只測引擎），是因為缺口本來就在呈現層——
@@ -307,7 +300,10 @@ const W5_GROUP_STATE = {
       q2: false,
       w5: {
         mga: true, micom: true,
-        groupColumn: 'department', g1: '人事', g2: '資訊',
+        // 2026-07-29：原本挑 人事／資訊 → 本機 jsdom 實測失敗。employee 的 department
+        // 各類人數不均（人事 5、資訊 8），且 q2 在部分部門內零變異，兩群估計直接掛掉，
+        // 表格根本不會 render。沙盒逐對實測後改用 財務／研發（15 / 11，20/20 次重排全有效）。
+        groupColumn: 'department', g1: '財務', g2: '研發',
         permutations: 30,
       },
     },
@@ -330,13 +326,24 @@ describe('PLS 結果：R24–R27「算了但看不到」的四個欄位', () => 
     const panel = renderPanel('pls-sem', { dataset: 'employee', settings: W5_GROUP_STATE }, 'Result')
     expect(panel).toBeTruthy()
     expect(screen.queryByText(zh.errors.boundaryTitle), 'MGA／MICOM 區塊炸了').not.toBeInTheDocument()
+    // ★ 先擋住「兩群估計失敗 → 只顯示警告框 → 表格根本沒 render」這個假通過：
+    //   不加這一條的話，下面三個 toContain 失敗時看起來像 UI 壞了，實際是資料選錯。
+    expect(panel.textContent, 'MGA／MICOM 估計失敗，表格沒 render——請改群組欄位或指標組合')
+      .not.toContain(zh.pls.result.w5ErrorPrefix.replace(/\{\w+\}/g, '').trim())
     expect(panel.textContent).toContain(zh.pls.result.mgaColHenseler2)   // R25
     expect(panel.textContent).toContain(zh.pls.result.micomColP)         // R26
     // R27：MICOM 先前沒有 meta 行，使用者看不到各組樣本數與有效 permutation 次數
-    expect(panel.textContent).toMatch(/人事.*n = \d+.*資訊.*n = \d+/s)
+    expect(panel.textContent).toMatch(/財務.*n = \d+.*研發.*n = \d+/s)
   })
 })
 
+/**
+ * 沒有示範設定的模組，煙霧測試涵蓋不到——twoWayAnova 就是漏網之魚：
+ * 內建的四個資料集裡沒有任何一個同時有兩個類別因子 ＋ 一個連續依變項，
+ * 所以它沒有 demo，也就沒被上面的 describe.each 掃到。
+ * 它與 ANCOVA 有**完全相同**的 `error` 欄位撞名（2026-07-13 紅隊 R5 修復），
+ * 用合成資料補一條專屬煙霧測試。
+ */
 describe('twoWayAnova（無 demo，用合成的兩因子資料補測）', () => {
   it('計算成功時 result.error 必須是 undefined（不可是誤差項物件）', async () => {
     const { runTwoWayAnova } = await import('../src/analyses/twoWayAnova/compute')
