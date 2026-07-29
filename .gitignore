@@ -43,3 +43,4 @@ tests/__pycache__/
 scripts/validation/out/*
 !scripts/validation/out/.gitkeep
 scripts/validation/Rplots*.pdf
+test-results.txt
