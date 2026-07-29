@@ -21,6 +21,66 @@ A5a 紅隊 **4 項（R50–R53）全部處置完畢**，其中 **R50 是階段 A
 抓到一個。A4 的獨立重寫是「換一條路線算同一個量」，A5a 的 Tukey 重寫則是**對分布本身做參數空間掃描**
 （$k\times \mathrm{df}\times q$ 共 896 格點），才把「只有一個基準點、而它恰好安全」逼出來。
 
+✅ **A5a 已完整驗收並推上遠端（commit `0729p`，2026-07-29）**：
+沙盒 12 檔全綠、`eslint .` 0 problems、`vite build` 615 modules transformed、
+119 個行號引用內容錨定重驗零異常；**Kevin 本機 16 檔全綠、1,426 過、6 跳過**
+（6 個 skip 全為既有的明文慣例差異，見 `compare.test.js` 的 `SKIP` 註記）。
+
+★ **休眠快照用的當下數字（供 §8.3／§8.4 收尾時直接引用）**：
+基準組 **84**、provenance **verified 78 / pending 2 / exempt 4**、tier **A 49 / B 31 / I 4**、
+方法文件 **44 份**（`docs/methods/` 含索引共 45 檔）、
+`MAX_PENDING = 2`、`MAX_UNDOCUMENTED = 27`、測試 16 檔 1,426 過。
+
+---
+
+## ★ A5b 開工指令（下一個 session 直接照這個順序做）
+
+**入口照順序讀**（其餘不必預讀）：
+
+1. 本檔 **§0**（品質規範，最高位階）
+2. 本檔 **★ 下一個 session 從這裡開始**（就是本節）＋ **§6.5 的 A5b 條目**
+3. `handoff-roadmap-v1.md` **§2**（架構不變量）、**§3**（沙盒作業手冊）
+4. 範本：`docs/methods/tukey-hsd.md`（★ 八節模板 ＋ **L4 的記錄方式** ＋「原文未取得」的標註寫法）
+   ——A5b 與它同屬 tier A、同樣帶數值近似，是最貼近的參照
+
+**A5b 範圍**：6 份文件、8 組基準（全 tier A）
+
+| 文件 | 基準組 | ★ 該批的慣例分歧重點 |
+|---|---|---|
+| `chi-square` | `chisquare_2x2` | **Yates 連續性校正**是否施加、$2\times2$ 以外是否施加 |
+| `fisher-exact` | `fisher_exact` | 單／雙尾的定義（scipy 的雙尾用「機率 ≤ 觀察值」的加總） |
+| `z-prop` | `zprop_one`＋`zprop_two` | **分母慣例**：單樣本用 $p_0$、雙樣本用 pooled（`prop_var` vs `pooled`） |
+| `mann-whitney` | `mann_whitney`＋`_small`＋`_ties` | ★ **$U$ 的慣例、連續性校正、並列校正、精確 vs 常態近似** |
+| `wilcoxon-signed-rank` | `wilcoxon_signed_rank` | ★ **零差值的處理**（`wilcox` vs `pratt`）、並列、精確 vs 近似 |
+| `kruskal-wallis` | `kruskal_wallis` | 並列校正、Dunn 事後比較的多重比較校正 |
+
+**★ 開工前必須先做的兩件事**（A5a 的教訓，不要跳過）：
+
+1. ★ **先掃 `compare.test.js` 的 `TOL` 與 `SKIP` 兩張表，把 A5b 範圍內的條目全部列出來**。
+   已知至少兩條：`mann_whitney_small.pExact`（JS 尚無精確法）與 `ks_lilliefors.p`（近似法不同，屬 A6）。
+   **每一條都要當成「有一個知道但沒查清楚的差異」重新檢視**，而不是當成已結案——
+   R50 就藏在那句「絕對差 <1e-6」的註解後面。
+2. ★ **對每一支問一次：基準覆蓋的是參數空間裡的哪一點？**
+   Mann-Whitney（$n$ 大小 × 有無並列）、Wilcoxon（零差值數量）、卡方（期望次數大小）
+   都有明確的參數方向，而現有基準各只有一到三點。**必要時對分布或統計量本身建格點基準**
+   （比照 A5a 新增的 `tukey_ptukey_grid`）。
+
+**交付判準**（照 A4／A5a 的做法）：
+
+1. 依文件第 3 節的文字規格**獨立重寫**，且**不呼叫產生基準的那個函式**；結果寫進 `validation-report-v1.md`
+2. 紅隊八條（§6.3）逐支跑，含孤兒欄位 `grep`、同一判定的多套實作掃描、`assumptionChecker` 涵蓋盤點
+3. L1／L2 當場修並列出改了什麼；**L3 當場問 Kevin**；**L4 立刻停批回報**
+4. 行號重驗（內容錨定法，放在所有程式碼修改之後）
+5. `docs/methods/README.md` 索引＋A5b 紅隊摘要；本檔 §6.5 勾選、§6.6 接 **R54**、功能擴充表接 **E40**、版本紀錄
+6. **`MAX_UNDOCUMENTED` 27 → 19**（A5b 涵蓋 8 組）
+7. 沙盒 12 檔＋`npx --no-install eslint .`＋`npx vite build --outDir /tmp/... --emptyOutDir`（看 `transformed` 行）
+8. 列出需 Kevin 本機補跑的項目（動到 `src/analyses/**` 或 `src/i18n/**` 就一定要）
+
+★ **A5b 完成後即進入 A6**（敘述／相關／迴歸／量表／多變量，約 17 組），
+A6 收尾後才處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）與判準 7（§8.4 休眠快照）。
+
+---
+
 ★ **A5a 累積出來的兩條檢查習慣（接在既有六條之後，A5b／A6 直接沿用）**：
 
 7. ★ **只有一個基準點的方法，要對「參數空間」掃描，不能只驗那一點。**
@@ -1018,7 +1078,7 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
   (8) `compare.test.js` 裡**放寬過的容差是紅旗，不是結案**。
   測試：新增 `tests/a5a.behavior.test.js`（15 條，含單調性與 df 方向連續性兩條結構鎖）。
   `MAX_UNDOCUMENTED` **36 → 27**；`MAX_PENDING` 維持 2。
-  沙盒 12 檔全綠；⬜ Kevin 本機待補跑 jsdom 5 檔＋lint＋build。
+  沙盒 12 檔全綠。✅ **本機全套已補跑完成（Kevin 2026-07-29）：16 檔全綠、1,426 過、6 跳過**。
 - v2.13（2026-07-29 同日）：**階段 A / A4 交付（7 / 7），階段 A 累計 37 份文件**：
   `nca-ce-fdh`、`nca-cr-fdh`、`nca-bottleneck`、`nca-permutation`、`lda`、`cfa`、`efa`。
   ★ **文件切成 7 份為 Kevin 當日裁決**（NCA 依「可報告的統計方法」拆四份）。
