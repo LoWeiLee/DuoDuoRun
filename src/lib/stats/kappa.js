@@ -168,12 +168,41 @@ export function cohenKappa(rows, rater1Var, rater2Var, weighting = 'none') {
   const z = seH0 > 0 ? kappa / seH0 : NaN
   const p = twoSidedZP(z)
 
-  // 95% CI 用 asymptotic SE
-  const varCI = (po * (1 - po)) / (n * (1 - pe) * (1 - pe))
-  const seKappa = Math.sqrt(varCI)
+  // ★ 2026-07-30 紅隊 R74（L3）：原本用 po(1−po)/(n(1−pe)²)，那是**未加權** kappa 的
+  //   漸近變異數，卻被原封不動套用到加權的情形。後果：quadratic 加權時 SE 偏大 2.4 倍
+  //   （0.1137 vs 0.0471），95% CI 上界算出 **1.0248**——而 κ 依定義不可能大於 1。
+  //   ★ 與 A5b 的 R54 同型（值域錯），而且同樣**數值比對抓不到**：
+  //   `reference.json` 的 cohen_kappa 只有三個點估計，沒有 SE 也沒有 CI。
+  //
+  //   改用 Fleiss, Cohen & Everitt (1969) 的加權 kappa 大樣本變異數：
+  //     σ² = { Σᵢⱼ pᵢⱼ·[wᵢⱼ − (w̄ᵢ. + w̄.ⱼ)(1−κ)]² − [κ − pe(1−κ)]² } / (n(1−pe)²)
+  //   其中 w̄ᵢ. = Σⱼ p.ⱼ·wᵢⱼ、w̄.ⱼ = Σᵢ pᵢ.·wᵢⱼ。未加權時本式退化為標準的未加權變異數。
+  //   沙盒實測：三種加權的 SE 與 `statsmodels.stats.inter_rater.cohens_kappa(wt=…)` 逐值相符，
+  //   CI 與 R `psych::cohen.kappa` 相對差 1e-9（未加權與 quadratic 皆然）。
+  const rowP = rowTotals.map((v) => v / n)
+  const colP = colTotals.map((v) => v / n)
+  const wbarRow = new Array(k).fill(0)
+  const wbarCol = new Array(k).fill(0)
+  for (let i = 0; i < k; i++) {
+    for (let j = 0; j < k; j++) {
+      wbarRow[i] += colP[j] * W[i][j]
+      wbarCol[j] += rowP[i] * W[i][j]
+    }
+  }
+  let varAcc = 0
+  for (let i = 0; i < k; i++) {
+    for (let j = 0; j < k; j++) {
+      const pij = table[i][j] / n
+      const d = W[i][j] - (wbarRow[i] + wbarCol[j]) * (1 - kappa)
+      varAcc += pij * d * d
+    }
+  }
+  const varCI = (varAcc - Math.pow(kappa - pe * (1 - kappa), 2)) / (n * (1 - pe) * (1 - pe))
+  const seKappa = Math.sqrt(Math.max(0, varCI))
   const zc = 1.959963984540054
-  const ciLow = kappa - zc * seKappa
-  const ciHigh = kappa + zc * seKappa
+  // ★ κ 的值域是 [−1, 1]，CI 不得越界（修正後在本資料集已不會越界，這是防線不是遮蓋）
+  const ciLow = Math.max(-1, kappa - zc * seKappa)
+  const ciHigh = Math.min(1, kappa + zc * seKappa)
 
   return {
     table, levels, rowTotals, colTotals,

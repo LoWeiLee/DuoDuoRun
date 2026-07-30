@@ -528,11 +528,20 @@
   }
  },
  "cohen_kappa": {
-  "source": "sklearn.cohen_kappa_score",
+  "source": "sklearn.cohen_kappa_score\uff08\u9ede\u4f30\u8a08\uff09\uff0b statsmodels.stats.inter_rater.cohens_kappa\uff08SE \u8207 CI\uff0cFleiss-Cohen-Everitt 1969 \u52a0\u6b0a\u8b8a\u7570\u6578\uff09",
   "values": {
    "kappa": 0.4794417201056205,
    "kappaLinear": 0.6556671449067433,
-   "kappaQuadratic": 0.8018796037592075
+   "kappaQuadratic": 0.8018796037592075,
+   "se": 0.08567479310206694,
+   "ciLow": 0.3115222112426487,
+   "ciHigh": 0.6473612289685924,
+   "seLinear": 0.06445438602075373,
+   "ciLowLinear": 0.529338869660424,
+   "ciHighLinear": 0.7819954201530626,
+   "seQuadratic": 0.04714853661125233,
+   "ciLowQuadratic": 0.7094701700773848,
+   "ciHighQuadratic": 0.8942890374410303
   }
  },
  "zprop_one": {

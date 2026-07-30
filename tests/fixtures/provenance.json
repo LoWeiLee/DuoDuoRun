@@ -63,11 +63,11 @@
     "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
   },
   "cohen_kappa": {
-    "authority": "scikit-learn",
-    "note": "",
+    "authority": "sklearn.cohen_kappa_score（三個點估計）＋ statsmodels.stats.inter_rater.cohens_kappa（SE 與 95% CI）。加權變異數的公式出處：Fleiss, J. L., Cohen, J., & Everitt, B. S. (1969). Large sample standard errors of kappa and weighted kappa. Psychological Bulletin, 72(5), 323-327",
+    "note": "2026-07-30 紅隊 R74（L3）：本組原本只有三個點估計，**沒有 SE 也沒有 CI**——而引擎的加權 CI 套用了未加權 kappa 的漸近變異數，quadratic 加權時 SE 偏大 2.4 倍、95% CI 上界算出 1.0248（κ 依定義 ≤ 1）。逐值比對抓不到，正是因為這一組缺這幾欄。已補 9 欄。",
     "status": "verified",
     "tier": "A",
-    "verification": "fixture 值直接由 scikit-learn 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+    "verification": "點估計由 sklearn 產生、SE 與 CI 由 statsmodels 產生，JS 與其逐值比對（12 欄，DEFAULT_TOL 1e-6）。★ 三方交叉核實（2026-07-30）：本工具修正後的 SE 與 statsmodels 逐值相符（相對差 ≤ 3.2e-10）；CI 與 Kevin 本機 R 4.6.0 的 psych::cohen.kappa 相對差 1e-9（未加權與 quadratic 皆然）；另以 Fleiss-Cohen-Everitt (1969) 原式在沙盒獨立手算，三種加權的 SE 全部對上。"
   },
   "cronbach_alpha_6items": {
     "authority": "pingouin",

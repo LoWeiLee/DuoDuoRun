@@ -625,6 +625,18 @@ export function clusterAnalysis(rows, settings) {
     varZScoresByCluster.push(z)
   }
 
+  // ★ 2026-07-30 紅隊 R72（L2）：退化情形下集群會產出「看起來成立的分群」而零警告。
+  //   實測兩種：
+  //     (a) 30 個**完全相同**的觀察值、k = 3 ⇒ Ward 切成 8/8/14 三群，
+  //         三個中心點一模一樣，報表照樣顯示三個集群與各自的大小；
+  //     (b) 只有 2 個相異點、k = 3 ⇒ kmeans 給 15/15/0，**一個空集群**，
+  //         而 silhouette = 1.0000（完美）——空群加完美輪廓係數是最誤導的組合。
+  //   ⇒ 判準取「相異觀察值數 < k」，它同時涵蓋兩種情形；另單獨回報空集群數。
+  const distinctRows = new Set(r._Xstd.map((row) => row.join('\u0000'))).size
+  const emptyClusters = r.clusterSizes.filter((sz) => sz === 0).length
+  const degenerate = distinctRows < k || emptyClusters > 0
+  const constantVars = vars.filter((_, j) => r._stats.sd[j] === 0)
+
   const elbow = computeElbow(rows, vars, method, opts)
 
   // 清掉不外露的內部欄位（_Xstd / _Xraw / _stats / centroidsStd 僅供本檔內部計算）
@@ -640,5 +652,9 @@ export function clusterAnalysis(rows, settings) {
     varMeansByCluster,
     varZScoresByCluster,
     elbow,
+    distinctRows,
+    emptyClusters,
+    degenerate,
+    constantVars,
   }
 }

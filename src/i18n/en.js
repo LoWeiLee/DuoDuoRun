@@ -1002,6 +1002,10 @@ export default {
     },
   },
   cluster: {
+    degenerateWarn: 'Warning: these data cannot form {k} meaningful clusters; the partition below cannot be interpreted. {reason} Cluster analysis requires the cases to differ from one another; check whether the wrong variables were selected, or use a smaller k.',
+    degenerateTooFewDistinct: 'After standardisation there are only {d} distinct cases, fewer than the {k} clusters requested \u2014 cases assigned to different clusters are in fact identical.',
+    degenerateEmpty: '{e} cluster(s) are empty (contain no cases).',
+    degenerateConstantVars: 'Variable(s) {vars} have no variation at all.',
     title: 'Cluster analysis',
     config: {
       methodLabel: 'Method',
@@ -1310,6 +1314,9 @@ export default {
     },
   },
   manova: {
+    degenerateWarn: 'Warning: this analysis is mathematically degenerate; none of the four multivariate statistics below can be interpreted and they must not be reported. {reason} Note: Wilks\u2019 \u039B honestly shows as \u201C\u2014\u201D, but Pillai, Hotelling-Lawley and Roy still print numbers \u2014 those numbers are equally meaningless.',
+    degenerateZeroDV: 'The dependent variable(s) {vars} have no variation at all (SD = 0).',
+    degenerateSingular: 'The error SSCP matrix is singular, usually because two dependent variables are perfectly collinear (for example a total score entered together with one of its own components).',
     title: 'MANOVA (Multivariate ANOVA)',
     config: {
       factorLabel: 'Factor (categorical, >= 2 levels)',

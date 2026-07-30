@@ -362,10 +362,25 @@ function Result() {
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const valueLabels = dataset.valueLabels?.[result.factorVar]
+  // ★ 2026-07-30 紅隊 R73（L2）：E 奇異時 Wilks 誠實回 NaN 印「—」，
+  //   而 Pillai／Hotelling-Lawley／Roy 走數值特徵值路徑，照樣印出數字
+  //   （依變項全常數時甚至印出 V = 0.000、F = 0.000、p = 1.000 這種「正常的不顯著」）。
+  const degenerate = result.singularError
+  const degenerateReason = result.zeroVarianceDVs?.length
+    ? fillTemplate(t.manova.degenerateZeroDV, {
+      vars: result.zeroVarianceDVs.map((v) => labelMap[v] || v).join('、'),
+    })
+    : t.manova.degenerateSingular
 
   return (
     <div className="space-y-1">
       <SummaryLine result={result} t={t} />
+
+      {degenerate && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {fillTemplate(t.manova.degenerateWarn, { reason: degenerateReason })}
+        </div>
+      )}
 
       {/* 關鍵統計量卡片（2026-07 UI 改版；以 Wilks' Λ 為主檢定，p 值紅綠語意） */}
       <StatCards
@@ -378,7 +393,7 @@ function Result() {
           {
             label: t.manova.result.cols.p,
             value: fmtP(result.wilks.p),
-            tone: toneForP(result.wilks.p),
+            tone: degenerate ? undefined : toneForP(result.wilks.p),
             sub: Number.isFinite(result.wilks.p) ? (result.wilks.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
           },
           { label: t.manova.result.cols.partialEta2, value: fmtNum(result.wilks.eta2, 3) },

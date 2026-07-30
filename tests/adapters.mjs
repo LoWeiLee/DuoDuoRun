@@ -276,10 +276,16 @@ export const ADAPTERS = {
       icc1k: v.icc1_k, icc2k: v.icc2_k, icc3k: v.icc3_k }
   },
   cohen_kappa() {
+    // ★ R74（2026-07-30）：加上 SE 與 CI 三組——修復前這一組只有點估計，
+    //   所以加權 CI 用錯變異數公式這件事逐值比對永遠抓不到。
+    const none = cohenKappa(main, 'rater1', 'rater2', 'none')
+    const lin = cohenKappa(main, 'rater1', 'rater2', 'linear')
+    const quad = cohenKappa(main, 'rater1', 'rater2', 'quadratic')
     return {
-      kappa: cohenKappa(main, 'rater1', 'rater2', 'none').kappa,
-      kappaLinear: cohenKappa(main, 'rater1', 'rater2', 'linear').kappa,
-      kappaQuadratic: cohenKappa(main, 'rater1', 'rater2', 'quadratic').kappa,
+      kappa: none.kappa, kappaLinear: lin.kappa, kappaQuadratic: quad.kappa,
+      se: none.seKappa, ciLow: none.ciLow, ciHigh: none.ciHigh,
+      seLinear: lin.seKappa, ciLowLinear: lin.ciLow, ciHighLinear: lin.ciHigh,
+      seQuadratic: quad.seKappa, ciLowQuadratic: quad.ciLow, ciHighQuadratic: quad.ciHigh,
     }
   },
   zprop_one() {

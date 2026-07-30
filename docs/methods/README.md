@@ -491,6 +491,59 @@ A5a 的 R50 教我們去掃參數空間；R60 再加一層——**先確認你�
 | [regression-multiple.md](regression-multiple.md) | 多元線性迴歸（含 VIF） | `regression_multiple` | **A** / verified |
 | [regression-hierarchical.md](regression-hierarchical.md) | 階層迴歸（$\Delta R^2$ 的 partial $F$） | `regression_hierarchical` | **A** / verified |
 
+## A6b — 邏輯迴歸／量表信度／ICC／Kappa／MANOVA／集群 ✅ 完成（6 / 6，2026-07-30）
+
+★ **階段 A 的最後一批**。本批的引擎守衛明顯優於 A6a（alpha、kappa、logistic 三支的退化情形都是硬擋），
+但仍抓到 **1 個 L3 ＋ 2 個 L2**，而且**三個都是「基準組裡不存在的欄位」**：
+R74 的 SE／CI、R72 的集群退化旗標、R73 的奇異矩陣旗標——
+⇒ **逐值比對永遠比不到不存在的欄位**，這是本批最該記住的一句話。
+
+| 文件 | 方法 | 基準組 | tier / status |
+|---|---|---|---|
+| [logistic-regression.md](logistic-regression.md) | 二元邏輯迴歸（IRLS、三種 pseudo-$R^2$、AUC） | `logistic_regression` | **A** / verified |
+| [cronbach-alpha.md](cronbach-alpha.md) | Cronbach's α（★ **未標準化**） | `cronbach_alpha_6items`、`cronbach_alpha_f1` | **A** / verified |
+| [icc.md](icc.md) | 組內相關係數（★ **六種型別**） | `icc` | **A** / verified |
+| [cohen-kappa.md](cohen-kappa.md) | Cohen's κ（含 linear／quadratic 加權） | `cohen_kappa`（★ 3 → **12 欄**） | **A** / verified |
+| [manova.md](manova.md) | MANOVA（四種多變量統計量） | `manova` | **A** / verified |
+| [cluster.md](cluster.md) | k-means ＋ Ward 階層法（★ **= R 的 `ward.D2`**） | `cluster_kmeans_k3`、`cluster_ward_k3` | **A** / verified |
+
+### A6b 的紅隊結果摘要
+
+| # | 方法 | 級 | 問題 | 處置 |
+|---|---|---|---|---|
+| **R72** | `cluster` | **L2** | ★ **憑空造出集群**：30 個**完全相同**的觀察值 + Ward + $k=3$ ⇒ 切成 8/8/14，三個中心點一模一樣；只有 2 個相異點 ⇒ k-means 給 15/15/0（**空集群**）而 **silhouette = 1.0000**。★ 前四次同型是「把無定義印成有意義」，**這一次是無中生有** | ✅ 已修：四個旗標（判準「相異觀察值數 < $k$ 或有空集群」一條涵蓋兩種病徵）＋警告框＋**三處**取消輪廓係數判讀＋4 條測試 |
+| **R73** | `manova` | **L2** | ★ **$\mathbf E$ 奇異時只有 Wilks 誠實回 NaN**：Wilks 走行列式（誠實回 NaN 印「—」），Pillai／H-L／Roy 走數值特徵值路徑**照樣給數字**——依變項全常數時甚至印出 $V=0$、$F=0$、**$p=1.000$**，一個看起來完全正常的「不顯著」結論 | ✅ 已修：`singularError` ＋ `zeroVarianceDVs`；★ 警告文字**直接點破陷阱**（明說 Pillai 等三個仍會印數字且同樣無意義）＋4 條測試 |
+| **R74** | `cohen_kappa` | **L3** | ★★ **加權 kappa 的 CI 用了未加權的變異數公式**：quadratic 的 SE 偏大 2.4 倍、**CI 上界算出 1.0248**（$\kappa$ 依定義 ≤ 1）。★ **連方向都錯**——加權應使 SE 變小，舊公式卻讓 quadratic 給出最大的 SE | ✅ Kevin 核定：改用 Fleiss-Cohen-Everitt (1969) ＋ 夾值域 ＋ **基準 3 → 12 欄**（statsmodels 為權威）。修正後與 statsmodels 逐值、與 psych 相對差 1e−9 |
+
+### ★ A6b 的兩件「命名／慣例」結案
+
+1. ★★ **ICC 的六個欄位名此前只是斷言**。本批依 McGraw & Wong (1996) 的六條原式獨立重算，
+   **六欄逐位元相同（0.00e+00）** ⇒ `icc21` 確實是 ICC(2,1)、`icc31` 確實是 ICC(3,1)。
+   ⚠️ 但 **R `psych::ICC` 對不上**（三型別印同一個值，與公式矛盾，差 3.1e−3）——
+   本工具側有更強的證據（公式層），psych 的行為**未解決**，據實記錄為 E109。
+2. ★★ **sklearn 的 `linkage='ward'` ＝ R 的 `ward.D2`**（不是 `ward.D`）。
+   R 實測：`ward.D2` 給 17/18/25、WSS 94.76284469 ⇒ 與本工具**逐值相同且 60 筆標籤逐一相同**；
+   `ward.D` 給 12/23/25、WSS 93.4295。**這個問題本專案此前從未回答過。**
+
+### A6b 的獨立重寫結果
+
+六支全部依文件第 3 節的文字規格重建，**不呼叫產生基準的那些函式**
+（`statsmodels.Logit`／`pingouin.cronbach_alpha`／`pingouin.intraclass_corr`／
+`sklearn.cohen_kappa_score`／`statsmodels.MANOVA`／`sklearn.KMeans` 一個都沒碰）：
+
+| 組 | max 相對差 |
+|---|---|
+| `icc`（六欄） | ★ **0.00e+00（逐位元相同）** |
+| `cluster_ward_k3`（自寫 Lance-Williams） | ★ **0.00e+00**，且標籤逐一相同 |
+| `cohen_kappa`（12 欄，含 FCE 變異數） | 0.00e+00 ~ 3.5e−15 |
+| `cronbach_alpha`（兩組） | 2.9e−16 |
+| `manova`（八欄） | 1.9e−14 |
+| `logistic_regression`（12 欄，自寫 IRLS） | 4.2e−9（成因已查明：statsmodels 的 null 模型是迭代求解，本工具與重寫都用閉式解） |
+
+★ `logistic_regression` 的 `auc` 是**逐位元相同**——重寫用 Mann-Whitney $U$ 形式自行計算，
+完全沒有呼叫 `sklearn.roc_auc_score`。
+
+
 ### A6a 的紅隊結果摘要（累積中）
 
 | # | 方法 | 級 | 問題 | 處置 |

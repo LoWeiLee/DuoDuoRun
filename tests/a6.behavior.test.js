@@ -1,5 +1,5 @@
 /**
- * 階段 A / A6a 的行為鎖（2026-07-30）
+ * 階段 A / A6（A6a ＋ A6b）的行為鎖（2026-07-30）
  *
  * 對應紅隊 R60（L4）與 R61（L2）。
  *
@@ -17,6 +17,9 @@ import { lillieforsPValue, kolmogorovSmirnov, shapiroWilk } from '../src/lib/sta
 import { runNormality } from '../src/analyses/normality/compute.js'
 import { levene } from '../src/lib/stats/levene.js'
 import { runCorrelation } from '../src/analyses/correlation/compute.js'
+import { cohenKappa } from '../src/lib/stats/kappa.js'
+import { clusterAnalysis } from '../src/lib/stats/cluster.js'
+import { manova } from '../src/lib/stats/manova.js'
 import { simpleLinearRegression } from '../src/lib/stats/regression.js'
 import { multipleRegression } from '../src/lib/stats/multipleRegression.js'
 import { describe as describeStats } from '../src/lib/stats/descriptive.js'
@@ -404,5 +407,125 @@ describe('E102 → 交叉鎖：k = 1 時兩套 OLS 實作必須同值', () => {
     const B = multipleRegression(xx.map((v) => [v]), yy, ['x'])
     expect(rel(A.slope.beta, B.coefficients[0].beta)).toBeLessThan(1e-12)
     expect(rel(Math.abs(A.slope.beta), Math.abs(A.fit.r))).toBeLessThan(1e-12)
+  })
+})
+
+/* ─────────────────────  R74：加權 kappa 的變異數與 CI  ───────────────────── */
+
+describe('R74（L3）：加權 kappa 的 CI 必須用加權的變異數公式，且不得越界', () => {
+  const rows = MAIN
+  // 期望值：statsmodels.stats.inter_rater.cohens_kappa(wt=…)，
+  // 並經 Kevin 本機 R psych::cohen.kappa 交叉確認（相對差 1e-9）。
+  const EXP = {
+    none: { se: 0.08567479310206694, lo: 0.3115222112426487, hi: 0.6473612289685924 },
+    linear: { se: 0.06445438602075373, lo: 0.529338869660424, hi: 0.7819954201530626 },
+    quadratic: { se: 0.04714853661125233, lo: 0.7094701700773848, hi: 0.8942890374410299 },
+  }
+  for (const [w, e] of Object.entries(EXP)) {
+    it(`weighting = ${w}：SE 與 CI 的相對差 < 1e-9`, () => {
+      const r = cohenKappa(rows, 'rater1', 'rater2', w)
+      const rel = (a, b) => Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-300)
+      expect(rel(r.seKappa, e.se)).toBeLessThan(1e-9)
+      expect(rel(r.ciLow, e.lo)).toBeLessThan(1e-9)
+      expect(rel(r.ciHigh, e.hi)).toBeLessThan(1e-9)
+    })
+  }
+
+  it('★ CI 不得越出 κ 的值域 [−1, 1]（舊版 quadratic 的上界是 1.0248）', () => {
+    for (const w of ['none', 'linear', 'quadratic']) {
+      const r = cohenKappa(rows, 'rater1', 'rater2', w)
+      expect(r.ciLow, `${w} 下界越界`).toBeGreaterThanOrEqual(-1)
+      expect(r.ciHigh, `${w} 上界越界`).toBeLessThanOrEqual(1)
+      expect(r.ciLow).toBeLessThanOrEqual(r.kappa)
+      expect(r.ciHigh).toBeGreaterThanOrEqual(r.kappa)
+    }
+  })
+
+  it('★ 舊公式的病徵不得復發：加權時的 SE 必須小於未加權時的 SE', () => {
+    // 加權放寬了「一致」的定義 ⇒ κ 較高、抽樣變異較小。
+    // 舊版對三種加權用同一條未加權公式，quadratic 反而給出最大的 SE（0.1137）——方向就是錯的。
+    const none = cohenKappa(rows, 'rater1', 'rater2', 'none')
+    const lin = cohenKappa(rows, 'rater1', 'rater2', 'linear')
+    const quad = cohenKappa(rows, 'rater1', 'rater2', 'quadratic')
+    expect(lin.seKappa).toBeLessThan(none.seKappa)
+    expect(quad.seKappa).toBeLessThan(lin.seKappa)
+  })
+
+  it('★ 回歸鎖：三個點估計不得被本次修正改動', () => {
+    const rel = (a, b) => Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-300)
+    expect(rel(cohenKappa(rows, 'rater1', 'rater2', 'none').kappa, 0.4794417201056205)).toBeLessThan(1e-12)
+    expect(rel(cohenKappa(rows, 'rater1', 'rater2', 'linear').kappa, 0.6556671449067433)).toBeLessThan(1e-12)
+    expect(rel(cohenKappa(rows, 'rater1', 'rater2', 'quadratic').kappa, 0.8018796037592075)).toBeLessThan(1e-12)
+  })
+})
+
+/* ─────────────────────  R72 / R73：集群與 MANOVA 的退化情形  ───────────────────── */
+
+describe('R72（L2）：集群在退化情形下必須標記，不得產出「看起來成立的分群」', () => {
+  const n = 30
+  const mk = (fn) => Array.from({ length: n }, (_, t) => fn(t))
+
+  it('★ 30 個完全相同的觀察值 + Ward + k=3 ⇒ 標記退化（舊版切成 8/8/14 且零警告）', () => {
+    const r = clusterAnalysis(mk(() => ({ a: 1, b: 2 })), { vars: ['a', 'b'], method: 'hierarchical', k: 3 })
+    expect(r.degenerate).toBe(true)
+    expect(r.distinctRows).toBe(1)
+    expect(r.constantVars).toEqual(['a', 'b'])
+  })
+  it('★ 只有 2 個相異點 + kmeans + k=3 ⇒ 標記退化（空集群 + silhouette 1.000）', () => {
+    const r = clusterAnalysis(mk((t) => ({ a: t % 2, b: t % 2 })), { vars: ['a', 'b'], method: 'kmeans', k: 3 })
+    expect(r.degenerate).toBe(true)
+    expect(r.distinctRows).toBe(2)
+    expect(r.emptyClusters).toBeGreaterThan(0)
+  })
+  it('★ 回歸鎖：正常資料不得被標記為退化', () => {
+    const r = clusterAnalysis(
+      mk((t) => ({ a: Math.sin(t) * 5 + t, b: Math.cos(t * 1.3) * 4 })),
+      { vars: ['a', 'b'], method: 'kmeans', k: 3 }
+    )
+    expect(r.degenerate).toBe(false)
+    expect(r.emptyClusters).toBe(0)
+    expect(r.constantVars).toEqual([])
+    expect(r.distinctRows).toBe(n)
+  })
+  it('中英 i18n 都要有 cluster 的四個退化字串', () => {
+    for (const [name, pack] of [['zh-TW', zh], ['en', en]]) {
+      for (const key of ['degenerateWarn', 'degenerateTooFewDistinct', 'degenerateEmpty', 'degenerateConstantVars']) {
+        expect(typeof pack.cluster[key], `${name}.cluster.${key} 缺字串`).toBe('string')
+      }
+    }
+  })
+})
+
+describe('R73（L2）：MANOVA 的 E 奇異時必須標記——Wilks 缺席而其他三個照給', () => {
+  const n = 30
+  const mk = (fn) => Array.from({ length: n }, (_, t) => fn(t))
+
+  it('★ 依變項全為常數 ⇒ singularError（舊版 Pillai 印 V=0、F=0、p=1.000 像正常的不顯著）', () => {
+    const r = manova(mk((t) => ({ g: ['A', 'B', 'C'][t % 3], y1: 5, y2: 7 })), 'g', ['y1', 'y2'])
+    expect(r.singularError).toBe(true)
+    expect(r.zeroVarianceDVs).toEqual(['y1', 'y2'])
+    // 退化值本身不變（只是多了旗標）：Wilks 仍為 NaN、Pillai 仍給 0
+    expect(Number.isFinite(r.wilks.lambda)).toBe(false)
+    expect(r.pillai.p).toBe(1)
+  })
+  it('★ 兩個依變項完全共線 ⇒ singularError', () => {
+    const r = manova(mk((t) => ({ g: ['A', 'B', 'C'][t % 3], y1: t, y2: 2 * t })), 'g', ['y1', 'y2'])
+    expect(r.singularError).toBe(true)
+    expect(r.zeroVarianceDVs).toEqual([])
+  })
+  it('★ 回歸鎖：基準資料集不得被標記（會動到 reference.json 的 manova 那一組）', () => {
+    const r = manova(MAIN, 'group3', ['y', 'x1', 'x2'])
+    expect(r.singularError).toBe(false)
+    expect(r.zeroVarianceDVs).toEqual([])
+    // 四個統計量維持原值
+    expect(Math.abs(r.wilks.lambda - 0.7511454880923656)).toBeLessThan(1e-12)
+    expect(Math.abs(r.pillai.v - 0.254760687891034)).toBeLessThan(1e-12)
+  })
+  it('中英 i18n 都要有 manova 的三個退化字串', () => {
+    for (const [name, pack] of [['zh-TW', zh], ['en', en]]) {
+      for (const key of ['degenerateWarn', 'degenerateZeroDV', 'degenerateSingular']) {
+        expect(typeof pack.manova[key], `${name}.manova.${key} 缺字串`).toBe('string')
+      }
+    }
   })
 })

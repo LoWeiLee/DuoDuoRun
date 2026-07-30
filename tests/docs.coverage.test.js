@@ -71,7 +71,10 @@ const METHODS_DIR = path.join(HERE, '..', 'docs', 'methods')
 //   涵蓋 descriptive_y、levene_median、levene_mean_spss_default、pearson_x1_x2、spearman_x1_x2。
 // ★ 2026-07-30（A6a 收官）：11 → 8。visualization ＋ 迴歸三支交付，A6a 八份到齊。
 //   剩下的 8 組全部落在 A6b（邏輯迴歸／量表信度／ICC／Kappa／MANOVA／集群）。
-const MAX_UNDOCUMENTED = 8
+// ★★ 2026-07-30（A6b 收官）：8 → **0**。階段 A 的方法文件目標達成——
+//   reference.json 的 86 組基準**全部**被至少一份文件的第 6 節點名。
+//   這個棘輪從 44（A3c 上線時）一路降到 0，且只能往下調。
+const MAX_UNDOCUMENTED = 0
 
 /** 取出一份方法文件的第 6 節（到第 7 節為止）。 */
 function sectionSix(text) {

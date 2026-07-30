@@ -255,7 +255,8 @@ function CentroidsTable({ result, t, labelMap }) {
 function QualitySection({ result, t }) {
   const r = t.cluster.result
   const ratio = result.tss > 0 ? result.bss / result.tss : NaN
-  const sKey = silhouetteInterpKey(result.silhouette)
+  // ★ R72：退化時不下輪廓係數的判讀
+  const sKey = result.degenerate ? null : silhouetteInterpKey(result.silhouette)
   return (
     <div>
       <Heading>{r.qualityTitle}</Heading>
@@ -386,7 +387,8 @@ function Interpretation({ result, t }) {
   const i = t.cluster.interp
   const r = t.cluster.result
   const ratio = result.tss > 0 ? result.bss / result.tss : NaN
-  const sKey = silhouetteInterpKey(result.silhouette)
+  // ★ R72：退化時不下輪廓係數的判讀
+  const sKey = result.degenerate ? null : silhouetteInterpKey(result.silhouette)
   const methodLabel = t.cluster.config.methods[result.method]
   const overall = fillTemplate(i.overall, {
     method: methodLabel,
@@ -428,11 +430,41 @@ function Result() {
   }
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
 
-  const sKey = silhouetteInterpKey(result.silhouette)
+  // ★ 2026-07-30 紅隊 R72（L2）：退化情形下集群會產出「看起來成立的分群」。
+  //   實測 30 個完全相同的觀察值 + Ward + k=3 ⇒ 切成 8/8/14，三個中心點一模一樣；
+  //   只有 2 個相異點 + kmeans + k=3 ⇒ 15/15/0（一個空群）而 silhouette = 1.0000。
+  //   ⇒ 判準取「相異觀察值數 < k 或有空集群」，並在退化時不給輪廓係數的判讀。
+  const degenerate = result.degenerate
+  const reasons = []
+  if (result.distinctRows < result.k) {
+    reasons.push(fillTemplate(t.cluster.degenerateTooFewDistinct, {
+      d: result.distinctRows, k: result.k,
+    }))
+  }
+  if (result.emptyClusters > 0) {
+    reasons.push(fillTemplate(t.cluster.degenerateEmpty, { e: result.emptyClusters }))
+  }
+  if (result.constantVars?.length) {
+    reasons.push(fillTemplate(t.cluster.degenerateConstantVars, {
+      vars: result.constantVars.map((v) => labelMap[v] || v).join('、'),
+    }))
+  }
+
+  // ★ R72：退化時不下輪廓係數的判讀（空群 + silhouette 1.000 是最誤導的組合）
+  const sKey = degenerate ? null : silhouetteInterpKey(result.silhouette)
 
   return (
     <div className="space-y-1">
       <SummaryLine result={result} t={t} />
+
+      {degenerate && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {fillTemplate(t.cluster.degenerateWarn, {
+            k: result.k,
+            reason: reasons.join(' '),
+          })}
+        </div>
+      )}
 
       {/* 關鍵統計量卡片（2026-07 UI 改版；品質指標不加 tone） */}
       <StatCards

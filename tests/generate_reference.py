@@ -467,10 +467,21 @@ put("icc", "pingouin.intraclass_corr",
     icc1k=icc_map["ICC(1,k)"], icc2k=icc_map["ICC(A,k)"], icc3k=icc_map["ICC(C,k)"])
 
 from sklearn.metrics import cohen_kappa_score
-put("cohen_kappa", "sklearn.cohen_kappa_score",
+# ★ 2026-07-30 紅隊 R74（L3）：原本只有三個點估計，**沒有 SE 也沒有 CI**——
+#   而引擎的加權 CI 用了未加權的變異數公式，quadratic 時上界算出 1.0248（κ 依定義 ≤ 1）。
+#   數值比對抓不到，正是因為這一組沒有這幾欄。改用 statsmodels 的 inter_rater 補上：
+#   它的 std_kappa 與 Fleiss, Cohen & Everitt (1969) 的加權變異數逐值相符，
+#   CI 亦與 R psych::cohen.kappa 相對差 1e-9（Kevin 本機 2026-07-30 實跑核實）。
+from statsmodels.stats.inter_rater import cohens_kappa as _sm_kappa
+_kap_tab = pd.crosstab(main["rater1"], main["rater2"]).values.astype(float)
+_kap = {w: _sm_kappa(_kap_tab, wt=w, return_results=True) for w in (None, "linear", "quadratic")}
+put("cohen_kappa", "sklearn.cohen_kappa_score（點估計）＋ statsmodels.stats.inter_rater.cohens_kappa（SE 與 CI，Fleiss-Cohen-Everitt 1969 加權變異數）",
     kappa=cohen_kappa_score(main["rater1"], main["rater2"]),
     kappaLinear=cohen_kappa_score(main["rater1"], main["rater2"], weights="linear"),
-    kappaQuadratic=cohen_kappa_score(main["rater1"], main["rater2"], weights="quadratic"))
+    kappaQuadratic=cohen_kappa_score(main["rater1"], main["rater2"], weights="quadratic"),
+    se=_kap[None].std_kappa, ciLow=_kap[None].kappa_low, ciHigh=_kap[None].kappa_upp,
+    seLinear=_kap["linear"].std_kappa, ciLowLinear=_kap["linear"].kappa_low, ciHighLinear=_kap["linear"].kappa_upp,
+    seQuadratic=_kap["quadratic"].std_kappa, ciLowQuadratic=_kap["quadratic"].kappa_low, ciHighQuadratic=_kap["quadratic"].kappa_upp)
 
 # --- 比例 z 檢定
 from statsmodels.stats.proportion import proportions_ztest, proportion_confint

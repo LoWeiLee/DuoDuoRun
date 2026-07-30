@@ -292,6 +292,20 @@ export function manova(rows, factorVar, dvVars) {
   // Wilks' Λ
   const wilksLambda = detEplusH > 0 ? detE / detEplusH : NaN
 
+  // ★ 2026-07-30 紅隊 R73（L2）：E（誤差 SSCP）奇異時，E⁻¹H 在數學上無定義——
+  //   Wilks 會誠實地回 NaN（印「—」），**但 Pillai／Hotelling-Lawley／Roy 照樣給出數字**，
+  //   因為它們走的是 `eigenvaluesEinvH` 的數值路徑而不是行列式。
+  //   實測兩種退化情形：
+  //     (a) 所有依變項皆為常數 ⇒ H 與 E 全為 0、特徵值 [0, 0]，而報表印出
+  //         **Pillai V = 0.000、F = 0.000、p = 1.000、η² = 0.000** —— 一個看起來完全正常的
+  //         「不顯著」結論，而真相是這個分析根本沒有意義；
+  //     (b) 兩個依變項完全共線 ⇒ 同樣是 Wilks 缺席、其他三個照給。
+  //   ⇒ 使用者看到「Wilks: —」會以為只是某個統計量算不出來，然後去讀 Pillai。
+  //   同 A3c 的 R33-b（同一件事兩套判準給出不同結論）之型。
+  //   判準用相對值：|E| 相對於 |E+H| 已到浮點下限時即視為奇異。
+  const singularError = !(detEplusH > 0) || !(detE / detEplusH > 1e-12)
+  const zeroVarianceDVs = dvVars.filter((_, j) => E[j][j] + H[j][j] <= 0)
+
   // E^(-1) H 的特徵值 / eigenvalues of E^(-1)·H
   let eigenvalues
   try {
@@ -475,6 +489,8 @@ export function manova(rows, factorVar, dvVars) {
     dfH,
     dfE,
     eigenvalues,
+    singularError,
+    zeroVarianceDVs,
     wilks: {
       lambda: wilksLambda,
       f: wilksF,

@@ -173,7 +173,7 @@ Lilliefors 只出現在常態性模組本身。這降低了 R60 的血徑，但�
 | 10 | ✅✅ **R 側交叉驗證（2026-07-30，Kevin 本機 R 4.6.0，`07` §2a ＋ `08` §A）——R60 的獨立證人**。`nortest::lillie.test` 走的是**第三套 dispatch**（DW ＋ Stephens），與本工具的移植來源 statsmodels 無關。★ **$D$ 在全部 11 組探針逐位元相符**；$p$ 的一致程度**依區域乾淨分成兩段**，見下表 |
 | 11 | ★ **決策區（$p<0.1$，DW 近似的有效區）：6 組探針 max 絕對差 1.5e−8**——含五組 clampzone（$n$ = 400/500/800/1000/2000，正是舊實作印 $p=1.000$ 的那五個點）。連極尾都對上：`likert_n1000` 兩邊都是 **2.8953e−114**。⇒ **兩套獨立編寫的 dispatch 在 DW 分支上實質逐值相同**，R60 的修正取得真正的第三方確認 |
 | 12 | ★ **$p>0.1$（兩套 dispatch 分道揚鑣的區域）：max 絕對差 8.9e−3**（$n$=200，0.6703 vs 0.6614），主資料集那一點 $n$=60 為 **0.0406**（0.5161 vs 0.4755）。⇒ 這一段是**慣例差異**：本工具跟隨 statsmodels 的 $10^7$ 模擬表，`nortest` 走 Stephens 修正。**與判讀無關**（都遠離 .05），但引用 $p$ 值時要知道換一套軟體會有第二位小數的差 |
-| 6 | ★ **行為鎖**：`tests/a6a.behavior.test.js`（28 條）鎖兩個方向的單調性、兩個換式邊界的連續性、表格上下界、兩個舊 clamp 區的判定方向，以及 8 個對 statsmodels 的定點回歸 |
+| 6 | ★ **行為鎖**：`tests/a6.behavior.test.js`（28 條）鎖兩個方向的單調性、兩個換式邊界的連續性、表格上下界、兩個舊 clamp 區的判定方向，以及 8 個對 statsmodels 的定點回歸 |
 
 **已知與 SPSS／JASP／R 的慣例差異**
 
@@ -284,7 +284,7 @@ Lilliefors 只出現在常態性模組本身。這降低了 R60 的血徑，但�
 4. ✅ **收回容差**：`ks_lilliefors.D` 的 1e-4 與 `shapiro_wilk.p` 的 1e-5 全部刪除；
    `ks_lilliefors.p` 的 SKIP 整條刪除，改為 `DEFAULT_TOL` 正常比對
 5. ✅ **更正 provenance**：`ks_lilliefors` 的 `verification` 原稱「逐值比對」，與 SKIP 的存在矛盾
-6. ✅ **28 條行為鎖**（`tests/a6a.behavior.test.js`）
+6. ✅ **28 條行為鎖**（`tests/a6.behavior.test.js`）
 7. ✅ **`reference.json` 完整重生**：既有 **85 組數值與 source 字串逐位元不變**，`datasets.json` 逐位元不變
 
 **修正後**：1,440 例連續分布掃描 max 相對差 **1.2e−11**、.05 判定**零翻面**；

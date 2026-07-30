@@ -936,6 +936,10 @@ export default {
     },
   },
   cluster: {
+    degenerateWarn: '警告：這批資料無法形成 {k} 個有意義的集群，下方的分群結果不可解讀。{reason} 集群分析要求觀察值之間有足夠的差異；請確認變項是否選錯，或改用較小的 k。',
+    degenerateTooFewDistinct: '標準化後只有 {d} 個相異的觀察值，少於要求的集群數 {k}——被分到不同群的其實是完全相同的資料點。',
+    degenerateEmpty: '有 {e} 個集群是空的（沒有任何觀察值）。',
+    degenerateConstantVars: '變項 {vars} 完全沒有變異。',
     title: '集群分析',
     config: {
       methodLabel: '方法',
@@ -1264,6 +1268,9 @@ export default {
     },
   },
   manova: {
+    degenerateWarn: '警告：本次分析落在數學上的退化情形，下方四個多變量統計量都不可解讀，也不應寫進報告。{reason} 請注意：Wilks Λ 會誠實地顯示為「—」，但 Pillai、Hotelling-Lawley 與 Roy 仍會印出數字——那些數字同樣無意義。',
+    degenerateZeroDV: '依變項 {vars} 完全沒有變異（標準差為 0）。',
+    degenerateSingular: '誤差 SSCP 矩陣為奇異（通常是依變項之間完全共線，例如把總分與它的分項一起放進來）。',
     title: 'MANOVA 多變量變異數分析',
     config: {
       factorLabel: '因子（類別變項，≥ 2 組）',

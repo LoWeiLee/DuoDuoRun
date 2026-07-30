@@ -7,20 +7,22 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：階段 A 已完成 **A1–A5b 共 50 份 ＋ A6a 全部 8 份**，合計 **58 份**。
-`reference.json` 的 **86 組基準中 78 組已被文件第 6 節點名**，未涵蓋 **8 組——全部落在 A6b**。
+**目前狀態一句話**：★★ **階段 A 的方法文件全部完成——A1–A6b 共 64 份**。
+`reference.json` 的 **86 組基準 100% 被文件第 6 節點名**，`MAX_UNDOCUMENTED` 已降至 **0**。
 溯源面：2 組 pending、4 組 verified 帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
 
-**★ 現在的下一步：A6b（6 份）**——`logistic-regression`、`cronbach-alpha`、`icc`、
-`cohen-kappa`、`manova`、`cluster`。見 §6.5 的 A6b 條目。
-A6b 收尾即為**階段 A 的最後一批**，之後處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）
-與判準 7（§8.4 休眠狀態快照），然後專案休眠。
+**★ 現在的下一步：§6.7 的判準 2 與判準 7**——
+判準 2＝**28 個側欄模組 → 方法對照表**（補進 `docs/methods/README.md`）；
+判準 7＝**§8.4 休眠狀態快照**。兩者做完，階段 A 才算結案，專案接著休眠到 9 月底。
+★ 其餘五條判準已達成：八節齊全（64 份）、README 有連結、§6.6 全部有裁決、
+`docs.coverage.test.js` 上線且棘輪歸零、沙盒與本機測試全綠。
 
-⬜ **Kevin 本機待補跑（雙擊）**：**`A6a本機驗收.bat`**（★ 已改為 **cp950 編碼、不用 `chcp 65001`**——
+⬜ **Kevin 本機待補跑（雙擊）**：**`A6驗收.bat`**（cp950 編碼、不用 `chcp 65001`——
 UTF-8 batch 檔在 cmd 的逐位元組解析下會錯位，症狀是彙總那幾行被吃掉）。
-★ **第二輪動到的範圍更大**：`src/analyses/` 的 normality／descriptive／correlation／
-simpleRegression／multipleRegression／hierarchicalRegression／oneWayAnova／twoWayAnova 八個模組 ＋ 兩份 i18n
-⇒ **jsdom 那批一定要本機跑**。
+★ **A6 兩批合計動到的 `src/analyses/` 模組**：normality／descriptive／correlation／
+simpleRegression／multipleRegression／hierarchicalRegression／oneWayAnova／twoWayAnova／
+manova／cluster，**共十個**，外加 `src/lib/stats/` 七檔與兩份 i18n
+⇒ **jsdom 那批一定要本機跑**。預期 17 檔全綠、5 個 skip。
 
 ✅ **R 抽驗 07 ＋ 08 已全部回收（2026-07-30，R 4.6.0）**：
 
@@ -81,7 +83,7 @@ Royston (1992) 原文未取得，那十個多項式係數至今沒回到原文�
 ---
 
 ✅ **A6a 沙盒驗收（2026-07-30，八份全部交付後）**：**13 檔全綠、1,435 過 / 5 跳過**
-（`tests/a6a.behavior.test.js` **49 條**）、`eslint .` **0 problems**、
+（`tests/a6.behavior.test.js` **49 條**）、`eslint .` **0 problems**、
 `vite build` **615 modules transformed**、**198 處行號引用內容錨定重驗**（三批分別修正 4／8／16 處）。
 `reference.json` 完整重生後**既有 85 組 values 與 source 字串逐位元不變**、`datasets.json` 逐位元不變。
 
@@ -91,10 +93,10 @@ Royston (1992) 原文未取得，那十個多項式係數至今沒回到原文�
 |---|---|
 | 基準組 | **86** |
 | provenance | verified **80** / pending **2** / exempt **4** |
-| 方法文件 | **58 份**（`docs/methods/` 含索引共 59 檔） |
-| 棘輪 | `MAX_PENDING = 2`、`MAX_UNDOCUMENTED = **8**` |
+| 方法文件 | **64 份**（`docs/methods/` 含索引共 65 檔） |
+| 棘輪 | `MAX_PENDING = 2`、★ `MAX_UNDOCUMENTED = **0**` |
 | 沙盒測試 | **13 檔**，**1,435 過 / 5 跳過**（5 條為明文記錄的慣例差異） |
-| §6.6 紅隊 | R2–R71 **全部有 Kevin 裁決或已修** |
+| §6.6 紅隊 | R2–R76 **全部有 Kevin 裁決或已修** |
 | 階段 A 的 L4 | **三個**：A1 的 R6、A5a 的 R50、**A6a 的 R60** |
 
 ---
@@ -938,9 +940,13 @@ R 4.6 對有並列的情形用 Streitberg–Röhmel 位移演算法算條件精�
 A4 的 R40-h、A5a 的 R51、A6a 的 R61 與 R66，分屬四個不同模組。
 ⇒ **每一支開工先跑一次常數欄，看報表會不會給出方向錯誤的判定。這是三十秒的檢查。**
 
-**A6b — 邏輯迴歸／量表信度／ICC／Kappa／MANOVA／集群（tier A）** ⬜
-`logistic_regression`、`cronbach_alpha_6items`＋`cronbach_alpha_f1`、`icc`、`cohen_kappa`、
-`manova`、`cluster_kmeans_k3`＋`cluster_ward_k3`
+**A6b — 邏輯迴歸／量表信度／ICC／Kappa／MANOVA／集群（tier A）** ✅ **完成（6 / 6，2026-07-30）**
+`logistic-regression`、`cronbach-alpha`、`icc`、`cohen-kappa`、`manova`、`cluster`。
+★ **階段 A 的最後一批**。本批的引擎守衛明顯優於 A6a（alpha／kappa／logistic 三支的退化情形都是硬擋），
+但仍抓到 **1 個 L3（R74）＋ 2 個 L2（R72／R73）**，而**三個都是「基準組裡不存在的欄位」**
+⇒ **逐值比對永遠比不到不存在的欄位**。
+★★ **`MAX_UNDOCUMENTED` 8 → 0**：`reference.json` 的 86 組基準**全部**被文件第 6 節點名，
+該棘輪從 44（A3c 上線時）一路降到 **0**。方法文件 **58 → 64 份**。
 
 **（原 A6 合併條目，Kevin 2026-07-30 裁決拆為 A6a／A6b 兩批）**
 `descriptive_y`、`shapiro_wilk`、`ks_lilliefors`、Levene（兩慣例）、資料視覺化、
@@ -1052,6 +1058,11 @@ A4 的 R40-h、A5a 的 R51、A6a 的 R61 與 R66，分屬四個不同模組。
 | **R69** | A6a | `regression_simple`／`regression_multiple` | **L2** | ★★ **同型第五次：完美配適與依變項零變異不擋也不警告**。多元迴歸完美配適時報表印 $R^2=1.0000$、$p<.001$，而 **$x_1$ 的 $t$ 被原樣印成 `2312738254615615.50`**（2.3 千兆，格式化到小數兩位）；$y$ 為常數時 $SS_{res}=1.3\times10^{-28}$、$SS_{tot}=0$，**係數純屬浮點雜訊卻印 $p=.001$ 顯著**。★ 簡單迴歸另有一層：**它沒有矩陣可解，`singular-matrix` 那道防線對它無效**（多元遇到常數欄／完全共線會被擋，簡單遇到 $y$ 常數一路算到底）。可達性在問卷研究很高——**把總分對它自己的分量表迴歸**即中 | 引擎新增 `perfectFit`（判準用相對值 $SS_{res}/SS_{tot}<10^{-20}$，因浮點下完美配適的 $SS_{res}$ 是 $10^{-27}$ 級而非恰好 0）＋簡單迴歸補 `zeroVarianceY`；簡單／多元／階層三支各加警告框並**取消 $p$ 的顯著性燈號**；i18n 中英 × 三命名空間 × 三鍵 ＝ **18 個字串**；7 條測試含回歸鎖。★ 順帶修掉 `maxVif` 被 UI 重算一次（同一判斷兩套實作） | ✅ 已修（L2 當場修） |
 | R70 | A6a | `descriptive`／`correlation` 兩份文件 | L1 | ★ **兩句「未實作」的宣稱是錯的**：四分位數（`viz/boxStats.js`）與散布圖（`visualization` 模組）**都存在**——我 `grep` 的範圍不含 `src/lib/viz/` 就下了結論。★ 這與 R63（檔頭宣稱「與 nortest 一致」而零證據）同型，只是方向相反：**一個是宣稱有證據而沒有，一個是宣稱沒有東西而其實有** | 兩份文件更正並**保留更正痕跡**；缺口重新定義為「敘述統計表不顯示 IQR」與「相關頁面不引導去看散布圖」。★ 順帶把四分位數的慣例確認為 **R 的 type 7** 並對 R 值驗到 **7.1e−15**（此前零基準） | ✅ 已修（L1 當場修） |
 | R71 | A6a | `visualization` | L1 | ★ **`quantile` 在專案內有三份**：`viz/boxStats.js:12–22` 與 `viz/binning.js:13–22` **逐字元完全相同**（同一目錄裡的兩個檔案各寫一次）、`stats/pls.js:140–148` 寫法不同但公式相同。三份都是 type 7 ⇒ 目前無行為分歧，但這正是 A5b 習慣 9 警告的形狀——`cfa.js` 當年也「只是」多養一套常態 CDF，而那一套在 R55 被發現會讓尾機率塌成 0 | **書面記錄，本批不重構**（動 `pls.js` 要重跑整個 PLS 回歸套件，成本與收益不成比例，且三份行為一致無立即風險）。建議階段 B 抽取為 `src/lib/stats/quantile.js`（E96） | ✅ 已記錄（L1） |
+| **R72** | A6b | `cluster_kmeans_k3`／`cluster_ward_k3` | **L2** | ★★ **憑空造出集群**。實測三種：30 個**完全相同**的觀察值 + Ward + $k=3$ ⇒ 切成 **8/8/14 三群**，三個中心點一模一樣；全常數 + k-means ⇒ **[30, 0, 0]**（兩個空集群）；只有 2 個相異點 + $k=3$ ⇒ **[15, 15, 0]** 且 **silhouette = 1.0000（完美）**——★ **空集群配完美輪廓係數是最誤導的組合**。★ 與前四次同型（A4 R40-i／A5a R51／A6a R61／R66），但**前四次是把無定義的結果印成有意義的判定，這一次是無中生有** | 引擎新增 `distinctRows`／`emptyClusters`／`degenerate`／`constantVars`，★ 判準取「相異觀察值數 < $k$ 或有空集群」**一條涵蓋兩種病徵**；警告框指出具體成因；★ **三處**取消輪廓係數判讀（`QualitySection` 卡片、解讀段、主元件各有一份 `sKey`）；4 條測試含回歸鎖 | ✅ 已修（L2 當場修） |
+| **R73** | A6b | `manova` | **L2** | ★ **$\mathbf E$ 奇異時只有 Wilks 誠實回 NaN**。成因是實作路徑不同：Wilks 走 $|\mathbf E|/|\mathbf E+\mathbf H|$（行列式為 0 時回 NaN 印「—」），Pillai／Hotelling-Lawley／Roy 走 `eigenvaluesEinvH` 的數值路徑**照樣算得出東西**。★ 依變項全為常數時報表印出 **$V=0.000$、$F=0.000$、$p=1.000$、$\eta^2=0.000$——一個看起來完全正常的「不顯著」結論**；兩個依變項完全共線時同樣是 Wilks 缺席、其他三個照給。使用者看到「Wilks: —」的自然反應就是去讀旁邊的 Pillai。同 A3c 的 R33-b 之型 | 引擎新增 `singularError`（判準 $|\mathbf E|/|\mathbf E+\mathbf H|<10^{-12}$）與 `zeroVarianceDVs`；★ 警告文字**直接點破陷阱**（明說 Pillai 等三個仍會印出數字、那些數字同樣無意義）；退化時取消 $p$ 燈號；i18n 中英各 3 鍵；4 條測試含「基準資料集不得被標記」的回歸鎖 | ✅ 已修（L2 當場修） |
+| **R74** | A6b | `cohen_kappa` | **L3** | ★★ **加權 kappa 的信賴區間用了未加權的變異數公式**。修復前 `varCI = po(1−po)/(n(1−pe)²)`，那是**未加權** kappa 的漸近變異數。後果兩層：(a) **值域錯**——quadratic 的 95% CI 上界算出 **1.0248**，而 $\kappa$ 依定義 ≤ 1（同 A5b R54，$\varepsilon^2$ 印出負數）；(b) ★ **方向也錯**——加權放寬了「一致」的定義 ⇒ $\kappa$ 較高、抽樣變異**較小**，舊公式卻讓 quadratic 給出**最大**的 SE（0.1137 vs 正確的 0.0471）。★ **三道防線都沒抓到的原因**：`reference.json` 的 `cohen_kappa` **只有三個點估計，沒有 SE 也沒有 CI**——逐值比對比不到不存在的欄位（同 A5b R56 的 Dunn 零基準之型） | 改用 Fleiss, Cohen & Everitt (1969) 的加權大樣本變異數 ＋ CI 夾在 $[-1,1]$；**基準組 3 → 12 欄**（新增三組 SE 與 CI，權威為 `statsmodels.stats.inter_rater.cohens_kappa`）；`reference.json` 重生後其餘 85 組逐位元不變；6 條測試，含 ★ **「加權時 SE 必須小於未加權」的方向性鎖**與「三個點估計不得改動」的回歸鎖 | ✅ **Kevin 2026-07-30 核定（選項 1：改公式＋夾值域＋補基準）並已執行**。修正後 SE 與 statsmodels 逐值（≤ 3.2e−10）、CI 與 Kevin 本機 R `psych::cohen.kappa` 相對差 **1e−9**、與 FCE 原式沙盒手算相符 ⇒ **四方一致** |
+| R75 | A6b | `icc` | L1 | ★ **ICC 六個欄位的命名此前只是斷言**：「`icc21` 是不是真的對應 McGraw-Wong 的 ICC(2,1)」從未實跑核實過，而**選錯型別是 ICC 最常見的誤用**。⚠️ 另發現 R `psych::ICC` **把三個型別印成同一個值**（0.80481040），與 §3.2 的公式矛盾（$MS_W \ne MS_E$ 時 ICC(1,1) 必然 ≠ ICC(3,1)），差本工具最大 3.1e−3 | ★★ **依 McGraw & Wong (1996) 的六條原式獨立重算，六欄逐位元相同（0.00e+00）** ⇒ **命名正確，而且拿到的是公式層的證據，比對第三方更強**。psych 的行為**未解決**，據實記入 `icc.md` §6 與 E109（下一步：`psych::ICC(x)$summary` 比對 ANOVA 表） | ✅ 已結案（命名層）＋ 誠實標註未解決項 |
+| R76 | A6b | `cluster_ward_k3` | L1 | ★ **「本工具的 Ward 是哪一個版本」這個問題本專案從未回答過**。R 的 `hclust` 有 `ward.D` 與 `ward.D2` 兩種，是**不同的演算法** | ★★ **已結案**：R 實測 `ward.D2` 給 17/18/25、WSS **94.76284469** ⇒ 與本工具**逐值相同且 60 筆分群標籤逐一相同**；`ward.D` 給 12/23/25、WSS 93.4295 ⇒ **sklearn 的 `linkage='ward'` ＝ `ward.D2`**。已寫入 `cluster.md` §3.3 | ✅ 已結案 |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -1240,6 +1251,28 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.23（2026-07-30 同日）：**★★ A6b 收官（6 / 6）＝ 階段 A 的方法文件目標達成**。
+  `MAX_UNDOCUMENTED` **8 → 0**——`reference.json` 的 **86 組基準全部**被文件第 6 節點名，
+  該棘輪從 A3c 上線時的 44 一路降到 **0**。方法文件 **58 → 64 份**。
+  ★★ **本批三個紅隊項有一個共同點，而那是本批最該記住的一句話**：
+  **逐值比對永遠比不到不存在的欄位。**
+  R74 的 SE／CI、R72 的集群退化旗標、R73 的奇異矩陣旗標——**三個都是基準組裡沒有的東西**。
+  ★ **R74（L3，Kevin 核定選項 1）**：加權 kappa 的 CI 用了未加權的變異數公式 ⇒ quadratic 的
+  **CI 上界算出 1.0248**（$\kappa\le1$），且**連方向都錯**（加權應使 SE 變小，舊式反而最大）。
+  改用 Fleiss-Cohen-Everitt (1969) ＋ 夾值域 ＋ **基準 3 → 12 欄**；修正後**四方一致**
+  （本工具＝statsmodels＝psych＝FCE 原式手算）。
+  ★ **R72（L2）**：集群**憑空造出三群**——30 個完全相同的觀察值被 Ward 切成 8/8/14；
+  只有 2 個相異點時 k-means 給出空集群 ＋ **silhouette = 1.0000**。
+  ⇒ 同型第五次，但**前四次是把無定義印成有意義，這一次是無中生有**。
+  ★ **R73（L2）**：MANOVA 的 $\mathbf E$ 奇異時**只有 Wilks 誠實回 NaN**，
+  Pillai／H-L／Roy 走數值路徑照樣給數字（依變項全常數時印出 $p=1.000$ 的「正常不顯著」）。
+  ★ **兩件命名／慣例結案**：(1) **ICC 六欄的命名**由 McGraw & Wong 原式獨立重算**逐位元反證**
+  ——⚠️ 但 R `psych::ICC` 把三型別印成同值、與公式矛盾，**未解決**（E109）；
+  (2) ★★ **sklearn 的 `linkage='ward'` ＝ R 的 `ward.D2`**（不是 `ward.D`），
+  WSS 與 **60 筆分群標籤逐一相同**——這個問題本專案此前從未回答過。
+  ★ **六支的獨立重寫全數通過**，其中 `icc`（六欄）與 `cluster_ward_k3`（自寫 Lance-Williams）
+  **逐位元相同**、`logistic_regression` 的 `auc` 亦逐位元相同（重寫用 Mann-Whitney $U$ 形式自算）。
+  沙盒 **13 檔、1,458 過 / 5 跳過**（`a6.behavior.test.js` **63 條**，原 `a6a.behavior.test.js` 已更名以涵蓋兩批）。
 - v2.22（2026-07-30 同日）：**A6a 收官（8 / 8）**——`visualization` ＋ 迴歸三支交付。
   ★★ **R69：「零變異／退化值」連中第五次**，而這一次的症狀最刺眼：多元迴歸完美配適時
   **把 $t=$ `2312738254615615.50` 原樣印在報表上**、$R^2=1.0000$、$p<.001$；
@@ -1261,7 +1294,7 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
   且**兩道棘輪都掃不到它**（`provenance.test.js` 掃 `reference.json` 的鍵、`docs.coverage.test.js` 檢查基準組
   有沒有被文件提到——對一個完全沒有基準的模組都無效，E95）。
   `MAX_UNDOCUMENTED` **11 → 8**（剩下全部落在 A6b）；方法文件 **54 → 58 份**；
-  沙盒 **13 檔、1,435 過 / 5 跳過**（`a6a.behavior.test.js` 49 條）。
+  沙盒 **13 檔、1,435 過 / 5 跳過**（`a6.behavior.test.js` 49 條）。
 - v2.21（2026-07-30 同日）：**A6a 再交付三份（descriptive／levene／correlation），4 / 8**。
   ★★ **「零變異／退化值」的檢查連中四次**——A4 的 R40-h、A5a 的 R51、A6a 的 R61 與 **R66**，
   分屬四個不同模組。R66 最嚴重：各組皆為常數時 Levene 舊版回 `{F: Infinity, p: 0}`，
