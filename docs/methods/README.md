@@ -483,6 +483,9 @@ A5a 的 R50 教我們去掃參數空間；R60 再加一層——**先確認你�
 | 文件 | 方法 | 基準組 | tier / status |
 |---|---|---|---|
 | [normality.md](normality.md) | Shapiro-Wilk ＋ Kolmogorov-Smirnov（Lilliefors 修正） | `shapiro_wilk`、`ks_lilliefors`、★ `ks_lilliefors_grid`（本批新增 84 欄） | **A** / verified |
+| [descriptive.md](descriptive.md) | 敘述統計（含偏度／峰度的三種算法） | `descriptive_y` | **A** / verified |
+| [levene.md](levene.md) | 變異數同質性（Brown-Forsythe，median 版） | `levene_median`、`levene_mean_spss_default`（★ 無 adapter，僅人工對照） | **A** / verified |
+| [correlation.md](correlation.md) | Pearson $r$ ＋ Spearman $\rho$（矩陣、pairwise） | `pearson_x1_x2`、`spearman_x1_x2` | **A** / verified |
 
 ### A6a 的紅隊結果摘要（累積中）
 
@@ -492,6 +495,11 @@ A5a 的 R50 教我們去掃參數空間；R60 再加一層——**先確認你�
 | **R61** | `shapiro_wilk`／`ks_lilliefors` | **L2** | ★ **零變異欄被判成「近似常態」綠燈**（$W=1$／$D=0$／$p=1$ 的退化值），在報表上看起來是全套最常態的變項。同 A4 R40-h、A5a R51 之型 | ✅ 已修：引擎回 `zeroVariance` 旗標、判讀改為「無法檢定」、警告框＋APA 句警語、i18n 中英各 3 鍵 |
 | **R62** | `ks_lilliefors`／`levene_mean_spss_default` | L1 | **provenance 的 `verification` 欄不實**：兩組都寫「JS 與其逐值比對」，但前者的 $p$ 掛著 SKIP、後者根本沒有 adapter | ✅ 已更正兩組的 `verification` 與 `note` |
 | **R63** | `ks_lilliefors` | L1 | ★ **兩處過期／不實的區塊註解**（A3c R34-a 同型）：JSDoc 仍寫「$D<0.05$ 時樣本接近完美常態」——那正是 R60 移除的 clamp；同段宣稱「與 R `nortest` 一致到小數第 3 位」而專案內零證據 | ✅ 已修，第二項改標待驗證 |
+| **R64** | `spearman_x1_x2` | L1 | ★ **Spearman 走 $t$ 近似、R 預設走精確法**。216 組確定性排列量化：本工具＝R 的 `exact=FALSE` 分支（3.8e−08）；比值 **0.288（$n$=6，$p$ 小 3.5 倍）~ 1.005**，偏寬鬆但隨 $n$ 收斂；★★ **.05 翻面 0 組**（R58 當時 1.1%） | ✅ Kevin 核定：**書面化即可**。並列區誠實標註未量化、列 backlog（R 在該格會退回近似，無現成權威） |
+| **R65** | `descriptive_y` | **L2** | ★ **一個非數值字串讓整欄八個統計量全變 NaN**：`descriptive/compute.js` 缺 `.filter(Number.isFinite)` 而 `normality/compute.js` 有 ⇒ 報表印 n = 5 但其餘全「—」，不說明原因 | ✅ 已修（對齊 normality）＋2 條測試含回歸鎖。既有 fixture 零影響 |
+| **R66** | `levene_median` | **L2** | ★★ **各組皆為常數時報「違反同質」——方向相反**。舊版回 `{F: Infinity, p: 0}` ⇒ 前提面板印紅燈，而真相是各組變異數完全相等。★ **這個分支永遠是錯的**（$SS_w=0$ 蘊含 $SS_b=0$，$F$ 必為 0/0）。**同型第四次**（R40-i／R51／R61） | ✅ 已修：引擎回 `levene-all-constant`、i18n 中英各一鍵、`assumptionChecker` 兩處改讀錯誤碼、單／雙因子 ANOVA 加**第三種中性狀態**（只改 NaN 不特判會變成綠燈「通過」，同樣是錯的）＋4 條測試 |
+| **R67** | `pearson_x1_x2` | **L2** | ★ **`zeroVariance` 是孤兒欄位**：引擎回傳、零 UI 消費者 ⇒ 零變異欄在矩陣印「—」、在解讀區被靜默略過，使用者看不到原因。★ 修復時發現**舊旗標本身不夠用**——它對整組配對都成立，兩欄時分不出誰是常數欄 | ✅ 已修：引擎分開回報 `xConstant`／`yConstant`、矩陣下方說明框、i18n 中英各一鍵＋5 條測試含「不得誤標正常欄」的回歸鎖 |
+| R68 | `descriptive_y` | L1 | **檔頭斷言只驗掉一半**：「與 `e1071::skewness(type=2)` / `DescTools::Skew(method=2)` 一致」——前者已實跑核實，**後者從未驗過** | ✅ 已在 `descriptive.md` §6 標為未驗證 |
 
 ★ **順帶收回的兩條假放寬**（A5b 習慣 8 的第二次應用）：`ks_lilliefors.D` 放寬 1e-4 而實測相對差 **0.0（逐位元相同）**；
 `shapiro_wilk.p` 放寬 1e-5 而實測 5.8e−8、1,440 例掃描 max|Δp| = 7.5e−7、零翻面。
@@ -503,6 +511,30 @@ A5a 的 R50 教我們去掃參數空間；R60 再加一層——**先確認你�
 ⇒ **改實作時把「該檔案的區塊註解」列入必改清單**（A3c 就寫過這一條，這次還是漏了），
 而且**註解裡的第三方一致性宣稱要當成引用來查**：「與 R 一致到小數第 3 位」這種句子，
 如果沒有一份輸出檔可以指，它就是以記憶充當引用。
+
+
+### A6a 的 R 側交叉驗證（2026-07-30，R 4.6.0）
+
+| 段 | 對象 | 結果 |
+|---|---|---|
+| [1] | `descriptive` 的偏態峰度 | ✅ **本工具＝`e1071` type 2（SPSS/SAS 預設）逐位元相符**——一句從未核實的檔頭斷言結案。★ 三種算法的差距：偏態 0.399~0.420、**峰度 0.389~0.656（差 1.7 倍）** |
+| [2a] | `normality` | $W$ 與 $D$ 印到 8 位逐位元相符；★ Lilliefors $p$ **0.5161 vs `nortest` 0.4755**（差 0.0406，屬 dispatch 慣例差異）。⚠️ 該點 $p\approx0.5$ 離 .05 很遠 ⇒ **R60 仍無決策區的證人** |
+| [3] | `levene` | ✅ 兩個 center 慣例都對上（median 0.3876／mean 0.3973）。★ 但 `leveneTest` 只印 4 位小數，夠確認慣例、**不夠逐值驗證**（同 A5b 的 E67 之型） |
+| [4] | `correlation` | Pearson 全對；★ **Spearman 慣例分歧**：無並列 ⇒ R 走精確法 1.705e−05 vs 本工具 $t$ 近似 1.252e−05（**小 1.36 倍、偏寬鬆**），A5b 的 R58 同型，待 08 號掃描 |
+| [5] | 迴歸三支 | ✅ 全對，含 `car::vif`。★★ **手算的 $\Delta F$／$\Delta p$ 對上 R 的 `anova(m1, m2)` ⇒ §0 的手算基準弱點在本組結案**。★ 順手驗掉零基準的標準化係數 beta（E80） |
+| [2b]→08[A] | R60 的 12 組探針 | ✅✅ **08 號補跑成功，R60 結案**：$D$ 在 11 組**逐位元相符**；$p$ 在**決策區（$p<0.1$，含五組 clampzone）max 絕對差 1.5e−8**，連 `likert_n1000` 的 $2.8953\times10^{-114}$ 都對上；$p>0.1$ 區 max 8.9e−3（兩套 dispatch 的慣例差異） |
+| 08[B] | `correlation` 的 Spearman | ✅ **量化完成（R64）**：216 組確定性排列，本工具＝R 的 `exact=FALSE` 分支（3.8e−08）；近似/精確比值 **0.288（$n$=6）~ 1.005**，方向偏寬鬆但隨 $n$ 收斂；★★ **.05 翻面 0 組**（R58 當時是 1.1%）⇒ 建議書面化即可 |
+
+★ **[2b] 當初陣亡的成因與當天剛開出的 R60 是同一型**：呼叫第三方時沒有問它的定義域。
+只是這一次的對象不是本工具，是**驗證腳本自己**。
+⇒ 後續抽驗腳本兩條：**先問第三方檢定的 $n$ 下限、逐項 `tryCatch` 不要整段包**。
+
+
+★★ **R60 的結案方式值得記下來**：它的第三方不是「另一個算得出 $p$ 的套件」，
+而是**另一套 dispatch 邏輯**。兩邊在 DW 分支上逐值相同、在各自的 fallback 分支上差到第二位小數
+——**這正好證明了差異的來源是 dispatch 而不是公式**。
+⇒ **找第三方時要問的不是「它會不會算」，是「它在哪些地方跟我們走同一條路、哪些地方不同」**；
+一致與不一致的**分界線落在哪裡**，比一致的程度更能說明問題。
 
 ## 側欄模組 → 方法對照
 

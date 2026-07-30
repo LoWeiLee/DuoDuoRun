@@ -37,7 +37,11 @@ export function pearsonCorr(x, y) {
     dxx += dx * dx
     dyy += dy * dy
   }
-  if (dxx === 0 || dyy === 0) return { r: NaN, t: NaN, df: NaN, p: NaN, n, zeroVariance: true }
+  // ★ 2026-07-30 紅隊 R67：只回一個 zeroVariance 旗標，UI 分不出是哪一欄為常數
+  //   （矩陣裡 (a,b) 被標記時，a 與 b 都可能是那個常數欄）⇒ 分開回報兩側。
+  if (dxx === 0 || dyy === 0) {
+    return { r: NaN, t: NaN, df: NaN, p: NaN, n, zeroVariance: true, xConstant: dxx === 0, yConstant: dyy === 0 }
+  }
   const r = num / Math.sqrt(dxx * dyy)
   const df = n - 2
   // 處理 r = ±1 的邊界（會讓分母為 0）
@@ -73,6 +77,8 @@ export function spearmanRho(x, y) {
     p: out.p,
     n,
     zeroVariance: out.zeroVariance || false,
+    xConstant: out.xConstant || false,
+    yConstant: out.yConstant || false,
   }
 }
 

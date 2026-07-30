@@ -239,10 +239,18 @@ function AssumptionChecks({ assumptions, t }) {
   const items = []
   if (assumptions.homogeneity) {
     const lv = assumptions.homogeneity
+    // ★ 2026-07-30 紅隊 R66：各組皆為常數時 Levene 是 0/0。舊版引擎回 p = 0，
+    //   這裡的 `lv.p < 0.05` 判 true ⇒ 印紅燈「違反同質」——**方向剛好相反**
+    //   （真相是各組變異數完全相等）。改回 NaN 後若不特判又會變成綠燈「通過」，
+    //   同樣是錯的 ⇒ 加第三種狀態：不下判定。
+    const undefinedTest = !Number.isFinite(lv.p)
     items.push({
       label: r.homogeneityCells,
-      stat: `F(${lv.df1}, ${lv.df2}) = ${fmtNum(lv.F, 2)}, p = ${fmtP(lv.p)}`,
+      stat: undefinedTest
+        ? (t.errors?.stats?.[lv.error] || '—')
+        : `F(${lv.df1}, ${lv.df2}) = ${fmtNum(lv.F, 2)}, p = ${fmtP(lv.p)}`,
       ok: !(lv.p < 0.05),
+      undefinedTest,
     })
   }
   if (assumptions.normality) {
@@ -254,7 +262,7 @@ function AssumptionChecks({ assumptions, t }) {
     })
   }
   if (items.length === 0) return null
-  const anyViolated = items.some((x) => !x.ok)
+  const anyViolated = items.some((x) => !x.undefinedTest && !x.ok)
   return (
     <div>
       <Heading>{r.assumpTitle}</Heading>
@@ -272,14 +280,14 @@ function AssumptionChecks({ assumptions, t }) {
             <span className="flex items-center gap-2 min-w-0">
               <span className={[
                 'inline-block w-2 h-2 rounded-full shrink-0',
-                it.ok ? 'bg-duo-sig-ok shadow-led-ok' : 'bg-duo-sig-bad shadow-led-bad',
+                it.undefinedTest ? 'bg-duo-cocoa-300' : (it.ok ? 'bg-duo-sig-ok shadow-led-ok' : 'bg-duo-sig-bad shadow-led-bad'),
               ].join(' ')} />
               <span className="text-duo-cocoa-700">{it.label}</span>
             </span>
             <span className="font-mono text-duo-cocoa-700 ml-auto text-right whitespace-nowrap">
               {it.stat}{' '}
-              <span className={it.ok ? 'text-duo-sig-ok' : 'text-duo-sig-bad'}>
-                · {it.ok ? r.assumpOk : r.assumpViolated}
+              <span className={it.undefinedTest ? 'text-duo-cocoa-400' : (it.ok ? 'text-duo-sig-ok' : 'text-duo-sig-bad')}>
+                · {it.undefinedTest ? t.norm.verdict.undefinedTest : (it.ok ? r.assumpOk : r.assumpViolated)}
               </span>
             </span>
           </li>

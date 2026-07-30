@@ -113,8 +113,10 @@ function checkTTest(rows, settings, t) {
       const lev = levene(groupArrs.map(([, a]) => a))
       checks.push({
         id: 'levene', label: c.varianceHomogeneity, status: leveneStatus(lev),
+        // ★ 2026-07-30 紅隊 R66：原本任何 error 都印「組數或樣本不足以檢測」，
+        //   而新增的 levene-all-constant 是完全不同的情形（各組皆為常數）。
         detail: lev.error
-          ? c.tooFewForLevene
+          ? (t.errors?.stats?.[lev.error] || c.tooFewForLevene)
           : fillTemplate(c.leveneDetail, {
               f: fmtNum(lev.F, 3), df1: lev.df1, df2: lev.df2, p: fmtP(lev.p),
             }),
@@ -194,8 +196,9 @@ function checkOneWayAnova(rows, settings, t) {
     const lev = levene(arrs.map(([, a]) => a))
     checks.push({
       id: 'levene', label: c.varianceHomogeneity, status: leveneStatus(lev),
+      // ★ R66：同上，區分 levene-all-constant 與樣本不足
       detail: lev.error
-        ? c.tooFewForLevene
+        ? (t.errors?.stats?.[lev.error] || c.tooFewForLevene)
         : fillTemplate(c.leveneDetail, {
             f: fmtNum(lev.F, 3), df1: lev.df1, df2: lev.df2, p: fmtP(lev.p),
           }),

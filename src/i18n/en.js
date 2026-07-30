@@ -2112,6 +2112,7 @@ export default {
       'need-n>=2': 'Fewer than 2 valid cases — variance cannot be computed.',
       'need-n>=3': 'Fewer than 3 valid cases — the regression model cannot be estimated.',
       'need-N>k': 'The number of valid cases must exceed the number of groups, otherwise no degrees of freedom remain for the error term.',
+      'levene-all-constant': 'Every group is constant (all within-group variances are 0), so Levene\u2019s test is mathematically undefined (F is 0/0). The group variances are in fact identical; this must NOT be read as a violation of homogeneity. Check whether the wrong variable was selected or whether a ceiling/floor effect is present.',
       'need->=2-groups': 'The grouping variable needs at least 2 groups to compare.',
       'need->=3-groups': 'This method requires at least 3 groups.',
       'need->=2-items': 'At least 2 items are needed to compute internal consistency.',
@@ -2307,6 +2308,7 @@ export default {
     },
   },
   corr: {
+    zeroVarianceNote: 'Note: {vars} had no variation at all in this analysis (every value identical). The correlation is mathematically undefined, is shown as \u201C\u2014\u201D in the matrix and is excluded from the interpretation below. This does NOT mean \u201Cno correlation\u201D.',
     title: 'Correlation matrix',
     methodLabel: 'Correlation method',
     methods: {

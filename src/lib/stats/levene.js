@@ -61,8 +61,16 @@ export function levene(groups) {
   const df1 = k - 1
   const df2 = N - k
 
+  // ★ 2026-07-30 紅隊 R66（L2）：原本回 { F: Infinity, p: 0 }，而**這個分支永遠是錯的**。
+  //   ssWithin = 0 ⟺ 每一組的 |X − median| 全為 0 ⟺ 每一組都零變異
+  //   ⟹ 各組的 Z 平均也全為 0 ⟹ ssBetween 必然同時為 0 ⟹ F 是 0/0，不是 ∞。
+  //   舊版的後果：assumptionChecker 的 leveneStatus 讀到 p = 0 判 'fail'，
+  //   前提檢核面板印**紅燈「違反變異數同質」＋ F = —（fmtNum(Infinity)）＋ p < .001**，
+  //   而真相是**三組變異數完全相同（都是 0）**——方向剛好相反。
+  //   改回錯誤碼後 leveneStatus 讀到非有限的 p 會判 'skip'，方向才對。
+  //   （同型：A4 的 R40-i、A5a 的 R51、A6a 的 R61——這是第四次。）
   if (ssWithin === 0) {
-    return { F: Infinity, df1, df2, p: 0 }
+    return { F: NaN, df1, df2, p: NaN, error: 'levene-all-constant' }
   }
 
   const F = (ssBetween / df1) / (ssWithin / df2)

@@ -169,30 +169,35 @@ expected（多多快跑，R60 修正後實跑）：
 ")
 
 if (probe_ok && has_nortest) {
-  tryCatch({
-    cat("\nR 的值：\n")
-    cat(sprintf("%-18s %5s %10s %12s %12s %12s\n",
-                "probe", "n", "D(R)", "p(lillie)", "W(shapiro)", "p(shapiro)"))
-    for (nm in unique(pr$probe)) {
-      v <- pr$value[pr$probe == nm]
+  cat("\nR 的值：\n")
+  cat(sprintf("%-18s %5s %10s %12s %12s %12s\n",
+              "probe", "n", "D(R)", "p(lillie)", "W(shapiro)", "p(shapiro)"))
+  # ★ 2026-07-30 修：原版把整個迴圈包在單一 tryCatch，且失敗時用邏輯型 NA。
+  #   nortest::lillie.test 要求 n >= 5，第一組探針 n = 4 直接拋錯 →
+  #   dv 變成邏輯 NA → formatC(NA, format="f") 回報 "unsupported type" → **整段陣亡**。
+  #   改為：逐組 tryCatch ＋ NA_real_ ＋ n < 5 時明示跳過。
+  for (nm in unique(pr$probe)) {
+    v <- pr$value[pr$probe == nm]
+    dv <- NA_real_; pv <- NA_real_; wv <- NA_real_; wp <- NA_real_; note <- ""
+    if (length(v) >= 5) {
       lt <- try(nortest::lillie.test(v), silent = TRUE)
-      sw <- try(shapiro.test(v), silent = TRUE)
-      dv <- if (inherits(lt, "try-error")) NA else as.numeric(lt$statistic)
-      pv <- if (inherits(lt, "try-error")) NA else lt$p.value
-      wv <- if (inherits(sw, "try-error")) NA else as.numeric(sw$statistic)
-      wp <- if (inherits(sw, "try-error")) NA else sw$p.value
-      cat(sprintf("%-18s %5d %10s %12s %12s %12s\n", nm, length(v),
-                  formatC(dv, format = "f", digits = 6),
-                  formatC(pv, format = "g", digits = 6),
-                  formatC(wv, format = "f", digits = 6),
-                  formatC(wp, format = "g", digits = 6)))
+      if (!inherits(lt, "try-error")) { dv <- as.numeric(lt$statistic); pv <- lt$p.value }
+    } else {
+      note <- "  <- nortest 要求 n >= 5，Lilliefors 跳過"
     }
-    cat("\n判讀提示給 AI：\n")
-    cat("  - D 欄若與 expected 逐位元級相符 ⇒ 統計量本身無爭議，差異全在 p 的近似路線。\n")
-    cat("  - p 欄的差異要看**方向**：R 偏小 = 本工具偏保守（漏抓）；R 偏大 = 本工具偏寬鬆（偽顯著）。\n")
-    cat("  - nortest 對 p > 0.1 會回傳 Stephens 修正值，statsmodels 回傳 10^7 模擬表值，\n")
-    cat("    兩者在 p 大的區域本來就會差；決策區（p 介於 .01~.10）才是要盯的地方。\n")
-  }, error = function(e) cat("  [x] 第 2b 段失敗：", conditionMessage(e), "\n"))
+    sw <- try(shapiro.test(v), silent = TRUE)
+    if (!inherits(sw, "try-error")) { wv <- as.numeric(sw$statistic); wp <- sw$p.value }
+    cat(sprintf("%-18s %5d %10s %12s %12s %12s%s\n", nm, length(v),
+                formatC(dv, format = "f", digits = 6),
+                formatC(pv, format = "g", digits = 6),
+                formatC(wv, format = "f", digits = 6),
+                formatC(wp, format = "g", digits = 6), note))
+  }
+  cat("\n判讀提示給 AI：\n")
+  cat("  - D 欄若與 expected 逐位元級相符 ⇒ 統計量本身無爭議，差異全在 p 的近似路線。\n")
+  cat("  - p 欄的差異要看方向：R 偏小 = 本工具偏寬鬆；R 偏大 = 本工具偏保守。\n")
+  cat("  - nortest 對 p > 0.1 走 Stephens 修正，statsmodels 走 10^7 模擬表值，\n")
+  cat("    兩者在 p 大的區域本來就會差；決策區（p 介於 .01~.10）才是要盯的地方。\n")
 } else {
   cat("\n[x] 缺 a6_probe.csv 或 nortest，本段跳過。\n")
 }

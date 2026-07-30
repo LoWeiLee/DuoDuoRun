@@ -67,7 +67,9 @@ const METHODS_DIR = path.join(HERE, '..', 'docs', 'methods')
  */
 // ★ 2026-07-30（A6a）：18 → 16。normality.md 交付，涵蓋 shapiro_wilk／ks_lilliefors，
 //   並認領本批新增的 ks_lilliefors_grid（R60）——新增一組同時寫入文件，棘輪淨降 2。
-const MAX_UNDOCUMENTED = 16
+// ★ 2026-07-30（A6a 第二輪）：16 → 11。descriptive／levene／correlation 三份交付，
+//   涵蓋 descriptive_y、levene_median、levene_mean_spss_default、pearson_x1_x2、spearman_x1_x2。
+const MAX_UNDOCUMENTED = 11
 
 /** 取出一份方法文件的第 6 節（到第 7 節為止）。 */
 function sectionSix(text) {

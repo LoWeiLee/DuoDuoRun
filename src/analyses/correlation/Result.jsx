@@ -45,6 +45,7 @@ function Result() {
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const cols = result.columns
   const method = result.method || 'pearson'
+  const constCols = constantColumns(result)
   const sym = t.corr.symbol[method] || 'r'
   const methodInline = t.corr.methodLabelInline[method]
 
@@ -119,6 +120,16 @@ function Result() {
         * p &lt; .05 &nbsp;·&nbsp; ** p &lt; .01 &nbsp;·&nbsp; *** p &lt; .001
       </p>
 
+      {/* ★ R67：零變異欄不再只印「—」，明說原因 */}
+      {constCols.length > 0 && (
+        <div className="mt-2 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {t.corr.zeroVarianceNote.replace(
+            '{vars}',
+            constCols.map((c) => labelMap[c] || c).join('、')
+          )}
+        </div>
+      )}
+
       {mode === 'teaching' && <Interpretation result={result} labelMap={labelMap} t={t} />}
     </div>
   )
@@ -129,6 +140,22 @@ function strengthFor(r) {
   if (a < 0.3) return 'weak'
   if (a < 0.5) return 'moderate'
   return 'strong'
+}
+
+// ★ 2026-07-30 紅隊 R67（L2）：`pearsonCorr`／`spearmanRho` 早就回傳 `zeroVariance`，
+//   但**沒有任何 UI 元件讀它**（孤兒欄位，同 A3a 的四項）。零變異欄在矩陣印「—」、
+//   在解讀區被 `Number.isFinite(cell.r)` 靜默略過——使用者看得到空格，看不到原因。
+//   ★ 用 `xConstant`（列方向那一欄是否為常數）而非 `zeroVariance`：後者對整組配對都成立，
+//   會把與常數欄配對的正常欄一起誤標。
+function constantColumns(result) {
+  const out = []
+  for (const a of result.columns) {
+    for (const b of result.columns) {
+      if (a === b) continue
+      if (result.matrix[a][b]?.xConstant) { out.push(a); break }
+    }
+  }
+  return out
 }
 
 function Interpretation({ result, labelMap, t }) {
