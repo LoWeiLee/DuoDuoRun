@@ -17,8 +17,13 @@
 A6 是**階段 A 的最後一批**；收尾後才處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）
 與判準 7（§8.4 休眠狀態快照）。
 
-A5b 紅隊 **4 項（R54–R57）全部處置完畢，本批無 L4**。基準組 **84 → 85**（新增 `kruskal_dunn`）、
-`MAX_PENDING` 維持 **2**、`MAX_UNDOCUMENTED` **27 → 18**。
+A5b 紅隊 **4 項（R54–R57）全部處置完畢，本批無 L4**；同日的 **R 側交叉驗證另開出 R58、R59，亦已結案**。
+基準組 **84 → 85**（新增 `kruskal_dunn`）、`MAX_PENDING` 維持 **2**、`MAX_UNDOCUMENTED` **27 → 18**。
+
+★ **A6 開工前必讀的一件事（R58）**：A5b 交付時我寫下「精確法缺口的危險方向為 0」，
+**那只在無並列時成立**，我把它寫成了通則。R 側抽驗打到這個盲點——有並列時
+方向相反（78% anti-conservative、1.1% 在 .05 上偽顯著）。
+⇒ **A6 交付任何「掃描結論」時，一律同時寫出「這個掃描的前提是什麼、前提外的區域長什麼樣」。**
 
 ★ **A5b 與 A5a 的結論相反，而這一次差別不在檢查方式**：兩批用的是同一套參數空間掃描，
 A5a 用 896 格點抓到一個 L4，A5b 用**逾 75,000 格點卻沒有 L4**。
@@ -30,6 +35,19 @@ A5a 用 896 格點抓到一個 L4，A5b 用**逾 75,000 格點卻沒有 L4**。
 **R54 的值完全正確**（與 rstatix 的公式逐位元相同），錯的是**它叫什麼**與**值域該不該截斷**——
 $\varepsilon^2$ 印出負數這件事**不會被任何數值比對抓到**，因為基準端與實作端犯的是同一個命名錯誤。
 **R55 則是同一個錯誤寫法被複製 8 次**，其中 `cfa.js` 還自己養了第二套常態 CDF。
+
+✅ **R 側交叉驗證已完成（2026-07-30，Kevin 本機 R 4.6.0 / lavaan 0.7.2）**：
+`scripts/validation/05_a5b_r_audit.R` ＋ `06_cfa_se_probe.R`（入口 `跑R抽驗.bat`、`跑CFA標準誤診斷.bat`）。
+**五項乾淨銷帳**：EFA 逐變項 MSA 與 $|\mathbf R|$ 對 `psych` **六位小數全對**（兩個零基準量結案）、
+單因子 ANOVA 的 **7 欄手算值**對 base R `aov()` 逐項相符、
+Tukey 對 R `ptukey()` 五格點（含 R50 失準區 df=100/120/999）相對差 1.6e−10 ~ 3.9e−08
+⇒ **`ptukey.js:18` 那句「對標 R::ptukey()」終於有證據**、
+R54 的命名判斷經 `effectsize` 確認（**E67 結案**）、prop／chisq／fisher 的 $p$ 全部對上。
+**兩項新開出並已結案**：**R58**（見上方，A5b 結論的範圍更正 ＋ UI 加強警告）、
+**R59**（CFA 標準誤 ＝ lavaan 的 `wishart`+`observed`，比值 0.999995~1.000002、殘差 4.5e−06
+就是中央差分截斷誤差 ⇒ **純慣例差異，不改實作**）。
+★ 順帶更正一項事實：**lavaan 預設的 $\chi^2$ 與 semopy 同側（$N\cdot F$），
+本工具是三者中唯一用 $(N-1)F$ 的**——`cfa.md` §3.3 原本寫反了。
 
 ✅ **A5a 已完整驗收並推上遠端（commit `0729p`，2026-07-29）**：
 沙盒 12 檔全綠、`eslint .` 0 problems、`vite build` 615 modules transformed、
@@ -47,11 +65,20 @@ $\varepsilon^2$ 印出負數這件事**不會被任何數值比對抓到**，因
 `lightningcss-win32-x64-msvc`（缺 Linux 原生二進位）而無法跑完 CSS 壓縮——與本批改動無關，
 但完整 build 需本機驗。
 
-★ **休眠快照用的當下數字（供 §8.3／§8.4 收尾時直接引用，2026-07-30 更新）**：
-基準組 **85**、provenance **verified 79 / pending 2 / exempt 4**、tier **A 50 / B 31 / I 4**、
-方法文件 **50 份**（`docs/methods/` 含索引共 51 檔）、
-`MAX_PENDING = 2`、`MAX_UNDOCUMENTED = 18`。
-★ 測試檔數與通過數待 Kevin 本機補跑後確認（沙盒 12 檔的數字見本節末的驗收段）。
+★ **休眠快照用的當下數字（供 §8.3／§8.4 收尾時直接引用，2026-07-30 A5b＋R 抽驗後定版）**：
+
+| 項目 | 值 |
+|---|---|
+| 基準組 | **85** |
+| provenance | verified **79** / pending **2** / exempt **4** |
+| tier | A **50** / B **31** / I **4** |
+| 方法文件 | **50 份**（`docs/methods/` 含索引共 51 檔） |
+| 棘輪 | `MAX_PENDING = 2`、`MAX_UNDOCUMENTED = **18**` |
+| 沙盒測試 | **12 檔**（`a11y.guard`／`a4.behavior`／`a5a.behavior`／`a5b.behavior`／`compare`／`docs.coverage`／`errorCodes`／`i18n`／`nca`／`pls.narrative`／`pls`／`provenance`），**1,303 過 / 6 跳過** |
+| §6.6 紅隊 | R2–R59 **全部有 Kevin 裁決** ⇒ §6.7 判準 4 達成 |
+| 階段 A 的 L4 | 兩個：A1 的 R6、A5a 的 R50（A5b 無 L4） |
+
+⬜ **Kevin 本機的測試檔數與通過數待補**（雙擊 `A5b本機驗收.bat`）——這一格是 §8.3 的兩個空格之一。
 
 ---
 
@@ -101,12 +128,34 @@ $\varepsilon^2$ 印出負數這件事**不會被任何數值比對抓到**，因
 1. 依文件第 3 節的文字規格**獨立重寫**，且**不呼叫產生基準的那個函式**；結果寫進 `validation-report-v1.md`
 2. 紅隊八條（§6.3）逐支跑，含孤兒欄位 `grep`、同一判定的多套實作掃描、`assumptionChecker` 涵蓋盤點
    ★ **另加 A5b 的第 10 條：每個效果量都要問「這個符號在文獻上是這個公式嗎？值域是什麼？工具守住了嗎？」**
+   ★ **另加 R58 的一條：任何「掃描結論」都要同時寫出「這個掃描的前提是什麼、前提外的區域長什麼樣」**
 3. L1／L2 當場修並列出改了什麼；**L3 當場問 Kevin**；**L4 立刻停批回報**
 4. 行號重驗（內容錨定法，放在所有程式碼修改之後）
 5. `docs/methods/README.md` 索引＋A6 紅隊摘要；本檔 §6.5 勾選、§6.6 接 **R58**、功能擴充表接 **E71**、版本紀錄
 6. **`MAX_UNDOCUMENTED` 18 → 0**（A6 涵蓋剩下的全部 18 組）★ 這一批做完棘輪應歸零
 7. 沙盒 12 檔＋`npx --no-install eslint .`＋`npx vite build --outDir /tmp/... --emptyOutDir`（看 `transformed` 行）
 8. 列出需 Kevin 本機補跑的項目（動到 `src/analyses/**` 或 `src/i18n/**` 就一定要）
+
+★ **A6 有一批「R 已經驗過」的便宜資產可直接引用**（2026-07-30 的 R 抽驗成果，見
+`docs/validation-report-v1.md` 的「R 側交叉驗證」節）：
+
+| A6 的文件 | 已有的 R 對照 | 怎麼用 |
+|---|---|---|
+| `normality` | ★ 尚無——`shapiro_wilk` 與 `ks_lilliefors` **都還沒對過 R** | R 的 `shapiro.test` 與 `nortest::lillie.test` 是現成證人，建議做 07 號腳本 |
+| `correlation` | 尚無 | `cor.test`（Pearson／Spearman）＋ Fisher $z$ CI，base R 即可 |
+| 迴歸三支 | 尚無 | `lm`／`anova(lm)` 比較 ΔR²，base R 即可 |
+| `logistic-regression` | ★ **R55 已改過本檔的 $p$** | `glm(family=binomial)` ＋ `pROC::auc`；三種 pseudo-$R^2$ 要注意定義 |
+| `cohen-kappa` | ★ **R55 已改過本檔的 $p$** | `psych::cohen.kappa`（psych 已裝好） |
+| `icc` | 尚無 | `psych::ICC` 一次回六種型別 —— ★ 這是 A6 最值得做的一支 |
+| `cronbach-alpha` | 尚無 | `psych::alpha`（標準化與未標準化都給） |
+| `manova` | 尚無 | base R `manova` ＋ `summary(..., test=)` 四種統計量 |
+| `cluster` | 尚無 | `kmeans`／`hclust(method="ward.D2")` —— ★ 注意 `ward.D` 與 `ward.D2` 是兩回事 |
+| `levene` | 尚無 | `car::leveneTest(center=median/mean)`，正好對本專案的兩組基準 |
+| `descriptive` | 尚無 | 偏態峰度要指定套件（`e1071::skewness(type=)` 三種算法） |
+
+⇒ **建議 A6 一開始就先做 `07_a6_r_audit.R`**（比照 05 號的寫法：expected 印在 R 輸出旁邊、
+每段 tryCatch、輸出單一 txt），讓 Kevin 在你寫文件的同時把 R 跑掉，收斂會快很多。
+lavaan／psych／effectsize 已在 2026-07-30 裝好，只需再加 `car`、`nortest`、`e1071`、`pROC`。
 
 ★ **A6 收尾後才處理 §6.7 的判準 2**（28 個側欄模組 → 方法對照表）**與判準 7**（§8.4 休眠快照），
 然後專案休眠，階段 B（Wave F1–F8）最早 2026 年 9 月底啟動。
