@@ -103,8 +103,18 @@ export function simpleLinearRegression(x, y) {
   const sdY = sd(y)
   const beta = sdY === 0 ? NaN : (b1 * sdX) / sdY
 
+  // ★ 2026-07-30 紅隊 R69（L2）：簡單迴歸沒有矩陣可解，所以**不會**像多元迴歸那樣被
+  //   singular-matrix 擋下來。兩個退化情形都要自己標：
+  //   (a) y 為常數 ⇒ ssTotal = 0 ⇒ R² 為 NaN 印「—」，但**截距的 p 是 0，報表印「< .001」綠燈**；
+  //   (b) 完美配適 ⇒ ssRes = 0 ⇒ se = 0、t = ±∞，報表印 **R² = 1.000、斜率 p < .001**
+  //       而 t 欄印「—」（fmtNum(Infinity)）——看起來只是排版空白。
+  const zeroVarianceY = ssTotal === 0
+  const perfectFit = ssTotal > 0 && ssRes / ssTotal < 1e-20
+
   return {
     n,
+    zeroVarianceY,
+    perfectFit,
     intercept: { b: b0, se: seB0, t: tB0, p: pB0 },
     slope:     { b: b1, se: seB1, t: tB1, p: pB1, beta },
     fit: { r, r2, adjR2, seEstimate },

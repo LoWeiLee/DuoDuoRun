@@ -17,6 +17,8 @@ import { lillieforsPValue, kolmogorovSmirnov, shapiroWilk } from '../src/lib/sta
 import { runNormality } from '../src/analyses/normality/compute.js'
 import { levene } from '../src/lib/stats/levene.js'
 import { runCorrelation } from '../src/analyses/correlation/compute.js'
+import { simpleLinearRegression } from '../src/lib/stats/regression.js'
+import { multipleRegression } from '../src/lib/stats/multipleRegression.js'
 import { describe as describeStats } from '../src/lib/stats/descriptive.js'
 import { isMissing } from '../src/lib/variableTypes.js'
 import REF from './fixtures/reference.json' with { type: 'json' }
@@ -301,5 +303,106 @@ describe('R67（L2）：相關矩陣的零變異欄不得只印「—」而不�
       expect(typeof pack.corr.zeroVarianceNote, `${name} 缺 corr.zeroVarianceNote`).toBe('string')
       expect(pack.corr.zeroVarianceNote.includes('{vars}'), `${name} 缺 {vars} 佔位`).toBe(true)
     }
+  })
+})
+
+/* ─────────────────────  R69：迴歸三支的兩個退化情形  ───────────────────── */
+
+describe('R69（L2）：迴歸的退化情形必須被標記，不得渲染成「極強的關係」', () => {
+  const n = 20
+  const X = Array.from({ length: n }, (_, i) => i)
+  const XM = Array.from({ length: n }, (_, i) => [i, Math.sin(i), Math.cos(i)])
+
+  it('簡單迴歸：y 為常數 ⇒ zeroVarianceY（★ 截距的 p 是 0，舊版報表印「< .001」綠燈）', () => {
+    const r = simpleLinearRegression(X, new Array(n).fill(7))
+    expect(r.zeroVarianceY).toBe(true)
+    expect(r.perfectFit).toBe(false)
+    expect(r.intercept.p).toBe(0) // 退化值本身不變，只是多了旗標
+  })
+  it('簡單迴歸：完美配適 ⇒ perfectFit（★ 舊版印 R² = 1.000、斜率 p < .001）', () => {
+    const r = simpleLinearRegression(X, X.map((v) => 2 * v + 3))
+    expect(r.perfectFit).toBe(true)
+    expect(r.fit.r2).toBeCloseTo(1, 12)
+    expect(r.slope.p).toBe(0)
+  })
+  it('★ 回歸鎖：一般資料兩個旗標都必須為假', () => {
+    const r = simpleLinearRegression(X, X.map((v) => 2 * v + Math.sin(v) * 5))
+    expect(r.perfectFit).toBe(false)
+    expect(r.zeroVarianceY).toBe(false)
+  })
+
+  it('多元迴歸：完美配適 ⇒ perfectFit（★ 舊版把 t = 2.3e15 原樣印在報表上）', () => {
+    const Y = XM.map((r) => 2 * r[0] + 3 * r[1] - r[2])
+    const r = multipleRegression(XM, Y, ['a', 'b', 'c'])
+    expect(r.perfectFit).toBe(true)
+    // 判準用相對值：浮點下的完美配適 ssRes 是 1e-27 級而不是恰好 0
+    expect(r.anova.ssRes).toBeGreaterThan(0)
+    expect(r.anova.ssRes / r.anova.ssTotal).toBeLessThan(1e-20)
+  })
+  it('多元迴歸：y 為常數 ⇒ zeroVarianceY（★ 係數是浮點雜訊卻印 p = .001）', () => {
+    const r = multipleRegression(XM, new Array(n).fill(7), ['a', 'b', 'c'])
+    expect(r.zeroVarianceY).toBe(true)
+    expect(r.perfectFit).toBe(false)
+  })
+  it('★ 回歸鎖：一般資料的多元迴歸兩個旗標都為假', () => {
+    const Y = XM.map((r, i) => 2 * r[0] + Math.sin(i * 3) * 9)
+    const r = multipleRegression(XM, Y, ['a', 'b', 'c'])
+    expect(r.perfectFit).toBe(false)
+    expect(r.zeroVarianceY).toBe(false)
+  })
+
+  it('★ maxVif 由引擎提供，UI 不得再算一次（同一判斷兩套實作）', () => {
+    const Y = XM.map((r, i) => 2 * r[0] + Math.sin(i * 3) * 9)
+    const r = multipleRegression(XM, Y, ['a', 'b', 'c'])
+    const recomputed = Math.max(...r.coefficients.map((c) => c.vif))
+    expect(r.maxVif).toBeCloseTo(recomputed, 12)
+  })
+
+  it('中英 i18n 的三個迴歸命名空間都要有三個退化字串', () => {
+    for (const [name, pack] of [['zh-TW', zh], ['en', en]]) {
+      for (const ns of ['simpleReg', 'multReg', 'hierReg']) {
+        for (const key of ['degenerateWarn', 'degeneratePerfect', 'degenerateZeroY']) {
+          expect(typeof pack[ns][key], `${name}.${ns}.${key} 缺字串`).toBe('string')
+        }
+        expect(pack[ns].degenerateWarn.includes('{reason}'), `${name}.${ns} 缺 {reason} 佔位`).toBe(true)
+      }
+    }
+  })
+})
+
+describe('E102 → 交叉鎖：k = 1 時兩套 OLS 實作必須同值', () => {
+  // simpleLinearRegression 走閉式解、multipleRegression 解 (X'X)^-1 —— 兩套獨立實作。
+  // 此前**沒有任何測試檢查它們一致**（紅隊第 3 條在演算法層的版本）。
+  const rel = (a, b) => Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-300)
+
+  it('對 200 組確定性資料（n = 8~47），四個關鍵量的相對差 < 1e-12', () => {
+    let worst = 0
+    for (let s = 0; s < 200; s++) {
+      const n = 8 + (s % 40)
+      const xx = Array.from({ length: n }, (_, i) => Math.sin(i * 1.7 + s) * 10 + i)
+      const yy = xx.map((v, i) => 2.3 * v + Math.cos(i * 2.1 + s) * 7)
+      const A = simpleLinearRegression(xx, yy)
+      const B = multipleRegression(xx.map((v) => [v]), yy, ['x'])
+      if (A.error || B.error) continue
+      for (const [p, q] of [
+        [A.slope.b, B.coefficients[0].b],
+        [A.slope.se, B.coefficients[0].se],
+        [A.fit.r2, B.fit.r2],
+        [A.anova.F, B.anova.F],
+      ]) {
+        worst = Math.max(worst, rel(p, q))
+      }
+    }
+    expect(worst).toBeLessThan(1e-12)
+  })
+
+  it('★ 標準化係數也要對得起來（簡單迴歸下 β = r）', () => {
+    const n = 40
+    const xx = Array.from({ length: n }, (_, i) => i + Math.sin(i) * 3)
+    const yy = xx.map((v, i) => 1.8 * v + Math.cos(i * 1.3) * 6)
+    const A = simpleLinearRegression(xx, yy)
+    const B = multipleRegression(xx.map((v) => [v]), yy, ['x'])
+    expect(rel(A.slope.beta, B.coefficients[0].beta)).toBeLessThan(1e-12)
+    expect(rel(Math.abs(A.slope.beta), Math.abs(A.fit.r))).toBeLessThan(1e-12)
   })
 })

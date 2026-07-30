@@ -7,20 +7,20 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：階段 A 已完成 **A1–A5b 共 50 份**＋ **A6a 的四份**（`normality`／`descriptive`／`levene`／`correlation`），合計 **54 份**。
-`reference.json` 的 **86 組基準中 75 組已被文件第 6 節點名**，未涵蓋 **11 組**：迴歸三支（A6a 剩餘）＋ A6b 的八組。
+**目前狀態一句話**：階段 A 已完成 **A1–A5b 共 50 份 ＋ A6a 全部 8 份**，合計 **58 份**。
+`reference.json` 的 **86 組基準中 78 組已被文件第 6 節點名**，未涵蓋 **8 組——全部落在 A6b**。
 溯源面：2 組 pending、4 組 verified 帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
 
-**★ 現在的下一步：A6a 的其餘 4 份**——`visualization`（零基準）、
-`regression-simple`／`-multiple`／`-hierarchical`。見 §6.5 的 A6a 條目。
-★ **迴歸三支的 R 證據已全部到手**（`lm`／`anova(m1,m2)`／`car::vif` 全對上，含手算 $\Delta F$ 的結案），
-第 6 節可直接引用。
-A6a 收尾後接 A6b（6 份），兩批都完成才處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）
-與判準 7（§8.4 休眠狀態快照）。
+**★ 現在的下一步：A6b（6 份）**——`logistic-regression`、`cronbach-alpha`、`icc`、
+`cohen-kappa`、`manova`、`cluster`。見 §6.5 的 A6b 條目。
+A6b 收尾即為**階段 A 的最後一批**，之後處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）
+與判準 7（§8.4 休眠狀態快照），然後專案休眠。
 
-⬜ **Kevin 本機待補跑（雙擊，剩一件）**：**`A6a本機驗收.bat`**——完整測試含 jsdom
-（本批動到 `src/analyses/normality/` 與兩份 i18n）。預期 17 檔全綠、**5 個 skip**
-（原本 6 個，R60 刪掉了 `ks_lilliefors.p` 那條）。
+⬜ **Kevin 本機待補跑（雙擊）**：**`A6a本機驗收.bat`**（★ 已改為 **cp950 編碼、不用 `chcp 65001`**——
+UTF-8 batch 檔在 cmd 的逐位元組解析下會錯位，症狀是彙總那幾行被吃掉）。
+★ **第二輪動到的範圍更大**：`src/analyses/` 的 normality／descriptive／correlation／
+simpleRegression／multipleRegression／hierarchicalRegression／oneWayAnova／twoWayAnova 八個模組 ＋ 兩份 i18n
+⇒ **jsdom 那批一定要本機跑**。
 
 ✅ **R 抽驗 07 ＋ 08 已全部回收（2026-07-30，R 4.6.0）**：
 
@@ -80,9 +80,9 @@ Royston (1992) 原文未取得，那十個多項式係數至今沒回到原文�
 
 ---
 
-✅ **A6a 沙盒驗收（2026-07-30，四份交付後）**：**13 檔全綠、1,425 過 / 5 跳過**
-（`tests/a6a.behavior.test.js` **39 條**）、`eslint .` **0 problems**、
-`vite build` **615 modules transformed**、**114 處行號引用內容錨定重驗**（第一批修正 4 處、第二批 8 處）。
+✅ **A6a 沙盒驗收（2026-07-30，八份全部交付後）**：**13 檔全綠、1,435 過 / 5 跳過**
+（`tests/a6a.behavior.test.js` **49 條**）、`eslint .` **0 problems**、
+`vite build` **615 modules transformed**、**198 處行號引用內容錨定重驗**（三批分別修正 4／8／16 處）。
 `reference.json` 完整重生後**既有 85 組 values 與 source 字串逐位元不變**、`datasets.json` 逐位元不變。
 
 ★ **休眠快照用的當下數字（2026-07-30 A6a 第一份交付後）**：
@@ -91,10 +91,10 @@ Royston (1992) 原文未取得，那十個多項式係數至今沒回到原文�
 |---|---|
 | 基準組 | **86** |
 | provenance | verified **80** / pending **2** / exempt **4** |
-| 方法文件 | **54 份**（`docs/methods/` 含索引共 55 檔） |
-| 棘輪 | `MAX_PENDING = 2`、`MAX_UNDOCUMENTED = **11**` |
-| 沙盒測試 | **13 檔**，**1,425 過 / 5 跳過**（5 條為明文記錄的慣例差異） |
-| §6.6 紅隊 | R2–R68 **全部有 Kevin 裁決或已修** |
+| 方法文件 | **58 份**（`docs/methods/` 含索引共 59 檔） |
+| 棘輪 | `MAX_PENDING = 2`、`MAX_UNDOCUMENTED = **8**` |
+| 沙盒測試 | **13 檔**，**1,435 過 / 5 跳過**（5 條為明文記錄的慣例差異） |
+| §6.6 紅隊 | R2–R71 **全部有 Kevin 裁決或已修** |
 | 階段 A 的 L4 | **三個**：A1 的 R6、A5a 的 R50、**A6a 的 R60** |
 
 ---
@@ -927,13 +927,12 @@ R 4.6 對有並列的情形用 Streitberg–Röhmel 位移演算法算條件精�
 `MAX_UNDOCUMENTED` **27 → 18**（實際值；roadmap 原估 19，因本批新增的 `kruskal_dunn` 同批寫入文件）。
 ★ 功能擴充待辦本批接 **E41–E70**（原指令寫「接 E40」，但 E40 已被前批用掉，故自 E41 起）。
 
-**A6a — 敘述／視覺化／常態／變異數同質／相關／迴歸三支（tier A）** 🔄 **進行中（4 / 8，2026-07-30）**
-`normality` ✅（`shapiro_wilk`、`ks_lilliefors`、★ 本批新增的 `ks_lilliefors_grid`）、
-`descriptive` ✅（`descriptive_y`）、`levene` ✅（`levene_median`＋`levene_mean_spss_default`）、
-`correlation` ✅（`pearson_x1_x2`＋`spearman_x1_x2`）。
-待寫 4 份：`visualization`（零基準，誠實標註）、`regression-simple`／`-multiple`／`-hierarchical`。
-★ **本批抓到階段 A 的第三個 L4（R60）＋ 三個 L2（R61／R65／R66／R67）**，全部處置完畢。
-`MAX_UNDOCUMENTED` **18 → 11**、基準組 **85 → 86**、沙盒測試 **12 → 13 檔**。
+**A6a — 敘述／視覺化／常態／變異數同質／相關／迴歸三支（tier A）** ✅ **完成（8 / 8，2026-07-30）**
+`normality`（`shapiro_wilk`、`ks_lilliefors`、★ 本批新增的 `ks_lilliefors_grid`）、
+`descriptive`、`levene`（median ＋ mean 兩慣例）、`correlation`（Pearson ＋ Spearman）、
+`visualization`（★ **零基準模組**，誠實標註）、`regression-simple`／`-multiple`／`-hierarchical`。
+★ **本批抓到階段 A 的第三個 L4（R60）＋ 五個 L2（R61／R65／R66／R67／R69）＋ 五個 L1（R62–R64／R68／R70／R71）**，全部處置完畢。
+`MAX_UNDOCUMENTED` **18 → 8**、基準組 **85 → 86**、沙盒測試 **12 → 13 檔**、方法文件 **50 → 58 份**。
 
 ★ **本批最該帶進 A6b 的一條**：**「零變異／退化值」的檢查已經連中四次**——
 A4 的 R40-h、A5a 的 R51、A6a 的 R61 與 R66，分屬四個不同模組。
@@ -1050,6 +1049,9 @@ A4 的 R40-h、A5a 的 R51、A6a 的 R61 與 R66，分屬四個不同模組。
 | **R66** | A6a | `levene_median` | **L2** | ★★ **各組皆為常數時報「違反同質」——方向剛好相反**。舊版回 `{F: Infinity, p: 0}` ⇒ `leveneStatus` 判 fail ⇒ 前提面板印**紅燈「變異數同質性：不通過」＋ F = —（`fmtNum(Infinity)`）＋ p < .001**，而真相是**各組變異數完全相等（都是 0）**。★ **這個分支永遠是錯的**：$SS_w=0$ 蘊含 $SS_b=0$，$F$ 必為 $0/0$ 而非 $\infty$。★ **同型第四次**（A4 R40-i／A5a R51／A6a R61），四次分屬四個模組 ⇒ 是格式化函式對退化值處理的系統性盲點。血徑：t 檢定、單因子、雙因子 ANOVA 三個模組的前提面板 | 引擎回 `levene-all-constant`（`levene.js:72–74`）＋ i18n 中英各一鍵 ＋ `assumptionChecker` 兩處改讀錯誤碼字串 ＋ 單／雙因子 ANOVA 的 Result 加**第三種中性狀態**（★ 只改回 NaN 而不特判的話 `!(lv.p < 0.05)` 會變成綠燈「通過」，**同樣是錯的**）＋4 條測試 | ✅ 已修（L2 當場修） |
 | **R67** | A6a | `pearson_x1_x2` | **L2** | ★ **`zeroVariance` 是孤兒欄位**（引擎算了、回傳了，`grep` 確認零 UI 消費者，同 A3a 的四項）⇒ 零變異欄在矩陣印「—」、在教學解讀區被 `Number.isFinite(cell.r)` 靜默略過，使用者看得到空格看不到原因。★ **修復時發現舊旗標本身不夠用**：`zeroVariance` 對整組配對都成立，兩欄時分不出誰才是常數欄 | 引擎分開回報 `xConstant`／`yConstant`（`correlation.js:43`）、`spearmanRho` 轉傳；矩陣下方說明框（`Result.jsx:123–131`）＋ i18n 中英各一鍵 ＋5 條測試含「不得把與常數欄配對的正常欄一起誤標」的回歸鎖 | ✅ 已修（L2 當場修） |
 | R68 | A6a | `descriptive_y` | L1 | **檔頭斷言只驗掉一半**：`descriptive.js` 寫「與 `e1071::skewness(type=2)` / `DescTools::Skew(method=2)` 一致」，07 號抽驗只跑了 `e1071`，**`DescTools` 那一半從未驗過** ⇒ 一句話裡兩個宣稱、證據只有一個 | 已在 `descriptive.md` §6「尚未驗證」標明 | ✅ 已記錄（L1） |
+| **R69** | A6a | `regression_simple`／`regression_multiple` | **L2** | ★★ **同型第五次：完美配適與依變項零變異不擋也不警告**。多元迴歸完美配適時報表印 $R^2=1.0000$、$p<.001$，而 **$x_1$ 的 $t$ 被原樣印成 `2312738254615615.50`**（2.3 千兆，格式化到小數兩位）；$y$ 為常數時 $SS_{res}=1.3\times10^{-28}$、$SS_{tot}=0$，**係數純屬浮點雜訊卻印 $p=.001$ 顯著**。★ 簡單迴歸另有一層：**它沒有矩陣可解，`singular-matrix` 那道防線對它無效**（多元遇到常數欄／完全共線會被擋，簡單遇到 $y$ 常數一路算到底）。可達性在問卷研究很高——**把總分對它自己的分量表迴歸**即中 | 引擎新增 `perfectFit`（判準用相對值 $SS_{res}/SS_{tot}<10^{-20}$，因浮點下完美配適的 $SS_{res}$ 是 $10^{-27}$ 級而非恰好 0）＋簡單迴歸補 `zeroVarianceY`；簡單／多元／階層三支各加警告框並**取消 $p$ 的顯著性燈號**；i18n 中英 × 三命名空間 × 三鍵 ＝ **18 個字串**；7 條測試含回歸鎖。★ 順帶修掉 `maxVif` 被 UI 重算一次（同一判斷兩套實作） | ✅ 已修（L2 當場修） |
+| R70 | A6a | `descriptive`／`correlation` 兩份文件 | L1 | ★ **兩句「未實作」的宣稱是錯的**：四分位數（`viz/boxStats.js`）與散布圖（`visualization` 模組）**都存在**——我 `grep` 的範圍不含 `src/lib/viz/` 就下了結論。★ 這與 R63（檔頭宣稱「與 nortest 一致」而零證據）同型，只是方向相反：**一個是宣稱有證據而沒有，一個是宣稱沒有東西而其實有** | 兩份文件更正並**保留更正痕跡**；缺口重新定義為「敘述統計表不顯示 IQR」與「相關頁面不引導去看散布圖」。★ 順帶把四分位數的慣例確認為 **R 的 type 7** 並對 R 值驗到 **7.1e−15**（此前零基準） | ✅ 已修（L1 當場修） |
+| R71 | A6a | `visualization` | L1 | ★ **`quantile` 在專案內有三份**：`viz/boxStats.js:12–22` 與 `viz/binning.js:13–22` **逐字元完全相同**（同一目錄裡的兩個檔案各寫一次）、`stats/pls.js:140–148` 寫法不同但公式相同。三份都是 type 7 ⇒ 目前無行為分歧，但這正是 A5b 習慣 9 警告的形狀——`cfa.js` 當年也「只是」多養一套常態 CDF，而那一套在 R55 被發現會讓尾機率塌成 0 | **書面記錄，本批不重構**（動 `pls.js` 要重跑整個 PLS 回歸套件，成本與收益不成比例，且三份行為一致無立即風險）。建議階段 B 抽取為 `src/lib/stats/quantile.js`（E96） | ✅ 已記錄（L1） |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -1238,6 +1240,28 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.22（2026-07-30 同日）：**A6a 收官（8 / 8）**——`visualization` ＋ 迴歸三支交付。
+  ★★ **R69：「零變異／退化值」連中第五次**，而這一次的症狀最刺眼：多元迴歸完美配適時
+  **把 $t=$ `2312738254615615.50` 原樣印在報表上**、$R^2=1.0000$、$p<.001$；
+  $y$ 為常數時係數純屬浮點雜訊（$SS_{res}=1.3\times10^{-28}$、$SS_{tot}=0$）卻印 $p=.001$ 顯著。
+  ★ 簡單迴歸另有一層——**它沒有矩陣可解，所以 `singular-matrix` 那道防線對它無效**。
+  可達性在問卷研究很高：**把總分對它自己的分量表迴歸**即中。
+  處置：引擎 `perfectFit`（相對值判準）＋簡單迴歸補 `zeroVarianceY`、三支各加警告框並取消 $p$ 燈號、
+  i18n 18 個字串、7 條測試；順帶修掉 `maxVif` 被 UI 重算一次。
+  ★ **R70 是我自己的錯誤**：`descriptive.md` 與 `correlation.md` 各寫了一句「未實作」，
+  而四分位數與散布圖**都在 `visualization` 模組裡**——`grep` 的範圍不含 `src/lib/viz/` 就下了結論。
+  ⇒ **「宣稱不存在」和「宣稱有證據」一樣需要查證。** 兩份文件已更正並保留痕跡；
+  順帶把四分位數確認為 **R 的 type 7** 並對 R 驗到 **7.1e−15**（此前零基準）。
+  ★ **R71**：`quantile` 在專案內有三份，其中兩份**在同一個目錄裡逐字元相同**。書面記錄，不重構。
+  ★ **獨立重寫全部通過**（mpmath dps=40，自寫 Gauss-Jordan 求逆，不呼叫 `statsmodels.OLS`／`variance_inflation_factor`）：
+  簡單迴歸 9 欄 max **6.6e−15**、多元 14 欄（含 VIF 三欄）max **1.35e−14**、階層 5 欄 max **2.8e−14**。
+  ★ **順帶補上一條此前不存在的交叉鎖**：`simpleLinearRegression`（閉式解）vs `multipleRegression`（矩陣解）
+  在 $k=1$ 時的一致性——200 組確定性資料 max 相對差 **5.2e−15**，無偏離。
+  ★ **`visualization` 是階段 A 唯一一份「零基準模組」的文件**：無基準組、無 adapter、無測試，
+  且**兩道棘輪都掃不到它**（`provenance.test.js` 掃 `reference.json` 的鍵、`docs.coverage.test.js` 檢查基準組
+  有沒有被文件提到——對一個完全沒有基準的模組都無效，E95）。
+  `MAX_UNDOCUMENTED` **11 → 8**（剩下全部落在 A6b）；方法文件 **54 → 58 份**；
+  沙盒 **13 檔、1,435 過 / 5 跳過**（`a6a.behavior.test.js` 49 條）。
 - v2.21（2026-07-30 同日）：**A6a 再交付三份（descriptive／levene／correlation），4 / 8**。
   ★★ **「零變異／退化值」的檢查連中四次**——A4 的 R40-h、A5a 的 R51、A6a 的 R61 與 **R66**，
   分屬四個不同模組。R66 最嚴重：各組皆為常數時 Levene 舊版回 `{F: Infinity, p: 0}`，

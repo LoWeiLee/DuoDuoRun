@@ -244,10 +244,23 @@ function Result() {
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const cols = t.simpleReg.result.cols
+  // ★ 2026-07-30 紅隊 R69：簡單迴歸沒有矩陣可解，不會被 singular-matrix 擋下來。
+  //   y 為常數時截距的 p 是 0（報表印「< .001」綠燈）；完美配適時 R² = 1.000、斜率 p < .001
+  //   而 t 印「—」（fmtNum(Infinity)）——看起來只是排版空白。
+  const degenerate = result.reg.perfectFit || result.reg.zeroVarianceY
+  const degenerateReason = result.reg.perfectFit
+    ? t.simpleReg.degeneratePerfect
+    : t.simpleReg.degenerateZeroY
 
   return (
     <div>
       <AssumptionRow result={result} t={t} />
+
+      {degenerate && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {t.simpleReg.degenerateWarn.replace('{reason}', degenerateReason)}
+        </div>
+      )}
 
       {/* 關鍵統計量卡片（2026-07 UI 改版） */}
       <StatCards
@@ -256,7 +269,8 @@ function Result() {
           {
             label: cols.p,
             value: fmtP(result.reg.anova.p),
-            tone: toneForP(result.reg.anova.p),
+            // ★ R69：退化情形不下顯著性判定
+            tone: degenerate ? undefined : toneForP(result.reg.anova.p),
             sub: Number.isFinite(result.reg.anova.p) ? (result.reg.anova.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
           },
           { label: cols.slope, value: fmtNum(result.reg.slope.b, 3) },

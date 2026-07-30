@@ -165,6 +165,12 @@ export function multipleRegression(X, y, predictorNames) {
   }
 
   // 警示：依變項變異 = 0；任一 VIF > 100 視為嚴重共線
+  // ★ 2026-07-30 紅隊 R69（L2）新增 perfectFit：殘差為 0（或相對於總變異已到浮點下限）時，
+  //   se → 0、t → ±∞、p → 0，報表會印 **R² = 1.000、p < .001、t = 2312738254615615.50**
+  //   ——一個數學上退化的結果被渲染成「極強的關係」。實務上最常見的成因是
+  //   **把總分對它自己的分量表迴歸**（問卷研究的典型誤用）。
+  //   判準用相對值而非 ssRes === 0：浮點下完美配適的 ssRes 是 1e-27 級而不是恰好 0。
+  const perfectFit = ssTotal > 0 && ssRes / ssTotal < 1e-20
   const zeroVarianceY = sdY === 0
   const maxVif = coefficients.reduce((m, c) => (Number.isFinite(c.vif) && c.vif > m ? c.vif : m), 0)
   const severeMulticollinearity = coefficients.some((c) => Number.isFinite(c.vif) && c.vif > 100)
@@ -183,6 +189,7 @@ export function multipleRegression(X, y, predictorNames) {
     residuals,
     fitted,
     zeroVarianceY,
+    perfectFit,
     severeMulticollinearity,
     maxVif,
   }

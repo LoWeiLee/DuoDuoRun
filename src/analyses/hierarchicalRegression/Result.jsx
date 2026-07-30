@@ -233,9 +233,20 @@ function Result() {
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const cols = t.hierReg.result.cols
   const lastStep = result.steps[result.steps.length - 1]
+  // ★ 2026-07-30 紅隊 R69：最終步的模型若是完美配適或依變項零變異，
+  //   下方的 R²／ΔR²／Δp 全部不可解讀。旗標來自 finalReg（即最後一步的 multipleRegression）。
+  const degenerate = result.finalReg?.perfectFit || result.finalReg?.zeroVarianceY
+  const degenerateReason = result.finalReg?.perfectFit
+    ? t.hierReg.degeneratePerfect
+    : t.hierReg.degenerateZeroY
 
   return (
     <div>
+      {degenerate && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {t.hierReg.degenerateWarn.replace('{reason}', degenerateReason)}
+        </div>
+      )}
       {/* 關鍵統計量卡片（最終步；2026-07 UI 改版） */}
       <StatCards
         items={[
@@ -245,7 +256,8 @@ function Result() {
           {
             label: cols.deltaP,
             value: fmtP(lastStep.deltaP),
-            tone: toneForP(lastStep.deltaP),
+            // ★ R69：退化情形不下顯著性判定
+            tone: degenerate ? undefined : toneForP(lastStep.deltaP),
             sub: Number.isFinite(lastStep.deltaP) ? (lastStep.deltaP < 0.05 ? 'p < .05' : 'n.s.') : undefined,
           },
         ]}

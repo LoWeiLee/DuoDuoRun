@@ -1527,6 +1527,9 @@ export default {
     },
   },
   hierReg: {
+    degenerateWarn: 'Warning: this regression is mathematically degenerate; the figures below cannot be interpreted and must not be reported. {reason} Common causes: regressing a total score on one of its own subscales (or any variable derived from the outcome), selecting the wrong outcome variable, or a ceiling/floor effect.',
+    degeneratePerfect: 'The residual sum of squares is 0 (perfect fit), so standard errors are 0, t diverges, p is identically 0 and R\u00B2 is identically 1.',
+    degenerateZeroY: 'The outcome variable has no variation at all (SD = 0), so R\u00B2 and F are undefined and the coefficients are nothing but floating-point noise.',
     title: 'Hierarchical regression',
     config: {
       yLabel: 'Dependent (Y)',
@@ -1934,6 +1937,9 @@ export default {
     },
   },
   multReg: {
+    degenerateWarn: 'Warning: this regression is mathematically degenerate; the figures below cannot be interpreted and must not be reported. {reason} Common causes: regressing a total score on one of its own subscales (or any variable derived from the outcome), selecting the wrong outcome variable, or a ceiling/floor effect.',
+    degeneratePerfect: 'The residual sum of squares is 0 (perfect fit), so standard errors are 0, t diverges, p is identically 0 and R\u00B2 is identically 1.',
+    degenerateZeroY: 'The outcome variable has no variation at all (SD = 0), so R\u00B2 and F are undefined and the coefficients are nothing but floating-point noise.',
     title: 'Multiple linear regression',
     config: {
       yLabel: 'Dependent (Y)',
@@ -2374,6 +2380,9 @@ export default {
     },
   },
   simpleReg: {
+    degenerateWarn: 'Warning: this regression is mathematically degenerate; the figures below cannot be interpreted and must not be reported. {reason} Common causes: regressing a total score on one of its own subscales (or any variable derived from the outcome), selecting the wrong outcome variable, or a ceiling/floor effect.',
+    degeneratePerfect: 'The residual sum of squares is 0 (perfect fit), so standard errors are 0, t diverges, p is identically 0 and R\u00B2 is identically 1.',
+    degenerateZeroY: 'The outcome variable has no variation at all (SD = 0), so R\u00B2 and F are undefined and the coefficients are nothing but floating-point noise.',
     title: 'Simple linear regression',
     config: {
       yLabel: 'Dependent (Y)',

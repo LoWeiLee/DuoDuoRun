@@ -486,6 +486,10 @@ A5a 的 R50 教我們去掃參數空間；R60 再加一層——**先確認你�
 | [descriptive.md](descriptive.md) | 敘述統計（含偏度／峰度的三種算法） | `descriptive_y` | **A** / verified |
 | [levene.md](levene.md) | 變異數同質性（Brown-Forsythe，median 版） | `levene_median`、`levene_mean_spss_default`（★ 無 adapter，僅人工對照） | **A** / verified |
 | [correlation.md](correlation.md) | Pearson $r$ ＋ Spearman $\rho$（矩陣、pairwise） | `pearson_x1_x2`、`spearman_x1_x2` | **A** / verified |
+| [visualization.md](visualization.md) | 散布圖／直方圖／盒鬚圖／熱圖 | ★ **無基準組**（模組未登記於 provenance） | ★ **未登記** |
+| [regression-simple.md](regression-simple.md) | 簡單線性迴歸 | `regression_simple` | **A** / verified |
+| [regression-multiple.md](regression-multiple.md) | 多元線性迴歸（含 VIF） | `regression_multiple` | **A** / verified |
+| [regression-hierarchical.md](regression-hierarchical.md) | 階層迴歸（$\Delta R^2$ 的 partial $F$） | `regression_hierarchical` | **A** / verified |
 
 ### A6a 的紅隊結果摘要（累積中）
 
@@ -500,6 +504,9 @@ A5a 的 R50 教我們去掃參數空間；R60 再加一層——**先確認你�
 | **R66** | `levene_median` | **L2** | ★★ **各組皆為常數時報「違反同質」——方向相反**。舊版回 `{F: Infinity, p: 0}` ⇒ 前提面板印紅燈，而真相是各組變異數完全相等。★ **這個分支永遠是錯的**（$SS_w=0$ 蘊含 $SS_b=0$，$F$ 必為 0/0）。**同型第四次**（R40-i／R51／R61） | ✅ 已修：引擎回 `levene-all-constant`、i18n 中英各一鍵、`assumptionChecker` 兩處改讀錯誤碼、單／雙因子 ANOVA 加**第三種中性狀態**（只改 NaN 不特判會變成綠燈「通過」，同樣是錯的）＋4 條測試 |
 | **R67** | `pearson_x1_x2` | **L2** | ★ **`zeroVariance` 是孤兒欄位**：引擎回傳、零 UI 消費者 ⇒ 零變異欄在矩陣印「—」、在解讀區被靜默略過，使用者看不到原因。★ 修復時發現**舊旗標本身不夠用**——它對整組配對都成立，兩欄時分不出誰是常數欄 | ✅ 已修：引擎分開回報 `xConstant`／`yConstant`、矩陣下方說明框、i18n 中英各一鍵＋5 條測試含「不得誤標正常欄」的回歸鎖 |
 | R68 | `descriptive_y` | L1 | **檔頭斷言只驗掉一半**：「與 `e1071::skewness(type=2)` / `DescTools::Skew(method=2)` 一致」——前者已實跑核實，**後者從未驗過** | ✅ 已在 `descriptive.md` §6 標為未驗證 |
+| **R69** | `regression_simple`／`_multiple` | **L2** | ★★ **同型第五次**：完美配適與依變項零變異不擋也不警告。多元迴歸的完美配適把 **$t=$ `2312738254615615.50`** 原樣印在報表上、$R^2=1.0000$、$p<.001$；$y$ 為常數時係數是浮點雜訊卻印 $p=.001$。簡單迴歸另有一層——**它沒有矩陣可解，所以 `singular-matrix` 那道防線對它無效** | ✅ 已修（三支一起）：引擎新增 `perfectFit`（判準用相對值 $SS_{res}/SS_{tot}<10^{-20}$）＋簡單迴歸補 `zeroVarianceY`；三支各加警告框並取消 $p$ 的燈號；i18n **18 個字串**；7 條測試含回歸鎖。★ 順帶修掉 `maxVif` 被 UI 重算一次 |
+| R70 | `descriptive`／`correlation` 兩份文件 | L1 | ★ **兩句「未實作」的宣稱是錯的**：四分位數與散布圖**都存在**，只是在 `visualization` 模組裡。我 grep 的範圍不含 `src/lib/viz/` 就下了結論 | ✅ 兩份文件已更正並保留更正痕跡；缺口重新定義為「敘述統計表不顯示 IQR」「相關頁面不引導去看散布圖」 |
+| R71 | `visualization` | L1 | ★ **`quantile` 在專案內有三份**：`viz/boxStats.js` 與 `viz/binning.js` **逐字元完全相同**、`stats/pls.js:140` 寫法不同但公式相同。三份都是 type 7 ⇒ 目前無行為分歧，但這正是 A5b 習慣 9 警告的形狀（`cfa.js` 當年也「只是」多養一套常態 CDF） | ✅ 書面記錄，本批不重構（動 `pls.js` 要重跑整個 PLS 套件，成本與收益不成比例）。建議階段 B 抽取為共用模組（E96） |
 
 ★ **順帶收回的兩條假放寬**（A5b 習慣 8 的第二次應用）：`ks_lilliefors.D` 放寬 1e-4 而實測相對差 **0.0（逐位元相同）**；
 `shapiro_wilk.p` 放寬 1e-5 而實測 5.8e−8、1,440 例掃描 max|Δp| = 7.5e−7、零翻面。

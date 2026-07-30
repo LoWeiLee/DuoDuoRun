@@ -1494,6 +1494,9 @@ export default {
     },
   },
   hierReg: {
+    degenerateWarn: '警告：本次迴歸落在數學上的退化情形，下方的數字不可解讀，也不應寫進報告。{reason} 常見成因：把總分對它自己的分量表（或其他由依變項算出來的變項）做迴歸、依變項選錯、或資料有天花板／地板效應。',
+    degeneratePerfect: '殘差平方和為 0（完美配適）⇒ 標準誤為 0、t 發散、p 恆為 0、R² 恆為 1。',
+    degenerateZeroY: '依變項完全沒有變異（標準差為 0）⇒ R² 與 F 皆無定義，係數只是浮點運算的雜訊。',
     title: '階層迴歸',
     config: {
       yLabel: '依變項 Y',
@@ -1990,6 +1993,9 @@ export default {
     },
   },
   multReg: {
+    degenerateWarn: '警告：本次迴歸落在數學上的退化情形，下方的數字不可解讀，也不應寫進報告。{reason} 常見成因：把總分對它自己的分量表（或其他由依變項算出來的變項）做迴歸、依變項選錯、或資料有天花板／地板效應。',
+    degeneratePerfect: '殘差平方和為 0（完美配適）⇒ 標準誤為 0、t 發散、p 恆為 0、R² 恆為 1。',
+    degenerateZeroY: '依變項完全沒有變異（標準差為 0）⇒ R² 與 F 皆無定義，係數只是浮點運算的雜訊。',
     title: '多元線性迴歸',
     config: {
       yLabel: '依變項 Y',
@@ -2432,6 +2438,9 @@ export default {
     },
   },
   simpleReg: {
+    degenerateWarn: '警告：本次迴歸落在數學上的退化情形，下方的數字不可解讀，也不應寫進報告。{reason} 常見成因：把總分對它自己的分量表（或其他由依變項算出來的變項）做迴歸、依變項選錯、或資料有天花板／地板效應。',
+    degeneratePerfect: '殘差平方和為 0（完美配適）⇒ 標準誤為 0、t 發散、p 恆為 0、R² 恆為 1。',
+    degenerateZeroY: '依變項完全沒有變異（標準差為 0）⇒ R² 與 F 皆無定義，係數只是浮點運算的雜訊。',
     title: '簡單線性迴歸',
     config: {
       yLabel: '依變項 Y',

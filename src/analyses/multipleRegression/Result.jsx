@@ -289,11 +289,24 @@ function Result() {
 
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const cols = t.multReg.result.cols
-  const maxVif = Math.max(...result.reg.coefficients.map((co) => co.vif))
+  // ★ 2026-07-30 紅隊 R69：`maxVif` 引擎早就算好並回傳了，這裡卻**又算了一次**
+  //   （同一個判斷兩套實作，紅隊第 3 條）。改讀引擎的值。
+  const maxVif = result.reg.maxVif
+  const degenerate = result.reg.perfectFit || result.reg.zeroVarianceY
+  const degenerateReason = result.reg.perfectFit
+    ? t.multReg.degeneratePerfect
+    : t.multReg.degenerateZeroY
 
   return (
     <div>
       <AssumptionRow result={result} t={t} />
+
+      {/* ★ R69：完美配適與依變項零變異時，下方所有數字都不可解讀 */}
+      {degenerate && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {t.multReg.degenerateWarn.replace('{reason}', degenerateReason)}
+        </div>
+      )}
 
       {/* 關鍵統計量卡片（2026-07 UI 改版） */}
       <StatCards
@@ -303,7 +316,8 @@ function Result() {
           {
             label: cols.p,
             value: fmtP(result.reg.anova.p),
-            tone: toneForP(result.reg.anova.p),
+            // ★ R69：退化情形不下顯著性判定（p 恆為 0 會被讀成「高度顯著」）
+            tone: degenerate ? undefined : toneForP(result.reg.anova.p),
             sub: Number.isFinite(result.reg.anova.p) ? (result.reg.anova.p < 0.05 ? 'p < .05' : 'n.s.') : undefined,
           },
           {

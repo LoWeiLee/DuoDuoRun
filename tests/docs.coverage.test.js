@@ -69,7 +69,9 @@ const METHODS_DIR = path.join(HERE, '..', 'docs', 'methods')
 //   並認領本批新增的 ks_lilliefors_grid（R60）——新增一組同時寫入文件，棘輪淨降 2。
 // ★ 2026-07-30（A6a 第二輪）：16 → 11。descriptive／levene／correlation 三份交付，
 //   涵蓋 descriptive_y、levene_median、levene_mean_spss_default、pearson_x1_x2、spearman_x1_x2。
-const MAX_UNDOCUMENTED = 11
+// ★ 2026-07-30（A6a 收官）：11 → 8。visualization ＋ 迴歸三支交付，A6a 八份到齊。
+//   剩下的 8 組全部落在 A6b（邏輯迴歸／量表信度／ICC／Kappa／MANOVA／集群）。
+const MAX_UNDOCUMENTED = 8
 
 /** 取出一份方法文件的第 6 節（到第 7 節為止）。 */
 function sectionSix(text) {
