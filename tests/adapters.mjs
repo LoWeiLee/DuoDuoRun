@@ -19,7 +19,7 @@ import { logisticRegression } from '../src/lib/stats/logisticRegression.js'
 import { chiSquareIndependence } from '../src/lib/stats/chiSquare.js'
 import { fisherExact } from '../src/lib/stats/fisherExact.js'
 import { mannWhitneyU, wilcoxonSignedRank, kruskalWallis, dunnPostHoc } from '../src/lib/stats/nonparametric.js'
-import { shapiroWilk, kolmogorovSmirnov } from '../src/lib/stats/normality.js'
+import { shapiroWilk, kolmogorovSmirnov, lillieforsPValue } from '../src/lib/stats/normality.js'
 import { levene } from '../src/lib/stats/levene.js'
 import { twoWayANOVA } from '../src/lib/stats/twoWayAnova.js'
 import { ancova } from '../src/lib/stats/ancova.js'
@@ -221,6 +221,13 @@ export const ADAPTERS = {
   ks_lilliefors() {
     const r = kolmogorovSmirnov(col('y'))
     return { D: r.D, p: r.p }
+  },
+  ks_lilliefors_grid() {
+    const out = {}
+    for (const n of [4, 8, 15, 30, 60, 100, 150, 325, 500, 1000, 1600, 3000])
+      for (const D of [0.02, 0.04, 0.06, 0.1, 0.18, 0.32, 0.55])
+        out[`p_n${n}_D${D}`] = lillieforsPValue(D, n)
+    return out
   },
   levene_median() {
     const r = levene(['A', 'B', 'C'].map((g) => by(g, 'y', 'group3')))

@@ -334,7 +334,9 @@ export default {
       normal: 'Approximately normal',
       nonNormal: 'Non-normal',
       mixed: 'Mixed verdict',
+      undefinedTest: 'Not testable (zero variance)',
     },
+    zeroVarianceWarn: 'Warning: variables marked "not testable" have no variation at all (every value identical, SD = 0). The Shapiro-Wilk W and the Kolmogorov-Smirnov D are then mathematically undefined; the W = 1.000, D = 0.000 and p = 1.000 returned here are degenerate placeholders and do NOT mean the data are normal. Check whether the wrong variable was selected, whether the column is a constant, or whether a ceiling/floor effect is present.',
     notes: {
       purposeTitle: 'Purpose',
       purpose:
@@ -363,6 +365,7 @@ export default {
       sentence:
         'Normality results — {var}: Shapiro-Wilk W = {w}, p = {pSW}; Kolmogorov-Smirnov (Lilliefors-corrected) D = {d}, p = {pKS} (n = {n}).',
       copyHint: 'Copy APA narrative',
+      zeroVarianceCaveat: '[WARNING: variables marked "not testable" have no variation at all (SD = 0); their W = 1.000, D = 0.000 and p = 1.000 are degenerate placeholders for an undefined test, must not be read as evidence of normality and must not be reported.]',
     },
     interp: {
       header: 'Reading',

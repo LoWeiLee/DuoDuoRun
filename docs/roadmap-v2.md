@@ -1,4 +1,4 @@
-# 多多快跑 主工單 v2（2026-07-13 建立，2026-07-29 最後更新）
+# 多多快跑 主工單 v2（2026-07-13 建立，2026-07-30 最後更新）
 
 **讀者**：後續執行的 AI 與 Kevin。
 **定位**：**單一主工單**。專案的所有待辦以本文件為準，其餘文件不放待辦。
@@ -7,82 +7,83 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：階段 A 已完成 **A1–A5b 共 50 份方法文件**——PLS 側 30 份（A1–A3）
-＋ NCA／LDA／CFA／EFA 共 7 份（A4）＋ t 檢定與 ANOVA 家族 7 份（A5a）
-＋ 類別與無母數 6 份（A5b，2026-07-30 收官）。`reference.json` 的 **85 組基準中 67 組已被文件第 6 節點名**，
-未涵蓋 **18 組全部落在尚未動工的 A6**。
-溯源面仍未全部結案：2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
+**目前狀態一句話**：階段 A 已完成 **A1–A5b 共 50 份**＋ **A6a 的第一份 `normality.md`**，合計 **51 份**。
+`reference.json` 的 **86 組基準中 70 組已被文件第 6 節點名**，未涵蓋 **16 組全部落在 A6a 剩餘 7 份與 A6b**。
+溯源面：2 組 pending、4 組 verified 帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
 
-**★ 現在的下一步：階段 A / A6（敘述／相關／迴歸／量表／多變量，18 組）**——見 §6.5 的 A6 條目。
-A6 是**階段 A 的最後一批**；收尾後才處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）
+**★ 現在的下一步：A6a 的其餘 7 份**——`descriptive`、`visualization`、`levene`、`correlation`、
+`regression-simple`／`-multiple`／`-hierarchical`。見 §6.5 的 A6a 條目。
+A6a 收尾後接 A6b（6 份），兩批都完成才處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）
 與判準 7（§8.4 休眠狀態快照）。
 
-A5b 紅隊 **4 項（R54–R57）全部處置完畢，本批無 L4**；同日的 **R 側交叉驗證另開出 R58、R59，亦已結案**。
-基準組 **84 → 85**（新增 `kruskal_dunn`）、`MAX_PENDING` 維持 **2**、`MAX_UNDOCUMENTED` **27 → 18**。
+⬜ **Kevin 本機待補跑兩件（都是雙擊）**：
+1. **`A6a本機驗收.bat`**——完整測試含 jsdom（本批動到 `src/analyses/normality/` 與兩份 i18n）。
+   預期 17 檔全綠、**5 個 skip**（原本 6 個，R60 刪掉了 `ks_lilliefors.p` 那條）。
+2. ★ **`跑A6抽驗.bat`**——R 側交叉驗證 07 號。**這是 R60 修正後唯一的獨立證人**：
+   statsmodels 是本工具的移植來源，不算第二意見；R 的 `nortest::lillie.test` 走 DW ＋ Stephens 的
+   第三套 dispatch。腳本第 [2b] 段含 12 組探針，刻意涵蓋兩個舊 clamp 區（$n=4$/$5$ 且 $D>0.30$、
+   $n=400$~$2000$ 且 $D<0.05$）。第一次執行要裝 `e1071`、`nortest`、`car`，約 3–10 分鐘。
 
-★ **A6 開工前必讀的一件事（R58）**：A5b 交付時我寫下「精確法缺口的危險方向為 0」，
-**那只在無並列時成立**，我把它寫成了通則。R 側抽驗打到這個盲點——有並列時
-方向相反（78% anti-conservative、1.1% 在 .05 上偽顯著）。
-⇒ **A6 交付任何「掃描結論」時，一律同時寫出「這個掃描的前提是什麼、前提外的區域長什麼樣」。**
+---
 
-★ **A5b 與 A5a 的結論相反，而這一次差別不在檢查方式**：兩批用的是同一套參數空間掃描，
-A5a 用 896 格點抓到一個 L4，A5b 用**逾 75,000 格點卻沒有 L4**。
-⇒ **掃描不保證找到 bug，它保證你不再需要猜。** A5b 換到的是三件從「知道但沒查清楚」
-變成「量化過的已知限制」的事：精確法缺口的方向（**危險方向為 0**）、
-尾端抵消的可達邊界（**$|z|\ge8.3$**）、以及一個此前零基準的方法（Dunn）。
+★ **A6a 開工第一天就抓到階段 A 的第三個 L4（R60），而它與前兩個的性質不同**：
+R6（A1）走錯相關矩陣、R50（A5a）積分節點不足——**兩者都是實作沒做對**。
+R60 的**公式抄對了，錯的是「這條公式可以用在哪裡」**：Dallal-Wilkinson 近似要求 $n>100$ 先重標定、
+且只在 $p<0.1$ 有效，本工具兩件都沒做，改用兩個自製 clamp 補洞。
+⇒ **$n\gtrsim325$ 時顯著的樣本被印成 $p=1.000$**（480 例掃描中 50 例、$n$=1000~2000 為 25%）。
 
-★ **A5b 抓到的兩件事不在數值裡，這是它與前五批最大的不同**：
-**R54 的值完全正確**（與 rstatix 的公式逐位元相同），錯的是**它叫什麼**與**值域該不該截斷**——
-$\varepsilon^2$ 印出負數這件事**不會被任何數值比對抓到**，因為基準端與實作端犯的是同一個命名錯誤。
-**R55 則是同一個錯誤寫法被複製 8 次**，其中 `cfa.js` 還自己養了第二套常態 CDF。
+★ **給 A6a 剩餘 7 份與 A6b 的三條，直接照做**：
 
-✅ **R 側交叉驗證已完成（2026-07-30，Kevin 本機 R 4.6.0 / lavaan 0.7.2）**：
-`scripts/validation/05_a5b_r_audit.R` ＋ `06_cfa_se_probe.R`（入口 `跑R抽驗.bat`、`跑CFA標準誤診斷.bat`）。
-**五項乾淨銷帳**：EFA 逐變項 MSA 與 $|\mathbf R|$ 對 `psych` **六位小數全對**（兩個零基準量結案）、
-單因子 ANOVA 的 **7 欄手算值**對 base R `aov()` 逐項相符、
-Tukey 對 R `ptukey()` 五格點（含 R50 失準區 df=100/120/999）相對差 1.6e−10 ~ 3.9e−08
-⇒ **`ptukey.js:18` 那句「對標 R::ptukey()」終於有證據**、
-R54 的命名判斷經 `effectsize` 確認（**E67 結案**）、prop／chisq／fisher 的 $p$ 全部對上。
-**兩項新開出並已結案**：**R58**（見上方，A5b 結論的範圍更正 ＋ UI 加強警告）、
-**R59**（CFA 標準誤 ＝ lavaan 的 `wishart`+`observed`，比值 0.999995~1.000002、殘差 4.5e−06
-就是中央差分截斷誤差 ⇒ **純慣例差異，不改實作**）。
-★ 順帶更正一項事實：**lavaan 預設的 $\chi^2$ 與 semopy 同側（$N\cdot F$），
-本工具是三者中唯一用 $(N-1)F$ 的**——`cfa.md` §3.3 原本寫反了。
+1. ★ **不要只問「這個公式抄對了嗎」，要問「這條公式的有效範圍是什麼、我們在不在裡面」。**
+   R60 的近似式、R50 的數值積分、A5b 的常態近似——三者都是「方法本身有定義域」的例子。
+   A6a 剩下的每一支都有這一類邊界：偏態峰度的三種算法（`descriptive`）、
+   Levene 的 center 慣例（`levene`）、Spearman 的精確 vs 近似（`correlation`）、
+   共線程度與 VIF 門檻（迴歸三支）。
+2. ★ **SKIP 比 TOL 危險。** A5b 與 A6a 各掃了一次容差表，兩批的實績都是「多數放寬是遺留的假放寬」，
+   而**兩批的真缺口都在 SKIP**（`mann_whitney_small.pExact`、`ks_lilliefors.p`）。
+   ⇒ TOL 是「知道有差、量過」；SKIP 是「知道有差、沒量」。**先掃 SKIP。**
+3. ★ **零變異／退化值的檢查已經是第三次中招**（A4 R40-h、A5a R51、A6a R61，三個不同模組）。
+   ⇒ 每一支都直接跑一次常數欄，看報表會不會給綠燈。**這是三十秒的檢查。**
 
-✅ **A5a 已完整驗收並推上遠端（commit `0729p`，2026-07-29）**：
-沙盒 12 檔全綠、`eslint .` 0 problems、`vite build` 615 modules transformed、
-119 個行號引用內容錨定重驗零異常；**Kevin 本機 16 檔全綠、1,426 過、6 跳過**。
+★ **A6a 已收回的兩條假放寬與一條 SKIP**：`ks_lilliefors.D`（1e-4，實測相對差 **0.0**）、
+`shapiro_wilk.p`（1e-5，實測 5.8e−8）、`ks_lilliefors.p`（SKIP，**是 L4**）。
+A6a 剩餘範圍內的已知放寬：`logistic_regression.p_x1`（1e-5，屬 A6b）、
+`efa_pca_varimax_k3.loadings`（1e-4，屬 A4 但同表）。
 
-✅ **A5b 沙盒驗收（2026-07-30）**：**12 檔全綠、1,303 過 / 6 跳過**
-（新增 `tests/a5b.behavior.test.js` 32 條）、改動檔案的 `eslint` **0 problems**、
-`vite build` **615 modules transformed**、★ **192 處行號引用內容錨定重驗零異常**
-（第一輪抓到 3 處失效 ＋ 一批因新增註解而位移，全部重新定位）。
+★ **獨立重寫的一個副產品，值得記住**：以 mpmath **40 位精度**依文件 §3.2 重建 Shapiro-Wilk 的 $W$，
+與 scipy 仍差 **5.4e−10**——double 的 eps 是 2.2e−16，**所以這不是浮點誤差**，
+是 Royston AS R94 與 scipy FORTRAN `swilk` 的演算法差異。
+⇒ `shapiro_wilk` 的「tier A / verified」鎖住的是**「兩套實作結果相近」，不是「係數抄對了」**。
+Royston (1992) 原文未取得，那十個多項式係數至今沒回到原文核對過。
+**這種區別要寫進第 6 節，不能讓 verified 這個字自己去承擔它承擔不起的意思。**
 
-⬜ **Kevin 本機待補跑**：雙擊 **`A5b本機驗收.bat`**（完整測試含 jsdom ＋ lint ＋ build）。
-本批動到 `src/lib/stats/`（7 檔）、`src/analyses/nonparametric/`、`src/analyses/chiSquare/`、
-`src/lib/format.js` 與**兩份 i18n**，jsdom 那批沙盒跑不動。
-★ 另有一件只有本機能確認：沙盒的 `vite build` 因 `node_modules` 只裝了
-`lightningcss-win32-x64-msvc`（缺 Linux 原生二進位）而無法跑完 CSS 壓縮——與本批改動無關，
-但完整 build 需本機驗。
+---
 
-★ **休眠快照用的當下數字（供 §8.3／§8.4 收尾時直接引用，2026-07-30 A5b＋R 抽驗後定版）**：
+✅ **A6a 沙盒驗收（2026-07-30）**：**13 檔全綠、1,414 過 / 5 跳過**
+（新增 `tests/a6a.behavior.test.js` 28 條）、`eslint .` **0 problems**、
+`vite build` **615 modules transformed**、42 處行號引用內容錨定重驗（修正 4 處）。
+`reference.json` 完整重生後**既有 85 組 values 與 source 字串逐位元不變**、`datasets.json` 逐位元不變。
+
+★ **休眠快照用的當下數字（2026-07-30 A6a 第一份交付後）**：
 
 | 項目 | 值 |
 |---|---|
-| 基準組 | **85** |
-| provenance | verified **79** / pending **2** / exempt **4** |
-| tier | A **50** / B **31** / I **4** |
-| 方法文件 | **50 份**（`docs/methods/` 含索引共 51 檔） |
-| 棘輪 | `MAX_PENDING = 2`、`MAX_UNDOCUMENTED = **18**` |
-| 沙盒測試 | **12 檔**（`a11y.guard`／`a4.behavior`／`a5a.behavior`／`a5b.behavior`／`compare`／`docs.coverage`／`errorCodes`／`i18n`／`nca`／`pls.narrative`／`pls`／`provenance`），**1,303 過 / 6 跳過** |
-| §6.6 紅隊 | R2–R59 **全部有 Kevin 裁決** ⇒ §6.7 判準 4 達成 |
-| 階段 A 的 L4 | 兩個：A1 的 R6、A5a 的 R50（A5b 無 L4） |
-
-⬜ **Kevin 本機的測試檔數與通過數待補**（雙擊 `A5b本機驗收.bat`）——這一格是 §8.3 的兩個空格之一。
+| 基準組 | **86** |
+| provenance | verified **80** / pending **2** / exempt **4** |
+| 方法文件 | **51 份**（`docs/methods/` 含索引共 52 檔） |
+| 棘輪 | `MAX_PENDING = 2`、`MAX_UNDOCUMENTED = **16**` |
+| 沙盒測試 | **13 檔**，**1,414 過 / 5 跳過**（1,419 條中 5 條為明文記錄的慣例差異） |
+| §6.6 紅隊 | R2–R63 **全部有 Kevin 裁決或已修** |
+| 階段 A 的 L4 | **三個**：A1 的 R6、A5a 的 R50、**A6a 的 R60** |
 
 ---
 
 ## ★ A6 開工指令（下一個 session 直接照這個順序做）
+
+> ★ **2026-07-30 更新**：A6 已依 Kevin 裁決拆為 **A6a／A6b** 兩批，且 A6a 的第一份
+> `normality.md` 已交付（並抓到 L4 R60）。本節的**做法與判準仍然有效**，
+> 但「18 組基準／12–14 份文件」的規模敘述已過期——現況見上方「下一個 session 從這裡開始」
+> 與 §6.5 的 A6a／A6b 條目。已完成的 `normality` 不必重做。
 
 **入口照順序讀**（其餘不必預讀）：
 
@@ -905,7 +906,18 @@ R 4.6 對有並列的情形用 Streitberg–Röhmel 位移演算法算條件精�
 `MAX_UNDOCUMENTED` **27 → 18**（實際值；roadmap 原估 19，因本批新增的 `kruskal_dunn` 同批寫入文件）。
 ★ 功能擴充待辦本批接 **E41–E70**（原指令寫「接 E40」，但 E40 已被前批用掉，故自 E41 起）。
 
-**A6 — 敘述／相關／迴歸／量表／多變量（tier A）** ⬜
+**A6a — 敘述／視覺化／常態／變異數同質／相關／迴歸三支（tier A）** 🔄 **進行中（1 / 8，2026-07-30）**
+`normality` ✅（涵蓋 `shapiro_wilk`、`ks_lilliefors`、★ 本批新增的 `ks_lilliefors_grid`）；
+待寫：`descriptive`、`visualization`（零基準，誠實標註）、`levene`、`correlation`、
+`regression-simple`／`-multiple`／`-hierarchical`。
+★ **本批一開工就抓到階段 A 的第三個 L4（R60）**，處置已完成並全數驗收（見 §6.6）。
+`MAX_UNDOCUMENTED` **18 → 16**、基準組 **85 → 86**、沙盒測試 **12 → 13 檔**。
+
+**A6b — 邏輯迴歸／量表信度／ICC／Kappa／MANOVA／集群（tier A）** ⬜
+`logistic_regression`、`cronbach_alpha_6items`＋`cronbach_alpha_f1`、`icc`、`cohen_kappa`、
+`manova`、`cluster_kmeans_k3`＋`cluster_ward_k3`
+
+**（原 A6 合併條目，Kevin 2026-07-30 裁決拆為 A6a／A6b 兩批）**
 `descriptive_y`、`shapiro_wilk`、`ks_lilliefors`、Levene（兩慣例）、資料視覺化、
 `pearson_x1_x2`、`spearman_x1_x2`、`regression_simple`／`_multiple`／`_hierarchical`、
 `logistic_regression`、Cronbach's α（兩組）、`icc`、`cohen_kappa`、`manova`、
@@ -1003,6 +1015,10 @@ R 4.6 對有並列的情形用 Streitberg–Röhmel 位移演算法算條件精�
 
 | R58 | A5b 後 / R 抽驗 | `mann_whitney*` | **L2** | ★★ **A5b 交付時寫的「精確法缺口的危險方向為 0」只在無並列時成立**，我把它寫成了通則。R 4.6 對有並列用 Streitberg–Röhmel 位移演算法算**條件精確分布**（不退回近似）：`ties` 基準組 R 精確 $p=0.022329$（沙盒獨立列舉 $\binom{24}{12}$＝2,704,156 種分組重算，與 R 逐位一致）vs 本工具近似 $p=0.018117$ ⇒ **偏寬鬆**。補掃 900 個有並列情境：**78.1% anti-conservative、10 例（1.1%）在 .05 上偽顯著**，最糟一例近似 0.0447（報顯著）vs 精確 0.1026（差 2.3 倍）。★ 這是**敘述錯誤不是實作退步**——引擎與 scipy 逐值相符至 6e−14 | 文件全面更正（`mann-whitney.md` §6 拆成無並列／有並列兩道 ＋ §8 新增 R58、`compare.test.js` 的 SKIP 註解、README、本檔、validation-report）；★ **UI 加強警告**：`smallSampleWarning && tieCorrection` 時多顯示一句明示「近似 p 可能偏小、SPSS/R 的精確法會給較大的 p」（i18n `smallSampleTiesNote`，zh／en）；`a5b.behavior.test.js` 加 4 條鎖 | ✅ Kevin 2026-07-30 重新裁決並已執行 |
 | R59 | A5b 後 / R 抽驗 | `cfa_2factor_loadings` | **L3** | ★★ **CFA 的 loading 標準誤對不上 lavaan**。六個標準化負荷完全吻合、未標準化差一個固定比例 $\sqrt{60/59}=1.008439$（＝共變數矩陣分母 $N$ vs $N-1$，屬慣例），**唯獨 se 差約 4%、$z$ 小約 3.5%**（i1：0.147094 vs ≈0.1406；$z$ 5.102 vs 5.290）——不是尺度可解釋的。se／$z$／$p$ 決定報表上哪些 loading 標星號，而這一欄**零第三方對照**。本工具做法為「數值 Hessian（$h=10^{-4}$）＋ $\mathrm{Cov}=\frac{2}{N-1}H^{-1}$」＝觀察訊息＋$N-1$；lavaan 預設為期望訊息＋$N$ | ✅ **已結案：純慣例差異，不改實作**。`06_cfa_se_probe.R` 把 lavaan 四種設定印到 10 位有效數字後，兩個軸乾淨分離——vs `normal+observed` 的比值**六個指標幾乎常數 1.016945 ~ 1.016951（＝60/59）** ⇒ 該軸純為 $N$ vs $N-1$；vs `wishart+expected` 的比值**隨指標變動 1.009 ~ 1.046** ⇒ 該軸為觀察 vs 期望訊息；★ vs **`wishart+observed`** 的比值 **0.999995 ~ 1.000002**（最大相對偏差 **4.5e−06**，＝中央差分 $h=10^{-4}$ 的截斷誤差量級）⇒ **本工具的口徑就是這一組**，$z$ 亦逐一對上，$\chi^2$ 相對差 5.6e−10 | ✅ **Kevin 2026-07-30 依既定判準結案**：比值整排 ≈ 1.000000 ⇒ 慣例差異、雙處標註即可。已寫入 `cfa.md` §3.5（SE 的兩個慣例軸）與 §6。★ 另更正 §3.3 一項錯誤敘述：原寫「lavaan 預設用 $(N-1)F$」，實測 lavaan 預設與 **semopy 同側**，本工具是三者中唯一用 $(N-1)F$ 的。順帶開出 E71（SRMR 相對差 4.8e−06，非逐位元）與 E72（因子相關的 se 有 Hessian 卻無出口） |
+| **R60** | A6a | `ks_lilliefors` | **L4** | ★★ **Lilliefors $p$ 的兩個定義域錯誤**。Dallal-Wilkinson 近似要求 (a) $n>100$ 時先重標定 `D *= (n/100)^0.49; n := 100`、(b) 只在 $p<0.1$ 有效（statsmodels docstring 明文），本工具**兩件都沒做**，改用 `D<0.05 → p=1` 與 `D>0.30 → p ≤ 0.05·e^{-5(D-0.30)}` 兩個自製 clamp。★ **兩個相反方向的失效區**：$n\gtrsim325$（.05 臨界 $D$ 跌破 0.05）時顯著樣本被印成 **$p=1.000$**——480 例掃描中 50 例（10.4%）、$n$=1000~2000 為 **25%**，其中 3 例整體判讀給「近似常態」綠燈；$n=4$~$7$ 且 $D>0.30$ 時反向偽顯著（960 例中 34 例）。★ **三道防線全失效的原因**：唯一基準點 $n=60$／$D\approx0.078$ 三個失效條件一個都沒踩到，而 `p` 欄掛著 SKIP、註解把定義域錯誤寫成「近似法不同」。可達性極高（問卷研究 $N=400$~$1000$ 正是漏抓區核心） | 忠實移植 statsmodels 的 approx 路徑（`pval_lf` 含重標定 ＋ $p>0.1$ 走 `TableDist.prob`），新增 26×14 臨界值表與 14×3 漸近式係數；函式更名 `lilliforsPValue`→`lillieforsPValue` 並匯出；新增基準組 **`ks_lilliefors_grid`**（12 $n$ × 7 $D$ ＝ 84 欄）；收回 `ks_lilliefors.D`（1e-4）與 `shapiro_wilk.p`（1e-5）兩條假放寬並刪除整條 SKIP；28 條行為鎖。修正後 1,440 例掃描 max 相對差 **1.2e−11**、零翻面 | ✅ **Kevin 2026-07-30 核定「完整移植，含臨界值表」並已執行**。`reference.json` 完整重生，**既有 85 組 values 與 source 字串逐位元不變**、`datasets.json` 逐位元不變。基準組 **85 → 86** |
+| **R61** | A6a | `shapiro_wilk`／`ks_lilliefors` | **L2** | ★ **零變異欄被判成「近似常態」綠燈**。實跑常數欄：引擎回 `W=1, p=1, D=0, p=1`，`verdictKey` 判 `normal`，UI 印**綠色的「近似常態」**——報表上是全套最常態的變項；APA 句照樣輸出 `W = 1.000, p = 1.000`。★ **階段 A 第三次遇到同一型**（A4 的 R40-h、A5a 的 R51），三次分屬三個不同模組 ⇒ 不是個案，是**格式化函式對退化值的處理**在專案內的系統性盲點 | 引擎回 `zeroVariance` 旗標（退化值本身不動 ⇒ 既有 fixture 零影響）；判讀增加第四種 `undefinedTest`「無法檢定（零變異）」並取消燈號；表格上方警告框 ＋ APA 句句首警語；i18n 中英各 3 鍵；含「正常資料旗標必須為假」的回歸鎖 | ✅ 已修（L2 當場修） |
+| R62 | A6a | `ks_lilliefors`／`levene_mean_spss_default` | L1 | **provenance 的 `verification` 欄不實**：兩組都寫「JS 與其逐值比對」，但前者的 `p` 掛著 SKIP 從未比對、後者**根本沒有 adapter**（只是人工對照值）。★ 沒有任何測試檢查這句話是否屬實 | 兩組的 `verification` 與 `note` 全部改寫，據實說明比對到什麼程度 | ✅ 已修（L1 當場修） |
+| R63 | A6a | `ks_lilliefors` | L1 | ★ **兩處過期／不實的區塊註解**（A3c R34-a 同型，且是驗收 subagent 抓到、執行者自己漏掉的）：`kolmogorovSmirnov` 的 JSDoc 仍寫「$D<0.05$ 時樣本接近完美常態，$p$ 約 1」——**那正是 R60 移除的 clamp**；同段還宣稱「與 `R::nortest::lillie.test()` 一致到小數第 3 位」，而專案內**零證據**（R 從未跑過）。⇒ 紅隊第 2 條在**註解層**的版本：檔頭註解也會「以記憶充當引用」 | 兩處更正，第二項改標待驗證並指向 `07_a6_r_audit.R` 第 [2b] 段 | ✅ 已修（L1 當場修） |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -1191,6 +1207,27 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.18（2026-07-30 同日）：**階段 A / A6a 開工，第一份 `normality.md` 交付，抓到階段 A 的第三個 L4**。
+  ★ **R60（L4）——Lilliefors $p$ 的兩個定義域錯誤**。這是三個 L4 裡最不像 bug 的一個：
+  R6 是走錯相關矩陣、R50 是積分節點不足，**兩者都是實作沒做對；R60 的公式抄對了，
+  錯的是「這條公式可以用在哪裡」**——Dallal-Wilkinson 近似要求 $n>100$ 先重標定、且只在 $p<0.1$ 有效，
+  本工具兩件都沒做，改用兩個自製 clamp 補洞。後果是 **$n\gtrsim325$ 時顯著樣本被印成 $p=1.000$**
+  （480 例掃描中 50 例、$n$=1000~2000 為 25%、3 例給綠燈），另在 $n=4$~$7$ 且 $D>0.30$ 反向偽顯著（34/960）。
+  處置：忠實移植 statsmodels 的 approx 路徑（含 26×14 臨界值表）＋ 新增 `ks_lilliefors_grid`（84 欄）
+  ＋ 收回兩條假放寬與整條 SKIP ＋ 28 條行為鎖。修正後 1,440 例掃描 max 相對差 1.2e−11、零翻面。
+  ★ **另開 R61（L2）**：零變異欄被判成「近似常態」綠燈——**階段 A 第三次遇到同一型**
+  （A4 的 R40-h、A5a 的 R51），三次分屬三個模組 ⇒ 是格式化函式對退化值處理的系統性盲點。
+  ★ **R62（L1）**：provenance 的 `verification` 欄不實（寫「逐值比對」但一組掛 SKIP、一組沒有 adapter）。
+  ★ **R63（L1）**：兩處過期／不實的區塊註解——**由驗收 subagent 抓到，執行者自己漏掉**。
+  其中一句宣稱「與 R::nortest 一致到小數第 3 位」而專案內零證據 ⇒ **檔頭註解也會「以記憶充當引用」**。
+  ★ **獨立重寫的一個副產品**：以 mpmath 40 位精度重建 $W$，與 scipy 仍差 5.4e−10 ⇒ **這不是浮點誤差**，
+  是 Royston AS R94 與 scipy FORTRAN `swilk` 的演算法差異 ⇒ `shapiro_wilk` 的 verified
+  鎖住的是「兩套實作結果相近」，不是「係數抄對了」（Royston 原文仍未取得）。
+  ★ **A5b 習慣 8 的第二次應用**：範圍內 3 條放寬，2 條是假放寬（`ks_lilliefors.D` 實測相對差 **0.0**、
+  `shapiro_wilk.p` 5.8e−8），**真缺口在 SKIP 不在 TOL**——與 A5b 完全同型。
+  ⇒ **TOL 是「知道有差、量過」，SKIP 是「知道有差、沒量」。後者才是紅旗。**
+  基準組 **85 → 86**；`MAX_UNDOCUMENTED` **18 → 16**；沙盒測試 **12 → 13 檔**；
+  新增 `scripts/validation/07_a6_r_audit.R`（六段，含 12 組探針）與 `跑A6抽驗.bat`、`data/a6_probe.csv`。
 - v2.17（2026-07-30 同日）：**R59 結案 ＋ 三項雜務清理**。
   `06_cfa_se_probe.R` 把 lavaan 的 `information` × `likelihood` 四種組合印到 10 位有效數字後，
   ★ **兩個慣例軸乾淨分離**：`normal+observed` 的比值**六指標幾乎常數 1.016945~1.016951（＝60/59）**

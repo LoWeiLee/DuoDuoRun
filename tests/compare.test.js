@@ -36,8 +36,13 @@ const TOL = {
   //   另在沙盒對參數空間掃描（MW：n1,n2 3–14 × 三種並列強度 × 4 重複 = 1,728 例；
   //   zprop：n 5–1000 × x 全枚舉 + 雙樣本 625 組 = 5,290 例）確認整個區間都成立，
   //   最大相對差 4.9e-13。⇒ 四條放寬全部刪除，改回 DEFAULT_TOL（1e-6）。
-  'ks_lilliefors.D': 1e-4,
-  'shapiro_wilk.p': 1e-5, // Royston 近似 vs scipy
+  // ★ 2026-07-30 紅隊 R60（A6a，習慣 8 的第二次應用）：以下兩條原本放寬到 1e-4 與 1e-5。
+  //   逐一重驗之後，兩條**都是遺留的假放寬**：
+  //     ks_lilliefors.D  —— 實測相對差 **0.0（與 statsmodels 逐位元相同）**；
+  //     shapiro_wilk.p   —— 實測相對差 5.8e-8，另在 1,440 例掃描（n = 4~2000）中
+  //                          max|Δp| = 7.5e-7、.05 判定零翻面。
+  //   ⇒ 兩條全部刪除，改回 DEFAULT_TOL（1e-6）。
+  //   ★ 真正的缺口不在容差而在 SKIP：ks_lilliefors.p 那條蓋住了一個 L4（見下方 SKIP 區的註記）。
   // 2026-07-13 紅隊：efa_pca_varimax 原本放寬到 5e-3（absLoadings）／1e-4（communalities），
   // 查證後發現差距來自 factor_analyzer 的 varimax 預設容差沒收斂完全，不是 JS 錯
   // （JS 解的 varimax 準則值反而較高）。基準改用 rotation tol=1e-12 重生後，
@@ -67,7 +72,13 @@ const SKIP = {
   //   的保守方向，零個偽顯著**；最大絕對差 0.0375。⇒ 缺 exact 法會少抓到極少數真效果，
   //   但不會製造假效果。Kevin 2026-07-30 裁決：書面化，維持 backlog，不在 A5b 實作。
   'mann_whitney_small.pExact': 'JS 尚無 exact 法（SPSS 小樣本預設 exact）— 缺口已量化為保守方向，見 docs/methods/mann-whitney.md §6 — backlog P2',
-  'ks_lilliefors.p': 'p 近似法不同：JS 用 Dallal-Wilkinson，statsmodels 用查表內插；D 統計量已對齊',
+  // ★ 2026-07-30 紅隊 R60（L4）：這條 SKIP 原本寫「p 近似法不同：JS 用 Dallal-Wilkinson，
+  //   statsmodels 用查表內插；D 統計量已對齊」——那句話把一個**定義域錯誤**描述成了慣例差異。
+  //   實情是本工具漏了 DW 近似要求的 n > 100 重標定，也沒有在 p > 0.1 時改走臨界值表，
+  //   而是自製了兩個 clamp。後果：n ≳ 325 時顯著樣本被印成 p = 1.000（480 例掃描中 50 例），
+  //   n = 4~7 且 D > 0.30 時反向偽顯著（960 例中 34 例）。
+  //   修正後（忠實移植 statsmodels 的 approx 路徑）1,440 例掃描 max 相對差 1.2e-11、零翻面，
+  //   ⇒ **SKIP 整條刪除**，本欄改為正常比對；並新增 ks_lilliefors_grid 鎖住參數空間。
   'cfa_2factor.chi2': 'χ² 慣例：JS 用 (N−1)·F（AMOS/Wishart），semopy 用 N·F — 見 chi2 換算測試',
   'cfa_2factor.cfi': 'JS 將 CFI 截斷於 1（lavaan 慣例），semopy 不截斷',
   'cfa_2factor.tli': '受 χ² 慣例影響，方向一致',

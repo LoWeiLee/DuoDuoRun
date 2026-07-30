@@ -5,10 +5,15 @@ import { runNormality } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
 import { getStrings } from '../../i18n'
 
+// ★ 2026-07-30 紅隊 R61（L2）：零變異欄的 W = 1.000 / D = 0.000 / p = 1.000 會被 APA 句
+//   原封不動印進論文，讀起來像「完美常態」。比照 A5a 的 R51，句首插入警語。
 function buildNarrative(result, dataset, lang) {
   const t = getStrings(lang)
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
-  return result.rows
+  const caveat = result.rows.some((r) => r.sw.zeroVariance || r.ks.zeroVariance)
+    ? t.norm.apa.zeroVarianceCaveat + ' '
+    : ''
+  return caveat + result.rows
     .map((r) =>
       fillTemplate(t.norm.apa.sentence, {
         var: labelMap[r.col] || r.col,

@@ -382,6 +382,29 @@ put("shapiro_wilk", "scipy.shapiro", W=W, p=p)
 from statsmodels.stats.diagnostic import lilliefors
 D, p = lilliefors(main["y"], dist="norm", pvalmethod="approx")
 put("ks_lilliefors", "statsmodels.lilliefors(approx)", D=D, p=p)
+
+# --- Lilliefors p 值本身的格點基準（2026-07-30 紅隊 R60，階段 A / A6a）
+# ★ 為什麼要有這一組：`ks_lilliefors` 只鎖住 datasets.json:main 的一個點（n = 60、D ≈ 0.078、
+#   p ≈ 0.52），而該點恰好落在「近似式無效但沒人發現」的區域，且 p 欄長期掛著 SKIP。
+#   舊實作有兩個定義域錯誤（n > 100 未重標定；p > 0.1 未改走臨界值表，改用兩個自製 clamp），
+#   在 n ≳ 325 系統性把顯著樣本印成 p = 1.000，在 n = 4~7 且 D > 0.30 反向偽顯著——
+#   一個資料點的基準對這兩塊完全沒有約束力。⇒ 直接對 p 函式本身建格點基準（比照 R50 的
+#   `tukey_ptukey_grid`），刻意涵蓋 D < 0.05、D > 0.30 兩個舊 clamp 區與 n = 100／1600 兩個換式邊界。
+# 權威：statsmodels 的 `pvalmethod='approx'` 路徑（pval_lf 含 n > 100 重標定；p > 0.1 改走
+#       10^7 次模擬的臨界值表）。公式出處 Dallal & Wilkinson (1986), Am. Stat. 40(4), 294-296。
+from statsmodels.stats._lilliefors import pval_lf, lilliefors_table_norm
+def _lf_approx(d, nn):
+    v = float(pval_lf(float(d), nn))
+    if v > 0.1:
+        v = float(lilliefors_table_norm.prob(float(d), nn))
+    return v
+_lf_grid = [(nn, d) for nn in (4, 8, 15, 30, 60, 100, 150, 325, 500, 1000, 1600, 3000)
+            for d in (0.02, 0.04, 0.06, 0.10, 0.18, 0.32, 0.55)]
+put("ks_lilliefors_grid",
+    "statsmodels pval_lf + TableDist.prob（pvalmethod='approx' 路徑）— Lilliefors p 值格點。"
+    "★ 刻意涵蓋 D < 0.05 與 D > 0.30（舊實作的兩個自製 clamp 區）以及 n = 100／1600 兩個換式邊界，見 R60",
+    **{("p_n%d_D%g" % (nn, d)): _lf_approx(d, nn) for nn, d in _lf_grid})
+
 F, p = sps.levene(*groups, center="median")
 put("levene_median", "scipy.levene(center=median)", F=F, p=p, df1=2, df2=N-3)
 F, p = sps.levene(*groups, center="mean")

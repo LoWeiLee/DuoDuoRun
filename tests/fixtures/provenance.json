@@ -141,10 +141,10 @@
   },
   "ks_lilliefors": {
     "authority": "statsmodels",
-    "note": "",
+    "note": "2026-07-30 紅隊 R60：本組只涵蓋 n=60、D≈0.078、p≈0.52 一個點，而該點落在舊實作的安全區；失效區（n≳325 與 n=4~7）完全沒有基準。參數空間的防線改由 ks_lilliefors_grid 承擔。",
     "status": "verified",
     "tier": "A",
-    "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+    "verification": "fixture 值直接由 statsmodels.lilliefors(pvalmethod='approx') 產生。★ 2026-07-30 紅隊 R60（L4）更正本欄：修正前 `D` 逐值比對（但容差被無故放寬到 1e-4，實測相對差為 0.0），而 `p` 從未被比對過——`compare.test.js` 對它掛著 SKIP，理由寫「近似法不同」，實際上是本工具的實作漏了 Dallal-Wilkinson 近似所要求的 n>100 重標定、也沒有在 p>0.1 時改走臨界值表。修正後 SKIP 已刪除，D 與 p 兩欄都以 DEFAULT_TOL（1e-6）逐值比對；另見新增的 ks_lilliefors_grid。"
   },
   "lda_group3": {
     "authority": "MASS 7.3.65（MASS::lda，隨 R 出貨）＋ base R manova（Wilks）；SPSS 慣例換算關係逐值確認",
@@ -155,10 +155,10 @@
   },
   "levene_mean_spss_default": {
     "authority": "scipy",
-    "note": "",
+    "note": "SPSS 預設為 mean-based Levene，本工具未實作；保留本組是為了在方法文件裡量化兩個慣例的差距（本資料集 F 0.3876 vs 0.3973）。若未來實作 center 選項，本組即為現成基準。",
     "status": "verified",
     "tier": "A",
-    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+    "verification": "fixture 值直接由 scipy.levene(center='mean') 產生。★ 2026-07-30 紅隊 R62 更正本欄：本組**沒有 adapter**，從未被 compare.test.js 比對過——本工具只實作 center=median（Brown-Forsythe），mean 版僅作為 SPSS 慣例的人工對照值保存。"
   },
   "levene_median": {
     "authority": "scipy",
@@ -522,7 +522,7 @@
     "note": "",
     "status": "verified",
     "tier": "A",
-    "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+    "verification": "fixture 值直接由 scipy.shapiro 產生；JS 與其逐值比對（DEFAULT_TOL 1e-6）。★ 2026-07-30 紅隊 R60 順帶重驗：`p` 欄原本被放寬到 1e-5，實測相對差 5.8e-8，另在 1,440 例掃描（n=4~2000、六種分布形狀）中 max|Δp| = 7.5e-7、.05 判定零翻面 ⇒ 放寬已收回 DEFAULT_TOL。"
   },
   "spearman_x1_x2": {
     "authority": "scipy",
@@ -593,5 +593,12 @@
     "status": "verified",
     "tier": "A",
     "verification": "fixture 值直接由 statsmodels 產生；JS 與其逐值比對（容差見 compare.test.js）。"
+  },
+  "ks_lilliefors_grid": {
+    "authority": "statsmodels 的 pvalmethod='approx' 路徑：_lilliefors.pval_lf（Dallal-Wilkinson 近似，含 n>100 重標定）＋ TableDist.prob（10^7 次模擬的臨界值表，p>0.1 時使用）。公式出處 Dallal & Wilkinson (1986), The American Statistician 40(4), 294-296",
+    "note": "2026-07-30 紅隊 R60（L4）建立，比照 R50 的 tukey_ptukey_grid。ks_lilliefors 僅涵蓋 n=60 一點，而舊實作的兩個定義域錯誤分別發作在 n≳325（D<0.05 一律回 p=1，漏抓方向）與 n=4~7 且 D>0.30（強制 p≤0.05，偽顯著方向）。本組直接對 p 函式本身建 n×D 格點（12×7=84 欄），刻意涵蓋兩個舊 clamp 區與 n=100（重標定門檻）／n=1600（表格轉漸近式）兩個換式邊界，不經過任何資料集。",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值由 statsmodels 的 approx 路徑產生；JS 的 lillieforsPValue 與其逐值比對（84 欄，DEFAULT_TOL 1e-6）。另在沙盒對 1,680 例實際樣本獨立掃描（n=4~2000 六種連續分布 1,440 例 ＋ 5 點量表大量並列 240 例）：D 統計量最大絕對差 1.8e-14、p 最大相對差 1.2e-11、.05 判定零翻面。"
   }
 }

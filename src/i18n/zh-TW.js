@@ -339,7 +339,9 @@ export default {
       normal: '近似常態',
       nonNormal: '違反常態',
       mixed: '結果不一致',
+      undefinedTest: '無法檢定（零變異）',
     },
+    zeroVarianceWarn: '警告：標示為「無法檢定」的變數完全沒有變異（所有數值相同，標準差為 0）。此時 Shapiro-Wilk 的 W 與 Kolmogorov-Smirnov 的 D 在數學上無定義，本工具回傳的 W = 1.000、D = 0.000、p = 1.000 是退化值，不代表「符合常態」——請先確認是否選錯變項、是否為常數欄，或是否有天花板／地板效應。',
     notes: {
       purposeTitle: '用途',
       purpose:
@@ -368,6 +370,7 @@ export default {
       sentence:
         '常態性檢定結果 — {var}：Shapiro-Wilk W = {w}, p = {pSW}；Kolmogorov-Smirnov（Lilliefors 修正）D = {d}, p = {pKS}（n = {n}）。',
       copyHint: '一鍵複製 APA 敘述',
+      zeroVarianceCaveat: '【警告：標示為「無法檢定」的變數完全沒有變異（標準差為 0），其 W = 1.000、D = 0.000 與 p = 1.000 是無定義情形下的退化值，不得解讀為符合常態，也不應寫進報告。】',
     },
     interp: {
       header: '解讀',

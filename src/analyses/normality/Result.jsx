@@ -12,7 +12,11 @@ import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runNormality } from './compute'
 import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
 
-function verdictKey(swP, ksP) {
+// ★ 2026-07-30 紅隊 R61（L2）：零變異欄的 W = 1.000 / D = 0.000 / p = 1.000 全部是退化值，
+//   舊版會把它判成 'normal' 綠燈——看起來是全套最常態的變項（同 A4 R40-h、A5a R51 之型）。
+//   零變異時不下判讀，改印「無法檢定」並在表格上方顯性說明。
+function verdictKey(swP, ksP, zeroVariance) {
+  if (zeroVariance) return 'undefinedTest'
   const a = Number.isFinite(swP) ? swP < 0.05 : null
   const b = Number.isFinite(ksP) ? ksP < 0.05 : null
   if (a === null && b === null) return null
@@ -22,6 +26,7 @@ function verdictKey(swP, ksP) {
 }
 
 function verdictColor(key) {
+  if (key === 'undefinedTest') return 'text-duo-cocoa-400'
   if (key === 'normal') return 'text-duo-sig-ok'
   if (key === 'nonNormal') return 'text-duo-sig-bad'
   if (key === 'mixed') return 'text-duo-amber-700'
@@ -40,8 +45,16 @@ function Result() {
   const labelMap = dataset.labels?.[lang === 'zh-TW' ? 'zh' : 'en'] || {}
   const c = t.norm.cols
 
+  const hasZeroVariance = result.rows.some((r) => r.sw.zeroVariance || r.ks.zeroVariance)
+
   return (
     <div>
+      {/* ★ R61：零變異欄的退化值不可被讀成「符合常態」 */}
+      {hasZeroVariance && (
+        <div className="mb-3 p-3 rounded-md bg-duo-tongue/10 border border-duo-tongue/20 text-xs text-duo-cocoa-800 leading-relaxed">
+          {t.norm.zeroVarianceWarn}
+        </div>
+      )}
       <div className="overflow-x-auto bg-white border border-duo-cocoa-100 rounded-md">
         <table className="w-full text-xs">
           <thead className="bg-duo-cream-50">
@@ -57,7 +70,7 @@ function Result() {
           </thead>
           <tbody>
             {result.rows.map((r) => {
-              const key = verdictKey(r.sw.p, r.ks.p)
+              const key = verdictKey(r.sw.p, r.ks.p, r.sw.zeroVariance || r.ks.zeroVariance)
               return (
                 <tr key={r.col} className="hover:bg-duo-cream-50 transition">
                   <td className="px-3 py-1.5 text-duo-cocoa-800 font-medium border-b border-duo-cream-50">{labelMap[r.col] || r.col}</td>
@@ -83,7 +96,7 @@ function Result() {
           </h3>
           <ul className="space-y-1.5">
             {result.rows.map((r) => {
-              const key = verdictKey(r.sw.p, r.ks.p)
+              const key = verdictKey(r.sw.p, r.ks.p, r.sw.zeroVariance || r.ks.zeroVariance)
               const text = fillTemplate(t.norm.interp.line, {
                 var: labelMap[r.col] || r.col,
                 verdict: key ? t.norm.verdict[key] : '—',
