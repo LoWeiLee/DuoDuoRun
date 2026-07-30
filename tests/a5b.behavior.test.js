@@ -147,6 +147,38 @@ describe('R57（L2）：連續性校正的說明不得再宣稱與 SPSS 一致',
   })
 })
 
+/* ─────────────────────  R58：小樣本 ＋ 並列的警告  ───────────────────── */
+
+describe('R58（L2）：小樣本含並列時必須有「近似 p 可能偏小」的警告', () => {
+  it('★ 兩語都必須有 smallSampleTiesNote，且點名 SPSS 與 R', () => {
+    for (const [name, t] of [['zh-TW', zh], ['en', en]]) {
+      const s = t.np.result.smallSampleTiesNote
+      expect(s, `${name} 缺 smallSampleTiesNote`).toBeTruthy()
+      expect(s, `${name} 未點名 SPSS`).toContain('SPSS')
+      expect(s, `${name} 未點名 R`).toMatch(/\bR\b/)
+    }
+  })
+
+  it('★ 觸發條件回歸：小樣本且有並列時，兩個旗標必須同時為真（警告才會出現）', () => {
+    // ties 型資料，每組 n = 6（< 10）且大量並列
+    const r = mannWhitneyU([3, 4, 3, 2, 4, 3], [4, 5, 4, 3, 5, 4])
+    expect(r.smallSampleWarning, 'n < 10 應觸發小樣本旗標').toBe(true)
+    expect(r.tieCorrection, '有並列應觸發並列旗標').toBe(true)
+  })
+
+  it('無並列的小樣本只該有小樣本旗標，不該誤觸並列警告', () => {
+    const r = mannWhitneyU([3.1, 4.2, 2.8, 5.0], [6.3, 7.1, 5.9, 8.2])
+    expect(r.smallSampleWarning).toBe(true)
+    expect(r.tieCorrection).toBe(false)
+  })
+
+  it('Wilcoxon 同樣要能同時觸發兩個旗標', () => {
+    const r = wilcoxonSignedRank([3, 4, 3, 2, 4, 3], [4, 5, 4, 3, 5, 4])
+    expect(r.smallSampleWarning).toBe(true)
+    expect(r.tieCorrection).toBe(true)
+  })
+})
+
 /* ─────────────────────  邊界條件的結構鎖  ───────────────────── */
 
 describe('A5b 邊界條件：退化情形不得回傳偽裝成成功的數字', () => {

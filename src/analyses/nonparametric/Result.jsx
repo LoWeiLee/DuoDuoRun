@@ -70,6 +70,11 @@ function MWResult({ result, t }) {
       {result.smallSampleWarning && (
         <p className="text-[11px] text-duo-amber-700 mt-1">{t.np.result.smallSampleNote}</p>
       )}
+      {/* ★ R58（2026-07-30）：小樣本 ＋ 有並列時，常態近似的 p 可能**偏小**（偽顯著方向）。
+          沙盒 900 個有並列情境實測 78.1% anti-conservative、1.1% 在 .05 上偽顯著。 */}
+      {result.smallSampleWarning && result.tieCorrection && (
+        <p className="text-[11px] text-duo-sig-bad mt-1 leading-snug">{t.np.result.smallSampleTiesNote}</p>
+      )}
     </div>
   )
 }
@@ -122,6 +127,10 @@ function WilResult({ result, t }) {
       )}
       {result.smallSampleWarning && !result.allZeroDiffs && (
         <p className="text-[11px] text-duo-amber-700 mt-1">{t.np.result.smallSampleNote}</p>
+      )}
+      {/* ★ R58：同 MWResult，小樣本 ＋ 有並列時明示近似 p 可能偏小 */}
+      {result.smallSampleWarning && result.tieCorrection && !result.allZeroDiffs && (
+        <p className="text-[11px] text-duo-sig-bad mt-1 leading-snug">{t.np.result.smallSampleTiesNote}</p>
       )}
     </div>
   )

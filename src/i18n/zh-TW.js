@@ -417,6 +417,10 @@ export default {
       droppedNote: '已剔除 {n} 對 D = 0',
       continuityNote: 'p 值已套用 ±0.5 連續性校正。與 R wilcox.test 的 correct = TRUE 預設同口徑，但 R 在樣本數 < 50 且無並列時預設走的是精確法而非常態近似；SPSS 的 Asymp. Sig. 不套用連續性校正，故本工具的 p 會略大於 SPSS 的漸近 p',
       smallSampleNote: '樣本量小（n < 10），常態近似的精度有限；建議搭配實際效果量與描述統計判讀',
+      smallSampleTiesNote:
+        '★ 小樣本又有並列：本工具報的是常態近似 p，這個情形下它可能**偏小**（偏向報出顯著）。'
+        + 'SPSS 與 R 在小樣本會走精確法，通常給較大的 p——沙盒實測 900 個有並列情境，'
+        + '約 78% 的近似 p 小於精確 p，約 1% 會在 .05 上翻面。結論落在 .05 邊界時，建議改以精確法複核。',
       allZeroDiffsNote: '所有配對差皆為 0，兩變數完全相同（p = 1）',
       effect: {
         trivial: '微弱', small: '小', medium: '中', large: '大',

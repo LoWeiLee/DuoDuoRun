@@ -90,6 +90,23 @@ R 側：seminr（PI/orthogonal、PLSpredict）、cSEM（testMICOM/testMGD）、N
 - 數字對照表 `抽驗對照表.md`：左欄已填入多多快跑的值，Kevin 只需填右欄
 - 資料檔 `data/`：main.csv（n=60）、nca.csv（n=48）、cta.csv（n=60），皆與 fixture 同源
 
+★ **第二波 R 抽驗（2026-07-30 / A5b 收尾代產，非 PLS 側）**：雙擊 **`跑R抽驗.bat`**
+→ 跑 `scripts/validation/05_a5b_r_audit.R`，結果寫入 `out/05_a5b_r_audit_out.txt`。
+六段，涵蓋三類「Python 側撐不住」的項目：
+
+| 段 | 對象 | 類別 | 為什麼非 R 不可 |
+|---|---|---|---|
+| 1 | CFA vs **lavaan** | (A) 零基準 | fixture 只涵蓋 chi2/df/cfi/tli/rmsea；**SRMR 與六個 loading 的 se/z/p 零第三方對照**，而 se/z/p 決定報表上哪些 loading 顯著 |
+| 2 | EFA vs **psych** | (A) 零基準 | **逐變項 MSA 與 \|R\| 零基準**，而報表逐題顯示 MSA、使用者據以決定刪哪一題 |
+| 3 | 單因子 ANOVA vs **aov()** | (B) 手算 | `scipy.f_oneway` 只回 F 與 p，其餘 **7 欄（SS 三項、df 兩項、eta2、omega2）是 generate_reference.py 手算** |
+| 4 | Tukey vs **ptukey()** | (C) 未核實 | `ptukey.js:18` 註解宣稱「對標 R::ptukey()」而**從未跑過 R**；R50 修正後也只對過 scipy。含高 df 失準區抽點 |
+| 5 | KW 效果量 vs **effectsize** | (B) 手算 | A5b 的 R54 已由官方文件核實**公式歸屬**，但數值仍是本專案依定義自算（E67） |
+| 6 | A5b 六支的慣例對照 | (C) 未核實 | 六份方法文件都寫了「與 R 的差異」，多數依官方手冊推得、未實跑。含 ★ **Fisher 的 OR 口徑**（本工具無條件 OR vs R 條件 MLE）與 ★ **卡方的 `$stdres`**（E43：本工具用 Pearson 殘差，SPSS 用調整後殘差） |
+
+第 3、4、6 段全走 base R，不需安裝任何套件；1、2、5 段需 lavaan／psych／effectsize，
+`.bat` 會先建好可寫的 `R_LIBS_USER` 再裝（**不先建的話 `install.packages` 會靜默失敗**）。
+任一段失敗會印 `[x]` 並跳過，其餘照跑，可分批銷帳。
+
 ## 5. W6 執行規格（探索與長尾；各項獨立、可單獨出貨，每項 ≈ 1 session）
 
 共通模式：先在 generate_reference.py 加基準區塊（用 run_pls_ref_only 跑）→

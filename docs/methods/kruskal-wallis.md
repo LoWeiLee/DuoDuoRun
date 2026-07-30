@@ -172,7 +172,17 @@ In that case the estimate is floored to 0」——本工具 2026-07-30 起跟進
 ### ★ 尚未驗證的部分
 
 1. ★ **三篇方法原文全部未取得**（Kruskal & Wallis 1952、Dunn 1964、Tomczak & Tomczak 2014）。★ 但 §3.4 的公式歸屬**已由 rstatix 與 effectsize 兩套套件的官方文件交叉核實**，不是憑記憶
-2. ★ **$\eta^2_H$ 零第三方數值對照**：公式歸屬已核實，但 `reference.json` 的 `eta2H` 仍是由 `generate_reference.py` 依 rstatix 的公式定義計算，**不是由 rstatix 實跑產生** ⇒ 這一欄仍屬「同一個作者同一次理解」的形狀。R `rstatix::kruskal_effsize` 一行即可對照，成本極低，建議 Kevin 本機補（E67）
+2. ✅ **$\eta^2_H$ 已於 2026-07-30 在 Kevin 本機取得第三方對照**（R 4.6.0，
+   `scripts/validation/05_a5b_r_audit.R` §5）。★ **R54 的命名判斷獲得確認**——
+   `effectsize::rank_eta_squared` 報 **Eta2 (rank) = 0.13**（本工具 0.126471，四捨五入相符），
+   而 `effectsize::rank_epsilon_squared` 報 **Epsilon2 (rank) = 0.16**（$H/(N-1)=0.156082$）
+   ⇒ 兩者確為不同的量，本工具算的是前者、原本標的是後者的名字。**E67 結案。**
+   ★ **但 effectsize 只印到 2 位小數**，僅足以確認「是哪一個量」，**不足以逐值驗證**
+   ⇒ 若要把這一欄升級為逐值 verified，需請 R 端印出完整位數（尚未做）
+3. ★ **Dunn 仍未與 R 對照**：base R 沒有 Dunn。2026-07-30 的抽驗只跑了
+   `pairwise.wilcox.test`（Bonferroni）作為粗檢——顯著配對集合一致（兩邊都只有 A–C 顯著：
+   R 0.013 vs 本工具校正後 0.008686），但那是不同方法，數字本來就不同。
+   本工具的 Dunn 基準來自 scikit-posthocs（見上表第 2、3 道）
 3. ★ **從未與 SPSS 對照過**（H、Dunn、Bonferroni 皆未對照）
 4. ★ **$k=2$ 的路徑無基準**：引擎容許 $k\ge2$（`nonparametric.js:211`），UI 擋在 $k\ge3$（`compute.js:79`）。$k=2$ 時 $H$ 與 Mann-Whitney 應有已知關係，但兩者都無對照 ⇒ 引擎的能力比 UI 寬，而寬出來的那部分零驗證
 5. ★ **各組中位數、原始尺度的位置摘要、Friedman、Holm／BH 校正、精確法**皆未實作 ⇒ 無基準

@@ -195,11 +195,17 @@ $$\mathbf A=\mathbf V\operatorname{diag}\bigl(\sqrt{\max(\lambda_j,0)}\bigr)$$
 
 1. ★ ★ **四篇方法原文全部未取得**。Bartlett 的 $-[(n-1)-(2p+5)/6]$ 修正項、KMO 的定義、
    varimax 準則都只對到 `factor_analyzer` 的**輸出**，沒有對到原文方程式編號
-2. ★ ★ **從未與 SPSS 或 R `psych` 對照過**。EFA 是社會科學最常被 SPSS 跑的方法之一，
-   而使用者最可能拿來對照的就是 SPSS 的報表。⇒ 這是本組最有價值的一次待辦抽驗
-3. ★ **逐變項 MSA（`kmo.perVar`）沒有基準**：`efa_pca_varimax` 只鎖 `kmo.overall`。
-   R40-b 新增的 MSA 表**逐格數字沒有任何第三方對照**
-4. ★ **`determinant`（$|\mathbf R|$）沒有基準**：R40-c 新增顯示，但 `compare.test.js` 不比對它
+2. ✅ **已於 2026-07-30 在 Kevin 本機與 R `psych` 對照**（R 4.6.0，`scripts/validation/05_a5b_r_audit.R` §2）。
+   ★ **仍未與 SPSS 對照過**——SPSS 是使用者最可能拿來比的報表，這一項留著
+3. ✅ **逐變項 MSA 已補上第三方對照，且逐位元相同**：`psych::KMO()$MSAi` 給
+   0.699319／0.748324／0.757158／0.792030／0.749689／0.639829，**與本工具六位小數全對**；
+   總體 MSA 0.73006 亦相符 ⇒ 從「零基準」結案
+4. ✅ **$|\mathbf R|$ 已補上第三方對照**：R `det(cor(items))` = **0.2160639142**，
+   與本工具的 0.21606391423793433 相符 ⇒ 從「零基準」結案。
+   Bartlett（$\chi^2=86.0575$、df 15、$p=5.3615\times10^{-12}$）與六個特徵值亦逐位相符
+5. ★ **`psych::principal` 的 varimax 負荷有 $10^{-3}$ 量級差異**（例：i6 第一欄
+   本工具 $-0.002473$ vs psych $-0.000720$），**共同性則六位小數全對**。
+   ⇒ 差異來自轉軸收斂容差，非公式；但這一項**未入庫為基準**，`compare.test.js` 仍不鎖轉軸負荷的逐值
 5. ★ **`singular` 與 `zero-variance-vars` 兩條新路徑沒有 fixture**：只有 `a4.behavior.test.js` 的行為鎖，
    沒有第三方對照（本質上也無從對照——第三方在這些情形多半直接報錯）
 6. **`rotationSkipped` 無第三方對照**（`factor_analyzer` 在 $k=1$ 時的行為未查）

@@ -843,10 +843,15 @@ Fisher 走 mpmath 精確有理數 `binomial`。
   一欄都沒對）＋ `cramerV` 是本專案手算。已新增 `kruskal_dunn`（scikit-posthocs）並把 `cramerV`
   改由 `scipy.contingency.association` 產生。**基準組 84 → 85**。
 
-★ **精確法缺口已窮盡量化（R57，維持 backlog）**：無並列時 MW 的 $U$ 與 Wilcoxon 的 $W^+$ 精確分布
+★ **精確法缺口已窮盡量化（R57）**：無並列時 MW 的 $U$ 與 Wilcoxon 的 $W^+$ 精確分布
 只依賴樣本數，故可對統計量**全枚舉**。MW 54,878 格點翻面 0.20%、Wilcoxon 11,507 格點翻面 0.278%，
-★ **兩者的危險方向（近似顯著、精確不顯著）皆為 0**——缺 exact 只會少抓真效果，不會製造假效果。
-與 R50 恰好相反的結論。
+**兩者的危險方向皆為 0**。
+
+★★ **但 2026-07-30 的 R 抽驗推翻了它的通則版本（R58）**：上述結論**只在無並列時成立**。
+R 4.6 對有並列的情形用 Streitberg–Röhmel 位移演算法算條件精確分布，方向**相反**——
+`ties` 基準組 R 精確 $p=0.022329$ vs 本工具近似 $p=0.018117$（偏寬鬆）；
+補掃 900 個有並列情境：**78.1% anti-conservative、10 例（1.1%）在 .05 上偽顯著**。
+⇒ Kevin 重新裁決：文件全面更正 ＋ UI 在「小樣本 ＋ 有並列」時加強警告，實作精確法維持 backlog P2。
 
 `MAX_UNDOCUMENTED` **27 → 18**（實際值；roadmap 原估 19，因本批新增的 `kruskal_dunn` 同批寫入文件）。
 ★ 功能擴充待辦本批接 **E41–E70**（原指令寫「接 E40」，但 E40 已被前批用掉，故自 E41 起）。
@@ -946,6 +951,9 @@ Fisher 走 mpmath 精確有理數 `binomial`。
 | R55 | A5b | **跨模組（8 處）** | **L3** | ★ **雙尾 $p$ 在 $\|z\|$ 大時塌成 0**。全專案 8 處寫 `2 * (1 - normalCdf(\|z\|))`，而 `normalCdf` 內部已以 `gammq` 算好上尾（相對精度 1e−13 級）——這份精度被 $1-(1-\text{tail})$ 的減法**整個抵消**。$\|z\|>6.5$ 起相對誤差 >1e−6、**$\|z\|\ge8.3$ 起回傳恰好 0**（單樣本比例 $n=8,x=0,p_0=0.9$ ⇒ $\|z\|=8.49$，報表印 `p = .000`）。★ 判 L3 而非 L4：5,240＋1,728 個格點**零 .05 翻面**，受影響區間全在 $p<10^{-10}$，APA 一律呈現 $p<.001$ | `pvalue.js` 新增 `normalSf(z)`；8 處全改——A5b 內 4 處（MW／Wilcoxon／Dunn／zProp）＋範圍外 4 處（`kappa.js`、`logisticRegression.js`、`normality.js`，並**移除 `cfa.js` 自帶的第二套 `normalCdfApprox`**，其註解宣稱「避免相依 pvalue」而該檔早已 import `pChiSq`） | ✅ 核定並已執行（2026-07-30，Kevin 選「8 處一次改乾淨」）。既有 fixture 的 $\|z\|$ 皆在安全區，重生後數值零變動 |
 | R56 | A5b | `kruskal_dunn`（新）／`chisquare_2x2` | **L3** | ★ **兩個可立刻補上的第三方基準**。(a) **Dunn 零基準**：引擎有實作、UI 有表格、APA 句還會**點名哪幾對顯著**，而 `compare.test.js` 一欄都沒對；(b) **`cramerV` 是 `generate_reference.py` 手算**，與 JS 出自同一次理解——正是 §0 要防的那一類 | 新增基準組 `kruskal_dunn`（6 欄，權威 **scikit-posthocs `posthoc_dunn`**，另在沙盒對 81 情境比對最大相對差 2.7e−10）；`cramerV` 改由 **scipy `contingency.association`** 產生（300 組隨機表與手算式最大相對差 1.9e−16） | ✅ 核定並已執行（2026-07-30）。**基準組 84 → 85**；`cramerV` 數值零變動 |
 | R57 | A5b | `mann_whitney*`／`wilcoxon_signed_rank` | **L2**＋書面 | ★ 三個說明錯誤 ＋ 精確法缺口。(a) i18n `continuityNote` 宣稱「與 **SPSS** / R wilcox.test 預設一致」——**SPSS 的 Asymp. Sig. 不套 CC**，且 **R 預設在 $n<50$ 無並列時走精確法**而非套了 CC 的近似法（R 4.6.0 官方手冊，已實際查閱）；(b) `formulaMWZ` 顯示的公式**沒寫出實作實際扣掉的 0.5**；(c) 效果量 $r$ 的分級函式在 `Result.jsx` 與 `Narrative.jsx` **各實作一次**且只有三級，而同模組 Notes 宣告四級 ⇒ 使用者永遠看不到「微弱」。(d) 精確法缺口窮盡量化：MW 54,878 格點、Wilcoxon 11,507 格點，翻面 0.20%／0.278%，**危險方向皆為 0** | (a)(b) 當場改寫兩語 i18n；(c) 收斂為 `format.js` 的 `effectBandR`／`effectBandV`（Cohen 四級），三個檔改為 import，i18n 補 `trivial` 鍵；(d) 依裁決書面化為「已量化的保守缺口」，`compare.test.js` 的 SKIP 註解升級為帶證據的說明，維持 backlog P2 | ✅ L2 三項當場修；(d) Kevin 2026-07-30 核定書面化 |
+
+| R58 | A5b 後 / R 抽驗 | `mann_whitney*` | **L2** | ★★ **A5b 交付時寫的「精確法缺口的危險方向為 0」只在無並列時成立**，我把它寫成了通則。R 4.6 對有並列用 Streitberg–Röhmel 位移演算法算**條件精確分布**（不退回近似）：`ties` 基準組 R 精確 $p=0.022329$（沙盒獨立列舉 $\binom{24}{12}$＝2,704,156 種分組重算，與 R 逐位一致）vs 本工具近似 $p=0.018117$ ⇒ **偏寬鬆**。補掃 900 個有並列情境：**78.1% anti-conservative、10 例（1.1%）在 .05 上偽顯著**，最糟一例近似 0.0447（報顯著）vs 精確 0.1026（差 2.3 倍）。★ 這是**敘述錯誤不是實作退步**——引擎與 scipy 逐值相符至 6e−14 | 文件全面更正（`mann-whitney.md` §6 拆成無並列／有並列兩道 ＋ §8 新增 R58、`compare.test.js` 的 SKIP 註解、README、本檔、validation-report）；★ **UI 加強警告**：`smallSampleWarning && tieCorrection` 時多顯示一句明示「近似 p 可能偏小、SPSS/R 的精確法會給較大的 p」（i18n `smallSampleTiesNote`，zh／en）；`a5b.behavior.test.js` 加 4 條鎖 | ✅ Kevin 2026-07-30 重新裁決並已執行 |
+| R59 | A5b 後 / R 抽驗 | `cfa_2factor_loadings` | **L3** | ★★ **CFA 的 loading 標準誤對不上 lavaan**。六個標準化負荷完全吻合、未標準化差一個固定比例 $\sqrt{60/59}=1.008439$（＝共變數矩陣分母 $N$ vs $N-1$，屬慣例），**唯獨 se 差約 4%、$z$ 小約 3.5%**（i1：0.147094 vs ≈0.1406；$z$ 5.102 vs 5.290）——不是尺度可解釋的。se／$z$／$p$ 決定報表上哪些 loading 標星號，而這一欄**零第三方對照**。本工具做法為「數值 Hessian（$h=10^{-4}$）＋ $\mathrm{Cov}=\frac{2}{N-1}H^{-1}$」＝觀察訊息＋$N-1$；lavaan 預設為期望訊息＋$N$ | ⬜ **未結案**。已代產 `scripts/validation/06_cfa_se_probe.R`（雙擊 `跑CFA標準誤診斷.bat`），把 lavaan 的 information（observed／expected）× likelihood（normal／wishart）四種組合印到 10 位有效數字，用以區分三個候選成因：(a) 訊息矩陣型別、(b) $N$ vs $N-1$、(c) 數值 Hessian 截斷誤差 | ⬜ **待 Kevin 執行 `跑CFA標準誤診斷.bat` 後裁決** |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -1134,6 +1142,24 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.16（2026-07-30 同日）：**R 側交叉驗證代產並由 Kevin 本機執行**
+  （`scripts/validation/05_a5b_r_audit.R`，雙擊 `跑R抽驗.bat`；六段全數成功）。
+  針對三類「Python 側撐不住」的項目取第二意見：(A) 零基準、(B) 本專案手算、(C) 文件寫了但未實跑。
+  ★ **五項乾淨銷帳**：EFA 逐變項 MSA 與 $|\mathbf R|$ 對 `psych` **六位小數全對**（兩個零基準量結案）、
+  單因子 ANOVA 的 **7 欄手算值**對 base R `aov()` 逐項相符（§0 型結構弱點結案）、
+  Tukey 對 R `ptukey()` 五個格點（含 R50 失準區 df=100/120/999）相對差 1.6e−10 ~ 3.9e−08
+  ⇒ **`ptukey.js:18` 那句「對標 R::ptukey()」終於有證據**、
+  R54 的命名判斷經 `effectsize` 確認（Eta2(rank) 對上本工具、Epsilon2(rank) 是另一個量，**E67 結案**）、
+  prop.test／chisq.test／fisher.test 的 $p$ 全部對上。
+  ★ **新開出三項**：**R58（L2）——A5b 交付時寫的「精確法缺口危險方向為 0」只在無並列時成立**，
+  有並列時方向相反（`ties` 組 R 條件精確 0.022329 vs 本工具近似 0.018117；補掃 900 情境
+  78.1% anti-conservative、1.1% 在 .05 上偽顯著）⇒ 文件全面更正 ＋ UI 加強警告；
+  **R59（L3，未結案）——CFA 的 loading 標準誤對不上 lavaan**（se 差 4%、$z$ 小 3.5%，
+  非尺度可解釋），已代產 `06_cfa_se_probe.R` 待 Kevin 執行；
+  **E43 升級**——卡方的 Pearson 殘差 vs 調整後殘差**在內建示範資料上就已給出不同的 1.96 判定**。
+  ★ 另更正一件事實：`cfa.md` 原寫「lavaan 與本工具 $\chi^2$ 慣例相同」是錯的，
+  lavaan 預設與 **semopy 相同**，本工具是三者中唯一用 $(N-1)\cdot F$ 的。
+  基準組維持 **85**；`MAX_UNDOCUMENTED` 維持 **18**；`a5b.behavior.test.js` 32 → **36 條**。
 - v2.15（2026-07-30）：**階段 A / A5b 交付（6 / 6），階段 A 累計 50 份文件**：
   `chi-square`、`fisher-exact`、`z-prop`、`mann-whitney`、`wilcoxon-signed-rank`、`kruskal-wallis`（含 Dunn）。
   ★ **本批無 L4。** 六支的獨立重寫全數通過且**每一支都不呼叫產生基準的那個函式**——

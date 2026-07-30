@@ -412,6 +412,11 @@ export default {
       droppedNote: '{n} pairs with D = 0 dropped',
       continuityNote: 'p-value applies the ±0.5 continuity correction, matching R wilcox.test (correct = TRUE). Note that R defaults to the exact test when n < 50 with no ties, and that SPSS Asymp. Sig. applies no continuity correction, so this p is slightly larger than the SPSS asymptotic p.',
       smallSampleNote: 'Small sample (n < 10); the normal approximation has limited precision — interpret alongside effect size and descriptive statistics.',
+      smallSampleTiesNote:
+        'Small sample with ties: this tool reports the normal-approximation p, which here can be TOO SMALL '
+        + '(biased toward declaring significance). SPSS and R use an exact test at small n and usually return a larger p. '
+        + 'Across 900 simulated tie scenarios, about 78% of approximate p-values were smaller than the exact ones and about '
+        + '1% flipped the .05 decision. If your conclusion sits near .05, verify it with an exact test.',
       allZeroDiffsNote: 'All paired differences are zero — the two variables are identical (p = 1).',
       effect: { trivial: 'trivial', small: 'small', medium: 'medium', large: 'large' },
       kwSigPosthoc:
