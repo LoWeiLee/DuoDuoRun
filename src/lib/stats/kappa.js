@@ -38,11 +38,11 @@
  *   0.8–1.0    almost perfect 幾近完美
  */
 import { isMissing } from '../variableTypes.js'
-import { normalCdf } from './pvalue.js'
+import { normalSf } from './pvalue.js'
 
 function twoSidedZP(z) {
   if (!Number.isFinite(z)) return NaN
-  return 2 * (1 - normalCdf(Math.abs(z)))
+  return 2 * normalSf(Math.abs(z)) // ★ R55：上尾直接算，勿用 1 - normalCdf
 }
 
 /**

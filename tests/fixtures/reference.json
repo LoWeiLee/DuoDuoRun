@@ -267,7 +267,7 @@
   }
  },
  "chisquare_2x2": {
-  "source": "scipy.chi2_contingency",
+  "source": "scipy.chi2_contingency + scipy.contingency.association(cramer)",
   "values": {
    "chi2": 17.37556561085973,
    "p": 3.067441457187181e-05,
@@ -315,12 +315,23 @@
   }
  },
  "kruskal_wallis": {
-  "source": "scipy.kruskal",
+  "source": "scipy.kruskal + rstatix eta2[H] \u5b9a\u7fa9\uff08floor 0\uff09",
   "values": {
    "H": 9.208852459016384,
    "p": 0.010007442332841603,
    "df": 2.0,
-   "epsilon2": 0.12647109577221727
+   "eta2H": 0.12647109577221727
+  }
+ },
+ "kruskal_dunn": {
+  "source": "scikit-posthocs.posthoc_dunn\uff08raw + bonferroni\uff09",
+  "values": {
+   "p_AB": 0.32372126246559374,
+   "p_AC": 0.0028954391362460493,
+   "p_BC": 0.04639449764906708,
+   "pAdj_AB": 0.9711637873967812,
+   "pAdj_AC": 0.008686317408738148,
+   "pAdj_BC": 0.13918349294720123
   }
  },
  "shapiro_wilk": {

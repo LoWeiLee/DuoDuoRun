@@ -7,81 +7,125 @@
 
 ## ★ 下一個 session 從這裡開始
 
-**目前狀態一句話**：階段 A 已完成 **A1–A4 共 37 份方法文件**——PLS 側 30 份（A1–A3）
-＋ NCA／LDA／CFA／EFA 共 7 份（A4，2026-07-29 收官）。`reference.json` 的 83 組基準中
-**47 組已被文件第 6 節點名**，未涵蓋 36 組全部落在尚未動工的 A5／A6。
+**目前狀態一句話**：階段 A 已完成 **A1–A5b 共 50 份方法文件**——PLS 側 30 份（A1–A3）
+＋ NCA／LDA／CFA／EFA 共 7 份（A4）＋ t 檢定與 ANOVA 家族 7 份（A5a）
+＋ 類別與無母數 6 份（A5b，2026-07-30 收官）。`reference.json` 的 **85 組基準中 67 組已被文件第 6 節點名**，
+未涵蓋 **18 組全部落在尚未動工的 A6**。
 溯源面仍未全部結案：2 組 pending、4 組 verified 但帶明文保留，全在 PLS 側。功能開發（階段 B）尚未動工。
 
-**★ 現在的下一步：階段 A / A5b（類別與無母數，tier A）**——見 §6.5 的 A5b 條目。
-A5a 紅隊 **4 項（R50–R53）全部處置完畢**，其中 **R50 是階段 A 的第二個 L4 真 bug**
-（前一個是 A1 的 R6）。基準組 **83 → 84**（新增 `tukey_ptukey_grid`）、`MAX_PENDING` 維持 **2**、
-`MAX_UNDOCUMENTED` **36 → 27**。
+**★ 現在的下一步：階段 A / A6（敘述／相關／迴歸／量表／多變量，18 組）**——見 §6.5 的 A6 條目。
+A6 是**階段 A 的最後一批**；收尾後才處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）
+與判準 7（§8.4 休眠狀態快照）。
 
-★ **A5a 與 A4 的結論相反，而差別在檢查方式**：A4 的 13 項全落在呈現層，A5a 卻在**數值本體**
-抓到一個。A4 的獨立重寫是「換一條路線算同一個量」，A5a 的 Tukey 重寫則是**對分布本身做參數空間掃描**
-（$k\times \mathrm{df}\times q$ 共 896 格點），才把「只有一個基準點、而它恰好安全」逼出來。
+A5b 紅隊 **4 項（R54–R57）全部處置完畢，本批無 L4**。基準組 **84 → 85**（新增 `kruskal_dunn`）、
+`MAX_PENDING` 維持 **2**、`MAX_UNDOCUMENTED` **27 → 18**。
+
+★ **A5b 與 A5a 的結論相反，而這一次差別不在檢查方式**：兩批用的是同一套參數空間掃描，
+A5a 用 896 格點抓到一個 L4，A5b 用**逾 75,000 格點卻沒有 L4**。
+⇒ **掃描不保證找到 bug，它保證你不再需要猜。** A5b 換到的是三件從「知道但沒查清楚」
+變成「量化過的已知限制」的事：精確法缺口的方向（**危險方向為 0**）、
+尾端抵消的可達邊界（**$|z|\ge8.3$**）、以及一個此前零基準的方法（Dunn）。
+
+★ **A5b 抓到的兩件事不在數值裡，這是它與前五批最大的不同**：
+**R54 的值完全正確**（與 rstatix 的公式逐位元相同），錯的是**它叫什麼**與**值域該不該截斷**——
+$\varepsilon^2$ 印出負數這件事**不會被任何數值比對抓到**，因為基準端與實作端犯的是同一個命名錯誤。
+**R55 則是同一個錯誤寫法被複製 8 次**，其中 `cfa.js` 還自己養了第二套常態 CDF。
 
 ✅ **A5a 已完整驗收並推上遠端（commit `0729p`，2026-07-29）**：
 沙盒 12 檔全綠、`eslint .` 0 problems、`vite build` 615 modules transformed、
-119 個行號引用內容錨定重驗零異常；**Kevin 本機 16 檔全綠、1,426 過、6 跳過**
-（6 個 skip 全為既有的明文慣例差異，見 `compare.test.js` 的 `SKIP` 註記）。
+119 個行號引用內容錨定重驗零異常；**Kevin 本機 16 檔全綠、1,426 過、6 跳過**。
 
-★ **休眠快照用的當下數字（供 §8.3／§8.4 收尾時直接引用）**：
-基準組 **84**、provenance **verified 78 / pending 2 / exempt 4**、tier **A 49 / B 31 / I 4**、
-方法文件 **44 份**（`docs/methods/` 含索引共 45 檔）、
-`MAX_PENDING = 2`、`MAX_UNDOCUMENTED = 27`、測試 16 檔 1,426 過。
+✅ **A5b 沙盒驗收（2026-07-30）**：**12 檔全綠、1,303 過 / 6 跳過**
+（新增 `tests/a5b.behavior.test.js` 32 條）、改動檔案的 `eslint` **0 problems**、
+`vite build` **615 modules transformed**、★ **192 處行號引用內容錨定重驗零異常**
+（第一輪抓到 3 處失效 ＋ 一批因新增註解而位移，全部重新定位）。
+
+⬜ **Kevin 本機待補跑**：雙擊 **`A5b本機驗收.bat`**（完整測試含 jsdom ＋ lint ＋ build）。
+本批動到 `src/lib/stats/`（7 檔）、`src/analyses/nonparametric/`、`src/analyses/chiSquare/`、
+`src/lib/format.js` 與**兩份 i18n**，jsdom 那批沙盒跑不動。
+★ 另有一件只有本機能確認：沙盒的 `vite build` 因 `node_modules` 只裝了
+`lightningcss-win32-x64-msvc`（缺 Linux 原生二進位）而無法跑完 CSS 壓縮——與本批改動無關，
+但完整 build 需本機驗。
+
+★ **休眠快照用的當下數字（供 §8.3／§8.4 收尾時直接引用，2026-07-30 更新）**：
+基準組 **85**、provenance **verified 79 / pending 2 / exempt 4**、tier **A 50 / B 31 / I 4**、
+方法文件 **50 份**（`docs/methods/` 含索引共 51 檔）、
+`MAX_PENDING = 2`、`MAX_UNDOCUMENTED = 18`。
+★ 測試檔數與通過數待 Kevin 本機補跑後確認（沙盒 12 檔的數字見本節末的驗收段）。
 
 ---
 
-## ★ A5b 開工指令（下一個 session 直接照這個順序做）
+## ★ A6 開工指令（下一個 session 直接照這個順序做）
 
 **入口照順序讀**（其餘不必預讀）：
 
 1. 本檔 **§0**（品質規範，最高位階）
-2. 本檔 **★ 下一個 session 從這裡開始**（就是本節）＋ **§6.5 的 A5b 條目**
+2. 本檔 **★ 下一個 session 從這裡開始**（就是本節）＋ **§6.5 的 A6 條目**
 3. `handoff-roadmap-v1.md` **§2**（架構不變量）、**§3**（沙盒作業手冊）
-4. 範本：`docs/methods/tukey-hsd.md`（★ 八節模板 ＋ **L4 的記錄方式** ＋「原文未取得」的標註寫法）
-   ——A5b 與它同屬 tier A、同樣帶數值近似，是最貼近的參照
+4. 範本兩份：
+   - `docs/methods/kruskal-wallis.md`——★ 八節模板 ＋ **L3 的三段式記錄方式**
+     ＋「效果量的名稱也要紅隊」的寫法（A6 有 $\eta^2$、$\omega^2$、$\alpha$、ICC、$\kappa$ 一整批效果量，最貼近）
+   - `docs/methods/tukey-hsd.md`——★ **L4 的記錄方式** ＋「原文未取得」的標註寫法
 
-**A5b 範圍**：6 份文件、8 組基準（全 tier A）
+**A6 範圍**：約 12–14 份文件、**18 組基準**（＝目前 `MAX_UNDOCUMENTED` 的全部）
 
-| 文件 | 基準組 | ★ 該批的慣例分歧重點 |
+| 文件（建議粒度） | 基準組 | ★ 該批的慣例分歧重點 |
 |---|---|---|
-| `chi-square` | `chisquare_2x2` | **Yates 連續性校正**是否施加、$2\times2$ 以外是否施加 |
-| `fisher-exact` | `fisher_exact` | 單／雙尾的定義（scipy 的雙尾用「機率 ≤ 觀察值」的加總） |
-| `z-prop` | `zprop_one`＋`zprop_two` | **分母慣例**：單樣本用 $p_0$、雙樣本用 pooled（`prop_var` vs `pooled`） |
-| `mann-whitney` | `mann_whitney`＋`_small`＋`_ties` | ★ **$U$ 的慣例、連續性校正、並列校正、精確 vs 常態近似** |
-| `wilcoxon-signed-rank` | `wilcoxon_signed_rank` | ★ **零差值的處理**（`wilcox` vs `pratt`）、並列、精確 vs 近似 |
-| `kruskal-wallis` | `kruskal_wallis` | 並列校正、Dunn 事後比較的多重比較校正 |
+| `descriptive` | `descriptive_y` | 偏態／峰度的**三種算法**（$g_1$ vs $G_1$ vs $b_1$）、四分位數的**九種定義** |
+| `normality` | `shapiro_wilk`＋`ks_lilliefors` | ★ **已知 SKIP**：`ks_lilliefors.p` 近似法不同（JS Dallal-Wilkinson vs statsmodels 查表內插）；`shapiro_wilk.p` 容差放寬到 1e-5 |
+| `levene` | `levene_median`＋`levene_mean_spss_default` | ★ **center 慣例**（median＝Brown-Forsythe vs mean＝原始 Levene），本專案**兩組都有基準**，正好是慣例分歧的教材 |
+| `correlation` | `pearson_x1_x2`＋`spearman_x1_x2` | Spearman 的並列處理、CI 的 Fisher $z$ 變換 |
+| `regression-simple` / `-multiple` / `-hierarchical` | `regression_simple`／`_multiple`／`regression_hierarchical` | 標準化係數的算法、$\Delta R^2$ 的 $F$ 檢定、VIF 門檻 |
+| `logistic-regression` | `logistic_regression` | ★ **容差已放寬到 1e-5**（`p_x1`）；三種 pseudo-$R^2$ 的定義；★ **R55 已改過本檔的 `p`** |
+| `cronbach-alpha` | `cronbach_alpha_6items`＋`cronbach_alpha_f1` | 標準化 vs 未標準化 $\alpha$ |
+| `icc` | `icc` | ★ **ICC 的六種型別**（1/2/3 × 單測/平均），最容易誤選 |
+| `cohen-kappa` | `cohen_kappa` | 加權方式（linear／quadratic）、Kappa 的最大值問題。★ **R55 已改過本檔的 `p`** |
+| `manova` | `manova` | 四種多變量統計量（Wilks／Pillai／Hotelling／Roy）的取捨。★ **A4 的 R49 抓到過本組被寬鬆比對誤判為已涵蓋** |
+| `cluster` | `cluster_kmeans_k3`＋`cluster_ward_k3` | 距離定義、連結法、標準化與否 |
 
-**★ 開工前必須先做的兩件事**（A5a 的教訓，不要跳過）：
+**★ 開工前必須先做的兩件事**（A5a／A5b 的教訓，不要跳過）：
 
-1. ★ **先掃 `compare.test.js` 的 `TOL` 與 `SKIP` 兩張表，把 A5b 範圍內的條目全部列出來**。
-   已知至少兩條：`mann_whitney_small.pExact`（JS 尚無精確法）與 `ks_lilliefors.p`（近似法不同，屬 A6）。
-   **每一條都要當成「有一個知道但沒查清楚的差異」重新檢視**，而不是當成已結案——
-   R50 就藏在那句「絕對差 <1e-6」的註解後面。
-2. ★ **對每一支問一次：基準覆蓋的是參數空間裡的哪一點？**
-   Mann-Whitney（$n$ 大小 × 有無並列）、Wilcoxon（零差值數量）、卡方（期望次數大小）
-   都有明確的參數方向，而現有基準各只有一到三點。**必要時對分布或統計量本身建格點基準**
-   （比照 A5a 新增的 `tukey_ptukey_grid`）。
+1. ★ **先掃 `compare.test.js` 的 `TOL` 與 `SKIP` 兩張表，把 A6 範圍內的條目全部列出來**。
+   ★ **A5b 的實績：範圍內 5 條，4 條是遺留的假放寬（實測 1e−13 級，已全部收回 `DEFAULT_TOL`）**，
+   1 條是真缺口（`mann_whitney_small.pExact`）。⇒ **不要假設放寬是有理由的，但也不要假設它是 bug——去量。**
+   A6 範圍內已知至少三條：`ks_lilliefors.D`（1e-4）、`ks_lilliefors.p`（SKIP）、
+   `shapiro_wilk.p`（1e-5）、`logistic_regression.p_x1`（1e-5）、`efa_pca_varimax_k3.loadings`（1e-4，屬 A4 但同表）。
+2. ★ **對每一支問一次：基準覆蓋的是參數空間裡的哪一點？** A6 的參數方向特別多：
+   偏態／峰度（$n$ 與分布形狀）、Shapiro-Wilk（$n$ —— Royston 近似在 $n$ 大時換式）、
+   Levene（center 慣例 × 組數）、迴歸（共線程度）、ICC（型別 × 評分者數）、
+   $\alpha$（題數 × 題間相關）、集群（$k$ × 起點）。**必要時對統計量本身建格點基準**
+   （比照 A5a 的 `tukey_ptukey_grid` 與 A5b 的 `kruskal_dunn`）。
 
-**交付判準**（照 A4／A5a 的做法）：
+**交付判準**（照 A4／A5a／A5b 的做法）：
 
 1. 依文件第 3 節的文字規格**獨立重寫**，且**不呼叫產生基準的那個函式**；結果寫進 `validation-report-v1.md`
 2. 紅隊八條（§6.3）逐支跑，含孤兒欄位 `grep`、同一判定的多套實作掃描、`assumptionChecker` 涵蓋盤點
+   ★ **另加 A5b 的第 10 條：每個效果量都要問「這個符號在文獻上是這個公式嗎？值域是什麼？工具守住了嗎？」**
 3. L1／L2 當場修並列出改了什麼；**L3 當場問 Kevin**；**L4 立刻停批回報**
 4. 行號重驗（內容錨定法，放在所有程式碼修改之後）
-5. `docs/methods/README.md` 索引＋A5b 紅隊摘要；本檔 §6.5 勾選、§6.6 接 **R54**、功能擴充表接 **E40**、版本紀錄
-6. **`MAX_UNDOCUMENTED` 27 → 19**（A5b 涵蓋 8 組）
+5. `docs/methods/README.md` 索引＋A6 紅隊摘要；本檔 §6.5 勾選、§6.6 接 **R58**、功能擴充表接 **E71**、版本紀錄
+6. **`MAX_UNDOCUMENTED` 18 → 0**（A6 涵蓋剩下的全部 18 組）★ 這一批做完棘輪應歸零
 7. 沙盒 12 檔＋`npx --no-install eslint .`＋`npx vite build --outDir /tmp/... --emptyOutDir`（看 `transformed` 行）
 8. 列出需 Kevin 本機補跑的項目（動到 `src/analyses/**` 或 `src/i18n/**` 就一定要）
 
-★ **A5b 完成後即進入 A6**（敘述／相關／迴歸／量表／多變量，約 17 組），
-A6 收尾後才處理 §6.7 的判準 2（28 個側欄模組 → 方法對照表）與判準 7（§8.4 休眠快照）。
+★ **A6 收尾後才處理 §6.7 的判準 2**（28 個側欄模組 → 方法對照表）**與判準 7**（§8.4 休眠快照），
+然後專案休眠，階段 B（Wave F1–F8）最早 2026 年 9 月底啟動。
 
 ---
 
-★ **A5a 累積出來的兩條檢查習慣（接在既有六條之後，A5b／A6 直接沿用）**：
+★ **A5b 累積出來的兩條檢查習慣（接在既有八條之後，A6 直接沿用）**：
+
+9. ★ **「同一件事的第二套實作」不只出現在判定邏輯，也出現在數值工具。**
+   R55 的 8 處是同一個錯誤寫法被複製 8 次；`cfa.js` 還自己養了一套常態 CDF，
+   而它的註解寫「避免相依 pvalue 的可選 import」——該檔第 37 行本來就已 import `pChiSq`（第 4 條的變體）。
+   ⇒ **看到一個數學小工具被就地實作，先 grep 專案裡是否已經有一份。**
+10. ★ **欄位的「名稱」也要紅隊，不只值。** R54 的值完全正確（與 rstatix 的公式逐位元相同），
+    錯的是它叫什麼、以及值域該不該截斷。**$\varepsilon^2$ 印出負數這件事不會被任何數值比對抓到**，
+    因為基準端與實作端犯的是同一個命名錯誤——`generate_reference.py` 與 `nonparametric.js`
+    都算 $(H-k+1)/(N-k)$，都叫它 `epsilon2`，`compare.test.js` 只會說「兩邊一致」。
+    ⇒ 寫第 3 節時，對每一個效果量問：**這個符號在文獻上是這個公式嗎？它的值域是什麼？工具守住了嗎？**
+
+★ **A5a 累積出來的兩條檢查習慣（A5b 已實際沿用，A6 繼續）**：
 
 7. ★ **只有一個基準點的方法，要對「參數空間」掃描，不能只驗那一點。**
    R50 的所有證據都不在 `datasets.json` 的那組資料裡——它在 **df 這個參數方向**上。
@@ -778,10 +822,34 @@ LDA 走 sklearn 1.288e−14、CFA 換 scipy L-BFGS-B 6.4e−8、EFA 5.0e−9）�
 R53（混合設計缺 Box's M，書面記錄）。七支的獨立重寫全數通過（t 檢定 14 欄**逐位元相同**，
 其餘最大 2.6e−12）。`MAX_UNDOCUMENTED` **36 → 27**。
 
-**A5b — 類別與無母數（tier A）** ⬜
-`chisquare_2x2`、`fisher_exact`、`zprop_one`＋`zprop_two`、
-Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn）——共 6 份、8 組基準。
-★ 開工前先讀 `docs/methods/README.md` 的 A5a 摘要末兩條（參數空間掃描、放寬過的容差是紅旗）。
+**A5b — 類別與無母數（tier A）** ✅ **完成（6 / 6，2026-07-30）**
+`chi-square`、`fisher-exact`、`z-prop`、`mann-whitney`、`wilcoxon-signed-rank`、`kruskal-wallis`（含 Dunn）
+——共 6 份、8 組基準 ＋ 本批新增的 `kruskal_dunn`。
+
+★ **本批無 L4。** 六支的獨立重寫全數通過（最大相對差 4.8e−13 ~ 1.4e−10），
+且**每一支都不呼叫產生基準的那個函式**——尾機率改走 mpmath 的高精度 `erfc` 與正規化不完全 gamma，
+Fisher 走 mpmath 精確有理數 `binomial`。
+
+★ **本批是掃描規模最大的一批（累計逾 75,000 格點），而規模換到的不是 bug，是三件被量化的事**：
+
+- **R54（L3）**：Kruskal-Wallis 的效果量**名稱錯誤且未 floor**。公式 $(H-k+1)/(N-k)$ 經 rstatix
+  官方文件核實是 `eta2[H]`（$\eta^2_H$），而 UI 三處都標成 $arepsilon^2$（真 $arepsilon^2$ 為 $H/(N-1)$，
+  兩者實測最大差 0.376）；且偏誤校正使原式可為負——**225 情境中 111 個（49%）為負、最小 −0.375**，
+  報表會印出依定義不可能的「$arepsilon^2 = -0.278$」。已改名 `eta2H` ＋ floor 0。
+- **R55（L3，跨模組 8 處）**：`2 * (1 - normalCdf(|z|))` 把 `gammq` 算好的尾端相對精度抵消掉，
+  **$|z|\ge8.3$ 起回傳恰好 0**（$n=8,x=0,p_0=0.9$ 即可觸發）。新增 `normalSf` 並改乾淨 8 處，
+  含移除 `cfa.js` 自帶的第二套 `normalCdfApprox`。★ 判 L3 而非 L4 的依據：7,000 個格點零 .05 翻面。
+- **R56（L3）**：**Dunn 事後比較此前零基準**（引擎有實作、APA 句會點名哪幾對顯著、`compare.test.js`
+  一欄都沒對）＋ `cramerV` 是本專案手算。已新增 `kruskal_dunn`（scikit-posthocs）並把 `cramerV`
+  改由 `scipy.contingency.association` 產生。**基準組 84 → 85**。
+
+★ **精確法缺口已窮盡量化（R57，維持 backlog）**：無並列時 MW 的 $U$ 與 Wilcoxon 的 $W^+$ 精確分布
+只依賴樣本數，故可對統計量**全枚舉**。MW 54,878 格點翻面 0.20%、Wilcoxon 11,507 格點翻面 0.278%，
+★ **兩者的危險方向（近似顯著、精確不顯著）皆為 0**——缺 exact 只會少抓真效果，不會製造假效果。
+與 R50 恰好相反的結論。
+
+`MAX_UNDOCUMENTED` **27 → 18**（實際值；roadmap 原估 19，因本批新增的 `kruskal_dunn` 同批寫入文件）。
+★ 功能擴充待辦本批接 **E41–E70**（原指令寫「接 E40」，但 E40 已被前批用掉，故自 E41 起）。
 
 **A6 — 敘述／相關／迴歸／量表／多變量（tier A）** ⬜
 `descriptive_y`、`shapiro_wilk`、`ks_lilliefors`、Levene（兩慣例）、資料視覺化、
@@ -873,6 +941,11 @@ Mann-Whitney（三組）、`wilcoxon_signed_rank`、`kruskal_wallis`（含 Dunn�
 | **R51** | A5a | `ttest_*` | **L2** | ★ **零變異時失敗偽裝成成功**：三種 t 檢定都算 `zeroVarianceWarning`，**零 UI 消費者**。實測成對 t（差值全同）：引擎回 $t=-\infty$、$p=0$、$d=-\infty$，而 `fmtNum(±∞)` 印「—」、`fmtP(0)` 印「< .001」、`toneForP(0)` 給**綠燈** ⇒ 報表顯示「$t=$ —、$p<.001$（綠）、$d=$ —」，APA 句照樣寫「達顯著差異」。與 A4 的 R40-i 同型且**共用同一個成因**（格式化函式對發散值的處理） | 純呈現層：警告框（指出 $t$ 發散、$p$ 恆為 0、三個數字都不可解讀）＋統計卡燈號在該情形取消＋APA 句句首插入警語且不下顯著性判定。引擎回傳值不變 | ✅ **Kevin 2026-07-29 核定並已執行**。`ttest/Result.jsx:341–358`、`Narrative.jsx:24–26`＋`72–73`、i18n 中英各 2 鍵；＋4 條行為測試（含「正常資料旗標必須為假」的回歸鎖） |
 | **R52** | A5a | `twoway_anova_type3` | **L2** | ★ **雙因子 ANOVA 完全沒有前提檢核**——實查 `assumptionChecker.js:283–289` 與各 `Result.jsx`：t 檢定與單因子有 Levene＋Shapiro、ANCOVA 有斜率同質性、重複量數與混合設計有 Mauchly，**七支裡只有雙因子是空的**，而 `levene.js` 與 `normality.js` 早就被另兩支使用 | 比照 `oneWayAnova/compute.js:47–48`：**細格層** Levene（雙因子的誤差項是細格內變異）＋**全模型殘差**的 Shapiro-Wilk（雙因子的常態假設是殘差常態）。只警告不擋 | ✅ **Kevin 2026-07-29 核定並已執行**。`twoWayAnova/compute.js:23–52`、`Result.jsx:233–291`、i18n 中英各 7 鍵；＋4 條行為測試（含「Levene 的 df1 必須是細格數−1」與四個 SS 逐值不變的回歸鎖） |
 | R53 | A5a | `mixed_anova` | L1 | 混合設計缺**被試間因子的共變異同質檢核**。正確的前提是各組的受試者內共變異矩陣相等（Box's M），而非單變量 Levene；`lda.js:545–576` 已有可複用實作但未接上 | 書面記錄（記為 E37）。接上 Box's M 屬功能擴充，跨出「文件批次不做功能擴充」的界線；`anova-mixed.md` §4／§6 已寫明缺口、正確的檢核是什麼、以及現成實作的位置 | ✅ 已記錄（Kevin 2026-07-29 裁決） |
+
+| R54 | A5b | `kruskal_wallis` | **L3** | ★ **效果量名稱錯誤且未 floor**。UI 欄位／公式說明／APA 句**三處**標成 $\varepsilon^2$，而公式 $(H-k+1)/(N-k)$ 經 **rstatix 官方文件**核實是 `eta2[H]`（$\eta^2_H$，偏誤校正）；真 rank $\varepsilon^2$ 為 $H/(N-1)$（**effectsize 官方文件**），兩者實測最大差 **0.376**。★ 更嚴重的是值域：偏誤校正使原式可為負，**225 情境中 111 個（49%）為負、最小 −0.375**，報表印出依定義不可能的值，而 rstatix 明文 floor 到 0 | 改名 `eta2H` ＋ `Math.max(0,·)`；i18n 三處同步（zh／en）；`generate_reference.py` 欄名與 floor 同步；provenance 的 authority 改為「scipy（H、p）＋ rstatix eta2[H] 定義（效果量）」 | ✅ 核定並已執行（2026-07-30）。重生後其餘 84 組**逐位元不變** |
+| R55 | A5b | **跨模組（8 處）** | **L3** | ★ **雙尾 $p$ 在 $\|z\|$ 大時塌成 0**。全專案 8 處寫 `2 * (1 - normalCdf(\|z\|))`，而 `normalCdf` 內部已以 `gammq` 算好上尾（相對精度 1e−13 級）——這份精度被 $1-(1-\text{tail})$ 的減法**整個抵消**。$\|z\|>6.5$ 起相對誤差 >1e−6、**$\|z\|\ge8.3$ 起回傳恰好 0**（單樣本比例 $n=8,x=0,p_0=0.9$ ⇒ $\|z\|=8.49$，報表印 `p = .000`）。★ 判 L3 而非 L4：5,240＋1,728 個格點**零 .05 翻面**，受影響區間全在 $p<10^{-10}$，APA 一律呈現 $p<.001$ | `pvalue.js` 新增 `normalSf(z)`；8 處全改——A5b 內 4 處（MW／Wilcoxon／Dunn／zProp）＋範圍外 4 處（`kappa.js`、`logisticRegression.js`、`normality.js`，並**移除 `cfa.js` 自帶的第二套 `normalCdfApprox`**，其註解宣稱「避免相依 pvalue」而該檔早已 import `pChiSq`） | ✅ 核定並已執行（2026-07-30，Kevin 選「8 處一次改乾淨」）。既有 fixture 的 $\|z\|$ 皆在安全區，重生後數值零變動 |
+| R56 | A5b | `kruskal_dunn`（新）／`chisquare_2x2` | **L3** | ★ **兩個可立刻補上的第三方基準**。(a) **Dunn 零基準**：引擎有實作、UI 有表格、APA 句還會**點名哪幾對顯著**，而 `compare.test.js` 一欄都沒對；(b) **`cramerV` 是 `generate_reference.py` 手算**，與 JS 出自同一次理解——正是 §0 要防的那一類 | 新增基準組 `kruskal_dunn`（6 欄，權威 **scikit-posthocs `posthoc_dunn`**，另在沙盒對 81 情境比對最大相對差 2.7e−10）；`cramerV` 改由 **scipy `contingency.association`** 產生（300 組隨機表與手算式最大相對差 1.9e−16） | ✅ 核定並已執行（2026-07-30）。**基準組 84 → 85**；`cramerV` 數值零變動 |
+| R57 | A5b | `mann_whitney*`／`wilcoxon_signed_rank` | **L2**＋書面 | ★ 三個說明錯誤 ＋ 精確法缺口。(a) i18n `continuityNote` 宣稱「與 **SPSS** / R wilcox.test 預設一致」——**SPSS 的 Asymp. Sig. 不套 CC**，且 **R 預設在 $n<50$ 無並列時走精確法**而非套了 CC 的近似法（R 4.6.0 官方手冊，已實際查閱）；(b) `formulaMWZ` 顯示的公式**沒寫出實作實際扣掉的 0.5**；(c) 效果量 $r$ 的分級函式在 `Result.jsx` 與 `Narrative.jsx` **各實作一次**且只有三級，而同模組 Notes 宣告四級 ⇒ 使用者永遠看不到「微弱」。(d) 精確法缺口窮盡量化：MW 54,878 格點、Wilcoxon 11,507 格點，翻面 0.20%／0.278%，**危險方向皆為 0** | (a)(b) 當場改寫兩語 i18n；(c) 收斂為 `format.js` 的 `effectBandR`／`effectBandV`（Cohen 四級），三個檔改為 import，i18n 補 `trivial` 鍵；(d) 依裁決書面化為「已量化的保守缺口」，`compare.test.js` 的 SKIP 註解升級為帶證據的說明，維持 backlog P2 | ✅ L2 三項當場修；(d) Kevin 2026-07-30 核定書面化 |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -1061,6 +1134,30 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.15（2026-07-30）：**階段 A / A5b 交付（6 / 6），階段 A 累計 50 份文件**：
+  `chi-square`、`fisher-exact`、`z-prop`、`mann-whitney`、`wilcoxon-signed-rank`、`kruskal-wallis`（含 Dunn）。
+  ★ **本批無 L4。** 六支的獨立重寫全數通過且**每一支都不呼叫產生基準的那個函式**——
+  尾機率改走 mpmath 的高精度 `erfc` 與正規化不完全 gamma、Fisher 走 mpmath 精確有理數 `binomial`：
+  MW 4.845e−13（1,728 情境）、Wilcoxon 1.318e−12（1,197 情境）、KW 3.708e−13（$H$ 逐位元相同）、
+  卡方 4.876e−13（1,350 張表）、Fisher 1.413e−10（1,621 張表）、z 比例 $z$ 3.6e−16（5,290 格點）、
+  ★ Dunn 對 scikit-posthocs 2.665e−10（81 情境）。
+  ★ **本批是掃描規模最大的一批（逾 75,000 格點）而沒有 L4** ⇒ 掃描不保證找到 bug，
+  它保證不再需要猜。三個 L3 換到的是三件被量化的事：
+  **R54**（KW 效果量**名稱錯誤且未 floor**——公式是 rstatix 的 `eta2[H]` 而 UI 三處標成 $\varepsilon^2$，
+  真 $\varepsilon^2$ 為 $H/(N-1)$、實測最大差 0.376；偏誤校正使原式可為負，**225 情境中 111 個為負、最小 −0.375**，
+  報表印出依定義不可能的值 ⇒ 改名 `eta2H` ＋ floor 0 ＋ i18n 三處同步）、
+  **R55**（跨模組 8 處的 `2 * (1 - normalCdf(|z|))` 把尾端相對精度抵消掉，**$|z|\ge8.3$ 起回傳恰好 0**，
+  $n=8,x=0,p_0=0.9$ 即可觸發 ⇒ 新增 `normalSf` 並改乾淨 8 處，含**移除 `cfa.js` 自帶的第二套 `normalCdfApprox`**；
+  判 L3 而非 L4 的依據是 7,000 個格點零 .05 翻面、受影響區間全在 $p<10^{-10}$）、
+  **R56**（**Dunn 此前零基準**而 APA 句會點名哪幾對顯著 ⇒ 新增 `kruskal_dunn` 6 欄、權威 scikit-posthocs；
+  `cramerV` 由本專案手算改為 scipy `contingency.association`，數值零變動）。
+  另開出 **R57**（L2 三項：i18n 誤稱「與 SPSS 一致」而 SPSS 不套 CC、公式未寫出 CC、
+  效果量分級雙實作且級數與說明不符 ⇒ 全部當場修，收斂為 `format.js` 的 `effectBandR`／`effectBandV`）。
+  ★ **精確法缺口窮盡量化**：MW 對 $U$ 全枚舉 54,878 格點、Wilcoxon 對 $T$ 全枚舉 11,507 格點，
+  .05 翻面 0.20%／0.278%，★ **危險方向（近似顯著、精確不顯著）皆為 0** ⇒ Kevin 裁決書面化、維持 backlog。
+  ★ **兩條新檢查習慣**：(9) 數值小工具也會有第二套實作；(10) **欄位的名稱也要紅隊，不只值**。
+  **基準組 84 → 85**；`MAX_UNDOCUMENTED` **27 → 18**（實際值）；`MAX_PENDING` 維持 2。
+  `generate_reference.py` 新增相依 **scikit-posthocs**（`handoff-roadmap-v1.md §3` 的套件清單已同步）。
 - v2.14（2026-07-29 同日）：**階段 A / A5a 交付（7 / 7），階段 A 累計 44 份文件**：
   `t-test`、`anova-oneway`、`tukey-hsd`、`anova-twoway`、`ancova`、`anova-repeated`、`anova-mixed`。
   ★ **Kevin 裁決把 A5 拆成 A5a／A5b 兩批**，文件粒度定為 13 份（t 檢定三種合一、tukey-hsd 獨立）。

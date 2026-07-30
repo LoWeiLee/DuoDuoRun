@@ -404,16 +404,16 @@ export default {
       cols: {
         u: 'U', u1: 'U₁', u2: 'U₂', wpos: 'W⁺', wneg: 'W⁻', t: 'T',
         h: 'H', df: 'df', z: 'z', p: 'p', n: 'n', meanRank: 'Mean rank', sumRank: 'Rank sum',
-        eps2: 'ε²', r: 'r (effect size)',
+        eta2H: 'η²_H', r: 'r (effect size)',
         pair: 'Pair', meanRankA: 'Mean rank A', meanRankB: 'Mean rank B',
         diffRank: '|Δmean rank|', zDunn: 'z', pRaw: 'Raw p', pAdj: 'Adj. p (Bonferroni)',
       },
       tieNote: 'Result includes tie correction',
       droppedNote: '{n} pairs with D = 0 dropped',
-      continuityNote: 'p-value applies ±0.5 continuity correction (matches SPSS / R wilcox.test default).',
+      continuityNote: 'p-value applies the ±0.5 continuity correction, matching R wilcox.test (correct = TRUE). Note that R defaults to the exact test when n < 50 with no ties, and that SPSS Asymp. Sig. applies no continuity correction, so this p is slightly larger than the SPSS asymptotic p.',
       smallSampleNote: 'Small sample (n < 10); the normal approximation has limited precision — interpret alongside effect size and descriptive statistics.',
       allZeroDiffsNote: 'All paired differences are zero — the two variables are identical (p = 1).',
-      effect: { small: 'small', medium: 'medium', large: 'large' },
+      effect: { trivial: 'trivial', small: 'small', medium: 'medium', large: 'large' },
       kwSigPosthoc:
         "After significant H, run Dunn's pairwise test (toggle \"Show post-hoc (Dunn's test)\" on the left to enable).",
       dunnTitle: "Dunn's post-hoc (Bonferroni-adjusted)",
@@ -443,7 +443,7 @@ export default {
         '1. Independent groups\n2. Similar shape across groups\n3. At least ordinal scale',
       formulasTitle: 'Core formulas',
       formulaMWU: 'U₁ = R₁ − n₁(n₁+1)/2, U₂ = n₁n₂ − U₁, U = min(U₁, U₂)',
-      formulaMWZ: 'z = (U₁ − μ) / σ with tie correction; p = 2(1 − Φ(|z|))',
+      formulaMWZ: 'z = (|U₁ − μ| − 0.5) / σ with continuity and tie correction; p = 2·P(Z > |z|)',
       formulaWil: 'W⁺ = Σ rank(|D|) where D > 0; T = min(W⁺, W⁻)',
       formulaWilZ:
         'z = (W⁺ − n(n+1)/4) / √((n(n+1)(2n+1) − Σ(t³−t)/2)/24)',
@@ -451,7 +451,7 @@ export default {
         'H = (12/(N(N+1))) Σ(R_i² / n_i) − 3(N+1), tie-corrected by dividing 1 − Σ(t³−t)/(N³−N)',
       formulaKWdf: 'df = k − 1; p from χ²(df) right tail',
       formulaEffMW: 'Effect size r = |z| / √N',
-      formulaEffKW: 'Effect size ε² = (H − k + 1) / (N − k)',
+      formulaEffKW: 'Effect size η²_H = max(0, (H − k + 1) / (N − k)). This is the bias-corrected eta squared based on H (rstatix eta2[H]), NOT rank epsilon squared (which is H/(N − 1)). Bias correction lets the raw formula go negative for very small H, so it is floored at 0.',
       readingTitle: 'How to read it',
       reading:
         '1. p < .05 → reject H₀ (groups differ in location)\n' +
@@ -474,7 +474,7 @@ export default {
       wilcoxon:
         'A Wilcoxon signed-rank test indicated a {sigWord} difference between {var1Name} and {var2Name}, T = {t}, z = {z}, p = {pStr}, n = {n} ({nDropped} zero-difference pairs dropped), effect size r = {r} ({effect}).',
       kw:
-        'A Kruskal-Wallis H test indicated a {sigWord} effect of {factor} on {depLabel}, H({df}, N = {n}) = {h}, p = {pStr}, ε² = {eps2}.',
+        'A Kruskal-Wallis H test indicated a {sigWord} effect of {factor} on {depLabel}, H({df}, N = {n}) = {h}, p = {pStr}, η²_H = {eta2H}.',
       sigYes: 'significant',
       sigNo: 'non-significant',
       copyHint: 'Copy APA narrative',
@@ -494,7 +494,7 @@ export default {
         '\nEffect size r = {r} ({effect}).',
       kw:
         'Conclusion: the effect of {factor} on {depLabel} was {sigWord} (H({df}, N = {n}) = {h}, p = {pStr}).' +
-        '\nε² = {eps2}.',
+        '\nη²_H = {eta2H}.',
       kwPosthoc: "Note: after significant H, run Dunn's pairwise post-hoc.",
       sigYes: 'significant',
       sigNo: 'not significant',

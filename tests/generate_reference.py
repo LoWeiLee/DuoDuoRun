@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 多多快跑 統計驗證基準值產生器
-用 scipy / statsmodels / pingouin / factor_analyzer / sklearn 產生黃金標準值。
+用 scipy / statsmodels / pingouin / factor_analyzer / sklearn / scikit-posthocs 產生黃金標準值。
 （R 為首選基準，但沙盒無法安裝；Python 這批套件與 R 核心演算法一致，
  差異項另標記由 Kevin 本機 JASP 複核。）
 
@@ -326,8 +326,13 @@ put("logistic_regression", "statsmodels.Logit",
 ct = pd.crosstab(main["catR"], main["catC"]).reindex(index=["Yes", "No"], columns=["High", "Low"])
 chi2, p, dof, _ = sps.chi2_contingency(ct, correction=False)
 chi2y, py, _, _ = sps.chi2_contingency(ct, correction=True)
-cramer = math.sqrt(chi2 / (N * (min(ct.shape) - 1)))
-put("chisquare_2x2", "scipy.chi2_contingency",
+# ★ R56（2026-07-30）：cramerV 原為本檔手算 sqrt(chi2/(N*(min(shape)-1)))，
+# 與 JS 實作出自同一次理解（正是 §0 品質規範要防的那一類）。
+# scipy.stats.contingency.association 為真正的第三方實作，沙盒實測 300 組
+# 隨機 r×c 表與手算式逐位元相同（最大相對差 1.9e-16）⇒ 換為第三方來源，數值不變。
+from scipy.stats.contingency import association
+cramer = association(ct.values, method="cramer")
+put("chisquare_2x2", "scipy.chi2_contingency + scipy.contingency.association(cramer)",
     chi2=chi2, p=p, df=dof, chi2Yates=chi2y, pYates=py, cramerV=cramer)
 orr, pf = sps.fisher_exact(ct)
 put("fisher_exact", "scipy.fisher_exact", p=pf, oddsRatio=orr)
@@ -349,7 +354,27 @@ put("wilcoxon_signed_rank", "scipy.wilcoxon(wilcox, correction, approx)",
     T=w.statistic, p=w.pvalue, z=getattr(w, "zstatistic", None))
 
 H, p = sps.kruskal(*groups)
-put("kruskal_wallis", "scipy.kruskal", H=H, p=p, df=2, epsilon2=(H - 3 + 1) / (N - 3))
+# ★ R54（2026-07-30）：欄名由 epsilon2 改為 eta2H。(H-k+1)/(N-k) 是「基於 H 的偏誤校正
+# eta squared」（rstatix::kruskal_effsize 的 eta2[H]），不是 rank epsilon squared
+# （後者為 H/(N-1)，見 effectsize::rank_epsilon_squared）。偏誤校正使原式在 H 很小時
+# 可為負，rstatix 明文 floor 到 0，本專案跟進。
+_kw_k = len(groups)
+put("kruskal_wallis", "scipy.kruskal + rstatix eta2[H] 定義（floor 0）",
+    H=H, p=p, df=_kw_k - 1, eta2H=max(0.0, (H - _kw_k + 1) / (N - _kw_k)))
+
+# ★ R56（2026-07-30）新增：Dunn 事後比較。此前 Dunn 是零基準
+# （引擎有實作、UI 有呈現、compare.test.js 無任何一欄），
+# 第三方權威為 scikit-posthocs.posthoc_dunn（未校正 p 與 Bonferroni 校正 p 各三對）。
+import scikit_posthocs as _sph
+_dunn_df = pd.DataFrame({
+    "v": np.concatenate(groups),
+    "g": np.concatenate([[nm] * len(gv) for nm, gv in zip(["A", "B", "C"], groups)]),
+})
+_P = _sph.posthoc_dunn(_dunn_df, val_col="v", group_col="g", p_adjust=None)
+_Pb = _sph.posthoc_dunn(_dunn_df, val_col="v", group_col="g", p_adjust="bonferroni")
+put("kruskal_dunn", "scikit-posthocs.posthoc_dunn（raw + bonferroni）",
+    p_AB=_P.loc["A", "B"], p_AC=_P.loc["A", "C"], p_BC=_P.loc["B", "C"],
+    pAdj_AB=_Pb.loc["A", "B"], pAdj_AC=_Pb.loc["A", "C"], pAdj_BC=_Pb.loc["B", "C"])
 
 # --- 常態性 / 變異數同質性
 W, p = sps.shapiro(main["y"])

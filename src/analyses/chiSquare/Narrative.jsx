@@ -5,16 +5,8 @@ import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import NarrativeBlock from '../../components/NarrativeBlock'
 import { runChiSquare } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import { fmtNum, fmtP, fillTemplate, effectBandV as cramerInterpretKey } from '../../lib/format'
 import { getStrings } from '../../i18n'
-
-function cramerInterpretKey(v) {
-  if (!Number.isFinite(v)) return null
-  if (v < 0.1) return 'trivial'
-  if (v < 0.3) return 'small'
-  if (v < 0.5) return 'medium'
-  return 'large'
-}
 
 function buildNarrative(result, dataset, lang) {
   const t = getStrings(lang)

@@ -13,7 +13,7 @@ import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runChiSquare } from './compute'
 import StatCards from '../../components/StatCards'
-import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
+import { fmtNum, fmtP, fillTemplate, toneForP, effectBandV as cramerInterpretKey } from '../../lib/format'
 import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
@@ -36,14 +36,6 @@ function Td({ children, align = 'right', mono = true, bold = false, color }) {
       {children}
     </td>
   )
-}
-
-function cramerInterpretKey(v) {
-  if (!Number.isFinite(v)) return null
-  if (v < 0.1) return 'trivial'
-  if (v < 0.3) return 'small'
-  if (v < 0.5) return 'medium'
-  return 'large'
 }
 
 function residColor(z) {

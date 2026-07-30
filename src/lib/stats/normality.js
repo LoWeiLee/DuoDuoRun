@@ -21,7 +21,7 @@
  *   Statistics and Computing, 2(3), 117-119.
  */
 import { mean, sd } from './descriptive.js'
-import { qnorm, normalCdf } from './pvalue.js'
+import { qnorm, normalCdf, normalSf } from './pvalue.js'
 
 export function shapiroWilk(samples) {
   const x = [...samples].sort((a, b) => a - b)
@@ -129,8 +129,9 @@ export function shapiroWilk(samples) {
     z = (lnW - mu) / sigma
   }
 
-  // p-value = 1 - Φ(z)（W 越小代表越偏離常態 → 對應 z 越大 → 右尾）
-  const p = 1 - normalCdf(z)
+  // p-value = P(Z > z)（W 越小代表越偏離常態 → 對應 z 越大 → 右尾）
+  // ★ R55：走 normalSf 而非 1 - normalCdf，否則 z ≳ 8.3 時 p 會塌成恰好 0
+  const p = normalSf(z)
 
   return { W: Wc, p: Math.max(0, Math.min(1, p)), n }
 }

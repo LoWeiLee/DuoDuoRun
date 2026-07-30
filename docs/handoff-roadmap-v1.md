@@ -62,7 +62,8 @@
    `run_pls_ref_only.py` / `run_cta_ref_only.py` 仍保留為「只重生單一區塊」的
    快捷路徑，但不再是規避超時的必要手段。
    注意：沙盒重建後 Python 套件會消失，需先
-   `pip install numpy pandas scipy scikit-learn statsmodels pingouin factor_analyzer semopy plspm --break-system-packages`。
+   `pip install numpy pandas scipy scikit-learn statsmodels pingouin factor_analyzer semopy plspm scikit-posthocs --break-system-packages`。
+   ★ **2026-07-30 / A5b 新增 `scikit-posthocs`**（`kruskal_dunn` 基準組的權威來源，Dunn 事後比較）。
 2. **掛載目錄禁止 unlink**：`git stash` 會半途失敗並打壞 .git/index。
    修復：以 Cowork 的檔案刪除授權工具開權限 → `rm .git/index.lock .git/index`
    → `git reset`。**比對 HEAD 用 `git show HEAD:path`，永遠不要 stash**。
@@ -73,7 +74,7 @@
    全部在 W1–W2 時期的非 PLS 檔案（cluster.js、pvalue.js、各分析 Result/Narrative
    等）。PLS 相關檔案單檔 lint 全綠。整理這 59 個屬獨立小任務（見 §6.8）。
 5. Python 套件就緒清單：numpy/pandas/scipy/plspm/statsmodels/pingouin/
-   factor_analyzer/scikit-learn/semopy（沙盒重建後要重裝：
+   factor_analyzer/scikit-learn/semopy/**scikit-posthocs**（沙盒重建後要重裝：
    `pip install ... --break-system-packages`）。
 
 ## 4. Kevin 本機抽驗清單（優先於任何新開發）

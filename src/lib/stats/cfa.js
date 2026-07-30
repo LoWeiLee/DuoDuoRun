@@ -34,7 +34,7 @@
  * 對標 R::lavaan::cfa()。
  */
 import { isMissing } from '../variableTypes.js'
-import { pChiSq } from './pvalue.js'
+import { pChiSq, normalSf } from './pvalue.js'
 import { inverse } from './matrix.js'
 
 /* ─────────────────  共變數矩陣（listwise）  ───────────────── */
@@ -664,8 +664,10 @@ export function cfa(rows, factors) {
         const z = loadings[i].lambda / seL
         loadings[i].se = seL
         loadings[i].z = z
-        // 雙尾常態 p 值：2·(1 − Φ(|z|))
-        loadings[i].p = 2 * (1 - normalCdfApprox(Math.abs(z)))
+        // 雙尾常態 p 值：2·P(Z > |z|)
+        // ★ R55（2026-07-30）：原本呼叫本檔自帶的 normalCdfApprox（A&S 7.1.26，絕對誤差 1.5e-7），
+        // 與 pvalue.js 的 normalCdf 屬同一件事的兩套實作；已統一走 normalSf（相對精度 1e-13 級）
+        loadings[i].p = 2 * normalSf(Math.abs(z))
       } else {
         loadings[i].se = null
       }
@@ -775,15 +777,7 @@ function computeStandardErrors(theta, evalF, n) {
   return se
 }
 
-/* ─────────────────  小工具：標準常態 CDF（避免相依 pvalue 的可選 import） ───────────────── */
-
-function normalCdfApprox(z) {
-  // Abramowitz & Stegun 7.1.26 → erf
-  const sign = z >= 0 ? 1 : -1
-  const ax = Math.abs(z)
-  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741
-  const a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911
-  const t = 1 / (1 + p * (ax / Math.SQRT2))
-  const y = 1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-(ax / Math.SQRT2) * (ax / Math.SQRT2))
-  return 0.5 * (1 + sign * y)
-}
+/* ★ R55（2026-07-30）：本檔原有 normalCdfApprox（A&S 7.1.26）已移除。
+   移除理由有二：(1) 它與 pvalue.js 的 normalCdf/normalSf 是同一件事的第二套實作
+   （紅隊習慣 3）；(2) 原註解寫「避免相依 pvalue 的可選 import」，但本檔第 37 行
+   本來就已 import pChiSq——那句註解描述的顧慮並不存在（紅隊習慣 4）。 */

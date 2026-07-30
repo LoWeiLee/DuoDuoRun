@@ -65,7 +65,7 @@ const METHODS_DIR = path.join(HERE, '..', 'docs', 'methods')
  *   第 6 節提到別組方法的套件名或函式名時，避免寫成與基準鍵完全相同的小寫字串。
  *   （收緊為「只認 `reference.json → \`key\`` 宣告式」需回頭改 30 份 A1–A3 文件，本批不做。）
  */
-const MAX_UNDOCUMENTED = 27
+const MAX_UNDOCUMENTED = 18
 
 /** 取出一份方法文件的第 6 節（到第 7 節為止）。 */
 function sectionSix(text) {

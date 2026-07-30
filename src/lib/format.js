@@ -10,10 +10,34 @@
  * fmtSig(p)              — 顯著性星號：< .001=***, < .01=**, < .05=*, 其餘=''
  * fmtRange(min, max)     — "1 – 5"
  * fillTemplate(tpl, d)   — 把 "{key}" 占位符換成 d[key]
+ *
+ * ★ 效果量分級（R54b，2026-07-30 紅隊）：
+ * effectBandR(r)  — 無母數的秩相關型效果量 r（Mann-Whitney / Wilcoxon）
+ * effectBandV(v)  — Cramér's V
+ * 收在這裡的理由：這兩個分級原本各有兩套實作（Result.jsx 與 Narrative.jsx 各一份），
+ * 屬「同一個判斷有沒有兩套實作」之型；且 nonparametric 的版本只有三級，
+ * 與同模組 notes 文字宣告的四級（含「微弱 < 0.1」）不一致——使用者永遠看不到「微弱」。
+ * 統一為 Cohen 四級：< .10 微弱 / < .30 小 / < .50 中 / ≥ .50 大。
  */
 
 const isBadNumber = (v) =>
   typeof v !== 'number' || Number.isNaN(v) || !Number.isFinite(v)
+
+/** Cohen 四級分帶（共用）：回傳 i18n 的 key，值不合法回 null */
+function cohenBand(x) {
+  if (isBadNumber(x)) return null
+  const a = Math.abs(x)
+  if (a < 0.1) return 'trivial'
+  if (a < 0.3) return 'small'
+  if (a < 0.5) return 'medium'
+  return 'large'
+}
+
+/** 無母數效果量 r（|z|/√N）的分級 */
+export const effectBandR = (r) => cohenBand(r)
+
+/** Cramér's V 的分級 */
+export const effectBandV = (v) => cohenBand(v)
 
 export function fmtNum(v, decimals = 2) {
   if (isBadNumber(v)) return '—'

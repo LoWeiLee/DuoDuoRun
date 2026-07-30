@@ -409,17 +409,17 @@ export default {
       cols: {
         u: 'U', u1: 'U₁', u2: 'U₂', wpos: 'W⁺', wneg: 'W⁻', t: 'T',
         h: 'H', df: 'df', z: 'z', p: 'p', n: 'n', meanRank: '平均秩', sumRank: '秩和',
-        eps2: 'ε²', r: 'r（效果量）',
+        eta2H: 'η²_H', r: 'r（效果量）',
         pair: '配對組', meanRankA: '平均秩 A', meanRankB: '平均秩 B',
         diffRank: '|Δ平均秩|', zDunn: 'z', pRaw: '原始 p', pAdj: '校正 p（Bonferroni）',
       },
       tieNote: '結果含並列校正',
       droppedNote: '已剔除 {n} 對 D = 0',
-      continuityNote: 'p 值已套用 ±0.5 連續性校正（與 SPSS / R wilcox.test 預設一致）',
+      continuityNote: 'p 值已套用 ±0.5 連續性校正。與 R wilcox.test 的 correct = TRUE 預設同口徑，但 R 在樣本數 < 50 且無並列時預設走的是精確法而非常態近似；SPSS 的 Asymp. Sig. 不套用連續性校正，故本工具的 p 會略大於 SPSS 的漸近 p',
       smallSampleNote: '樣本量小（n < 10），常態近似的精度有限；建議搭配實際效果量與描述統計判讀',
       allZeroDiffsNote: '所有配對差皆為 0，兩變數完全相同（p = 1）',
       effect: {
-        small: '小', medium: '中', large: '大',
+        trivial: '微弱', small: '小', medium: '中', large: '大',
       },
       kwSigPosthoc:
         '整體 H 顯著時，建議用 Dunn 檢定做事後兩兩比較（可勾選左側「顯示事後比較（Dunn）」啟用）',
@@ -450,7 +450,7 @@ export default {
         '1. 各組獨立\n2. 各組分布形狀類似（檢定中位數差異需此）\n3. 至少順序測量尺度',
       formulasTitle: '核心公式',
       formulaMWU: 'U₁ = R₁ − n₁(n₁+1)/2，U₂ = n₁n₂ − U₁，U = min(U₁, U₂)',
-      formulaMWZ: 'z = (U₁ − μ) / σ，含並列校正；p = 2(1 − Φ(|z|))',
+      formulaMWZ: 'z = (|U₁ − μ| − 0.5) / σ，含連續性校正與並列校正；p = 2·P(Z > |z|)',
       formulaWil: 'W⁺ = Σ rank(|D|) where D > 0；T = min(W⁺, W⁻)',
       formulaWilZ:
         'z = (W⁺ − n(n+1)/4) / √((n(n+1)(2n+1) − Σ(t³−t)/2)/24)',
@@ -458,7 +458,7 @@ export default {
         'H = (12/(N(N+1))) Σ(R_i² / n_i) − 3(N+1)，並列校正後 / (1 − Σ(t³−t)/(N³−N))',
       formulaKWdf: 'df = k − 1；p 從 χ²(df) 右尾',
       formulaEffMW: '效果量 r = |z| / √N',
-      formulaEffKW: '效果量 ε² = (H − k + 1) / (N − k)',
+      formulaEffKW: '效果量 η²_H = max(0, (H − k + 1) / (N − k))　※ 這是「基於 H 的偏誤校正 eta squared」（rstatix 的 eta2[H]），不是 rank ε²（後者為 H/(N − 1)）；偏誤校正使原式在 H 很小時可為負，故下限取 0',
       readingTitle: '怎麼讀',
       reading:
         '1. p < .05 → 拒絕 H₀（兩組／多組分布位置相同）\n' +
@@ -481,7 +481,7 @@ export default {
       wilcoxon:
         'Wilcoxon Signed-Rank 檢定結果顯示，{var1Name} 與 {var2Name} 之間{sigWord}差異，T = {t}, z = {z}, p = {pStr}, n = {n}（剔除 {nDropped} 對 D = 0），效果量 r = {r}（{effect}）。',
       kw:
-        'Kruskal-Wallis H 檢定結果顯示，{factor} 對 {depLabel} 的影響{sigWord}，H({df}, N = {n}) = {h}, p = {pStr}，ε² = {eps2}。',
+        'Kruskal-Wallis H 檢定結果顯示，{factor} 對 {depLabel} 的影響{sigWord}，H({df}, N = {n}) = {h}, p = {pStr}，η²_H = {eta2H}。',
       sigYes: '達顯著',
       sigNo: '未達顯著',
       copyHint: '一鍵複製 APA 敘述',
@@ -501,7 +501,7 @@ export default {
         '\n效果量 r = {r}，屬於{effect}效果量。',
       kw:
         '結論：{factor} 對 {depLabel} 的影響{sigWord}（H({df}, N = {n}) = {h}, p = {pStr}）。' +
-        '\nε² = {eps2}。',
+        '\nη²_H = {eta2H}。',
       kwPosthoc: '注意：H 顯著後，建議跑 Dunn 兩兩事後比較。',
       sigYes: '達顯著',
       sigNo: '未達顯著',

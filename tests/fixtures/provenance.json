@@ -42,8 +42,8 @@
     "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
   },
   "chisquare_2x2": {
-    "authority": "scipy",
-    "note": "",
+    "authority": "scipy（chi2_contingency ＋ contingency.association）",
+    "note": "2026-07-30 / A5b（R56）：cramerV 原為 generate_reference.py 手算，與 JS 出自同一次理解；已改由 scipy.stats.contingency.association(method='cramer') 產生（300 組隨機 r×c 表與手算式最大相對差 1.9e-16，重生後數值零變動）。",
     "status": "verified",
     "tier": "A",
     "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"
@@ -125,9 +125,16 @@
     "tier": "A",
     "verification": "fixture 值直接由 pingouin 產生；JS 與其逐值比對（容差見 compare.test.js）。"
   },
+  "kruskal_dunn": {
+    "authority": "scikit-posthocs",
+    "note": "2026-07-30 / A5b（R56）新增。此前 Dunn 事後比較零基準：引擎有實作、UI 有呈現、compare.test.js 一欄都沒對。",
+    "status": "verified",
+    "tier": "A",
+    "verification": "fixture 值直接由 scikit-posthocs.posthoc_dunn 產生（未校正 p 與 Bonferroni p 各三對）；JS 與其逐值比對。另在沙盒對 81 組情境（k=3–5 × 每組 n=5/10/20 × 三種並列強度）比對，最大相對差 2.7e-10。"
+  },
   "kruskal_wallis": {
-    "authority": "scipy",
-    "note": "",
+    "authority": "scipy（H、p）＋ rstatix eta2[H] 定義（效果量）",
+    "note": "2026-07-30 / A5b（R54）：效果量欄由 epsilon2 改名為 eta2H 並 floor 到 0。(H−k+1)/(N−k) 是 rstatix::kruskal_effsize 的 eta2[H]（偏誤校正 η²_H），非 rank ε²（後者為 H/(N−1)）。H 與 p 仍直接來自 scipy。",
     "status": "verified",
     "tier": "A",
     "verification": "fixture 值直接由 scipy 產生；JS 與其逐值比對（容差見 compare.test.js）。"

@@ -2,16 +2,8 @@ import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import NarrativeBlock from '../../components/NarrativeBlock'
 import { runNonparametric } from './compute'
-import { fmtNum, fmtP, fillTemplate } from '../../lib/format'
+import { fmtNum, fmtP, fillTemplate, effectBandR as effectKey } from '../../lib/format'
 import { getStrings } from '../../i18n'
-
-function effectKey(r) {
-  if (!Number.isFinite(r)) return null
-  const a = Math.abs(r)
-  if (a < 0.3) return 'small'
-  if (a < 0.5) return 'medium'
-  return 'large'
-}
 
 function buildNarrative(result, dataset, lang) {
   const t = getStrings(lang)
@@ -57,7 +49,7 @@ function buildNarrative(result, dataset, lang) {
     n: result.N,
     h: fmtNum(result.H, 3),
     pStr: fmtP(result.p),
-    eps2: fmtNum(result.epsilon2, 3),
+    eta2H: fmtNum(result.eta2H, 3),
     sigWord,
   })
   if (result.dunn && result.dunn.comparisons) {

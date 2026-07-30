@@ -18,7 +18,7 @@ import { hierarchicalRegression } from '../src/lib/stats/hierarchicalRegression.
 import { logisticRegression } from '../src/lib/stats/logisticRegression.js'
 import { chiSquareIndependence } from '../src/lib/stats/chiSquare.js'
 import { fisherExact } from '../src/lib/stats/fisherExact.js'
-import { mannWhitneyU, wilcoxonSignedRank, kruskalWallis } from '../src/lib/stats/nonparametric.js'
+import { mannWhitneyU, wilcoxonSignedRank, kruskalWallis, dunnPostHoc } from '../src/lib/stats/nonparametric.js'
 import { shapiroWilk, kolmogorovSmirnov } from '../src/lib/stats/normality.js'
 import { levene } from '../src/lib/stats/levene.js'
 import { twoWayANOVA } from '../src/lib/stats/twoWayAnova.js'
@@ -203,7 +203,16 @@ export const ADAPTERS = {
   },
   kruskal_wallis() {
     const r = kruskalWallis(groups3)
-    return { H: r.H, p: r.p, df: r.df, epsilon2: r.epsilon2 }
+    return { H: r.H, p: r.p, df: r.df, eta2H: r.eta2H }
+  },
+  // ★ R56（2026-07-30）新增：Dunn 事後比較的第三方對照（scikit-posthocs）
+  kruskal_dunn() {
+    const r = dunnPostHoc(groups3)
+    const at = (a, b) => r.comparisons.find((c) => c.groupA === a && c.groupB === b)
+    return {
+      p_AB: at('A', 'B').p, p_AC: at('A', 'C').p, p_BC: at('B', 'C').p,
+      pAdj_AB: at('A', 'B').pAdj, pAdj_AC: at('A', 'C').pAdj, pAdj_BC: at('B', 'C').pAdj,
+    }
   },
   shapiro_wilk() {
     const r = shapiroWilk(col('y'))

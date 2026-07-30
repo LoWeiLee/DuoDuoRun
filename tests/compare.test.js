@@ -29,10 +29,13 @@ const TOL = {
   //   舊 ptukey 實作在 df ≥ 100 誤差達 1e-2 ~ 7.6e-1、p 值在 .05 兩側翻面，
   //   而這條放寬的容差正好蓋在唯一安全的那一點上。修正後改回 DEFAULT_TOL（1e-6），
   //   並新增 `tukey_ptukey_grid`（120 欄，含 df = 100/120/200/500/999）作為高 df 的回歸防線。
-  'mann_whitney_small.p': 1e-4, // 小樣本常態近似的邊界行為
-  'mann_whitney_ties.p': 1e-4,
-  'zprop_one.p': 1e-4,
-  'zprop_two.p': 1e-4,
+  // ★ 2026-07-30 紅隊 A5b（習慣 8 的直接應用）：以下四條原本放寬到 1e-4——
+  //   mann_whitney_small.p 註解寫「小樣本常態近似的邊界行為」，zprop 兩條連註解都沒有。
+  //   逐一重驗後發現這四條全部是 **2026-07-02 修 erf 之前的遺留**：
+  //   實測相對差為 6.9e-14 / 6.0e-14 / 3.1e-13 / 1.1e-13，遠在 DEFAULT_TOL 之內。
+  //   另在沙盒對參數空間掃描（MW：n1,n2 3–14 × 三種並列強度 × 4 重複 = 1,728 例；
+  //   zprop：n 5–1000 × x 全枚舉 + 雙樣本 625 組 = 5,290 例）確認整個區間都成立，
+  //   最大相對差 4.9e-13。⇒ 四條放寬全部刪除，改回 DEFAULT_TOL（1e-6）。
   'ks_lilliefors.D': 1e-4,
   'shapiro_wilk.p': 1e-5, // Royston 近似 vs scipy
   // 2026-07-13 紅隊：efa_pca_varimax 原本放寬到 5e-3（absLoadings）／1e-4（communalities），
@@ -58,7 +61,12 @@ const PLS_CLOSED_FORM = new Set(['alphaStd_F1', 'alphaStd_F2', 'htmt_F1F2', 'vif
 
 // 已知慣例差異，不比對（每項需在驗證報告中有對應記錄）
 const SKIP = {
-  'mann_whitney_small.pExact': 'JS 尚無 exact 法（SPSS 小樣本預設 exact）— backlog P2',
+  // ★ 2026-07-30 紅隊 A5b：這條 SKIP 的風險已量化，不再是「不明的已知差異」。
+  //   窮盡掃描（n1 ≤ n2、3–25，U 全枚舉，共 54,878 格點）比對精確分布與本工具的
+  //   常態近似（含 CC）：.05 判定翻面 110 格（0.20%），**全部是「精確顯著、近似不顯著」
+  //   的保守方向，零個偽顯著**；最大絕對差 0.0375。⇒ 缺 exact 法會少抓到極少數真效果，
+  //   但不會製造假效果。Kevin 2026-07-30 裁決：書面化，維持 backlog，不在 A5b 實作。
+  'mann_whitney_small.pExact': 'JS 尚無 exact 法（SPSS 小樣本預設 exact）— 缺口已量化為保守方向，見 docs/methods/mann-whitney.md §6 — backlog P2',
   'ks_lilliefors.p': 'p 近似法不同：JS 用 Dallal-Wilkinson，statsmodels 用查表內插；D 統計量已對齊',
   'cfa_2factor.chi2': 'χ² 慣例：JS 用 (N−1)·F（AMOS/Wishart），semopy 用 N·F — 見 chi2 換算測試',
   'cfa_2factor.cfi': 'JS 將 CFI 截斷於 1（lavaan 慣例），semopy 不截斷',

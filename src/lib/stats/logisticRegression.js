@@ -36,7 +36,7 @@
  * 對標 R::glm + summary、SPSS 邏輯斯迴歸輸出。
  */
 import { matvec, inverse } from './matrix.js'
-import { normalCdf, pChiSq } from './pvalue.js'
+import { normalSf, pChiSq } from './pvalue.js'
 
 /** Sigmoid 函式（含 numerically stable 分支） */
 function sigmoid(z) {
@@ -159,7 +159,7 @@ export function logisticRegression(X, y, predictorNames) {
     const z = b / se
     return {
       z,
-      p: 2 * (1 - normalCdf(Math.abs(z))),
+      p: 2 * normalSf(Math.abs(z)), // ★ R55：上尾直接算，勿用 1 - normalCdf
       or: Math.exp(b),
       orCI: [Math.exp(b - 1.96 * se), Math.exp(b + 1.96 * se)],
     }

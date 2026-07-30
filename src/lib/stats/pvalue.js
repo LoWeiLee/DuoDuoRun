@@ -148,6 +148,27 @@ export function normalCdf(z) {
   return z > 0 ? 1 - tail : tail
 }
 
+/**
+ * normalSf(z) — 標準常態分布**上尾**機率 P(Z > z)，保留相對精度
+ *
+ * ★ 2026-07-30 紅隊 R55：`normalCdf` 內部就是以 gammq 直接算上尾（相對精度 1e-13 級），
+ *   但呼叫端一律寫成 `1 - normalCdf(|z|)`，等於 `1 - (1 - tail)`——這個減法把
+ *   剛剛算好的相對精度**整個抵消掉**。實測（沙盒，5,240 個 z 比例格點）：
+ *     |z| > 6.5  → 相對誤差 > 1e-6
+ *     |z| > 7.2  → 相對誤差 > 1e-4
+ *     |z| ≥ 8.3  → 回傳**恰好 0**（例：單樣本比例 n=8、x=0、p0=0.9 ⇒ |z|=8.49）
+ *   雙尾 p 一律走 `2 * normalSf(Math.abs(z))`，不要再寫 `2 * (1 - normalCdf(...))`。
+ *
+ *   為什麼不是 L4：掃描 5,240 個格點零個 .05 判定翻面，受影響區間全在 p < 1e-10，
+ *   而 APA 一律呈現為 p < .001。Kevin 2026-07-30 裁決按 L3 處理、8 處呼叫端一次改乾淨。
+ */
+export function normalSf(z) {
+  if (!Number.isFinite(z)) return NaN
+  if (z === 0) return 0.5
+  const tail = 0.5 * gammq(0.5, (z * z) / 2)
+  return z > 0 ? tail : 1 - tail
+}
+
 /* ─────────────────────────  卡方分布相關  ───────────────────────── */
 
 /**

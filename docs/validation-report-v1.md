@@ -2626,3 +2626,173 @@ $\mathrm{df}=N-k$，三組時 **$N\ge103$ 即進入失準區**——完全是一
 3. **`MAX_UNDOCUMENTED = 27` 是進度計**。A5b 涵蓋 8 組，寫完應降到 **19**。
 4. **A5b 全屬 tier A**，但 A5a 已證明 tier A 不等於安全——`tukey_hsd` 也是 tier A。
    tier 說的是「基準值的來源」，不是「引擎的實作對不對」。
+
+---
+
+## 階段 A / A5b（2026-07-30，Opus 5）：類別與無母數，6 份交付
+
+**範圍**：`chi-square`、`fisher-exact`、`z-prop`、`mann-whitney`、`wilcoxon-signed-rank`、
+`kruskal-wallis`（含 Dunn）——6 份文件、8 組基準 ＋ 本批新增的 `kruskal_dunn`。
+
+★ **本批無 L4。** 也是階段 A 掃描規模最大的一批（累計逾 **75,000 個格點**）而**沒有**抓到數值錯誤。
+⇒ 這是掃描該有的兩種結果之一：**它不保證找到 bug，它保證你不再需要猜。**
+
+### 一、獨立重寫（六支全數通過，且每一支都不呼叫產生基準的那個函式）
+
+`mannwhitneyu`／`wilcoxon`／`kruskal`／`chi2_contingency`／`fisher_exact`／`proportions_ztest`
+**一個都沒碰**。尾機率改走 **mpmath 的高精度 `erfc` 與正規化不完全 gamma**（`mp.dps = 40`），
+Fisher 走 **mpmath 精確有理數 `binomial`**——與引擎的 Numerical Recipes 路徑完全無關：
+
+| 方法 | 掃描規模 | 重寫路線 | 最大相對差 |
+|---|---|---|---|
+| Mann-Whitney | 1,728 情境（$n_1,n_2$ 3–14 × 三種並列強度 × 4 重複） | 自行實作平均秩＋並列校正＋CC | **4.845e−13** |
+| Wilcoxon | 1,197 情境（$n$ 4–30 × 零差值 0–5 × 三種並列強度） | 同上；另驗 `nDropped` 1,197 次全對 | **1.318e−12** |
+| Kruskal-Wallis | 225 情境（$k$ 2–6 × 每組 $n$ 5 值 × 三種並列強度） | 手算 $H$、並列校正、$\eta^2_H$ | **3.708e−13**（$H$ 逐位元相同） |
+| 卡方 | 1,350 張表（含 0 格、期望次數 < 1、最大 $4\times5$） | 手算 $E$、$\chi^2$、Yates、$V$ | **4.876e−13** |
+| Fisher exact | 1,621 張表（$N\le3000$） | ★ mpmath 精確有理數列舉 | **1.413e−10** |
+| z 比例 | 5,290 格點（單樣本 $x$ 全枚舉 ＋ 雙樣本 625 組） | 手算兩套分母慣例 | $z$ **3.6e−16**；$p$ 見 §三 |
+| **Dunn** | 81 情境 × 3–10 對 | ★ 對 **scikit-posthocs** 逐值 | **2.665e−10** |
+
+### 二、★ 窮盡掃描：兩支的精確法缺口被量化（R57）
+
+無並列時，MW 的 $U$ 與 Wilcoxon 的 $W^+$ 的精確分布**只依賴樣本數**，
+所以能用動態規劃建出完整分布、**對統計量全枚舉**——不是抽樣，是窮盡：
+
+| 方法 | 格點數 | .05 判定翻面 | ★ 危險方向（近似顯著、精確不顯著） | 最大絕對差 |
+|---|---|---|---|---|
+| Mann-Whitney（$n_1\le n_2$，3–25，$U$ 全枚舉） | **54,878** | 110（0.20%） | ★ **0** | 0.0375 |
+| Wilcoxon（$n$ 4–40，$T$ 全枚舉） | **11,507** | 32（0.278%） | ★ **0** | 0.0488 |
+
+⇒ **缺 exact 法只會少抓到極少數真效果，不會製造假效果。** 與 R50 恰好相反的結論：
+R50 的唯一基準落在安全點上、危險就在旁邊；本批的基準所在區域**沒有隱藏的危險方向**。
+
+★ **附帶發現**：Wilcoxon 的翻面在 **$n=40$ 仍持續出現**（$n=10,13,14,15,18,19,24,26,27,30,32,35,36,38,40$
+各有一組），不像 MW 集中在極小樣本 ⇒ Notes 裡「$n\ge10$ 常態近似已足夠」的暗示對本方法要打折（E63）。
+
+### 三、★ R55（L3，跨模組 8 處）：雙尾 $p$ 在 $|z|$ 大時塌成 0
+
+**成因**　`normalCdf` 的註解明寫「尾端以 `gammq` 計算，保持相對精度」——
+而**每一個呼叫端**都寫成 `2 * (1 - normalCdf(|z|))`，這個 $1-(1-\text{tail})$ 的減法把精度整個抵消掉。
+
+| $\|z\|$ | 正確 $p$（雙尾） | 引擎回傳 | 相對誤差 |
+|---|---|---|---|
+| 4.0 | 6.334e−05 | 6.334e−05 | 3.6e−15 |
+| 6.0 | 1.973e−09 | 1.973e−09 | 5.6e−08 |
+| 7.0 | 2.560e−12 | 2.560e−12 | 4.1e−05 |
+| 7.5 | 6.382e−14 | 6.373e−14 | 1.4e−03 |
+| **8.5** | **1.896e−17** | **0（恰好）** | **1.0** |
+| 12.0 | 3.553e−33 | 0（恰好） | 1.0 |
+
+★ **可達性**：單樣本比例 $n=8$、$x=0$、$p_0=0.9$ 就給 $|z|=8.49$，報表印 `p = .000`。
+邏輯迴歸與 Cohen's kappa 在效果強時也輕易越過。
+
+★ **為什麼判 L3 而非 L4**：5,240 個 z 比例格點 ＋ 1,728 個 MW 格點掃描，**零個 .05 判定翻面**；
+受影響區間全落在 $p<10^{-10}$，而 APA 一律呈現 $p<.001$。與 R50 不同——R50 在可達的 df 上
+直接把 $p$ 翻到 .05 的另一側。**Kevin 2026-07-30 核定按 L3 處理、8 處一次改乾淨。**
+
+**處置**：`pvalue.js` 新增 `normalSf(z)`；A5b 內 4 處（MW／Wilcoxon／Dunn／zProp）
+＋範圍外 4 處（`kappa.js`、`logisticRegression.js`、`normality.js`）全改；
+★ **移除 `cfa.js` 自帶的 `normalCdfApprox`**（A&S 7.1.26，絕對誤差 1.5e−7）——它是同一件事的第二套實作，
+且其註解寫「避免相依 pvalue 的可選 import」而該檔第 37 行本來就已 import `pChiSq`。
+重生後 84 組既有基準**逐位元不變**（既有 fixture 的 $|z|$ 皆在安全區）。
+
+### 四、★ R54（L3）：效果量的名稱錯誤——一個數值比對永遠抓不到的錯
+
+**發現**　KW 的效果量在**三處**標成 $\varepsilon^2$（UI 欄位、公式說明、APA 句），
+而公式 $(H-k+1)/(N-k)$ 經 **rstatix 官方文件**核實是 `eta2[H]`（$\eta^2_H$，偏誤校正）；
+真正的 rank $\varepsilon^2$ 是 $H/(N-1)$（**effectsize 官方文件**），實測最大差 **0.376**。
+
+★ **兩層後果**：
+1. **名稱錯** ⇒ 使用者把 $\eta^2_H$ 當 $\varepsilon^2$ 貼進論文，審稿人用 effectsize 複算對不上
+2. ★ **值域錯** ⇒ 偏誤校正使原式可為負，**225 情境中 111 個（49%）為負、最小 −0.375**，
+   報表印出「$\varepsilon^2=-0.278$」這種依定義不可能的值。rstatix 明文 floor 到 0，本工具沒有
+
+★ **這是本批最值得記住的一件事**：`compare.test.js` **永遠不會抓到它**——
+`generate_reference.py` 與 `nonparametric.js` 都算 $(H-k+1)/(N-k)$、都叫它 `epsilon2`，
+比對只會說「兩邊一致」。**基準端與實作端犯的是同一個命名錯誤。**
+
+**處置**：改名 `eta2H` ＋ `Math.max(0,·)`（另存 `eta2HRaw` 供除錯）；i18n 三處同步（zh／en）；
+`generate_reference.py` 欄名與 floor 同步；provenance 的 `authority` 改為
+「scipy（H、p）＋ rstatix eta2[H] 定義（效果量）」。重生後其餘 84 組逐位元不變。
+
+### 五、★ R56（L3）：Dunn 事後比較補上第一組基準
+
+Dunn 有引擎實作、有 UI 表格、APA 句還會**點名哪幾對顯著**，而 `compare.test.js` 一欄都沒對
+——一個會直接進論文結論的數字，零回歸防線。
+新增 `kruskal_dunn`（6 欄，權威 **scikit-posthocs `posthoc_dunn`**），
+另在沙盒對 81 情境（$k$ 3–5 × 每組 $n$ 5/10/20 × 三種並列強度）比對最大相對差 **2.665e−10**。
+同批把 `cramerV` 由本專案手算改為 **scipy `contingency.association`**（300 組隨機表最大相對差 1.9e−16，
+數值零變動）。**基準組 84 → 85。**
+
+### 六、R57（L2 三項，當場修）
+
+| 項 | 內容 | 修法 |
+|---|---|---|
+| (a) | i18n `continuityNote` 宣稱「與 **SPSS** / R wilcox.test 預設一致」——**SPSS 的 Asymp. Sig. 不套 CC**；且 **R 預設在 $n<50$ 無並列時走精確法**而非套了 CC 的近似法（R 4.6.0 官方手冊，已實際查閱） | 兩語同步改寫，並標明證據等級（R 側查官方手冊；SPSS 側為第三方教學文件，IBM 官方文件未取得） |
+| (b) | `formulaMWZ` 顯示 `z = (U₁ − μ) / σ`，**沒寫出實作實際扣掉的 0.5** | 改為 `z = (|U₁ − μ| − 0.5) / σ，含連續性校正與並列校正` |
+| (c) | 效果量分級函式**雙實作**：`effectKey`（r）在 `nonparametric/{Result,Narrative}.jsx` 各一份且**只有三級**，而同模組 Notes 宣告四級 ⇒ 使用者永遠看不到「微弱」；`cramerInterpretKey`（V）在 `chiSquare/{Result,Narrative}.jsx` 各一份 | 收斂為 `src/lib/format.js` 的 `effectBandR`／`effectBandV`（共用 Cohen 四級），四處改為 import，i18n 的 `np.result.effect` 補 `trivial` 鍵 |
+
+### 七、★ 容差重驗：範圍內 5 條，4 條是遺留的假放寬
+
+A5a 的習慣 8（「放寬過的容差是紅旗」）在本批的實際收成：
+
+| 條目 | 原容差 | 原註解 | 實測相對差 | 處置 |
+|---|---|---|---|---|
+| `mann_whitney_small.p` | 1e-4 | 「小樣本常態近似的邊界行為」 | **6.9e−14** | ✅ 刪除放寬 |
+| `mann_whitney_ties.p` | 1e-4 | ★ **無註解** | **6.0e−14** | ✅ 刪除放寬 |
+| `zprop_one.p` | 1e-4 | ★ **無註解** | **3.1e−13** | ✅ 刪除放寬 |
+| `zprop_two.p` | 1e-4 | ★ **無註解** | **1.1e−13** | ✅ 刪除放寬 |
+| `mann_whitney_small.pExact` | SKIP | 「JS 尚無 exact 法」 | — | ✅ 註解升級為帶證據的量化說明（見 §二） |
+
+★ 四條都是 **2026-07-02 修 `erf` 之前的遺留**。⇒ 給 A6 的教訓不是「放寬都是 bug」也不是
+「放寬都有理由」，而是 **去量**：本批 5 條裡 4 條是假放寬、1 條是真缺口。
+
+### 八、★ 三項「無基準可鎖」的誠實記錄
+
+1. ★ **Wilcoxon 的唯一基準落在最乾淨的一點上**（$n=60$、零並列、零零差值）：
+   `wilcox` vs `pratt` 的慣例分歧（實測最大 $|\Delta p|$ **0.444**、翻面率最高 **14.5%**）
+   與三條退化路徑（全零差值、$\sigma=0$、$n=1$）**全部無入庫基準**。
+   ★ **這是 R50 的形狀**；所幸掃描顯示無危險方向，但缺回歸防線（E62）
+2. ★ **$\eta^2_H$ 仍是本專案依定義自算，非 rstatix 實跑**：公式歸屬已由官方文件核實，
+   但數值本身沒有第三方產生方 ⇒ 仍是 §0 所指的形狀（E67）
+3. ★ **卡方適合度檢定零基準**（引擎與 UI 都在線）、**Cohen's $h$ 零基準**、
+   **MW／Wilcoxon 的效果量 $r$ 零基準**（pingouin 報的是 RBC 與 CLES，非 $|z|/\sqrt N$）（E42、E51、E55）
+
+### 九、驗收
+
+- 沙盒 **12 檔全綠、1,303 過 / 6 跳過**（新增 `tests/a5b.behavior.test.js` **32 條**）：
+  `pls` 198、`compare` 961（6 skip）、`a4.behavior` 33、`a5b.behavior` 32、`pls.narrative` 24、
+  `nca` 16、`a5a.behavior` 15、`provenance` 7、`docs.coverage` 6、`i18n` 5、`errorCodes` 3、`a11y.guard` 3
+- `npx eslint`（本批改動的 18 個檔案 ＋ `src/lib/` `src/i18n/` `src/analyses/{nonparametric,chiSquare}/` `tests/` 全目錄）**0 problems**
+  ★ eslint 抓到一個測試抓不到的錯：`nonparametric/Narrative.jsx` 的 import 別名漏了
+  （`effectBandR` 未別名為 `effectKey`）⇒ 該檔只被 jsdom 測試碰到，非 jsdom 那 12 檔全綠也不會發現。已修
+- `vite build` **615 modules transformed**（與 A5a 相同），產物 91 KB CSS ＋ JS chunk 正常產出。
+  ★ **但沙盒的 `vite build` 無法跑完 CSS 壓縮**：`node_modules` 只裝了
+  `lightningcss-win32-x64-msvc`（Kevin 的 Windows 端安裝），缺 Linux 原生二進位 ⇒
+  `[lightningcss minify] Cannot find module '../lightningcss.linux-x64-gnu.node'`。
+  這與本批改動無關（未動任何 CSS／tailwind／vite 設定）；以 `cssMinify: false` 驗證 JS 側完整通過。
+  **完整 build 需 Kevin 本機確認**
+- ★ **行號重驗（內容錨定法，放在所有程式碼修改之後）**：六份文件共 **192 處**行號引用。
+  第一輪抓到 **3 處超出檔案長度或指向空白行**、另有一批因加註解而位移（`zProp.js` 與
+  `nonparametric.js` 都因 R54／R55 的說明註解使後段行號下移）⇒ 全部依內容錨定重新定位，
+  第三輪 **192 處零異常**。另對 111 個關鍵錨點做「該行必須包含指定字串」的硬驗證，亦零異常
+- 基準組 **84 → 85**；`MAX_PENDING` 維持 **2**；`MAX_UNDOCUMENTED` **27 → 18**（實際值）
+- ★ 重生驗證：新增 `kruskal_dunn`、`epsilon2`→`eta2H` 改名、`cramerV` 換第三方來源後，
+  **其餘 84 組既有基準的 `values` 逐位元不變**
+- `generate_reference.py` 新增相依 **scikit-posthocs**（handoff §3 套件清單已同步）
+- ⬜ **Kevin 本機待補跑**：雙擊 **`A5b本機驗收.bat`**（一次跑完整測試 ＋ lint ＋ build，末尾印三個回傳碼）
+  ——本批動到 `src/lib/stats/` 7 檔、`src/analyses/nonparametric/`、`src/analyses/chiSquare/`、
+  `src/lib/format.js` 與**兩份 i18n**
+
+### 十、給 A6 的提醒
+
+1. ★ **欄位的名稱也要紅隊，不只值**（新習慣 10）。A6 有 $\eta^2$、$\omega^2$、$\alpha$、ICC、$\kappa$、
+   偏態峰度一整批效果量與描述量，每一個都要問：**這個符號在文獻上是這個公式嗎？值域是什麼？工具守住了嗎？**
+   R54 證明了基準端與實作端可以一起錯而測試全綠。
+2. ★ **數值小工具也會有第二套實作**（新習慣 9）。`cfa.js` 養了一套常態 CDF；
+   A6 的偏態／峰度、四分位數、Fisher $z$ 變換都是容易就地重寫的小工具 ⇒ 先 grep。
+3. ★ **A6 範圍內的 TOL／SKIP 條目較多**（`ks_lilliefors` 兩條、`shapiro_wilk.p`、`logistic_regression.p_x1`），
+   而本批實績是「5 條裡 4 條是假放寬」⇒ 逐條去量，不要預設立場。
+4. ★ **`MAX_UNDOCUMENTED = 18` 應在 A6 歸零**。A6 涵蓋的就是剩下的全部 18 組。
+5. **`levene_median` 與 `levene_mean_spss_default` 兩組並存**，正好是慣例分歧最好的教材——
+   本專案罕見地把兩個慣例都建了基準，第 3 節可以直接示範「本工具採哪一個、為什麼、另一個差多少」。

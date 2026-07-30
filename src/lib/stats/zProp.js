@@ -13,11 +13,13 @@
  *
  * 兩種型別都使用常態雙尾 p。
  */
-import { normalCdf } from './pvalue.js'
+import { normalSf } from './pvalue.js'
 
+// ★ R55（2026-07-30）：走 normalSf（上尾）而非 1 - normalCdf——
+// 後者在 |z| ≥ 8.3 會回傳恰好 0（例：n=8、x=0、p0=0.9 ⇒ |z|=8.49）
 function twoSidedZP(z) {
   if (!Number.isFinite(z)) return NaN
-  return 2 * (1 - normalCdf(Math.abs(z)))
+  return 2 * normalSf(Math.abs(z))
 }
 
 export function oneProp(rows, varName, successLevel, p0) {

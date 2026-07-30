@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 import { useApp, useAnalysisState } from '../../context/AppContext'
 import { runNonparametric } from './compute'
 import StatCards from '../../components/StatCards'
-import { fmtNum, fmtP, fillTemplate, toneForP } from '../../lib/format'
+import { fmtNum, fmtP, fillTemplate, toneForP, effectBandR as effectKey } from '../../lib/format'
 import Heading from '../../components/ui/Heading'
 
 function Th({ children, align = 'right' }) {
@@ -27,14 +27,6 @@ function Td({ children, align = 'right', mono = true, bold = false }) {
       {children}
     </td>
   )
-}
-
-function effectKey(r) {
-  if (!Number.isFinite(r)) return null
-  const a = Math.abs(r)
-  if (a < 0.3) return 'small'
-  if (a < 0.5) return 'medium'
-  return 'large'
 }
 
 function MWResult({ result, t }) {
@@ -174,7 +166,7 @@ function KWResult({ result, t, valueLabels, lang }) {
               <Th>{c.df}</Th>
               <Th>{c.p}</Th>
               <Th>{c.n}</Th>
-              <Th>{c.eps2}</Th>
+              <Th>{c.eta2H}</Th>
             </tr>
           </thead>
           <tbody>
@@ -183,7 +175,7 @@ function KWResult({ result, t, valueLabels, lang }) {
               <Td>{result.df}</Td>
               <Td>{fmtP(result.p)}</Td>
               <Td>{result.N}</Td>
-              <Td>{fmtNum(result.epsilon2, 3)}</Td>
+              <Td>{fmtNum(result.eta2H, 3)}</Td>
             </tr>
           </tbody>
         </table>
@@ -332,7 +324,7 @@ function Interpretation({ result, t, dataset, lang }) {
     n: result.N,
     h: fmtNum(result.H, 3),
     pStr: fmtP(result.p),
-    eps2: fmtNum(result.epsilon2, 3),
+    eta2H: fmtNum(result.eta2H, 3),
     sigWord: sig ? t.np.interp.sigYes : t.np.interp.sigNo,
   })
   return (
@@ -388,7 +380,7 @@ function Result() {
     cardItems = [
       { label: cols.h, value: fmtNum(result.H, 3), sub: `${cols.df} = ${result.df}` },
       pCard,
-      { label: cols.eps2, value: fmtNum(result.epsilon2, 3) },
+      { label: cols.eta2H, value: fmtNum(result.eta2H, 3) },
     ]
   }
 

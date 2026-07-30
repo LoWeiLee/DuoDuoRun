@@ -8,11 +8,13 @@
  *
  * p-value：
  *   全部用 large-sample 常態近似（Z 檢定），含 tie 校正。
+ *   ★ 上尾機率一律走 `normalSf`（R55，2026-07-30）：不可寫 `1 - normalCdf(z)`，
+ *     該減法會把 gammq 算好的尾端相對精度整個抵消掉（|z| ≥ 8.3 時回傳恰好 0）。
  *   Mann-Whitney / Wilcoxon 採 ±0.5 連續性校正（與 SPSS / R wilcox.test 預設一致）。
  *   小樣本（n < 10）加 smallSampleWarning，UI 端可加註樣本太小的提醒。
  *   實務上 n ≥ 10 / 組常態近似（含 CC）已足夠精確。
  */
-import { normalCdf } from './pvalue.js'
+import { normalSf } from './pvalue.js'
 import { pChiSq } from './pvalue.js'
 import { ranks, pooledRanks } from './ranks.js'
 
@@ -73,7 +75,7 @@ export function mannWhitneyU(x1, x2) {
   } else {
     zCC = adjMag / sigma
     zRaw = raw >= 0 ? zCC : -zCC
-    p = 2 * (1 - normalCdf(zCC))
+    p = 2 * normalSf(zCC)
   }
   const r = sigma > 0 ? zCC / Math.sqrt(N) : 0
   const smallSample = n1 < 10 || n2 < 10
@@ -168,7 +170,7 @@ export function wilcoxonSignedRank(x1, x2) {
   } else {
     zCC = adjMag / sigma
     z = raw >= 0 ? zCC : -zCC
-    p = 2 * (1 - normalCdf(zCC))
+    p = 2 * normalSf(zCC)
   }
   const T = Math.min(Wpos, Wneg)
   const effR = sigma > 0 ? zCC / Math.sqrt(n) : 0
@@ -197,7 +199,12 @@ export function wilcoxonSignedRank(x1, x2) {
  *   - tie 校正：H' = H / (1 - Σ(t³-t) / (N³-N))
  *   - df = k - 1
  *   - p = pChiSq right-tail
- *   - 效果量 ε² = (H - k + 1) / (N - k)
+ *   - ★ 效果量 η²_H = max(0, (H - k + 1) / (N - k))（R54，2026-07-30）
+ *     這是「基於 H 的偏誤校正 eta squared」，即 rstatix::kruskal_effsize(method="eta2")
+ *     文件裡的 eta2[H]；**不是** rank epsilon squared（後者為 H/(N-1)，見
+ *     effectsize::rank_epsilon_squared）。兩者都出自 Tomczak & Tomczak (2014)，極易互相誤植。
+ *     ★ 偏誤校正的代價是原式在 H 很小時會落到負值（沙盒實測 225 例中 111 例為負、
+ *     最小 -0.375），故比照 rstatix 的做法 floor 到 0，維持 [0, 1] 值域。
  */
 export function kruskalWallis(groups) {
   const k = groups.length
@@ -225,11 +232,14 @@ export function kruskalWallis(groups) {
 
   const df = k - 1
   const p = pChiSq(H, df)
-  const eps2 = N - k > 0 ? (H - k + 1) / (N - k) : NaN
+  // ★ R54：η²_H 是偏誤校正估計量，原式可為負；比照 rstatix floor 到 0
+  const eta2Raw = N - k > 0 ? (H - k + 1) / (N - k) : NaN
+  const eta2H = Number.isFinite(eta2Raw) ? Math.max(0, eta2Raw) : NaN
 
   return {
     H, df, p, N, k,
-    epsilon2: eps2,
+    eta2H,
+    eta2HRaw: eta2Raw, // 未 floor 的原值（除錯與文件用，UI 不呈現）
     groupStats: groups.map((g, i) => ({
       name: g.name,
       n: groupNs[i],
@@ -291,7 +301,7 @@ export function dunnPostHoc(groups) {
       const mrj = meanRanks[j]
       const diff = mri - mrj
       const z = se > 0 ? diff / se : 0
-      const pRaw = 2 * (1 - normalCdf(Math.abs(z)))
+      const pRaw = 2 * normalSf(Math.abs(z))
       const pAdj = Math.min(1, pRaw * m)
       comparisons.push({
         groupA: groups[i].name,
