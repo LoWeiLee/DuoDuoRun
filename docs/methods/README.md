@@ -596,8 +596,80 @@ R74 的 SE／CI、R72 的集群退化旗標、R73 的奇異矩陣旗標——
 ⇒ **找第三方時要問的不是「它會不會算」，是「它在哪些地方跟我們走同一條路、哪些地方不同」**；
 一致與不一致的**分界線落在哪裡**，比一致的程度更能說明問題。
 
-## 側欄模組 → 方法對照
+## 側欄模組 → 方法對照（§6.7 判準 2，2026-07-30 完成）
 
-【待階段 A 收尾補齊】28 個側欄模組對應到約 60 個可報告方法，對照表在文件齊備後一次產出——
-提前寫會與實際完成的文件清單脫節。
+側欄共 **28 個已實作模組**（`src/analyses/registry.js`）＋ **17 個 COMING_SOON 項目**。
+下表把每個模組對應到 `docs/methods/` 的文件。
+
+★ **對應不是一對一**：`nonparametric` 一個模組涵蓋三支方法、`pls-sem` 涵蓋 20 支；
+反過來，`levene` 與 `tukey-hsd` 兩份文件**沒有專屬模組**——它們是別人的前提檢核與事後比較。
+
+### 一、六個分組共 28 個模組
+
+| 分組 | 側欄 id | 方法文件 |
+|---|---|---|
+| 敘述 | `desc-stats` | [descriptive.md](descriptive.md) |
+| 敘述 | `normality` | [normality.md](normality.md) |
+| 敘述 | `visualization` | [visualization.md](visualization.md)（★ 零基準模組） |
+| 推論 | `t-test` | [t-test.md](t-test.md)（前提檢核另見 [levene.md](levene.md)） |
+| 推論 | `one-way-anova` | [anova-oneway.md](anova-oneway.md) ＋ [tukey-hsd.md](tukey-hsd.md) ＋ [levene.md](levene.md) |
+| 推論 | `two-way-anova` | [anova-twoway.md](anova-twoway.md) ＋ [levene.md](levene.md) |
+| 推論 | `chi-square` | [chi-square.md](chi-square.md) |
+| 推論 | ★ `nonparametric` | **一對三**：[mann-whitney.md](mann-whitney.md) ＋ [wilcoxon-signed-rank.md](wilcoxon-signed-rank.md) ＋ [kruskal-wallis.md](kruskal-wallis.md)（含 Dunn） |
+| 推論 | `z-prop` | [z-prop.md](z-prop.md) |
+| 推論 | `fisher-exact` | [fisher-exact.md](fisher-exact.md) |
+| 推論 | `ancova` | [ancova.md](ancova.md) |
+| 推論 | `repeated-anova` | [anova-repeated.md](anova-repeated.md) |
+| 推論 | `mixed-anova` | [anova-mixed.md](anova-mixed.md) |
+| 迴歸 | `correlation` | [correlation.md](correlation.md) |
+| 迴歸 | `simple-regression` | [regression-simple.md](regression-simple.md) |
+| 迴歸 | `multiple-regression` | [regression-multiple.md](regression-multiple.md) |
+| 迴歸 | `logistic-regression` | [logistic-regression.md](logistic-regression.md) |
+| 迴歸 | `hierarchical-regression` | [regression-hierarchical.md](regression-hierarchical.md) |
+| 量表 | `cronbach-alpha` | [cronbach-alpha.md](cronbach-alpha.md) |
+| 量表 | `efa` | [efa.md](efa.md) |
+| 量表 | `kappa` | [cohen-kappa.md](cohen-kappa.md) |
+| 量表 | `icc` | [icc.md](icc.md) |
+| 量表 | `cfa` | [cfa.md](cfa.md) |
+| 多變量 | `manova` | [manova.md](manova.md) |
+| 多變量 | `lda` | [lda.md](lda.md) |
+| 多變量 | `cluster` | [cluster.md](cluster.md) |
+| SEM | ★ `pls-sem` | **一對二十**：見下方「PLS-SEM 的 20 份」 |
+| SEM | ★ `nca` | **一對四**：[nca-ce-fdh.md](nca-ce-fdh.md) ＋ [nca-cr-fdh.md](nca-cr-fdh.md) ＋ [nca-bottleneck.md](nca-bottleneck.md) ＋ [nca-permutation.md](nca-permutation.md) |
+
+### 二、`pls-sem` 的 20 份
+
+| 層 | 文件 |
+|---|---|
+| 測量與估計核心 | [pls-basic.md](pls-basic.md)、[pls-formative.md](pls-formative.md)、[pls-plsc.md](pls-plsc.md)、[pls-reliability-validity.md](pls-reliability-validity.md)、[pls-pairwise-wpls.md](pls-pairwise-wpls.md) |
+| 適配與預測 | [pls-fit.md](pls-fit.md)、[pls-gof.md](pls-gof.md)、[pls-q2.md](pls-q2.md)、[pls-predict.md](pls-predict.md)、[pls-itcriteria.md](pls-itcriteria.md) |
+| 推論 | [pls-bootstrap.md](pls-bootstrap.md)、[pls-bca.md](pls-bca.md) |
+| 調節與中介 | [pls-mediation.md](pls-mediation.md)、[pls-moderation-twostage.md](pls-moderation-twostage.md)、[pls-moderation-product-indicator.md](pls-moderation-product-indicator.md)、[pls-moderation-orthogonal.md](pls-moderation-orthogonal.md)、[pls-moderation-threeway.md](pls-moderation-threeway.md)、[pls-moderated-mediation.md](pls-moderated-mediation.md)、[pls-quadratic.md](pls-quadratic.md) |
+| 高階構念 | [pls-hoc-repeated.md](pls-hoc-repeated.md)、[pls-hoc-disjoint.md](pls-hoc-disjoint.md)、[pls-hoc-embedded.md](pls-hoc-embedded.md) |
+| 群組與進階 | [pls-mga.md](pls-mga.md)、[pls-micom.md](pls-micom.md)、[pls-ipma.md](pls-ipma.md)、[pls-cipma.md](pls-cipma.md)、[pls-copula.md](pls-copula.md)、[pls-cta.md](pls-cta.md)、[pls-fimix.md](pls-fimix.md)、[pls-pos.md](pls-pos.md) |
+
+（★ 實際為 **31 份**——「20 份」是階段 A 規劃時的估計，A1–A3 展開後拆得更細。）
+
+### 三、★ 沒有專屬側欄模組的兩份文件
+
+| 文件 | 它出現在哪裡 |
+|---|---|
+| [levene.md](levene.md) | t 檢定、單因子 ANOVA、雙因子 ANOVA 的**前提檢核區**（`assumptionChecker.js` 兩處 ＋ 三個模組的 compute） |
+| [tukey-hsd.md](tukey-hsd.md) | 單因子 ANOVA 的**事後比較**（無條件顯示） |
+
+★ **這兩份的存在本身就是判準 2 的價值**：它們是使用者看得到、會寫進論文的數字，
+卻不對應任何一個側欄項目——**如果只照側欄清單盤點，這兩支會被漏掉**。
+（Tukey 那一支正是 A5a 的 L4 R50 所在。）
+
+### 四、17 個 COMING_SOON 項目（尚未實作，無文件）
+
+`cb-sem`、`hlm`、`mcnemar`、`friedman`、`multinomial-logit`、`ordinal-logit`、`probit`、
+`poisson`、`polynomial-reg`、`cox`、`cca`、`bayes-t`、`bayes-anova`、`bayes-corr`、
+`irt`、`meta`、`arima`
+
+★ 其中 **`cb-sem` 有設計稿**（`docs/cb-sem-design-plan-v1.md`，roadmap §4 暫緩中）、
+**`hlm` 與 `friedman` 已列入階段 B 的 Wave F8／F1**（roadmap §3）。
+側欄以 `disabled` 按鈕 ＋ `aria-disabled` 呈現（`Sidebar.jsx:168–180`），輔具會播報停用狀態。
+
+---
 
