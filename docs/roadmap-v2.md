@@ -953,7 +953,7 @@ R 4.6 對有並列的情形用 Streitberg–Röhmel 位移演算法算條件精�
 | R57 | A5b | `mann_whitney*`／`wilcoxon_signed_rank` | **L2**＋書面 | ★ 三個說明錯誤 ＋ 精確法缺口。(a) i18n `continuityNote` 宣稱「與 **SPSS** / R wilcox.test 預設一致」——**SPSS 的 Asymp. Sig. 不套 CC**，且 **R 預設在 $n<50$ 無並列時走精確法**而非套了 CC 的近似法（R 4.6.0 官方手冊，已實際查閱）；(b) `formulaMWZ` 顯示的公式**沒寫出實作實際扣掉的 0.5**；(c) 效果量 $r$ 的分級函式在 `Result.jsx` 與 `Narrative.jsx` **各實作一次**且只有三級，而同模組 Notes 宣告四級 ⇒ 使用者永遠看不到「微弱」。(d) 精確法缺口窮盡量化：MW 54,878 格點、Wilcoxon 11,507 格點，翻面 0.20%／0.278%，**危險方向皆為 0** | (a)(b) 當場改寫兩語 i18n；(c) 收斂為 `format.js` 的 `effectBandR`／`effectBandV`（Cohen 四級），三個檔改為 import，i18n 補 `trivial` 鍵；(d) 依裁決書面化為「已量化的保守缺口」，`compare.test.js` 的 SKIP 註解升級為帶證據的說明，維持 backlog P2 | ✅ L2 三項當場修；(d) Kevin 2026-07-30 核定書面化 |
 
 | R58 | A5b 後 / R 抽驗 | `mann_whitney*` | **L2** | ★★ **A5b 交付時寫的「精確法缺口的危險方向為 0」只在無並列時成立**，我把它寫成了通則。R 4.6 對有並列用 Streitberg–Röhmel 位移演算法算**條件精確分布**（不退回近似）：`ties` 基準組 R 精確 $p=0.022329$（沙盒獨立列舉 $\binom{24}{12}$＝2,704,156 種分組重算，與 R 逐位一致）vs 本工具近似 $p=0.018117$ ⇒ **偏寬鬆**。補掃 900 個有並列情境：**78.1% anti-conservative、10 例（1.1%）在 .05 上偽顯著**，最糟一例近似 0.0447（報顯著）vs 精確 0.1026（差 2.3 倍）。★ 這是**敘述錯誤不是實作退步**——引擎與 scipy 逐值相符至 6e−14 | 文件全面更正（`mann-whitney.md` §6 拆成無並列／有並列兩道 ＋ §8 新增 R58、`compare.test.js` 的 SKIP 註解、README、本檔、validation-report）；★ **UI 加強警告**：`smallSampleWarning && tieCorrection` 時多顯示一句明示「近似 p 可能偏小、SPSS/R 的精確法會給較大的 p」（i18n `smallSampleTiesNote`，zh／en）；`a5b.behavior.test.js` 加 4 條鎖 | ✅ Kevin 2026-07-30 重新裁決並已執行 |
-| R59 | A5b 後 / R 抽驗 | `cfa_2factor_loadings` | **L3** | ★★ **CFA 的 loading 標準誤對不上 lavaan**。六個標準化負荷完全吻合、未標準化差一個固定比例 $\sqrt{60/59}=1.008439$（＝共變數矩陣分母 $N$ vs $N-1$，屬慣例），**唯獨 se 差約 4%、$z$ 小約 3.5%**（i1：0.147094 vs ≈0.1406；$z$ 5.102 vs 5.290）——不是尺度可解釋的。se／$z$／$p$ 決定報表上哪些 loading 標星號，而這一欄**零第三方對照**。本工具做法為「數值 Hessian（$h=10^{-4}$）＋ $\mathrm{Cov}=\frac{2}{N-1}H^{-1}$」＝觀察訊息＋$N-1$；lavaan 預設為期望訊息＋$N$ | ⬜ **未結案**。已代產 `scripts/validation/06_cfa_se_probe.R`（雙擊 `跑CFA標準誤診斷.bat`），把 lavaan 的 information（observed／expected）× likelihood（normal／wishart）四種組合印到 10 位有效數字，用以區分三個候選成因：(a) 訊息矩陣型別、(b) $N$ vs $N-1$、(c) 數值 Hessian 截斷誤差 | ⬜ **待 Kevin 執行 `跑CFA標準誤診斷.bat` 後裁決** |
+| R59 | A5b 後 / R 抽驗 | `cfa_2factor_loadings` | **L3** | ★★ **CFA 的 loading 標準誤對不上 lavaan**。六個標準化負荷完全吻合、未標準化差一個固定比例 $\sqrt{60/59}=1.008439$（＝共變數矩陣分母 $N$ vs $N-1$，屬慣例），**唯獨 se 差約 4%、$z$ 小約 3.5%**（i1：0.147094 vs ≈0.1406；$z$ 5.102 vs 5.290）——不是尺度可解釋的。se／$z$／$p$ 決定報表上哪些 loading 標星號，而這一欄**零第三方對照**。本工具做法為「數值 Hessian（$h=10^{-4}$）＋ $\mathrm{Cov}=\frac{2}{N-1}H^{-1}$」＝觀察訊息＋$N-1$；lavaan 預設為期望訊息＋$N$ | ✅ **已結案：純慣例差異，不改實作**。`06_cfa_se_probe.R` 把 lavaan 四種設定印到 10 位有效數字後，兩個軸乾淨分離——vs `normal+observed` 的比值**六個指標幾乎常數 1.016945 ~ 1.016951（＝60/59）** ⇒ 該軸純為 $N$ vs $N-1$；vs `wishart+expected` 的比值**隨指標變動 1.009 ~ 1.046** ⇒ 該軸為觀察 vs 期望訊息；★ vs **`wishart+observed`** 的比值 **0.999995 ~ 1.000002**（最大相對偏差 **4.5e−06**，＝中央差分 $h=10^{-4}$ 的截斷誤差量級）⇒ **本工具的口徑就是這一組**，$z$ 亦逐一對上，$\chi^2$ 相對差 5.6e−10 | ✅ **Kevin 2026-07-30 依既定判準結案**：比值整排 ≈ 1.000000 ⇒ 慣例差異、雙處標註即可。已寫入 `cfa.md` §3.5（SE 的兩個慣例軸）與 §6。★ 另更正 §3.3 一項錯誤敘述：原寫「lavaan 預設用 $(N-1)F$」，實測 lavaan 預設與 **semopy 同側**，本工具是三者中唯一用 $(N-1)F$ 的。順帶開出 E71（SRMR 相對差 4.8e−06，非逐位元）與 E72（因子相關的 se 有 Hessian 卻無出口） |
 
 #### A3a 記錄但不修的項目（屬功能擴充，不擋階段 A 結案）
 
@@ -1142,6 +1142,22 @@ Kevin 本機的 R 不在 PATH 上，`.bat` 要自己去登錄檔與常見安裝�
 ---
 
 ## 版本紀錄
+- v2.17（2026-07-30 同日）：**R59 結案 ＋ 三項雜務清理**。
+  `06_cfa_se_probe.R` 把 lavaan 的 `information` × `likelihood` 四種組合印到 10 位有效數字後，
+  ★ **兩個慣例軸乾淨分離**：`normal+observed` 的比值**六指標幾乎常數 1.016945~1.016951（＝60/59）**
+  ⇒ 該軸純為 $N$ vs $N-1$；`wishart+expected` 的比值**隨指標變動 1.009~1.046** ⇒ 該軸為觀察 vs 期望訊息；
+  ★ **`wishart+observed` 的比值 0.999995~1.000002**（最大偏差 4.5e−06＝中央差分 $h=10^{-4}$ 的截斷誤差）
+  ⇒ **本工具的口徑就是這一組**，$z$ 逐一對上、$\chi^2$ 相對差 5.6e−10。
+  ★ **裁決：純慣例差異，不改實作**（觀察訊息 ＋ $N-1$，兩端都是 lavaan 支援的合法設定；
+  與 lavaan 預設相比本工具的 $z$ 小約 3.5%、偏保守）。已寫入 `cfa.md` §3.5 與 §6。
+  ★ **另更正 `cfa.md` §3.3 的一項錯誤敘述**：原把「lavaan 預設」列在 $(N-1)F$ 那一側，
+  實測 lavaan 預設與 **semopy 同側**，本工具是三者中唯一用 $(N-1)F$ 的。
+  新開出 **E71**（SRMR 相對差 4.79e−06、非逐位元，且大於 $\chi^2$ 的收斂殘差 ⇒ 分母慣例可能略有出入）
+  與 **E72**（因子相關的 se 有 Hessian 卻無出口，補上成本很低）。
+  ★ **§6.6 的 53 列至此全部有 Kevin 裁決 ⇒ §6.7 判準 4 達成。**
+  雜務：`test-results.txt` 已由 Kevin 刪除（脫離追蹤待 commit）；
+  `handoff-roadmap-v1.md` §4 的過期敘述「SmartPLS 4 側待做」已更正
+  （SmartPLS 4 授權 2026-07-13 過期、當日已改由開源實作裁決並結案）。
 - v2.16（2026-07-30 同日）：**R 側交叉驗證代產並由 Kevin 本機執行**
   （`scripts/validation/05_a5b_r_audit.R`，雙擊 `跑R抽驗.bat`；六段全數成功）。
   針對三類「Python 側撐不住」的項目取第二意見：(A) 零基準、(B) 本專案手算、(C) 文件寫了但未實跑。

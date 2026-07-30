@@ -84,10 +84,13 @@ SmartPLS 4 的 two-stage 交互係數（不標準化慣例）、HOC 兩階段流
 MICOM step 2 的 c、SRMR/fit 家族、CTA-PLS 的 tetrad 選取集；
 R 側：seminr（PI/orthogonal、PLSpredict）、cSEM（testMICOM/testMGD）、NCA 套件。
 
-**抽驗工具包已代產（2026-07-13）；R 側已執行並銷帳，SmartPLS 4 側待做**：`scripts/validation/`
+**抽驗工具包已代產（2026-07-13）；★ R 側與 SmartPLS 側皆已結案**：`scripts/validation/`
 - 雙擊 `跑抽驗腳本.bat` → 自動跑 R 的 seminr / cSEM / NCA 三支腳本，結果寫入 `out/`
-- SmartPLS 4 部分為手動操作，步驟見該夾 `README.md`（含 CTA-PLS §2.7）
-- 數字對照表 `抽驗對照表.md`：左欄已填入多多快跑的值，Kevin 只需填右欄
+- ★ **SmartPLS 4 側不再是待辦（2026-07-30 更正本節的過期敘述）**：本檔 §1 已記載
+  **SmartPLS 4 授權於 2026-07-13 過期（License expired，功能全鎖），無法作為證人**，
+  原「待 SmartPLS 4」的兩項（Henseler MGA 的偏誤校正錨點、d_G 的對數底數）
+  當日已改由開源實作裁決並結案。⇒ 該夾 `README.md` §2、§3 的 SmartPLS 手動步驟與
+  `抽驗對照表.md` 的 SmartPLS 欄位**保留為歷史紀錄**，不再是待辦
 - 資料檔 `data/`：main.csv（n=60）、nca.csv（n=48）、cta.csv（n=60），皆與 fixture 同源
 
 ★ **第二波 R 抽驗（2026-07-30 / A5b 收尾代產，非 PLS 側）**：雙擊 **`跑R抽驗.bat`**
